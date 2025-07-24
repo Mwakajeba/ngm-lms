@@ -2,14 +2,18 @@
     <div class="sidebar-header">
         <div>
             <!-- <img src="{{ asset('assets/images/logo1.png') }}" width="120" style="color:#fff" alt="logo icon">  -->
-             <h5 style="color:#fff">SMARTFINANCE</h5> 
+            <h5 style="color:#fff">SMARTFINANCE</h5> 
         </div>
-        <div class="toggle-icon ms-auto"><i class='bx bx-first-page'></i>
-        </div>
+        <div class="toggle-icon ms-auto"><i class='bx bx-first-page'></i></div>
     </div>
+
     <!--navigation-->
     <ul class="metismenu" id="menu">
         @foreach($menus as $menu)
+            @php
+                $isEditOrDelete = Str::contains($menu->route, ['edit', 'delete','destroy']);
+            @endphp
+
             @if($menu->children->count())
                 <li>
                     <a href="javascript:;" class="has-arrow">
@@ -18,15 +22,21 @@
                     </a>
                     <ul>
                         @foreach($menu->children as $child)
-                            <li>
-                                <a href="{{ route($child->route) }}">
-                                    <i class="bx bx-right-arrow-alt"></i>{{ $child->name }}
-                                </a>
-                            </li>
+                            @php
+                                $isChildEditOrDelete = Str::contains($child->route, ['edit', 'delete', 'destroy']);
+                            @endphp
+
+                            @if (!$isChildEditOrDelete)
+                                <li>
+                                    <a href="{{ route($child->route) }}">
+                                        <i class="bx bx-right-arrow-alt"></i>{{ $child->name }}
+                                    </a>
+                                </li>
+                            @endif
                         @endforeach
                     </ul>
                 </li>
-            @else
+            @elseif(!$isEditOrDelete)
                 <li>
                     <a href="{{ route($menu->route) }}">
                         <div class="parent-icon"><i class="{{ $menu->icon ?? 'bx bx-circle' }}"></i></div>

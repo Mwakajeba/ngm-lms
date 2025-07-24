@@ -7,6 +7,7 @@ use App\Http\Controllers\OtpEmailController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CompanyController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -42,10 +43,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
 });
 
-Route::middleware(['auth', 'role:admin'])->group(function () {
-    Route::get('/users/{user}/roles', [UserRoleController::class, 'edit'])->name('users.roles.edit');
-    Route::post('/users/{user}/roles', [UserRoleController::class, 'update'])->name('users.roles.update');
-});
+// Route::middleware(['auth', 'role:admin'])->group(function () {
+//     Route::get('/users/{user}/roles', [UserRoleController::class, 'edit'])->name('users.roles.edit');
+//     Route::post('/users/{user}/roles', [UserRoleController::class, 'update'])->name('users.roles.update');
+// });
 ////////////////////////////////////////////// END PERMISSIONS MANAGEMENT //////////////////////////////////////////
 
 ////////////////////////////////////////////// USER MANAGEMENT /////////////////////////////////////////////////////
@@ -58,11 +59,16 @@ Route::resource('users', UserController::class)->middleware('auth');
 
 Route::resource('branches', BranchController::class)->middleware('auth');
 
+Route::resource('companies', CompanyController::class)->middleware('auth');
+
 ////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
+
+
+
 
 
 Route::post('/logout', function () {
     Auth::logout();
-    return redirect('/');
+    return redirect('/')->with('success', 'You are successfully logout.');
 })->middleware('auth');
 
