@@ -26,7 +26,7 @@
 </html> -->
 @extends('layouts.main')
 
-@section('title', 'Dashboard')
+@section('title', __('app.dashboard'))
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">

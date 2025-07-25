@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" class="color-sidebar sidebarcolor3">
+<html lang="{{ app()->getLocale() }}" class="color-sidebar sidebarcolor3">
 
 <head>
     <!-- DataTables Bootstrap CSS -->

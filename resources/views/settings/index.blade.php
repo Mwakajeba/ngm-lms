@@ -133,20 +133,35 @@
                             </div>
 
                             <!-- Roles & Permissions -->
-                            <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-secondary">
-                                    <div class="card-body text-center">
-                                        <div class="mb-3">
-                                            <i class="bx bx-shield fs-1 text-secondary"></i>
-                                        </div>
-                                        <h5 class="card-title">Roles & Permissions</h5>
-                                        <p class="card-text">Manage user roles, permissions, and access control.</p>
-                                        <a href="{{ route('roles.index') }}" class="btn btn-secondary">
-                                            <i class="bx bx-shield me-1"></i> Manage
-                                        </a>
-                                    </div>
-                                </div>
-                            </div>
+                                        <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card border-secondary">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bx bx-shield fs-1 text-secondary"></i>
+                        </div>
+                        <h5 class="card-title">Roles & Permissions</h5>
+                        <p class="card-text">Manage user roles, permissions, and access control.</p>
+                        <a href="{{ route('roles.index') }}" class="btn btn-secondary">
+                            <i class="bx bx-shield me-1"></i> Manage
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card border-info">
+                    <div class="card-body text-center">
+                        <div class="mb-3">
+                            <i class="bx bx-globe fs-1 text-info"></i>
+                        </div>
+                        <h5 class="card-title">Language Test</h5>
+                        <p class="card-text">Test the multi-language functionality of the system.</p>
+                        <a href="{{ route('test.language') }}" class="btn btn-info">
+                            <i class="bx bx-globe me-1"></i> Test Language
+                        </a>
+                    </div>
+                </div>
+            </div>
                         </div>
                     </div>
                 </div>

@@ -344,6 +344,12 @@
 			</li>
 		</ul>
 	</div>
+	
+	<!-- Language Switcher -->
+	<div class="me-3">
+		@include('incs.languageSwitcher')
+	</div>
+	
 	<div class="user-box dropdown px-3">
 		<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 			<img src="{{ asset('assets/images/avatars/avatar-2.png') }}" class="user-img" alt="user avatar">
