@@ -19,14 +19,32 @@ class AuthController extends Controller
 
     public function login(Request $request)
     {
-        $credentials = $request->only('phone', 'password');
+        $request->validate([
+            'phone' => 'required',
+            'password' => 'required',
+        ]);
+
+        // Find user by phone with flexible matching
+        $user = find_user_by_phone($request->phone);
+        
+        if (!$user) {
+            return back()->withErrors([
+                'phone' => 'Phone number not found.',
+            ])->withInput();
+        }
+
+        // Attempt login with the found user's phone number
+        $credentials = [
+            'phone' => $user->phone,
+            'password' => $request->password
+        ];
 
         if (Auth::attempt($credentials)) {
             return redirect()->intended('/dashboard');
         }
 
         return back()->withErrors([
-            'email' => 'Invalid credentials.',
+            'password' => 'Invalid password.',
         ])->withInput();
     }
 
@@ -38,44 +56,62 @@ class AuthController extends Controller
      public function forgotPassword(Request $request)
     {
         $request->validate([
-            'phone' => 'required|exists:users,phone',
+            'phone' => 'required',
         ]);
+
+        // Find user by phone with flexible matching
+        $user = find_user_by_phone($request->phone);
+        
+        if (!$user) {
+            return back()->withErrors([
+                'phone' => 'Phone number not found.',
+            ])->withInput();
+        }
 
         $verification_code = rand(100000, 999999);
 
         OtpCode::create([
-            'phone' => $request->phone,
+            'phone' => $user->phone, // Use the normalized phone number
             'code' => $verification_code,
             'expires_at' => Carbon::now()->addMinutes(5)
         ]);
 
          // Send SMS
-       $this->sendSmsVerification($request->phone, $verification_code);
+       $this->sendSmsVerification($user->phone, $verification_code);
 
        // Redirect to verification page
-        session(['phone' => $request->phone]);
+        session(['phone' => $user->phone]);
         return redirect()->route('verify-otp-password');
     }
 
     public function resendOtp($phone)
     {
+        // Find user by phone with flexible matching
+        $user = find_user_by_phone($phone);
+        
+        if (!$user) {
+            return back()->withErrors([
+                'phone' => 'Phone number not found.',
+            ]);
+        }
+
         // Optional: invalidate previous OTPs
-        OtpCode::where('phone', $phone)->update(['is_used' => 1]);
+        OtpCode::where('phone', $user->phone)->update(['is_used' => 1]);
 
         // Generate new OTP
         $otpCode = rand(100000, 999999);
 
         // Save OTP
         OtpCode::create([
-            'phone' => $phone,
+            'phone' => $user->phone, // Use the normalized phone number
             'code' => $otpCode,
             'expires_at' => Carbon::now()->addMinutes(5),
         ]);
 
-        $this->sendSmsVerification($phone, $otpCode);
+        $this->sendSmsVerification($user->phone, $otpCode);
 
        // Redirect to verification page
-        session(['phone' => $phone]);
+        session(['phone' => $user->phone]);
         return redirect()->route('verify-otp-password');
     }
 
@@ -107,7 +143,14 @@ class AuthController extends Controller
             'code' => 'required',
         ]);
 
-        $otp = OtpCode::where('phone', $request->phone)
+        // Find user by phone with flexible matching
+        $user = find_user_by_phone($request->phone);
+        
+        if (!$user) {
+            return back()->withErrors(['phone' => 'Phone number not found.']);
+        }
+
+        $otp = OtpCode::where('phone', $user->phone)
                   ->where('code', $request->code)
                   ->where('expires_at', '>', Carbon::now())
                   ->where('is_used', 0)
@@ -120,7 +163,7 @@ class AuthController extends Controller
 
          $otp->update(['is_used' => 1]);
 
-        session(['verified_phone' => $request->phone]);
+        session(['verified_phone' => $user->phone]);
 
         return redirect()->route('new-password-form')->with('success', 'Phone verified successfully!');
     }
@@ -143,7 +186,8 @@ class AuthController extends Controller
             'password' => 'required|min:6|confirmed',
         ]);
 
-        $user = User::where('phone', $request->phone)->first();
+        // Find user by phone with flexible matching
+        $user = find_user_by_phone($request->phone);
 
         if (!$user) {
             return back()->withErrors(['phone' => 'User not found.']);

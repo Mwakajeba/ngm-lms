@@ -33,7 +33,11 @@
                                     @csrf
                                     <div class="col-12">
                                         <label for="inputPhone" class="form-label">Phone Number</label>
-                                        <input type="text" class="form-control" name="phone"  placeholder="255715XXXXXX" id="phone" value="{{ old('phone') }}" required> 
+                                        <input type="text" class="form-control" name="phone" placeholder="+255715XXXXXX or 0715XXXXXX or 255715XXXXXX" id="phone" value="{{ old('phone') }}" required> 
+                                        <small class="form-text text-muted">
+                                            <i class="bx bx-info-circle me-1"></i>
+                                            You can enter your phone number in any format: +255715XXXXXX, 0715XXXXXX, or 255715XXXXXX
+                                        </small>
                                     </div>
                                     <div class="col-md-6 text">
                                         <a href="{{ route('login') }}">Sign In</a>

@@ -11,6 +11,11 @@
                     <div class="mb-4 text-center">
                         <img src="{{ asset('assets/images/logo1.png') }}" width="180" alt="" />
                     </div>
+                    
+                    <!-- Language Switcher for Auth Pages -->
+                    <div class="text-center mb-3">
+                        @include('incs.languageSwitcher')
+                    </div>
                     <div class="card rounded-4">
                         <div class="card-body">
                             <div class="p-4 rounded">
@@ -22,7 +27,7 @@
 							       <img src="{{ asset('assets/images/icons/lock.png')}}" width="120" alt="" />
 						        </div>
                                 <div class="login-separater text-center mb-4">
-                                    <span>SIGN IN WITH PHONE</span>
+                                    <span>{{ __('app.sign_in') }} {{ __('app.with_phone') }}</span>
                                     <hr />
                                 </div>
 
@@ -36,27 +41,31 @@
                                 <form class="row g-3" method="POST" action="{{ url('/login') }}">
                                     @csrf
                                     <div class="col-12">
-                                        <label for="inputPhone" class="form-label">Phone Number</label>
-                                        <input type="text" class="form-control" name="phone"  placeholder="255715XXXXXX" id="phone" value="{{ old('phone') }}" required> 
+                                        <label for="inputPhone" class="form-label">{{ __('app.phone_number') }}</label>
+                                        <input type="text" class="form-control" name="phone" placeholder="+255715XXXXXX or 0715XXXXXX or 255715XXXXXX" id="phone" value="{{ old('phone') }}" required> 
+                                        <small class="form-text text-muted">
+                                            <i class="bx bx-info-circle me-1"></i>
+                                            {{ __('app.phone_number_help') }}
+                                        </small>
                                     </div>
                                     <div class="col-12">
-                                        <label for="inputChoosePassword" class="form-label">Enter Password</label>
+                                        <label for="inputChoosePassword" class="form-label">{{ __('app.enter_password') }}</label>
                                         <div class="input-group" id="show_hide_password">
-                                            <input type="password" name="password" class="form-control border-end-0" placeholder="Password" id="password" required>
+                                            <input type="password" name="password" class="form-control border-end-0" placeholder="{{ __('app.password') }}" id="password" required>
                                             <a href="javascript:;" class="input-group-text bg-transparent"><i class='bx bx-hide'></i></a>
                                         </div>
                                     </div>
                                     <div class="col-md-12">
-                                        <a href="{{ route('forgotPassword') }}">Reset Password by Phone</a>
+                                        <a href="{{ route('forgotPassword') }}">{{ __('app.reset_password_by_phone') }}</a>
                                     </div>
                                     <div class="col-md-12">
-                                        <a href="{{ route('email-otp-form') }}">Reset Password by Email</a>
+                                        <a href="{{ route('email-otp-form') }}">{{ __('app.reset_password_by_email') }}</a>
                                     </div> 
             
                                     <div class="col-12">
                                         <div class="d-grid">
                                             <button type="submit" class="btn btn-primary">
-                                                <i class="bx bxs-lock-open"></i> Sign in
+                                                <i class="bx bxs-lock-open"></i> {{ __('app.sign_in') }}
                                             </button>
                                         </div>
                                     </div>

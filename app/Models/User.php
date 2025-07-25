@@ -24,6 +24,7 @@ class User extends Authenticatable
         'name',
         'phone',
         'email',
+        'locale',
         'password',
         'sms_verification_code',
         'sms_verified_at',
@@ -48,6 +49,46 @@ class User extends Authenticatable
     public function scopeActive($query)
     {
         return $query->where('status', 'active');
+    }
+
+    /**
+     * Scope to find user by phone number with flexible matching
+     */
+    public function scopeByPhone($query, $phone)
+    {
+        $normalized = normalize_phone_number($phone);
+        
+        // Try to find user with normalized phone number
+        $user = $query->where('phone', $normalized)->first();
+        
+        if ($user) {
+            return $user;
+        }
+        
+        // If not found, try different variations
+        $variations = [];
+        
+        // If it's a Tanzania number, try different formats
+        if (strpos($normalized, '255') === 0 && strlen($normalized) === 12) {
+            $number = substr($normalized, 3); // Remove 255 prefix
+            
+            $variations = [
+                $normalized,                    // 255xxxxxxxxx
+                '0' . $number,                  // 0xxxxxxxxx
+                '+' . $normalized,              // +255xxxxxxxxx
+                $number                         // xxxxxxxxx (9 digits)
+            ];
+        }
+        
+        // Try each variation
+        foreach ($variations as $variation) {
+            $user = $query->where('phone', $variation)->first();
+            if ($user) {
+                return $user;
+            }
+        }
+        
+        return null;
     }
 
     /**

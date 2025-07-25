@@ -10,12 +10,20 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
-    ->withMiddleware(function (Middleware $middleware): void {
-        $middleware->alias([
-            'company.scope' => \App\Http\Middleware\CompanyScopeMiddleware::class,
-            'role' => \App\Http\Middleware\CheckRole::class,
-        ]);
-    })
+                ->withMiddleware(function (Middleware $middleware): void {
+                $middleware->alias([
+                    'company.scope' => \App\Http\Middleware\CompanyScopeMiddleware::class,
+                    'role' => \App\Http\Middleware\CheckRole::class,
+                    'apply.settings' => \App\Http\Middleware\ApplySystemSettings::class,
+                    'set.locale' => \App\Http\Middleware\SetLocale::class,
+                ]);
+                
+                // Apply system settings globally
+                $middleware->append(\App\Http\Middleware\ApplySystemSettings::class);
+                
+                // Set locale globally
+                $middleware->append(\App\Http\Middleware\SetLocale::class);
+            })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

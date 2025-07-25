@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'User Management')
+@section('title', __('app.user_management'))
 
 @section('content')
 <div class="page-wrapper">
@@ -11,7 +11,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Total Users</p>
+                                <p class="mb-0">{{ __('app.total_users') }}</p>
                                 <h4 class="font-weight-bold">{{ $totalUsers }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-user'></i>
@@ -25,7 +25,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Active Users</p>
+                                <p class="mb-0">{{ __('app.active_users') }}</p>
                                 <h4 class="font-weight-bold">{{ $activeUsers }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-check-circle'></i>
@@ -39,7 +39,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Inactive Users</p>
+                                <p class="mb-0">{{ __('app.inactive_users') }}</p>
                                 <h4 class="font-weight-bold">{{ $inactiveUsers }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-time'></i>
@@ -53,7 +53,7 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">This Month</p>
+                                <p class="mb-0">{{ __('app.this_month') }}</p>
                                 <h4 class="font-weight-bold">{{ $users->where('created_at', '>=', now()->startOfMonth())->count() }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-calendar'></i>
@@ -65,14 +65,14 @@
         </div>
         <!--end row-->
         
-        <h6 class="mb-0 text-uppercase">USERS</h6>
+        <h6 class="mb-0 text-uppercase">{{ __('app.users') }}</h6>
         <hr/>
         <div class="card">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">Users List</h5>
+                    <h5 class="mb-0">{{ __('app.user_list') }}</h5>
                     <a href="{{ route('users.create') }}" class="btn btn-primary">
-                        <i class="bx bx-plus"></i> Add New User
+                        <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
                     </a>
                 </div>
                 
@@ -81,14 +81,14 @@
                     <table id="example2" class="table table-striped table-bordered" style="width:100%">
                         <thead>
                              <tr>
-                                <th>Name</th>
-                                <th>Email</th>
-                                <th>Phone</th>
-                                <th>Branch</th>
-                                <th>Roles</th>
-                                <th>Status</th>
-                                <th>Created At</th>
-                                <th>Actions</th>
+                                <th>{{ __('app.name') }}</th>
+                                <th>{{ __('app.email') }}</th>
+                                <th>{{ __('app.phone') }}</th>
+                                <th>{{ __('app.branch') }}</th>
+                                <th>{{ __('app.roles') }}</th>
+                                <th>{{ __('app.status') }}</th>
+                                <th>{{ __('app.created_at') }}</th>
+                                <th>{{ __('app.actions') }}</th>
                             </tr>
                         </thead>
                         <tbody>
@@ -108,7 +108,7 @@
                                 </td>
                                 <td>{{ $user->email }}</td>
                                 <td>{{ $user->phone }}</td>
-                                <td>{{ $user->branch->name ?? 'N/A' }}</td>
+                                <td>{{ $user->branch->name ?? __('app.not_available') }}</td>
                                 <td>
                                     @foreach($user->roles as $role)
                                         <span class="badge bg-primary me-1">{{ $role->name }}</span>
@@ -116,21 +116,21 @@
                                 </td>
                                 <td>
                                     @if($user->status === 'active')
-                                        <span class="badge bg-success">Active</span>
+                                        <span class="badge bg-success">{{ __('app.active') }}</span>
                                     @elseif($user->status === 'inactive')
-                                        <span class="badge bg-warning">Inactive</span>
+                                        <span class="badge bg-warning">{{ __('app.inactive') }}</span>
                                     @else
-                                        <span class="badge bg-danger">Suspended</span>
+                                        <span class="badge bg-danger">{{ __('app.suspended') }}</span>
                                     @endif
                                 </td>
                                 <td>{{ $user->created_at->format('M d, Y') }}</td>
                                 <td>
-                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-info">Profile</a>
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-primary">Edit</a>
+                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-info">{{ __('app.profile') }}</a>
+                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-primary">{{ __('app.edit') }}</a>
                                     <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $user->name }}">Delete</button>
+                                        <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $user->name }}">{{ __('app.delete') }}</button>
                                     </form>
                                 </td>
                             </tr>
@@ -158,7 +158,7 @@
 <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
 <!--End Back To Top Button-->
 <footer class="page-footer">
-    <p class="mb-0">Copyright © {{ date('Y') }}. All right reserved. -- By SAFCO FINTECH</p>
+    <p class="mb-0">{{ __('app.copyright') }} © {{ date('Y') }}. {{ __('app.all_rights_reserved') }} -- {{ __('app.by_safco_fintech') }}</p>
 </footer>
 
 <!-- Delete User Form -->
@@ -172,7 +172,7 @@
 @push('scripts')
 <script>
 function deleteUser(userHashId) {
-    if (confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
+    if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
         const form = document.getElementById('deleteUserForm');
         form.action = `/users/${userHashId}`;
         form.submit();
