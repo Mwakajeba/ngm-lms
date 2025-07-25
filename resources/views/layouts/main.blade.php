@@ -2,9 +2,15 @@
 <html lang="en" class="color-sidebar sidebarcolor3">
 
 <head>
+    <!-- DataTables Bootstrap CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
+    <!-- DataTables Buttons CSS -->
+    <link rel="stylesheet" href="https://cdn.datatables.net/buttons/2.4.2/css/buttons.bootstrap5.min.css">
+
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+
     <title>@yield('title', 'Connect – Dashboard')</title>
 
     <!--favicon-->
@@ -44,8 +50,8 @@
     </div>
 
     <!-- Scripts -->
-    <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/js/jquery.min.js') }}"></script>
+    <script src="{{ asset('assets/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/simplebar/js/simplebar.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/metismenu/js/metisMenu.min.js') }}"></script>
     <script src="{{ asset('assets/plugins/perfect-scrollbar/js/perfect-scrollbar.js') }}"></script>
@@ -63,66 +69,84 @@
     <script src="{{ asset('assets/plugins/highcharts/js/accessibility.js') }}"></script>
     <script src="{{ asset('assets/js/index4.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatable/js/jquery.dataTables.min.js')}}"></script>
-	<script src="{{ asset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js')}}"></script>
-	<script>
-		$(document).ready(function() {
-			$('#example').DataTable();
-		  } );
-	</script>
-	<script>
-		$(document).ready(function() {
-			var table = $('#example2').DataTable( {
-				lengthChange: false,
-				buttons: [ 'copy', 'excel', 'pdf', 'print']
-			} );
-		 
-			table.buttons().container()
-				.appendTo( '#example2_wrapper .col-md-6:eq(0)' );
-		} );
-	</script>
+    <script src="{{ asset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js')}}"></script>
+    <script>
+        $(document).ready(function() {
+            $('#example').DataTable();
+        });
+    </script>
+    <script>
+        $(document).ready(function() {
+            var table = $('#example2').DataTable({
+                lengthChange: false,
+                buttons: ['copy', 'excel', 'pdf', 'print']
+            });
+
+            table.buttons().container()
+                .appendTo('#example2_wrapper .col-md-6:eq(0)');
+        });
+    </script>
 
     <!-- App JS -->
     <script src="{{ asset('assets/js/app.js') }}"></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
-    
+
+    @stack('scripts')
+
     <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('.delete-form').forEach(form => {
-            form.addEventListener('submit', function (e) {
-                e.preventDefault(); // Prevent immediate form submission
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelectorAll('.delete-form').forEach(form => {
+                form.addEventListener('submit', function(e) {
+                    e.preventDefault(); // Prevent immediate form submission
 
-                const name = this.querySelector('button').getAttribute('data-name');
+                    const name = this.querySelector('button').getAttribute('data-name');
 
-                Swal.fire({
-                    title: `Delete "${name}"?`,
-                    text: "This action cannot be undone!",
-                    icon: 'warning',
-                    showCancelButton: true,
-                    confirmButtonColor: '#d33',
-                    cancelButtonColor: '#3085d6',
-                    confirmButtonText: 'Yes, delete it!'
-                }).then((result) => {
-                    if (result.isConfirmed) {
-                        this.submit(); // Submit the form
-                    }
+                    Swal.fire({
+                        title: `Delete "${name}"?`,
+                        text: "This action cannot be undone!",
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#d33',
+                        cancelButtonColor: '#3085d6',
+                        confirmButtonText: 'Yes, delete it!'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            this.submit(); // Submit the form
+                        }
+                    });
                 });
             });
         });
-    });
     </script>
 
-@if(session('success'))
-<script>
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: '{{ session('success') }}',
-        showConfirmButton: false,
-        timer: 2000
-    });
-</script>
-@endif
+    @if(session('success'))
+    <script>
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'success',
+            title: '{{ session('
+            success ') }}',
+            showConfirmButton: false,
+            timer: 3000
+        });
+    </script>
+    @endif
+
+    @if(session('error'))
+    <script>
+        Swal.fire({
+            toast: true,
+            position: 'top-end',
+            icon: 'error',
+            title: '{{ session('
+            error ') }}',
+            showConfirmButton: false,
+            timer: 4000
+        });
+    </script>
+    @endif
 
 </body>
+
 </html>
