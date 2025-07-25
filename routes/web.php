@@ -10,6 +10,7 @@ use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\LanguageController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -30,6 +31,14 @@ Route::get('/reset-password', [AuthController::class, 'showNewPasswordForm'])->n
 Route::post('/reset-password', [AuthController::class, 'storeNewPassword']);
 
 Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('resend.otp');
+
+// Language switching
+Route::get('/language/{locale}', [LanguageController::class, 'switchLanguage'])->name('language.switch');
+
+// Test language route
+Route::get('/test-language', function() {
+    return view('test-language');
+})->name('test.language');
 
 Route::get('/request-email-otp', [OtpEmailController::class, 'showEmailForm'])->name('email-otp-form');
 Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->name('email-otp-send');
@@ -101,6 +110,8 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // System Settings
     Route::get('/system', [SettingsController::class, 'systemSettings'])->name('system');
     Route::put('/system', [SettingsController::class, 'updateSystemSettings'])->name('system.update');
+    Route::post('/system/reset', [SettingsController::class, 'resetSystemSettings'])->name('system.reset');
+    Route::post('/system/test-email', [SettingsController::class, 'testEmailConfig'])->name('system.test-email');
     
     // Backup Settings
     Route::get('/backup', [SettingsController::class, 'backupSettings'])->name('backup');

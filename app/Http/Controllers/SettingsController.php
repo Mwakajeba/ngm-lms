@@ -228,25 +228,118 @@ class SettingsController extends Controller
 
     public function systemSettings()
     {
-        return view('settings.system');
+        $groups = [
+            'general' => 'General Settings',
+            'email' => 'Email Configuration',
+            'security' => 'Security Settings',
+            'backup' => 'Backup Configuration',
+            'maintenance' => 'Maintenance Settings',
+            'microfinance' => 'Microfinance Settings'
+        ];
+
+        $groupIcons = [
+            'general' => 'bx-cog',
+            'email' => 'bx-envelope',
+            'security' => 'bx-shield',
+            'backup' => 'bx-data',
+            'maintenance' => 'bx-wrench',
+            'microfinance' => 'bx-money'
+        ];
+
+        $timezones = [
+            'Africa/Dar_es_Salaam',
+            'Africa/Nairobi',
+            'Africa/Kampala',
+            'Africa/Kigali',
+            'Africa/Bujumbura',
+            'UTC',
+            'America/New_York',
+            'America/Chicago',
+            'America/Denver',
+            'America/Los_Angeles',
+            'Europe/London',
+            'Europe/Paris',
+            'Europe/Berlin',
+            'Asia/Tokyo',
+            'Asia/Shanghai',
+            'Asia/Kolkata',
+            'Australia/Sydney',
+            'Africa/Cairo',
+            'Africa/Lagos',
+            'America/Sao_Paulo',
+            'Pacific/Auckland'
+        ];
+
+        $settings = [];
+        foreach ($groups as $groupKey => $groupName) {
+            $settings[$groupKey] = \App\Models\SystemSetting::getByGroup($groupKey);
+        }
+
+        return view('settings.system', compact('groups', 'groupIcons', 'timezones', 'settings'));
     }
 
     public function updateSystemSettings(Request $request)
     {
         $request->validate([
-            'app_name' => 'required|string|max:255',
-            'app_url' => 'required|url',
-            'timezone' => 'required|string',
-            'locale' => 'required|string|max:5',
+            'settings' => 'required|array',
+            'settings.*' => 'nullable|string',
         ]);
 
-        // Update config values (you might want to store these in database)
-        config(['app.name' => $request->app_name]);
-        config(['app.url' => $request->app_url]);
-        config(['app.timezone' => $request->timezone]);
-        config(['app.locale' => $request->locale]);
+        try {
+            foreach ($request->settings as $key => $value) {
+                $setting = \App\Models\SystemSetting::where('key', $key)->first();
+                
+                if ($setting) {
+                    // Handle different input types
+                    if ($setting->type === 'boolean') {
+                        $value = $value === '1' || $value === 'true' || $value === 'on';
+                    } elseif ($setting->type === 'integer') {
+                        $value = (int) $value;
+                    }
+                    
+                    $setting->update(['value' => $value]);
+                }
+            }
 
-        return redirect()->route('settings.system')->with('success', 'System settings updated successfully!');
+            // Clear cache
+            \App\Models\SystemSetting::clearCache();
+
+            return redirect()->route('settings.system')->with('success', 'System settings updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('settings.system')->with('error', 'Failed to update settings: ' . $e->getMessage());
+        }
+    }
+
+    public function resetSystemSettings()
+    {
+        try {
+            \App\Models\SystemSetting::truncate();
+            \App\Models\SystemSetting::initializeDefaults();
+            
+            return redirect()->route('settings.system')->with('success', 'System settings reset to defaults successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('settings.system')->with('error', 'Failed to reset settings: ' . $e->getMessage());
+        }
+    }
+
+
+
+    /**
+     * Test email configuration
+     */
+    public function testEmailConfig()
+    {
+        try {
+            $result = \App\Services\SystemSettingService::testEmailConfig();
+            
+            if ($result['success']) {
+                return response()->json(['success' => true, 'message' => $result['message']]);
+            } else {
+                return response()->json(['success' => false, 'message' => $result['message']], 400);
+            }
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Email test failed: ' . $e->getMessage()], 500);
+        }
     }
 
     public function backupSettings()
