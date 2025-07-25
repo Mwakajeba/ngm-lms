@@ -11,7 +11,7 @@
     <ul class="metismenu" id="menu">
         @foreach($menus as $menu)
             @php
-                $isEditOrDelete = Str::contains($menu->route, ['edit', 'delete','destroy']);
+                $isEditOrDelete = Str::contains($menu->route, ['edit', 'delete','destroy', 'create']);
             @endphp
 
             @if($menu->children->count())
@@ -23,7 +23,7 @@
                     <ul>
                         @foreach($menu->children as $child)
                             @php
-                                $isChildEditOrDelete = Str::contains($child->route, ['edit', 'delete', 'destroy']);
+                                $isChildEditOrDelete = Str::contains($child->route, ['edit', 'delete', 'destroy', 'create']);
                             @endphp
 
                             @if (!$isChildEditOrDelete)

@@ -1,85 +1,383 @@
-@if ($errors->any())
-    <div class="alert alert-danger">
-        <ul class="mb-0">
-            @foreach ($errors->all() as $error)
-                <li>{{ $error }}</li>
-            @endforeach
-        </ul>
+@extends('layouts.main')
+
+@section('title', isset($user) ? 'Edit User' : 'Create New User')
+
+@section('content')
+<div class="page-wrapper">
+    <div class="page-content">
+        <h6 class="mb-0 text-uppercase">{{ isset($user) ? 'EDIT USER' : 'CREATE NEW USER' }}</h6>
+        <hr/>
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-3">
+                    <h5 class="mb-0">{{ isset($user) ? 'Edit User Information' : 'User Information' }}</h5>
+                </div>
+                        
+                        <form action="{{ isset($user) ? route('users.update', $user) : route('users.store') }}" 
+                              method="POST" id="userForm">
+                            @csrf
+                            @if(isset($user))
+                                @method('PUT')
+                            @endif
+                            
+                            <div class="row">
+                                <!-- Personal Information -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="name" class="form-label">Full Name <span class="text-danger">*</span></label>
+                                        <input type="text" class="form-control @error('name') is-invalid @enderror" 
+                                               id="name" name="name" 
+                                               value="{{ old('name', $user->name ?? '') }}" 
+                                               placeholder="Enter full name" required>
+                                        @error('name')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
+                                        <input type="tel" class="form-control @error('phone') is-invalid @enderror" 
+                                               id="phone" name="phone" 
+                                               value="{{ old('phone', $user->phone ?? '') }}" 
+                                               placeholder="e.g., 0715123456 or +255715123456" required>
+                                        @error('phone')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <small class="form-text text-muted">
+                                            Enter phone number in any format (0715123456, +255715123456, 255715123456). Will be automatically formatted to 255715123456.
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="email" class="form-label">Email Address</label>
+                                        <input type="email" class="form-control @error('email') is-invalid @enderror" 
+                                               id="email" name="email" 
+                                               value="{{ old('email', $user->email ?? '') }}" 
+                                               placeholder="Enter email address">
+                                        @error('email')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="status" class="form-label">Status <span class="text-danger">*</span></label>
+                                        <select class="form-select @error('status') is-invalid @enderror" 
+                                                id="status" name="status" required>
+                                            <option value="">Select Status</option>
+                                            <option value="active" {{ old('status', $user->status ?? '') == 'active' ? 'selected' : '' }}>Active</option>
+                                            <option value="inactive" {{ old('status', $user->status ?? '') == 'inactive' ? 'selected' : '' }}>Inactive</option>
+                                            <option value="suspended" {{ old('status', $user->status ?? '') == 'suspended' ? 'selected' : '' }}>Suspended</option>
+                                        </select>
+                                        @error('status')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Branch Assignment -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="branch_id" class="form-label">Branch <span class="text-danger">*</span></label>
+                                        <select class="form-select @error('branch_id') is-invalid @enderror" 
+                                                id="branch_id" name="branch_id" required>
+                                            <option value="">Select Branch</option>
+                                            @foreach($branches as $branch)
+                                                <option value="{{ $branch->id }}" 
+                                                        {{ old('branch_id', $user->branch_id ?? '') == $branch->id ? 'selected' : '' }}>
+                                                    {{ $branch->name }} - {{ $branch->location ?? 'No location' }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('branch_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+
+                                <!-- Password -->
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password" class="form-label">
+                                            {{ isset($user) ? 'New Password' : 'Password' }} 
+                                            <span class="text-danger">{{ isset($user) ? '' : '*' }}</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control @error('password') is-invalid @enderror" 
+                                                   id="password" name="password" 
+                                                   placeholder="{{ isset($user) ? 'Leave blank to keep current password' : 'Enter password' }}"
+                                                   {{ isset($user) ? '' : 'required' }}>
+                                            <button class="btn btn-outline-secondary" type="button" id="togglePassword">
+                                                <i class="bx bx-show"></i>
+                                            </button>
+                                        </div>
+                                        @error('password')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                        <small class="form-text text-muted">
+                                            {{ isset($user) ? 'Leave blank to keep current password. Must be at least 8 characters if changed.' : 'Password must be at least 8 characters long.' }}
+                                        </small>
+                                    </div>
+                                </div>
+
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="password_confirmation" class="form-label">
+                                            Confirm {{ isset($user) ? 'New ' : '' }}Password 
+                                            <span class="text-danger">{{ isset($user) ? '' : '*' }}</span>
+                                        </label>
+                                        <div class="input-group">
+                                            <input type="password" class="form-control" 
+                                                   id="password_confirmation" name="password_confirmation" 
+                                                   placeholder="Confirm password">
+                                            <button class="btn btn-outline-secondary" type="button" id="toggleConfirmPassword">
+                                                <i class="bx bx-show"></i>
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Role Assignment -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Roles <span class="text-danger">*</span></label>
+                                        <div class="row">
+                                            @foreach($roles as $role)
+                                            <div class="col-md-4 mb-2">
+                                                <div class="form-check">
+                                                    <input class="form-check-input @error('roles') is-invalid @enderror" 
+                                                           type="checkbox" name="roles[]" 
+                                                           value="{{ $role->id }}" 
+                                                           id="role_{{ $role->id }}"
+                                                           {{ in_array($role->id, old('roles', isset($user) ? $user->roles->pluck('id')->toArray() : [])) ? 'checked' : '' }}>
+                                                    <label class="form-check-label" for="role_{{ $role->id }}">
+                                                        <strong>{{ ucfirst($role->name) }}</strong>
+                                                        @if($role->permissions->count() > 0)
+                                                            <br><small class="text-muted">
+                                                                Permissions: {{ $role->permissions->pluck('name')->implode(', ') }}
+                                                            </small>
+                                                        @endif
+                                                    </label>
+                                                </div>
+                                            </div>
+                                            @endforeach
+                                        </div>
+                                        @error('roles')
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Current User Info (only for edit) -->
+                            @if(isset($user))
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <h6 class="alert-heading">Current User Information</h6>
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>User ID:</strong> {{ $user->user_id }}</p>
+                                                <p class="mb-1"><strong>Created:</strong> {{ $user->created_at->format('M d, Y H:i') }}</p>
+                                                <p class="mb-1"><strong>Last Updated:</strong> {{ $user->updated_at->format('M d, Y H:i') }}</p>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <p class="mb-1"><strong>Current Branch:</strong> {{ $user->branch->name ?? 'N/A' }}</p>
+                                                <p class="mb-1"><strong>Current Roles:</strong> 
+                                                    @foreach($user->roles as $role)
+                                                        <span class="badge bg-primary me-1">{{ $role->name }}</span>
+                                                    @endforeach
+                                                </p>
+                                                <p class="mb-1"><strong>Status:</strong> 
+                                                    @if($user->status === 'active')
+                                                        <span class="badge bg-success">Active</span>
+                                                    @elseif($user->status === 'inactive')
+                                                        <span class="badge bg-warning">Inactive</span>
+                                                    @else
+                                                        <span class="badge bg-danger">Suspended</span>
+                                                    @endif
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            @endif
+
+                            <!-- Password Strength Indicator -->
+                            <div class="row" id="passwordStrengthSection" style="display: none;">
+                                <div class="col-12">
+                                    <div class="mb-3">
+                                        <label class="form-label">Password Strength</label>
+                                        <div class="progress" style="height: 5px;">
+                                            <div class="progress-bar" id="passwordStrength" role="progressbar" style="width: 0%"></div>
+                                        </div>
+                                        <small class="form-text text-muted" id="passwordFeedback"></small>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Form Actions -->
+                            <div class="row">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-end gap-2">
+                                        <a href="{{ route('users.index') }}" class="btn btn-secondary">
+                                            <i class="bx bx-arrow-back me-1"></i> Cancel
+                                        </a>
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bx bx-save me-1"></i> {{ isset($user) ? 'Update User' : 'Create User' }}
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>       
+            </div>
+        </div>
     </div>
-@endif
-<form action="{{ isset($user) ? route('users.update', $user->id) : route('users.store') }}" method="POST">
-    @csrf
-    @if(isset($user))
-        @method('PUT')
-    @endif
+</div>
+<!--end page wrapper -->
+<!--start overlay-->
+<div class="overlay toggle-icon"></div>
+<!--end overlay-->
+<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+<!--End Back To Top Button-->
+<footer class="page-footer">
+    <p class="mb-0">Copyright © {{ date('Y') }}. All right reserved. -- By SAFCO FINTECH</p>
+</footer>
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label class="form-label">Select Branch</label>
-            <select class="form-select" name="branch_id" required>
-                <option value="">-- Choose Branch --</option>
-                @foreach($branches as $branch)
-                    <option value="{{ $branch->id }}"
-                        {{ (old('branch_id') == $branch->id || (isset($user) && $user->branch_id == $branch->id)) ? 'selected' : '' }}>
-                        {{ $branch->name }} ({{ $branch->company->name ?? 'N/A' }})
-                    </option>
-                @endforeach
-            </select>
-        </div>
+@endsection
 
-        <div class="col-md-6">
-            <label class="form-label">User Role</label>
-            <select class="form-select" name="role" required>
-                <option value="">-- Choose Role --</option>
-                <option value="admin" {{ (old('role') == 'admin' || (isset($user) && $user->role == 'admin')) ? 'selected' : '' }}>Admin</option>
-                <option value="manager" {{ (old('role') == 'manager' || (isset($user) && $user->role == 'manager')) ? 'selected' : '' }}>Manager</option>
-                <option value="teller" {{ (old('role') == 'teller' || (isset($user) && $user->role == 'teller')) ? 'selected' : '' }}>Teller</option>
-            </select>
-        </div>
-    </div>
+@push('scripts')
+<script>
+// Password toggle functionality
+document.getElementById('togglePassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('password');
+    const icon = this.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('bx-show');
+        icon.classList.add('bx-hide');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('bx-hide');
+        icon.classList.add('bx-show');
+    }
+});
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label class="form-label">Full Name</label>
-            <input type="text" class="form-control" name="name" value="{{ $user->name ?? old('name') }}" required>
-        </div>
+document.getElementById('toggleConfirmPassword').addEventListener('click', function() {
+    const passwordInput = document.getElementById('password_confirmation');
+    const icon = this.querySelector('i');
+    
+    if (passwordInput.type === 'password') {
+        passwordInput.type = 'text';
+        icon.classList.remove('bx-show');
+        icon.classList.add('bx-hide');
+    } else {
+        passwordInput.type = 'password';
+        icon.classList.remove('bx-hide');
+        icon.classList.add('bx-show');
+    }
+});
 
-        <div class="col-md-6">
-            <label class="form-label">Phone Number</label>
-            <input type="text" class="form-control" name="phone" value="{{ $user->phone ?? old('phone') }}" required>
-        </div>
-    </div>
+// Password strength checker
+document.getElementById('password').addEventListener('input', function() {
+    const password = this.value;
+    const strengthSection = document.getElementById('passwordStrengthSection');
+    const strengthBar = document.getElementById('passwordStrength');
+    const feedback = document.getElementById('passwordFeedback');
+    
+    if (password.length > 0) {
+        strengthSection.style.display = 'block';
+        
+        let strength = 0;
+        let feedbackText = '';
+        
+        // Check length
+        if (password.length >= 8) strength += 25;
+        if (password.length >= 12) strength += 25;
+        
+        // Check for lowercase
+        if (/[a-z]/.test(password)) strength += 25;
+        
+        // Check for uppercase
+        if (/[A-Z]/.test(password)) strength += 25;
+        
+        // Check for numbers
+        if (/[0-9]/.test(password)) strength += 25;
+        
+        // Check for special characters
+        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+        
+        // Cap at 100%
+        strength = Math.min(strength, 100);
+        
+        // Update progress bar
+        strengthBar.style.width = strength + '%';
+        
+        // Update color and feedback
+        if (strength < 25) {
+            strengthBar.className = 'progress-bar bg-danger';
+            feedbackText = 'Very Weak';
+        } else if (strength < 50) {
+            strengthBar.className = 'progress-bar bg-warning';
+            feedbackText = 'Weak';
+        } else if (strength < 75) {
+            strengthBar.className = 'progress-bar bg-info';
+            feedbackText = 'Good';
+        } else {
+            strengthBar.className = 'progress-bar bg-success';
+            feedbackText = 'Strong';
+        }
+        
+        feedback.textContent = feedbackText;
+    } else {
+        strengthSection.style.display = 'none';
+    }
+});
 
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label class="form-label">Email Address</label>
-            <input type="email" class="form-control" name="email" value="{{ $user->email ?? old('email') }}">
-        </div>
-
-        <div class="col-md-6">
-            <label class="form-label">{{ isset($user) ? 'New Password (leave blank to keep current)' : 'Password' }}</label>
-            <input type="password" class="form-control" name="password" {{ isset($user) ? '' : 'required' }}>
-        </div>
-    </div>
-
-    <div class="row mb-3">
-        <div class="col-md-6">
-            <label class="form-label">Status</label>
-            <select class="form-select" name="is_active" required>
-                <option value="">-- Select Status --</option>
-                <option value="yes" {{ (old('is_active') ?? $user->is_active ?? '') == 'yes' ? 'selected' : '' }}>Active</option>
-                <option value="no" {{ (old('is_active') ?? $user->is_active ?? '') == 'no' ? 'selected' : '' }}>Inactive</option>
-            </select>
-        </div>
-
-        <div class="col-md-6">
-            
-        </div>
-    </div>
-
-    <div class="d-flex justify-content-end">
-        <button type="submit" class="btn btn-{{ isset($user) ? 'primary' : 'success' }}">
-            {{ isset($user) ? 'Update User' : 'Create User' }}
-        </button>
-    </div>
-</form>
+// Form validation
+document.getElementById('userForm').addEventListener('submit', function(e) {
+    const password = document.getElementById('password').value;
+    const confirmPassword = document.getElementById('password_confirmation').value;
+    const roles = document.querySelectorAll('input[name="roles[]"]:checked');
+    const isEdit = {{ isset($user) ? 'true' : 'false' }};
+    
+    // Password validation
+    if (!isEdit && password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return false;
+    }
+    
+    if (isEdit && password && password !== confirmPassword) {
+        e.preventDefault();
+        alert('Passwords do not match!');
+        return false;
+    }
+    
+    // Role validation
+    if (roles.length === 0) {
+        e.preventDefault();
+        alert('Please select at least one role!');
+        return false;
+    }
+    
+    // Password length validation
+    if ((!isEdit && password.length < 8) || (isEdit && password && password.length < 8)) {
+        e.preventDefault();
+        alert('Password must be at least 8 characters long!');
+        return false;
+    }
+});
+</script>
+@endpush
