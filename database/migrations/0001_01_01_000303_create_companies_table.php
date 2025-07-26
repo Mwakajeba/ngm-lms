@@ -22,6 +22,39 @@ return new class extends Migration
             $table->string('txt_color')->nullable();
             $table->timestamps();
         });
+
+           if (!Schema::hasColumn('companies', 'company_id')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->uuid('company_id')->nullable()->after('id');
+            });
+        }
+
+        // Now you can safely query and update it
+        $companies = DB::table('companies')->whereNull('company_id')->get();
+        foreach ($companies as $company) {
+            DB::table('companies')
+                ->where('id', $company->id)
+                ->update(['company_id' => Str::uuid()]);
+        }
+
+        // Other fields
+        if (!Schema::hasColumn('companies', 'license_number')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->string('license_number')->nullable()->after('address');
+            });
+        }
+        
+        if (!Schema::hasColumn('companies', 'registration_date')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->date('registration_date')->nullable()->after('license_number');
+            });
+        }
+        
+        if (!Schema::hasColumn('companies', 'status')) {
+            Schema::table('companies', function (Blueprint $table) {
+                $table->enum('status', ['active', 'inactive', 'suspended'])->default('active')->after('registration_date');
+            });
+        }
     }
 
     /**
