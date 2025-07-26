@@ -55,7 +55,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('roles', [RolePermissionController::class, 'store'])->name('roles.store');
     Route::get('roles/{role}', [RolePermissionController::class, 'show'])->name('roles.show');
     Route::get('roles/{role}/edit', [RolePermissionController::class, 'edit'])->name('roles.edit');
-    Route::put('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
+    Route::post('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy');
     
     // Permissions management

@@ -199,11 +199,9 @@
                             </div>
 
                             <div class="mt-4">
-                                <button type="submit" class="btn btn-primary">
-                                    <i class="bx bx-save me-1"></i> Save Settings
-                                </button>
+                                {!! form_submit_button(__('app.save_settings'), 'btn btn-primary', 'bx bx-save') !!}
                                 <button type="reset" class="btn btn-secondary">
-                                    <i class="bx bx-reset me-1"></i> Reset Form
+                                    <i class="bx bx-reset me-1"></i> {{ __('app.reset_form') }}
                                 </button>
                             </div>
                         </form>
@@ -230,7 +228,7 @@
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                 <form action="{{ route('settings.system.reset') }}" method="POST" class="d-inline">
                     @csrf
-                    <button type="submit" class="btn btn-warning">Reset to Defaults</button>
+                    <button type="submit" class="btn btn-warning" onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_reset_settings') }}')">{{ __('app.reset_to_defaults') }}</button>
                 </form>
             </div>
         </div>

@@ -251,10 +251,7 @@
                 <div class="modal-body" id="editRoleModalBody">
                     <!-- Content will be loaded dynamically -->
                 </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-primary">Update Role</button>
-                </div>
+                
             </form>
         </div>
     </div>
@@ -340,6 +337,7 @@
 @endsection
 
 @push('scripts')
+{!! confirm_delete() !!}
 <script>
 $(document).ready(function() {
     // Initialize DataTable
@@ -382,30 +380,97 @@ $(document).ready(function() {
     // DataTable is now properly configured with responsive behavior
     // Actions column will always be visible
 
+    // Handle role creation form submission
+    $('#createRoleForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = this;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+        
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Creating...';
+        }
+        
+        const formData = new FormData(form);
+        
+        $.ajax({
+            url: form.action,
+            type: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            },
+            success: function(response) {
+                Swal.fire('{{ __("app.success") }}!', response.message || '{{ __("app.role_created_successfully") }}', 'success')
+                .then(() => {
+                    $('#createRoleModal').modal('hide');
+                    location.reload();
+                });
+            },
+            error: function(xhr, status, error) {
+                let errorMessage = '{{ __("app.failed_to_create_role") }}';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    // Handle validation errors
+                    const errors = xhr.responseJSON.errors;
+                    errorMessage = Object.values(errors).flat().join('\n');
+                }
+                Swal.fire('{{ __("app.error") }}!', errorMessage, 'error');
+            },
+            complete: function() {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
+            }
+        });
+    });
+
     // Handle permission creation form submission
     $('#createPermissionForm').on('submit', function(e) {
         e.preventDefault();
         
-        const formData = new FormData(this);
+        const form = this;
+        const submitBtn = form.querySelector('button[type="submit"]');
+        const originalText = submitBtn ? submitBtn.innerHTML : '';
+        
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Creating...';
+        }
+        
+        const formData = new FormData(form);
         
         $.ajax({
-            url: $(this).attr('action'),
+            url: form.action,
             type: 'POST',
             data: formData,
             processData: false,
             contentType: false,
             success: function(response) {
-                Swal.fire('Success!', 'Permission created successfully.', 'success')
+                Swal.fire('{{ __("app.success") }}!', '{{ __("app.permission_created_successfully") }}', 'success')
                 .then(() => {
+                    $('#createPermissionModal').modal('hide');
                     location.reload();
                 });
             },
             error: function(xhr) {
-                let errorMessage = 'Failed to create permission.';
+                let errorMessage = '{{ __("app.failed_to_create_permission") }}';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
                 }
-                Swal.fire('Error!', errorMessage, 'error');
+                Swal.fire('{{ __("app.error") }}!', errorMessage, 'error');
+            },
+            complete: function() {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerHTML = originalText;
+                }
             }
         });
     });
@@ -416,8 +481,112 @@ function editRole(roleId) {
         $('#editRoleModalBody').html(data);
         $('#editRoleForm').attr('action', `/roles/${roleId}`);
         $('#editRoleModal').modal('show');
+        
+        // Add form submission handler with double submit prevention
+        $('#editRoleForm').off('submit').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = this;
+            const submitBtn = form.querySelector('button[type="submit"]');
+            const originalText = submitBtn ? submitBtn.innerHTML : '';
+            
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Updating...';
+            }
+            
+            // Manually collect form data to ensure all fields are included
+            const formData = new FormData();
+            
+            // Add CSRF token
+            const csrfToken = form.querySelector('input[name="_token"]');
+            if (csrfToken) {
+                formData.append('_token', csrfToken.value);
+            }
+            
+            // Add name field
+            const nameField = form.querySelector('input[name="name"]');
+            if (nameField) {
+                formData.append('name', nameField.value);
+            }
+            
+            // Add description field
+            const descField = form.querySelector('textarea[name="description"]');
+            if (descField) {
+                formData.append('description', descField.value);
+            }
+            
+            // Add guard_name field
+            const guardField = form.querySelector('select[name="guard_name"]');
+            if (guardField) {
+                formData.append('guard_name', guardField.value);
+            }
+            
+            // Add permissions
+            const permissionCheckboxes = form.querySelectorAll('input[name="permissions[]"]:checked');
+            permissionCheckboxes.forEach(checkbox => {
+                formData.append('permissions[]', checkbox.value);
+            });
+            
+            $.ajax({
+                url: form.action,
+                type: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                dataType: 'json',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json'
+                },
+                success: function(response) {
+                    if (response.success) {
+                        Swal.fire('{{ __("app.success") }}!', response.message || '{{ __("app.role_updated_successfully") }}', 'success')
+                        .then(() => {
+                            $('#editRoleModal').modal('hide');
+                            location.reload();
+                        });
+                    } else {
+                        Swal.fire('{{ __("app.error") }}!', response.message || '{{ __("app.failed_to_update_role") }}', 'error');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    let errorMessage = '{{ __("app.failed_to_update_role") }}';
+                    
+                    try {
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                            // Handle validation errors
+                            const errors = xhr.responseJSON.errors;
+                            errorMessage = Object.values(errors).flat().join('\n');
+                        } else if (xhr.responseText) {
+                            // Try to parse response as JSON
+                            const response = JSON.parse(xhr.responseText);
+                            if (response.message) {
+                                errorMessage = response.message;
+                            }
+                        }
+                    } catch (e) {
+                        errorMessage = 'Server error: ' + xhr.status + ' - ' + xhr.statusText;
+                    }
+                    
+                    Swal.fire('{{ __("app.error") }}!', errorMessage, 'error');
+                },
+                complete: function() {
+                    if (submitBtn) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = originalText;
+                    }
+                }
+            });
+            
+            return false;
+        });
     });
 }
+
+
 
 function viewRole(roleId) {
     $.get(`/roles/${roleId}`, function(data) {
@@ -428,13 +597,14 @@ function viewRole(roleId) {
 
 function deleteRole(roleId) {
     Swal.fire({
-        title: 'Are you sure?',
-        text: "This action cannot be undone!",
+        title: '{{ __("app.confirm") }}',
+        text: "{{ __('app.are_you_sure_delete_role') }}",
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
         cancelButtonColor: '#3085d6',
-        confirmButtonText: 'Yes, delete it!'
+        confirmButtonText: '{{ __("app.yes") }}',
+        cancelButtonText: '{{ __("app.cancel") }}'
     }).then((result) => {
         if (result.isConfirmed) {
             $.ajax({
@@ -444,13 +614,13 @@ function deleteRole(roleId) {
                     _token: '{{ csrf_token() }}'
                 },
                 success: function(response) {
-                    Swal.fire('Deleted!', 'Role has been deleted.', 'success')
+                    Swal.fire('{{ __("app.deleted") }}!', '{{ __("app.role_deleted_successfully") }}', 'success')
                     .then(() => {
                         location.reload();
                     });
                 },
                 error: function(xhr) {
-                    Swal.fire('Error!', 'Failed to delete role.', 'error');
+                    Swal.fire('{{ __("app.error") }}!', '{{ __("app.failed_to_delete_role") }}', 'error');
                 }
             });
         }
