@@ -130,7 +130,7 @@
                                     <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $user->name }}">{{ __('app.delete') }}</button>
+                                        <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $user->name }}" onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_delete_user') }}')">{{ __('app.delete') }}</button>
                                     </form>
                                 </td>
                             </tr>
@@ -170,6 +170,7 @@
 @endsection
 
 @push('scripts')
+{!! confirm_delete() !!}
 <script>
 function deleteUser(userHashId) {
     if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {

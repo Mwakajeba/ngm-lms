@@ -57,11 +57,26 @@ class RolePermissionController extends Controller
 
             DB::commit();
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Role created successfully!'
+                ]);
+            }
+
             return redirect()->route('roles.index')
                 ->with('success', 'Role created successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to create role: ' . $e->getMessage()
+                ], 422);
+            }
+
             return back()->withInput()
                 ->with('error', 'Failed to create role: ' . $e->getMessage());
         }
@@ -108,11 +123,26 @@ class RolePermissionController extends Controller
 
             DB::commit();
 
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Role updated successfully!'
+                ]);
+            }
+
             return redirect()->route('roles.index')
                 ->with('success', 'Role updated successfully!');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to update role: ' . $e->getMessage()
+                ], 422);
+            }
+
             return back()->withInput()
                 ->with('error', 'Failed to update role: ' . $e->getMessage());
         }
@@ -122,20 +152,47 @@ class RolePermissionController extends Controller
     {
         // Prevent deletion of system roles
         if (in_array($role->name, ['super-admin', 'admin'])) {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete system roles.'
+                ], 422);
+            }
             return back()->with('error', 'Cannot delete system roles.');
         }
 
         // Check if role has users
         if ($role->users()->count() > 0) {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot delete role that has assigned users.'
+                ], 422);
+            }
             return back()->with('error', 'Cannot delete role that has assigned users.');
         }
 
         try {
             $role->delete();
+            
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Role deleted successfully!'
+                ]);
+            }
+            
             return redirect()->route('roles.index')
                 ->with('success', 'Role deleted successfully!');
 
         } catch (\Exception $e) {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to delete role: ' . $e->getMessage()
+                ], 422);
+            }
+            
             return back()->with('error', 'Failed to delete role: ' . $e->getMessage());
         }
     }
