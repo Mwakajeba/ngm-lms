@@ -15,6 +15,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\BankAccountController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -192,11 +193,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
+    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers.index');
     Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'show'])->name('suppliers.show');
     Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
     Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
+    Route::patch('/suppliers/{supplier}/status', [App\Http\Controllers\Accounting\SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
     Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Manual Journal Entries
@@ -224,12 +227,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
 
     // Bank Accounts
-    Route::get('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'index'])->name('bank-accounts');
-    Route::get('/bank-accounts/create', [App\Http\Controllers\Accounting\BankAccountController::class, 'create'])->name('bank-accounts.create');
-    Route::post('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}/edit', [App\Http\Controllers\Accounting\BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
+    Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
+    Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
+    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Transfers
     Route::get('/bank-transfers', [App\Http\Controllers\Accounting\BankTransferController::class, 'index'])->name('bank-transfers');
@@ -270,14 +274,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
     Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
-
-    // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
-    Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
-    Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
-    Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
-    Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
-    Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {

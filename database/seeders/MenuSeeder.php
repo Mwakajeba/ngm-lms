@@ -37,13 +37,8 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-cog',
                 'visibleRoutes' => [
                     ['name' => 'General Settings', 'route' => 'settings.index'],
-                    ['name' => 'Company Settings', 'route' => 'settings.company'],
-                    ['name' => 'Branch Settings', 'route' => 'settings.branches'],
-                    ['name' => 'User Settings', 'route' => 'settings.user'],
-                    ['name' => 'System Settings', 'route' => 'settings.system'],
-                    ['name' => 'Backup Settings', 'route' => 'settings.backup'],
                 ],
-                'hiddenRoutes' => ['settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
+                'hiddenRoutes' => ['settings.company', 'settings.branches', 'settings.user', 'settings.system', 'settings.backup', 'settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
             ],
             'Company' => [
                 'icon' => 'bx bx-building',
@@ -74,9 +69,8 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.fsli-accounts'],
-                    ['name' => 'Account Class Groups', 'route' => 'accounting.account-class-groups'],
                     ['name' => 'Charts of account', 'route' => 'accounting.accounts'],
-                    ['name' => 'Suppliers', 'route' => 'accounting.suppliers'],
+                    ['name' => 'Suppliers', 'route' => 'accounting.suppliers.index'],
                     ['name' => 'Manual journal entries', 'route' => 'accounting.journal-entries'],
                     ['name' => 'Payment voucher', 'route' => 'accounting.payment-vouchers'],
                     ['name' => 'Receipt voucher', 'route' => 'accounting.receipt-vouchers'],
@@ -87,7 +81,7 @@ class MenuSeeder extends Seeder
                     ['name' => 'Budget', 'route' => 'accounting.budget'],
                     ['name' => 'Fees', 'route' => 'accounting.fees'],
                 ],
-                'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy', 'accounting.account-class-groups.create', 'accounting.account-class-groups.edit', 'accounting.account-class-groups.destroy', 'accounting.account-class-groups.show'],
+                'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy'],
             ],
             'Accounting Reports' => [
                 'icon' => 'bx bx-file',

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class ChartAccount extends Model
 {
@@ -63,5 +64,13 @@ class ChartAccount extends Model
     public function equityCategory(): BelongsTo
     {
         return $this->belongsTo(EquityCategory::class, 'equity_category_id');
+    }
+
+    /**
+     * Get the bank accounts for this chart account.
+     */
+    public function bankAccounts(): HasMany
+    {
+        return $this->hasMany(BankAccount::class, 'chart_account_id');
     }
 }
