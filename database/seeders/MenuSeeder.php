@@ -75,7 +75,7 @@ class MenuSeeder extends Seeder
                 'visibleRoutes' => [
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.fsli-accounts'],
                     ['name' => 'Charts of account', 'route' => 'accounting.accounts'],
-                    ['name' => 'Suppliers', 'route' => 'accounting.suppliers'],
+                    ['name' => 'Suppliers', 'route' => 'accounting.suppliers.index'],
                     ['name' => 'Manual journal entries', 'route' => 'accounting.journal-entries'],
                     ['name' => 'Payment voucher', 'route' => 'accounting.payment-vouchers'],
                     ['name' => 'Receipt voucher', 'route' => 'accounting.receipt-vouchers'],

@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
       EquityCategorySeeder::class,
       RegionsTableSeeder::class,
       DistrictsTableSeeder::class,
+      SupplierSeeder::class,
     ]);
   }
 }

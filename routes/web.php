@@ -193,11 +193,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
+    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers.index');
     Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'show'])->name('suppliers.show');
     Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
     Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
+    Route::patch('/suppliers/{supplier}/status', [App\Http\Controllers\Accounting\SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
     Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Manual Journal Entries
@@ -272,14 +274,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
     Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
-
-    // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
-    Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
-    Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
-    Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
-    Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
-    Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
