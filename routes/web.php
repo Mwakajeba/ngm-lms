@@ -13,6 +13,8 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\AccountClassGroupController;
+use App\Http\Controllers\ChartAccountController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -38,7 +40,7 @@ Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('r
 Route::get('/language/{locale}', [LanguageController::class, 'switchLanguage'])->name('language.switch');
 
 // Test language route
-Route::get('/test-language', function() {
+Route::get('/test-language', function () {
     return view('test-language');
 })->name('test.language');
 
@@ -59,16 +61,16 @@ Route::middleware(['auth'])->group(function () {
     Route::get('roles/{role}/edit', [RolePermissionController::class, 'edit'])->name('roles.edit');
     Route::post('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy');
-    
+
     // Permissions management
     Route::get('permissions', [RolePermissionController::class, 'permissions'])->name('permissions.index');
     Route::post('permissions', [RolePermissionController::class, 'createPermission'])->name('permissions.store');
     Route::delete('permissions/{permission}', [RolePermissionController::class, 'deletePermission'])->name('permissions.destroy');
-    
+
     // User role assignment
     Route::post('users/{user}/assign-roles', [RolePermissionController::class, 'assignToUser'])->name('users.assign-roles');
     Route::delete('users/{user}/remove-role', [RolePermissionController::class, 'removeFromUser'])->name('users.remove-role');
-    
+
     // Role statistics
     Route::get('roles-stats', [RolePermissionController::class, 'getStats'])->name('roles.stats');
 });
@@ -92,11 +94,11 @@ Route::post('/users/{user}/roles', [UserController::class, 'assignRoles'])->name
 
 Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope'])->group(function () {
     Route::get('/', [SettingsController::class, 'index'])->name('index');
-    
+
     // Company Settings
     Route::get('/company', [SettingsController::class, 'companySettings'])->name('company');
     Route::put('/company', [SettingsController::class, 'updateCompanySettings'])->name('company.update');
-    
+
     // Branch Settings
     Route::get('/branches', [SettingsController::class, 'branchSettings'])->name('branches');
     Route::get('/branches/create', [SettingsController::class, 'createBranch'])->name('branches.create');
@@ -104,17 +106,17 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     Route::get('/branches/{branch}/edit', [SettingsController::class, 'editBranch'])->name('branches.edit');
     Route::put('/branches/{branch}', [SettingsController::class, 'updateBranch'])->name('branches.update');
     Route::delete('/branches/{branch}', [SettingsController::class, 'destroyBranch'])->name('branches.destroy');
-    
+
     // User Settings
     Route::get('/user', [SettingsController::class, 'userSettings'])->name('user');
     Route::put('/user', [SettingsController::class, 'updateUserSettings'])->name('user.update');
-    
+
     // System Settings
     Route::get('/system', [SettingsController::class, 'systemSettings'])->name('system');
     Route::put('/system', [SettingsController::class, 'updateSystemSettings'])->name('system.update');
     Route::post('/system/reset', [SettingsController::class, 'resetSystemSettings'])->name('system.reset');
     Route::post('/system/test-email', [SettingsController::class, 'testEmailConfig'])->name('system.test-email');
-    
+
     // Backup Settings
     Route::get('/backup', [SettingsController::class, 'backupSettings'])->name('backup');
     Route::post('/backup/create', [SettingsController::class, 'createBackup'])->name('backup.create');
@@ -122,17 +124,17 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     Route::get('/backup/{hash_id}/download', [SettingsController::class, 'downloadBackup'])->name('backup.download');
     Route::delete('/backup/{hash_id}', [SettingsController::class, 'deleteBackup'])->name('backup.delete');
     Route::post('/backup/clean', [SettingsController::class, 'cleanOldBackups'])->name('backup.clean');
-    
+
     // AI Assistant Settings
     Route::get('/ai', [SettingsController::class, 'aiAssistantSettings'])->name('ai');
     Route::post('/ai/chat', [SettingsController::class, 'aiChat'])->name('ai.chat')->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\ValidateCsrfToken::class);
-    Route::get('/ai/test', function() { 
+    Route::get('/ai/test', function () {
         return response()->json([
             'csrf_token' => csrf_token(),
             'status' => 'success',
             'message' => 'AI Assistant connection test successful'
-        ]); 
-        })->name('ai.test');
+        ]);
+    })->name('ai.test');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -149,7 +151,7 @@ Route::resource('companies', CompanyController::class)->middleware('auth');
 
 Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:super-admin'])->group(function () {
     Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
-    
+
     // Companies
     Route::get('/companies', [SuperAdminController::class, 'companies'])->name('companies');
     Route::get('/companies/create', [SuperAdminController::class, 'createCompany'])->name('companies.create');
@@ -158,10 +160,10 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:su
     Route::get('/companies/{company}/edit', [SuperAdminController::class, 'editCompany'])->name('companies.edit');
     Route::put('/companies/{company}', [SuperAdminController::class, 'updateCompany'])->name('companies.update');
     Route::delete('/companies/{company}', [SuperAdminController::class, 'destroyCompany'])->name('companies.destroy');
-    
+
     // Branches
     Route::get('/branches', [SuperAdminController::class, 'branches'])->name('branches');
-    
+
     // Users
     Route::get('/users', [SuperAdminController::class, 'users'])->name('users');
 });
@@ -172,20 +174,22 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:su
 
 Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(function () {
     // Chart of Accounts - FSLI
-    Route::get('/fsli-accounts', [App\Http\Controllers\Accounting\FsliAccountController::class, 'index'])->name('fsli-accounts');
-    Route::get('/fsli-accounts/create', [App\Http\Controllers\Accounting\FsliAccountController::class, 'create'])->name('fsli-accounts.create');
-    Route::post('/fsli-accounts', [App\Http\Controllers\Accounting\FsliAccountController::class, 'store'])->name('fsli-accounts.store');
-    Route::get('/fsli-accounts/{fsliAccount}/edit', [App\Http\Controllers\Accounting\FsliAccountController::class, 'edit'])->name('fsli-accounts.edit');
-    Route::put('/fsli-accounts/{fsliAccount}', [App\Http\Controllers\Accounting\FsliAccountController::class, 'update'])->name('fsli-accounts.update');
-    Route::delete('/fsli-accounts/{fsliAccount}', [App\Http\Controllers\Accounting\FsliAccountController::class, 'destroy'])->name('fsli-accounts.destroy');
+    Route::get('/fsli-accounts', [AccountClassGroupController::class, 'index'])->name('fsli-accounts');
+    Route::get('/fsli-accounts/create', [AccountClassGroupController::class, 'create'])->name('fsli-accounts.create');
+    Route::post('/fsli-accounts', [AccountClassGroupController::class, 'store'])->name('fsli-accounts.store');
+    Route::get('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'show'])->name('fsli-accounts.show');
+    Route::get('/fsli-accounts/{accountClassGroup}/edit', [AccountClassGroupController::class, 'edit'])->name('fsli-accounts.edit');
+    Route::put('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'update'])->name('fsli-accounts.update');
+    Route::delete('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'destroy'])->name('fsli-accounts.destroy');
 
     // Chart of Accounts
-    Route::get('/accounts', [App\Http\Controllers\Accounting\ChartAccountController::class, 'index'])->name('accounts');
-    Route::get('/accounts/create', [App\Http\Controllers\Accounting\ChartAccountController::class, 'create'])->name('accounts.create');
-    Route::post('/accounts', [App\Http\Controllers\Accounting\ChartAccountController::class, 'store'])->name('accounts.store');
-    Route::get('/accounts/{account}/edit', [App\Http\Controllers\Accounting\ChartAccountController::class, 'edit'])->name('accounts.edit');
-    Route::put('/accounts/{account}', [App\Http\Controllers\Accounting\ChartAccountController::class, 'update'])->name('accounts.update');
-    Route::delete('/accounts/{account}', [App\Http\Controllers\Accounting\ChartAccountController::class, 'destroy'])->name('accounts.destroy');
+    Route::get('/accounts', [ChartAccountController::class, 'index'])->name('accounts');
+    Route::get('/accounts/create', [ChartAccountController::class, 'create'])->name('accounts.create');
+    Route::post('/accounts', [ChartAccountController::class, 'store'])->name('accounts.store');
+    Route::get('/accounts/{chartAccount}', [ChartAccountController::class, 'show'])->name('accounts.show');
+    Route::get('/accounts/{chartAccount}/edit', [ChartAccountController::class, 'edit'])->name('accounts.edit');
+    Route::put('/accounts/{chartAccount}', [ChartAccountController::class, 'update'])->name('accounts.update');
+    Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Suppliers
     Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
@@ -266,14 +270,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
     Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
-
-    // FSLI Accounts
-    Route::get('/fsli-accounts', [App\Http\Controllers\Accounting\FsliAccountController::class, 'index'])->name('fsli-accounts');
-    Route::get('/fsli-accounts/create', [App\Http\Controllers\Accounting\FsliAccountController::class, 'create'])->name('fsli-accounts.create');
-    Route::post('/fsli-accounts', [App\Http\Controllers\Accounting\FsliAccountController::class, 'store'])->name('fsli-accounts.store');
-    Route::get('/fsli-accounts/{fsliAccount}/edit', [App\Http\Controllers\Accounting\FsliAccountController::class, 'edit'])->name('fsli-accounts.edit');
-    Route::put('/fsli-accounts/{fsliAccount}', [App\Http\Controllers\Accounting\FsliAccountController::class, 'update'])->name('fsli-accounts.update');
-    Route::delete('/fsli-accounts/{fsliAccount}', [App\Http\Controllers\Accounting\FsliAccountController::class, 'destroy'])->name('fsli-accounts.destroy');
 
     // Suppliers
     Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
