@@ -22,6 +22,8 @@ class DatabaseSeeder extends Seeder
       MenuSeeder::class,
       AccountingClassGroupSeeder::class,
       AccountClassSeeder::class,
+      CashFlowCategorySeeder::class,
+      EquityCategorySeeder::class,
       RegionsTableSeeder::class,
       DistrictsTableSeeder::class,
     ]);

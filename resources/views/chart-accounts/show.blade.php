@@ -124,6 +124,9 @@
                                     <small class="text-muted d-block">Cash Flow Impact</small>
                                     @if($chartAccount->has_cash_flow)
                                         <span class="badge bg-success fs-6">Yes</span>
+                                        @if($chartAccount->cashFlowCategory)
+                                            <br><small class="text-muted">{{ $chartAccount->cashFlowCategory->name }}</small>
+                                        @endif
                                     @else
                                         <span class="badge bg-secondary fs-6">No</span>
                                     @endif
@@ -138,6 +141,9 @@
                                     <small class="text-muted d-block">Equity Impact</small>
                                     @if($chartAccount->has_equity)
                                         <span class="badge bg-success fs-6">Yes</span>
+                                        @if($chartAccount->equityCategory)
+                                            <br><small class="text-muted">{{ $chartAccount->equityCategory->name }}</small>
+                                        @endif
                                     @else
                                         <span class="badge bg-secondary fs-6">No</span>
                                     @endif

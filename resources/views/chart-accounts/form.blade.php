@@ -46,8 +46,9 @@
     <div class="row mb-3">
         <div class="col-md-6">
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="has_cash_flow" value="1" {{ (old('has_cash_flow') || (isset($chartAccount) && $chartAccount->has_cash_flow)) ? 'checked' : '' }}>
-                <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" name="has_cash_flow" value="1" id="has_cash_flow" 
+                    {{ (old('has_cash_flow') || (isset($chartAccount) && $chartAccount->has_cash_flow)) ? 'checked' : '' }}>
+                <label class="form-check-label" for="has_cash_flow">
                     Has Cash Flow Impact
                 </label>
             </div>
@@ -58,8 +59,9 @@
 
         <div class="col-md-6">
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="has_equity" value="1" {{ (old('has_equity') || (isset($chartAccount) && $chartAccount->has_equity)) ? 'checked' : '' }}>
-                <label class="form-check-label">
+                <input class="form-check-input" type="checkbox" name="has_equity" value="1" id="has_equity" 
+                    {{ (old('has_equity') || (isset($chartAccount) && $chartAccount->has_equity)) ? 'checked' : '' }}>
+                <label class="form-check-label" for="has_equity">
                     Has Equity Impact
                 </label>
             </div>
@@ -69,6 +71,38 @@
         </div>
     </div>
 
+    <!-- Cash Flow Category Dropdown (shown when has_cash_flow is checked) -->
+    <div class="mb-3" id="cash_flow_category_div" style="display: {{ (old('has_cash_flow') || (isset($chartAccount) && $chartAccount->has_cash_flow)) ? 'block' : 'none' }};">
+        <label class="form-label">Cash Flow Category</label>
+        <select class="form-select" name="cash_flow_category_id">
+            <option value="">-- Choose Cash Flow Category --</option>
+            @foreach($cashFlowCategories as $category)
+                <option value="{{ $category->id }}" {{ (old('cash_flow_category_id') == $category->id || (isset($chartAccount) && $chartAccount->cash_flow_category_id == $category->id)) ? 'selected' : '' }}>
+                    {{ $category->name }}
+                </option>
+            @endforeach
+        </select>
+        @error('cash_flow_category_id')
+            <div class="text-danger">{{ $message }}</div>
+        @enderror
+    </div>
+
+    <!-- Equity Category Dropdown (shown when has_equity is checked) -->
+    <div class="mb-3" id="equity_category_div" style="display: {{ (old('has_equity') || (isset($chartAccount) && $chartAccount->has_equity)) ? 'block' : 'none' }};">
+        <label class="form-label">Equity Category</label>
+        <select class="form-select" name="equity_category_id">
+            <option value="">-- Choose Equity Category --</option>
+            @foreach($equityCategories as $category)
+                <option value="{{ $category->id }}" {{ (old('equity_category_id') == $category->id || (isset($chartAccount) && $chartAccount->equity_category_id == $category->id)) ? 'selected' : '' }}>
+                    {{ $category->name }}
+                </option>
+            @endforeach
+        </select>
+        @error('equity_category_id')
+            <div class="text-danger">{{ $message }}</div>
+        @enderror
+    </div>
+
     <div class="d-flex justify-content-end">
         <a href="{{ route('accounting.accounts') }}" class="btn btn-secondary me-2">Cancel</a>
         <button type="submit" class="btn btn-{{ isset($chartAccount) ? 'primary' : 'success' }}">
@@ -76,3 +110,42 @@
         </button>
     </div>
 </form>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const cashFlowCheckbox = document.getElementById('has_cash_flow');
+    const equityCheckbox = document.getElementById('has_equity');
+    const cashFlowDiv = document.getElementById('cash_flow_category_div');
+    const equityDiv = document.getElementById('equity_category_div');
+
+    // Function to toggle cash flow category dropdown
+    function toggleCashFlowCategory() {
+        if (cashFlowCheckbox.checked) {
+            cashFlowDiv.style.display = 'block';
+        } else {
+            cashFlowDiv.style.display = 'none';
+            // Clear the selection when hiding
+            cashFlowDiv.querySelector('select').value = '';
+        }
+    }
+
+    // Function to toggle equity category dropdown
+    function toggleEquityCategory() {
+        if (equityCheckbox.checked) {
+            equityDiv.style.display = 'block';
+        } else {
+            equityDiv.style.display = 'none';
+            // Clear the selection when hiding
+            equityDiv.querySelector('select').value = '';
+        }
+    }
+
+    // Add event listeners
+    cashFlowCheckbox.addEventListener('change', toggleCashFlowCategory);
+    equityCheckbox.addEventListener('change', toggleEquityCategory);
+
+    // Initialize on page load
+    toggleCashFlowCategory();
+    toggleEquityCategory();
+});
+</script>

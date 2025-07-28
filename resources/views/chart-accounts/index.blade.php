@@ -42,7 +42,9 @@
                                     <th>Account Code</th>
                                     <th>Account Name</th>
                                     <th>Cash Flow</th>
+                                    <th>Cash Flow Category</th>
                                     <th>Equity</th>
+                                    <th>Equity Category</th>
                                     <th>Created At</th>
                                     <th>Actions</th>
                                 </tr>
@@ -63,10 +65,24 @@
                                             @endif
                                         </td>
                                         <td>
+                                            @if($account->has_cash_flow && $account->cashFlowCategory)
+                                                <span class="badge bg-info">{{ $account->cashFlowCategory->name }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
                                             @if($account->has_equity)
                                                 <span class="badge bg-success">Yes</span>
                                             @else
                                                 <span class="badge bg-secondary">No</span>
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if($account->has_equity && $account->equityCategory)
+                                                <span class="badge bg-warning">{{ $account->equityCategory->name }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <td>{{ $account->created_at->format('M d, Y') }}</td>

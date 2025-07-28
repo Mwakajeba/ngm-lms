@@ -25,6 +25,8 @@ class ChartAccount extends Model
         'account_name',
         'has_cash_flow',
         'has_equity',
+        'cash_flow_category_id',
+        'equity_category_id',
     ];
 
     /**
@@ -45,5 +47,21 @@ class ChartAccount extends Model
     public function accountClassGroup(): BelongsTo
     {
         return $this->belongsTo(AccountClassGroup::class, 'account_class_group_id');
+    }
+
+    /**
+     * Get the cash flow category for this chart account.
+     */
+    public function cashFlowCategory(): BelongsTo
+    {
+        return $this->belongsTo(CashFlowCategory::class, 'cash_flow_category_id');
+    }
+
+    /**
+     * Get the equity category for this chart account.
+     */
+    public function equityCategory(): BelongsTo
+    {
+        return $this->belongsTo(EquityCategory::class, 'equity_category_id');
     }
 }
