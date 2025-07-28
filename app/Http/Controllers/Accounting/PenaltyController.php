@@ -4,13 +4,13 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\Fee;
+use App\Models\Penalty;
 use App\Models\Company;
 use App\Models\Branch;
 use App\Models\ChartAccount;
 use Illuminate\Support\Facades\Validator;
 
-class FeeController extends Controller
+class PenaltyController extends Controller
 {
     public function index()
     {
@@ -18,25 +18,27 @@ class FeeController extends Controller
         $companyId = $user->company_id ?? null;
 
         if ($companyId) {
-            $fees = Fee::with(['company', 'branch', 'chartAccount', 'createdBy'])
+            $penalties = Penalty::with(['company', 'branch', 'chartAccount', 'createdBy'])
                 ->byCompany($companyId)
                 ->orderBy('name')
                 ->get();
         } else {
-            $fees = Fee::with(['company', 'branch', 'chartAccount', 'createdBy'])
+            $penalties = Penalty::with(['company', 'branch', 'chartAccount', 'createdBy'])
                 ->orderBy('name')
                 ->get();
         }
 
         $stats = [
-            'total' => $fees->count(),
-            'active' => $fees->where('status', 'active')->count(),
-            'inactive' => $fees->where('status', 'inactive')->count(),
-            'fixed' => $fees->where('fee_type', 'fixed')->count(),
-            'percentage' => $fees->where('fee_type', 'percentage')->count(),
+            'total' => $penalties->count(),
+            'active' => $penalties->where('status', 'active')->count(),
+            'inactive' => $penalties->where('status', 'inactive')->count(),
+            'fixed' => $penalties->where('penalty_type', 'fixed')->count(),
+            'percentage' => $penalties->where('penalty_type', 'percentage')->count(),
+            'outstanding_amount' => $penalties->where('deduction_type', 'outstanding_amount')->count(),
+            'principal' => $penalties->where('deduction_type', 'principal')->count(),
         ];
 
-        return view('accounting.fees.index', compact('fees', 'stats'));
+        return view('accounting.penalties.index', compact('penalties', 'stats'));
     }
 
     public function create()
@@ -53,10 +55,11 @@ class FeeController extends Controller
         }
 
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
-        $statusOptions = Fee::getStatusOptions();
-        $feeTypeOptions = Fee::getFeeTypeOptions();
+        $statusOptions = Penalty::getStatusOptions();
+        $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
+        $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.fees.create', compact('companies', 'branches', 'chartAccounts', 'statusOptions', 'feeTypeOptions'));
+        return view('accounting.penalties.create', compact('companies', 'branches', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
     public function store(Request $request)
@@ -64,8 +67,9 @@ class FeeController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'chart_account_id' => 'required|exists:chart_accounts,id',
-            'fee_type' => 'required|in:fixed,percentage',
+            'penalty_type' => 'required|in:fixed,percentage',
             'amount' => 'required|numeric|min:0',
+            'deduction_type' => 'required|in:outstanding_amount,principal',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
             'company_id' => 'nullable|exists:companies,id',
@@ -79,11 +83,12 @@ class FeeController extends Controller
         $user = auth()->user();
         $companyId = $user->company_id ?? $request->company_id ?? Company::first()->id ?? 1;
 
-        $fee = Fee::create([
+        $penalty = Penalty::create([
             'name' => $request->name,
             'chart_account_id' => $request->chart_account_id,
-            'fee_type' => $request->fee_type,
+            'penalty_type' => $request->penalty_type,
             'amount' => $request->amount,
+            'deduction_type' => $request->deduction_type,
             'description' => $request->description,
             'status' => $request->status,
             'company_id' => $companyId,
@@ -92,17 +97,17 @@ class FeeController extends Controller
             'updated_by' => $user->id,
         ]);
 
-        return redirect()->route('accounting.fees.index')->with('success', 'Fee created successfully!');
+        return redirect()->route('accounting.penalties.index')->with('success', 'Penalty created successfully!');
     }
 
-    public function show(Fee $fee)
+    public function show(Penalty $penalty)
     {
-        $fee->load(['company', 'branch', 'chartAccount', 'createdBy', 'updatedBy']);
+        $penalty->load(['company', 'branch', 'chartAccount', 'createdBy', 'updatedBy']);
 
-        return view('accounting.fees.show', compact('fee'));
+        return view('accounting.penalties.show', compact('penalty'));
     }
 
-    public function edit(Fee $fee)
+    public function edit(Penalty $penalty)
     {
         $user = auth()->user();
         $companyId = $user->company_id ?? null;
@@ -116,19 +121,21 @@ class FeeController extends Controller
         }
 
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
-        $statusOptions = Fee::getStatusOptions();
-        $feeTypeOptions = Fee::getFeeTypeOptions();
+        $statusOptions = Penalty::getStatusOptions();
+        $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
+        $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.fees.edit', compact('fee', 'companies', 'branches', 'chartAccounts', 'statusOptions', 'feeTypeOptions'));
+        return view('accounting.penalties.edit', compact('penalty', 'companies', 'branches', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
-    public function update(Request $request, Fee $fee)
+    public function update(Request $request, Penalty $penalty)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'chart_account_id' => 'required|exists:chart_accounts,id',
-            'fee_type' => 'required|in:fixed,percentage',
+            'penalty_type' => 'required|in:fixed,percentage',
             'amount' => 'required|numeric|min:0',
+            'deduction_type' => 'required|in:outstanding_amount,principal',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
             'company_id' => 'nullable|exists:companies,id',
@@ -141,40 +148,41 @@ class FeeController extends Controller
 
         $user = auth()->user();
 
-        $fee->update([
+        $penalty->update([
             'name' => $request->name,
             'chart_account_id' => $request->chart_account_id,
-            'fee_type' => $request->fee_type,
+            'penalty_type' => $request->penalty_type,
             'amount' => $request->amount,
+            'deduction_type' => $request->deduction_type,
             'description' => $request->description,
             'status' => $request->status,
-            'company_id' => $request->company_id ?? $fee->company_id,
+            'company_id' => $request->company_id ?? $penalty->company_id,
             'branch_id' => $request->branch_id,
             'updated_by' => $user->id,
         ]);
 
-        return redirect()->route('accounting.fees.index')->with('success', 'Fee updated successfully!');
+        return redirect()->route('accounting.penalties.index')->with('success', 'Penalty updated successfully!');
     }
 
-    public function destroy(Fee $fee)
+    public function destroy(Penalty $penalty)
     {
         try {
-            $fee->delete();
-            return redirect()->route('accounting.fees.index')->with('success', 'Fee deleted successfully!');
+            $penalty->delete();
+            return redirect()->route('accounting.penalties.index')->with('success', 'Penalty deleted successfully!');
         } catch (\Exception $e) {
-            return redirect()->route('accounting.fees.index')->with('error', 'Failed to delete fee: ' . $e->getMessage());
+            return redirect()->route('accounting.penalties.index')->with('error', 'Failed to delete penalty: ' . $e->getMessage());
         }
     }
 
-    public function changeStatus(Request $request, Fee $fee)
+    public function changeStatus(Request $request, Penalty $penalty)
     {
         $request->validate([
             'status' => 'required|in:active,inactive',
         ]);
 
-        $fee->update(['status' => $request->status]);
+        $penalty->update(['status' => $request->status]);
 
         $statusText = $request->status === 'active' ? 'activated' : 'deactivated';
-        return redirect()->route('accounting.fees.show', $fee)->with('success', "Fee {$statusText} successfully!");
+        return redirect()->route('accounting.penalties.show', $penalty)->with('success', "Penalty {$statusText} successfully!");
     }
 }

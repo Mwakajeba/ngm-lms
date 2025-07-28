@@ -138,6 +138,14 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
             'message' => 'AI Assistant connection test successful'
         ]);
     })->name('ai.test');
+
+    // Penalty Settings
+    Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
+    Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
+
+    // Fees Settings
+    Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
+    Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -272,12 +280,24 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/budget/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'destroy'])->name('budget.destroy');
 
     // Fees
-    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees');
+    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees.index');
     Route::get('/fees/create', [App\Http\Controllers\Accounting\FeeController::class, 'create'])->name('fees.create');
     Route::post('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'store'])->name('fees.store');
+    Route::get('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'show'])->name('fees.show');
     Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
     Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
+    Route::patch('/fees/{fee}/status', [App\Http\Controllers\Accounting\FeeController::class, 'changeStatus'])->name('fees.changeStatus');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
+
+    // Penalties
+    Route::get('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'index'])->name('penalties.index');
+    Route::get('/penalties/create', [App\Http\Controllers\Accounting\PenaltyController::class, 'create'])->name('penalties.create');
+    Route::post('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'store'])->name('penalties.store');
+    Route::get('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'show'])->name('penalties.show');
+    Route::get('/penalties/{penalty}/edit', [App\Http\Controllers\Accounting\PenaltyController::class, 'edit'])->name('penalties.edit');
+    Route::put('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'update'])->name('penalties.update');
+    Route::patch('/penalties/{penalty}/status', [App\Http\Controllers\Accounting\PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
+    Route::delete('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'destroy'])->name('penalties.destroy');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
