@@ -40,22 +40,6 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['settings.company', 'settings.branches', 'settings.user', 'settings.system', 'settings.backup', 'settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
             ],
-            'Company' => [
-                'icon' => 'bx bx-building',
-                'visibleRoutes' => [
-                    ['name' => 'Company List', 'route' => 'companies.index'],
-                    ['name' => 'Add New Company', 'route' => 'companies.create'],
-                ],
-                'hiddenRoutes' => ['companies.edit', 'companies.destroy'],
-            ],
-            'Branch' => [
-                'icon' => 'bx bx-git-branch',
-                'visibleRoutes' => [
-                    ['name' => 'Branch List', 'route' => 'branches.index'],
-                    ['name' => 'Add New Branch', 'route' => 'branches.create'],
-                ],
-                'hiddenRoutes' => ['branches.edit', 'branches.destroy'],
-            ],
             'Customers' => [
                 'icon' => 'bx bx-group',
                 'visibleRoutes' => [
@@ -79,7 +63,8 @@ class MenuSeeder extends Seeder
                     ['name' => 'Bank reconciliation', 'route' => 'accounting.bank-reconciliation'],
                     ['name' => 'Bill purchases', 'route' => 'accounting.bill-purchases'],
                     ['name' => 'Budget', 'route' => 'accounting.budget'],
-                    ['name' => 'Fees', 'route' => 'accounting.fees'],
+                    ['name' => 'Fees', 'route' => 'accounting.fees.index'],
+                    ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
                 ],
                 'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy'],
             ],
