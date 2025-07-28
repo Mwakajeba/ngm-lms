@@ -149,65 +149,35 @@
                                         @forelse($penalties as $penalty)
                                             <tr>
                                                 <td>
-                                                    <div class="d-flex align-items-center">
-                                                        <div class="avatar-sm bg-danger text-white rounded-circle me-3">
-                                                            <i class="bx bx-error-circle"></i>
-                                                        </div>
-                                                        <div>
-                                                            <h6 class="mb-0">{{ $penalty->name }}</h6>
-                                                            @if($penalty->description)
-                                                                <small
-                                                                    class="text-muted">{{ Str::limit($penalty->description, 50) }}</small>
-                                                            @endif
-                                                        </div>
-                                                    </div>
+                                                    <a href="{{ route('accounting.penalties.show', $penalty) }}"
+                                                        class="text-primary fw-bold">
+                                                        {{ $penalty->name }}
+                                                    </a>
                                                 </td>
-                                                <td>
-                                                    <span class="badge bg-light text-dark">
-                                                        {{ $penalty->chartAccount->account_name ?? 'N/A' }}
-                                                    </span>
-                                                </td>
+                                                <td>{{ $penalty->chartAccount->account_name ?? 'N/A' }}</td>
                                                 <td>{!! $penalty->penalty_type_badge !!}</td>
-                                                <td>
-                                                    <strong>{{ $penalty->formatted_amount }}</strong>
-                                                </td>
+                                                <td>{{ $penalty->formatted_amount }}</td>
                                                 <td>{!! $penalty->deduction_type_badge !!}</td>
                                                 <td>{!! $penalty->status_badge !!}</td>
-                                                <td>
-                                                    <span class="badge bg-light text-dark">
-                                                        {{ $penalty->company->name ?? 'N/A' }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <span class="badge bg-light text-dark">
-                                                        {{ $penalty->branch->name ?? 'N/A' }}
-                                                    </span>
-                                                </td>
-                                                <td>
-                                                    <small class="text-muted">
-                                                        {{ $penalty->createdBy->name ?? 'N/A' }}
-                                                    </small>
-                                                </td>
+                                                <td>{{ $penalty->company->name ?? 'N/A' }}</td>
+                                                <td>{{ $penalty->branch->name ?? 'N/A' }}</td>
+                                                <td>{{ $penalty->createdBy->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
                                                         <a href="{{ route('accounting.penalties.show', $penalty) }}"
-                                                            class="btn btn-sm btn-outline-primary" title="View">
-                                                            <i class="bx bx-show"></i>
+                                                            class="btn btn-sm btn-outline-primary">
+                                                            View
                                                         </a>
                                                         <a href="{{ route('accounting.penalties.edit', $penalty) }}"
-                                                            class="btn btn-sm btn-outline-warning" title="Edit">
-                                                            <i class="bx bx-edit"></i>
+                                                            class="btn btn-sm btn-outline-warning">
+                                                            Edit
                                                         </a>
-                                                        <form action="{{ route('accounting.penalties.destroy', $penalty) }}"
-                                                            method="POST" class="d-inline"
-                                                            onsubmit="return confirm('Are you sure you want to delete this penalty?')">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                                title="Delete">
-                                                                <i class="bx bx-trash"></i>
-                                                            </button>
-                                                        </form>
+                                                        <button type="button"
+                                                            class="btn btn-sm btn-outline-danger delete-penalty-btn"
+                                                            title="Delete" data-penalty-id="{{ $penalty->id }}"
+                                                            data-penalty-name="{{ $penalty->name }}">
+                                                            Delete
+                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -252,6 +222,34 @@
                     infoFiltered: "(filtered from _MAX_ total penalties)",
                     emptyTable: "No penalties available",
                     zeroRecords: "No matching penalties found"
+                }
+            });
+
+            // Delete penalty functionality
+            $('.delete-penalty-btn').on('click', function () {
+                const penaltyId = $(this).data('penalty-id');
+                const penaltyName = $(this).data('penalty-name');
+
+                if (confirm(`Are you sure you want to delete the penalty "${penaltyName}"?`)) {
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': `/accounting/penalties/${penaltyId}`
+                    });
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_token',
+                        'value': '{{ csrf_token() }}'
+                    }));
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_method',
+                        'value': 'DELETE'
+                    }));
+
+                    $('body').append(form);
+                    form.submit();
                 }
             });
         });

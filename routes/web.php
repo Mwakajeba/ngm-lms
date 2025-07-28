@@ -285,6 +285,16 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::patch('/fees/{fee}/status', [App\Http\Controllers\Accounting\FeeController::class, 'changeStatus'])->name('fees.changeStatus');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
 
+    // Penalties
+    Route::get('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'index'])->name('penalties.index');
+    Route::get('/penalties/create', [App\Http\Controllers\Accounting\PenaltyController::class, 'create'])->name('penalties.create');
+    Route::post('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'store'])->name('penalties.store');
+    Route::get('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'show'])->name('penalties.show');
+    Route::get('/penalties/{penalty}/edit', [App\Http\Controllers\Accounting\PenaltyController::class, 'edit'])->name('penalties.edit');
+    Route::put('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'update'])->name('penalties.update');
+    Route::patch('/penalties/{penalty}/status', [App\Http\Controllers\Accounting\PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
+    Route::delete('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'destroy'])->name('penalties.destroy');
+
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');

@@ -112,15 +112,15 @@
                                             <td>{{ $account->created_at->format('M d, Y') }}</td>
                                             <td>
                                                 <a href="{{ route('accounting.accounts.show', $account->id) }}"
-                                                    class="btn btn-sm btn-info">View</a>
+                                                    class="btn btn-sm btn-outline-primary">View</a>
                                                 <a href="{{ route('accounting.accounts.edit', $account->id) }}"
-                                                    class="btn btn-sm btn-primary">Edit</a>
+                                                    class="btn btn-sm btn-outline-warning">Edit</a>
 
-                                                <form action="{{ route('accounting.accounts.destroy', $account->id) }}"
+                                                <fPorm action="{{ route('accounting.accounts.destroy', $account->id) }}"
                                                     method="POST" class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger"
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
                                                         data-name="{{ $account->account_name }}">Delete</button>
                                                 </form>
                                             </td>

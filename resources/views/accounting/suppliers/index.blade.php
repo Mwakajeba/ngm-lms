@@ -163,13 +163,13 @@
                                                     {{ optional($supplier->branch)->name ?? 'N/A' }}
                                                 </td>
                                                 <td class="text-center">
-                                                    <div class="btn-group" role="group">
+                                                    <div class="d-flex gap-2">
                                                         <a href="{{ route('accounting.suppliers.show', $supplier) }}"
-                                                            class="btn btn-sm btn-outline-info" title="View Details">
+                                                            class="btn btn-sm btn-outline-primary" title="View Details">
                                                             View
                                                         </a>
                                                         <a href="{{ route('accounting.suppliers.edit', $supplier) }}"
-                                                            class="btn btn-sm btn-outline-primary" title="Edit">
+                                                            class="btn btn-sm btn-outline-warning" title="Edit">
                                                             Edit
                                                         </a>
                                                         <button type="button"

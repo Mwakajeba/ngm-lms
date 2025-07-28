@@ -54,15 +54,15 @@
                                         <td>{{ $group->created_at->format('M d, Y') }}</td>
                                         <td>
                                             <a href="{{ route('accounting.fsli-accounts.show', $group->id) }}"
-                                                class="btn btn-sm btn-info">View</a>
+                                                class="btn btn-sm btn-outline-primary">View</a>
                                             <a href="{{ route('accounting.fsli-accounts.edit', $group->id) }}"
-                                                class="btn btn-sm btn-primary">Edit</a>
+                                                class="btn btn-sm btn-outline-warning">Edit</a>
 
                                             <form action="{{ route('accounting.fsli-accounts.destroy', $group->id) }}"
                                                 method="POST" class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     data-name="{{ $group->name }}">Delete</button>
                                             </form>
                                         </td>

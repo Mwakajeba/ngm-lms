@@ -164,22 +164,6 @@
                                     </div>
                                 </div>
 
-                                <!-- Penalty Settings -->
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-orange">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-time fs-1 text-orange"></i>
-                                            </div>
-                                            <h5 class="card-title">Penalty Settings</h5>
-                                            <p class="card-text">Configure late payment penalties and fee structures.</p>
-                                            <a href="{{ route('settings.penalty') }}" class="btn btn-orange">
-                                                <i class="bx bx-cog me-1"></i> Configure
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Fees Settings -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-teal">
@@ -191,6 +175,22 @@
                                             <p class="card-text">Manage service fees, charges, and payment structures.</p>
                                             <a href="{{ route('accounting.fees.index') }}" class="btn btn-teal">
                                                 <i class="bx bx-list-ul me-1"></i> Manage Fees
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Penalties Settings -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-danger">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-error-circle fs-1 text-danger"></i>
+                                            </div>
+                                            <h5 class="card-title">Penalties Management</h5>
+                                            <p class="card-text">Configure late payment penalties and fee structures.</p>
+                                            <a href="{{ route('accounting.penalties.index') }}" class="btn btn-danger">
+                                                <i class="bx bx-list-ul me-1"></i> Manage Penalties
                                             </a>
                                         </div>
                                     </div>
@@ -274,6 +274,26 @@
         .btn-teal:hover {
             background-color: #1ba37e;
             border-color: #1ba37e;
+            color: white;
+        }
+
+        .border-danger {
+            border-color: #dc3545 !important;
+        }
+
+        .text-danger {
+            color: #dc3545 !important;
+        }
+
+        .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: white;
+        }
+
+        .btn-danger:hover {
+            background-color: #bb2d3b;
+            border-color: #bb2d3b;
             color: white;
         }
     </style>
