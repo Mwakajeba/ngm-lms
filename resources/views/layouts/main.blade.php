@@ -71,12 +71,12 @@
     <script src="{{ asset('assets/plugins/datatable/js/jquery.dataTables.min.js')}}"></script>
     <script src="{{ asset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js')}}"></script>
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             $('#example').DataTable();
         });
     </script>
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
             var table = $('#example2').DataTable({
                 lengthChange: false,
                 buttons: ['copy', 'excel', 'pdf', 'print']
@@ -94,9 +94,9 @@
     @stack('scripts')
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             document.querySelectorAll('.delete-form').forEach(form => {
-                form.addEventListener('submit', function(e) {
+                form.addEventListener('submit', function (e) {
                     e.preventDefault(); // Prevent immediate form submission
 
                     const name = this.querySelector('button').getAttribute('data-name');
@@ -120,56 +120,54 @@
     </script>
 
     @if(session('success'))
-    <script>
-    Swal.fire({
-        toast: true,
-        position: 'top-end',
-        icon: 'success',
-        title: "{{ session('success') }}",
-        showConfirmButton: false,
-        timer: 3000
-    });
-</script>
-    </script>
+        <script>
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'success',
+                title: '{{ session('success') }}',
+                showConfirmButton: false,
+                timer: 3000
+            });
+        </script>
     @endif
 
     @if(session('error'))
-    <script>
-        Swal.fire({
-            toast: true,
-            position: 'top-end',
-            icon: 'error',
-            title: "{{ session('
-            error ') }}",
-            showConfirmB"utton: false,
-            timer: 4000
-        });
-    </script>
+        <script>
+            Swal.fire({
+                toast: true,
+                position: 'top-end',
+                icon: 'error',
+                title: '{{ session('error') }}',
+                showConfirmButton: false,
+                timer: 4000
+            });
+        </script>
     @endif
 
     <script>
-function previewImage(event) {
-    const reader = new FileReader();
-    reader.onload = function(){
-        const output = document.getElementById('preview');
-        output.innerHTML = `<img src="${reader.result}" width="100">`;
-    }
-    reader.readAsDataURL(event.target.files[0]);
-}
+        function previewImage(event) {
+            const reader = new FileReader();
+            reader.onload = function () {
+                const output = document.getElementById('preview');
+                output.innerHTML = `<img src="${reader.result}" width="100">`;
+            }
+            reader.readAsDataURL(event.target.files[0]);
+        }
 
-document.getElementById('region')?.addEventListener('change', function () {
-    const region = this.value;
-    fetch(`/get-districts/${region}`)
-        .then(res => res.json())
-        .then(data => {
-            let options = `<option value="">Select District</option>`;
-            data.forEach(district => {
-                options += `<option value="${district.name}">${district.name}</option>`;
-            });
-            document.getElementById('district').innerHTML = options;
+        document.getElementById('region')?.addEventListener('change', function () {
+            const region = this.value;
+            fetch(`/get-districts/${region}`)
+                .then(res => res.json())
+                .then(data => {
+                    let options = `<option value="">Select District</option>`;
+                    data.forEach(district => {
+                        options += `<option value="${district.name}">${district.name}</option>`;
+                    });
+                    document.getElementById('district').innerHTML = options;
+                });
         });
-});
-</script>
+    </script>
 
 </body>
 
