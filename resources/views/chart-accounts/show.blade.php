@@ -118,7 +118,7 @@
                         <div class="card-body p-3">
                             <div class="d-flex align-items-center mb-3">
                                 <div class="bg-success bg-opacity-10 rounded-circle p-2 me-3">
-                                    <i class="bx bx-money text-success"></i>
+                                    <i class="bx bx-money-withdraw text-success"></i>
                                 </div>
                                 <div class="flex-grow-1">
                                     <small class="text-muted d-block">Cash Flow Impact</small>
@@ -126,6 +126,10 @@
                                         <span class="badge bg-success fs-6">Yes</span>
                                         @if($chartAccount->cashFlowCategory)
                                             <br><small class="text-muted">{{ $chartAccount->cashFlowCategory->name }}</small>
+                                            @if($chartAccount->cashFlowCategory->description)
+                                                <br><small
+                                                    class="text-muted fst-italic">{{ $chartAccount->cashFlowCategory->description }}</small>
+                                            @endif
                                         @endif
                                     @else
                                         <span class="badge bg-secondary fs-6">No</span>
@@ -135,7 +139,7 @@
 
                             <div class="d-flex align-items-center">
                                 <div class="bg-warning bg-opacity-10 rounded-circle p-2 me-3">
-                                    <i class="bx bx-trending-up text-warning"></i>
+                                    <i class="bx bx-pie-chart-alt text-warning"></i>
                                 </div>
                                 <div class="flex-grow-1">
                                     <small class="text-muted d-block">Equity Impact</small>
@@ -143,6 +147,10 @@
                                         <span class="badge bg-success fs-6">Yes</span>
                                         @if($chartAccount->equityCategory)
                                             <br><small class="text-muted">{{ $chartAccount->equityCategory->name }}</small>
+                                            @if($chartAccount->equityCategory->description)
+                                                <br><small
+                                                    class="text-muted fst-italic">{{ $chartAccount->equityCategory->description }}</small>
+                                            @endif
                                         @endif
                                     @else
                                         <span class="badge bg-secondary fs-6">No</span>
@@ -151,6 +159,49 @@
                             </div>
                         </div>
                     </div>
+
+                    <!-- Category Details Card -->
+                    @if($chartAccount->has_cash_flow || $chartAccount->has_equity)
+                        <div class="card shadow-sm border-0 mb-4">
+                            <div class="card-header bg-light">
+                                <h6 class="mb-0">
+                                    <i class="bx bx-category me-2 text-muted"></i>
+                                    Category Details
+                                </h6>
+                            </div>
+                            <div class="card-body p-3">
+                                @if($chartAccount->has_cash_flow && $chartAccount->cashFlowCategory)
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bx bx-money-withdraw text-success me-2"></i>
+                                            <strong class="text-success">Cash Flow Category</strong>
+                                        </div>
+                                        <div class="ps-4">
+                                            <div class="fw-semibold">{{ $chartAccount->cashFlowCategory->name }}</div>
+                                            @if($chartAccount->cashFlowCategory->description)
+                                                <small class="text-muted">{{ $chartAccount->cashFlowCategory->description }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+
+                                @if($chartAccount->has_equity && $chartAccount->equityCategory)
+                                    <div class="mb-3">
+                                        <div class="d-flex align-items-center mb-2">
+                                            <i class="bx bx-pie-chart-alt text-warning me-2"></i>
+                                            <strong class="text-warning">Equity Category</strong>
+                                        </div>
+                                        <div class="ps-4">
+                                            <div class="fw-semibold">{{ $chartAccount->equityCategory->name }}</div>
+                                            @if($chartAccount->equityCategory->description)
+                                                <small class="text-muted">{{ $chartAccount->equityCategory->description }}</small>
+                                            @endif
+                                        </div>
+                                    </div>
+                                @endif
+                            </div>
+                        </div>
+                    @endif
 
                     <!-- Quick Actions Card -->
                     <div class="card shadow-sm border-0">

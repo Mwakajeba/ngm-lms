@@ -113,39 +113,69 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    console.log('DOM loaded, initializing form...');
+    
+    // Get elements
     const cashFlowCheckbox = document.getElementById('has_cash_flow');
     const equityCheckbox = document.getElementById('has_equity');
     const cashFlowDiv = document.getElementById('cash_flow_category_div');
     const equityDiv = document.getElementById('equity_category_div');
+    
+    console.log('Elements found:', {
+        cashFlowCheckbox: cashFlowCheckbox,
+        equityCheckbox: equityCheckbox,
+        cashFlowDiv: cashFlowDiv,
+        equityDiv: equityDiv
+    });
 
     // Function to toggle cash flow category dropdown
     function toggleCashFlowCategory() {
+        console.log('Cash flow checkbox changed:', cashFlowCheckbox.checked);
         if (cashFlowCheckbox.checked) {
             cashFlowDiv.style.display = 'block';
+            console.log('Cash flow dropdown shown');
         } else {
             cashFlowDiv.style.display = 'none';
             // Clear the selection when hiding
-            cashFlowDiv.querySelector('select').value = '';
+            const select = cashFlowDiv.querySelector('select');
+            if (select) {
+                select.value = '';
+            }
+            console.log('Cash flow dropdown hidden and cleared');
         }
     }
 
     // Function to toggle equity category dropdown
     function toggleEquityCategory() {
+        console.log('Equity checkbox changed:', equityCheckbox.checked);
         if (equityCheckbox.checked) {
             equityDiv.style.display = 'block';
+            console.log('Equity dropdown shown');
         } else {
             equityDiv.style.display = 'none';
             // Clear the selection when hiding
-            equityDiv.querySelector('select').value = '';
+            const select = equityDiv.querySelector('select');
+            if (select) {
+                select.value = '';
+            }
+            console.log('Equity dropdown hidden and cleared');
         }
     }
 
     // Add event listeners
-    cashFlowCheckbox.addEventListener('change', toggleCashFlowCategory);
-    equityCheckbox.addEventListener('change', toggleEquityCategory);
+    if (cashFlowCheckbox) {
+        cashFlowCheckbox.addEventListener('change', toggleCashFlowCategory);
+        console.log('Cash flow event listener added');
+    }
+    
+    if (equityCheckbox) {
+        equityCheckbox.addEventListener('change', toggleEquityCategory);
+        console.log('Equity event listener added');
+    }
 
     // Initialize on page load
     toggleCashFlowCategory();
     toggleEquityCategory();
+    console.log('Initial toggle functions called');
 });
 </script>

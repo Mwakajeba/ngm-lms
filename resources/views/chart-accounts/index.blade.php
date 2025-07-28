@@ -42,9 +42,23 @@
                                     <th>Account Code</th>
                                     <th>Account Name</th>
                                     <th>Cash Flow</th>
-                                    <th>Cash Flow Category</th>
+                                    @php
+                                        $hasCashFlowCategories = $chartAccounts->contains(function ($account) {
+                                            return $account->has_cash_flow && $account->cashFlowCategory;
+                                        });
+                                    @endphp
+                                    @if($hasCashFlowCategories)
+                                        <th>Cash Flow Category</th>
+                                    @endif
                                     <th>Equity</th>
-                                    <th>Equity Category</th>
+                                    @php
+                                        $hasEquityCategories = $chartAccounts->contains(function ($account) {
+                                            return $account->has_equity && $account->equityCategory;
+                                        });
+                                    @endphp
+                                    @if($hasEquityCategories)
+                                        <th>Equity Category</th>
+                                    @endif
                                     <th>Created At</th>
                                     <th>Actions</th>
                                 </tr>
@@ -64,13 +78,18 @@
                                                 <span class="badge bg-secondary">No</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            @if($account->has_cash_flow && $account->cashFlowCategory)
-                                                <span class="badge bg-info">{{ $account->cashFlowCategory->name }}</span>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
+                                        @if($hasCashFlowCategories)
+                                            <td>
+                                                @if($account->has_cash_flow && $account->cashFlowCategory)
+                                                    <span class="badge bg-info"
+                                                        title="{{ $account->cashFlowCategory->description ?? '' }}">
+                                                        <i class="bx bx-money-withdraw me-1"></i>{{ $account->cashFlowCategory->name }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+                                        @endif
                                         <td>
                                             @if($account->has_equity)
                                                 <span class="badge bg-success">Yes</span>
@@ -78,13 +97,18 @@
                                                 <span class="badge bg-secondary">No</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            @if($account->has_equity && $account->equityCategory)
-                                                <span class="badge bg-warning">{{ $account->equityCategory->name }}</span>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
-                                        </td>
+                                        @if($hasEquityCategories)
+                                            <td>
+                                                @if($account->has_equity && $account->equityCategory)
+                                                    <span class="badge bg-warning"
+                                                        title="{{ $account->equityCategory->description ?? '' }}">
+                                                        <i class="bx bx-pie-chart-alt me-1"></i>{{ $account->equityCategory->name }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
+                                        @endif
                                         <td>{{ $account->created_at->format('M d, Y') }}</td>
                                         <td>
                                             <a href="{{ route('accounting.accounts.show', $account->id) }}"
