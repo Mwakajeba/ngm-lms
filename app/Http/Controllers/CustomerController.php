@@ -98,6 +98,7 @@ class CustomerController extends Controller
     // Display one customer
     public function show(Customer $customer)
     {
+        $customer->load('collaterals.type', 'loans');
         return view('customers.show', compact('customer'));
     }
 

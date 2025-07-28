@@ -5,18 +5,103 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
-        <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6>
-        <hr/>
+        <div class="d-flex justify-content-between align-items-center mb-2">
+            <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6>
+            <a href="" class="btn btn-sm btn-primary">
+                <i class="bx bx-plus"></i> Apply for Loan
+            </a>
+        </div>
         <div class="row">
+            <!-- Total Loans -->
+            <div class="col-md-3">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Total Loans</p>
+                                <h4 class="my-1">100,000</h4>
+                                <p class="mb-0 font-13 text-success">
+                                    <i class="bx bxs-up-arrow align-middle"></i> Up to date
+                                </p>
+                            </div>
+                            <div class="widgets-icons bg-light-success text-success ms-auto">
+                                <i class="bx bxs-wallet"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Default Loans -->
+            <div class="col-md-3">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Default Loans</p>
+                                <h4 class="my-1">100,000</h4>
+                                <p class="mb-0 font-13 text-danger">
+                                    <i class="bx bxs-down-arrow align-middle"></i> In arrears
+                                </p>
+                            </div>
+                            <div class="widgets-icons bg-light-danger text-danger ms-auto">
+                                <i class="bx bxs-error"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Total Arrears -->
+            <div class="col-md-3">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Total Arrears</p>
+                                <h4 class="my-1">100,000</h4>
+                                <p class="mb-0 font-13 text-warning">
+                                    <i class="bx bxs-info-circle align-middle"></i> Needs attention
+                                </p>
+                            </div>
+                            <div class="widgets-icons bg-light-warning text-warning ms-auto">
+                                <i class="bx bxs-time-five"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Pending Penalties -->
+            <div class="col-md-3">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div>
+                                <p class="mb-0 text-secondary">Pending Penalties</p>
+                                <h4 class="my-1">100,000</h4>
+                                <p class="mb-0 font-13 text-danger">
+                                    <i class="bx bxs-error-circle align-middle"></i> Unpaid
+                                </p>
+                            </div>
+                            <div class="widgets-icons bg-light-danger text-danger ms-auto">
+                                <i class="bx bxs-wallet-alt"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            
             <!-- Profile Card -->
             <div class="col-xl-4">
                 <div class="card">
                     <div class="card-body">
                         <div class="text-center">
                             <div class="avatar-lg mx-auto mb-4">
-                                <div class="avatar-title bg-soft-primary text-primary rounded-circle font-size-24">
-                                    {{ strtoupper(substr($customer->name, 0, 1)) }}
-                                </div>
+                                <img src="{{ asset('assets/images/avatars/avatar-2.png')}}" alt="Admin" class="rounded-circle p-1 bg-primary" width="110">
                             </div>
                             <h5 class="font-size-16 mb-1 text-truncate">{{ $customer->name }}</h5>
                             <p class="text-muted text-truncate mb-3">{{ $customer->phone1 ?? 'No phone' }}</p>
@@ -28,49 +113,39 @@
                             <div class="table-responsive">
                                 <table class="table table-borderless mb-0">
                                     <tbody>
-                                        <tr>
-                                            <th scope="row">Customer ID :</th>
-                                            <td>{{ $customer->customerNo }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Phone :</th>
-                                            <td>{{ $customer->phone1 }}</td>
-                                        </tr>
-                                         <tr>
-                                            <th scope="row">Alt Phone :</th>
-                                            <td>{{ $customer->phone2 }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Region :</th>
-                                            <td>{{ $customer->region->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">District :</th>
-                                            <td>{{ $customer->district->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Branch :</th>
-                                            <td>{{ $customer->branch->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Company :</th>
-                                            <td>{{ $customer->company->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Joined :</th>
-                                            <td>{{ $customer->created_at->format('M d, Y') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <th scope="row">Last Updated :</th>
-                                            <td>{{ $customer->updated_at->format('M d, Y') }}</td>
-                                        </tr>
+                                        <tr><th scope="row">Customer ID :</th><td>{{ $customer->customerNo }}</td></tr>
+                                        <tr><th scope="row">Phone :</th><td>{{ $customer->phone1 }}</td></tr>
+                                        <tr><th scope="row">Alt Phone :</th><td>{{ $customer->phone2 }}</td></tr>
+                                        <tr><th scope="row">Region :</th><td>{{ $customer->region->name ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">District :</th><td>{{ $customer->district->name ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">Branch :</th><td>{{ $customer->branch->name ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">Company :</th><td>{{ $customer->company->name ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">Joined :</th><td>{{ $customer->created_at->format('M d, Y') }}</td></tr>
+                                        <tr><th scope="row">Last Updated :</th><td>{{ $customer->updated_at->format('M d, Y') }}</td></tr>
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+
+                        <!-- Action Buttons -->
+                        <div class="mt-4 d-flex justify-content-between">
+                            <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-sm btn-warning w-50 me-2">
+                                <i class="bx bx-edit"></i> Edit
+                            </a>
+
+                            <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="w-50">
+                                @csrf
+                                @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-danger w-100" onclick="return confirm('Are you sure you want to delete this customer?');">
+                                    <i class="bx bx-trash"></i> Delete
+                                </button>
+                            </form>
+                        </div>
+
                     </div>
                 </div>
             </div>
+
 
             <!-- Profile Details -->
             <div class="col-xl-8">
@@ -80,37 +155,46 @@
                         <hr class="my-4">
 
                         <div class="table-responsive">
-                            <!-- <table class="table table-bordered dt-responsive nowrap" id="collateralTable">
+                            <table class="table table-bordered dt-responsive nowrap" id="collateralTable">
                                 <thead>
                                     <tr>
                                         <th>Type</th>
                                         <th>Value</th>
                                         <th>Date</th>
-                                        <th>Status</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($customer->collaterals as $collateral)
                                         <tr>
-                                            <td>{{ $collateral->type }}</td>
-                                            <td>{{ number_format($collateral->value, 2) }}</td>
+                                            <td>{{ $collateral->type->name ?? 'N/A' }}</td>  {{-- Access type name --}}
+                                            <td>{{ number_format($collateral->amount, 2) }}</td> {{-- Assuming 'amount' field --}}
                                             <td>{{ $collateral->created_at->format('M d, Y') }}</td>
-                                            <td>{{ $collateral->status }}</td>
                                             <td class="text-center">
-                                                <a href="{{ route('collaterals.edit', $collateral->id) }}" class="btn btn-sm btn-primary">
+                                                <a href="{{ route('cash_collaterals.show', $collateral->id) }}" class="btn btn-sm btn-warning">
+                                                    View
+                                                </a>
+                                                <a href="{{ route('cash_collaterals.edit', $collateral->id) }}" class="btn btn-sm btn-info">
                                                     Edit
                                                 </a>
-                                                <form action="{{ route('collaterals.destroy', $collateral->id) }}" method="POST" style="display:inline;">
+                                                <form action="{{ route('cash_collaterals.destroy', $collateral->id) }}" method="POST" style="display:inline;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                                 </form>
+
+                                                <a href="{{ route('cash_collaterals.deposit', $collateral->id) }}" class="btn btn-sm btn-primary">
+                                                    Deposit
+                                                </a>
+
+                                                <a href="{{ route('cash_collaterals.withdraw', $collateral->id) }}" class="btn btn-sm btn-success">
+                                                    Withdraw
+                                                </a>
                                             </td>
                                         </tr>
                                     @endforeach
                                 </tbody>
-                            </table> -->
+                            </table>
 
                     </div>
                 </div>
@@ -121,7 +205,7 @@
                         <h4 class="card-title mb-4">Loans Records</h4>
                         <hr class="my-4">
                         <div class="table-responsive">
-                            <!-- <table class="table table-bordered dt-responsive nowrap" id="loansTable">
+                            <table class="table table-bordered dt-responsive nowrap" id="loansTable">
                                 <thead>
                                     <tr>
                                         <th>Loan ID</th>
@@ -147,7 +231,7 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
-                            </table> -->
+                            </table> 
 
                     </div>
                 </div>
