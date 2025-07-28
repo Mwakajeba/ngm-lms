@@ -15,6 +15,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\CashCollateralTypeController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -141,9 +142,11 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
 ////////////////////////////////////////////// BRANCH MANAGEMENT ///////////////////////////////////////////////////
 
-Route::resource('branches', BranchController::class)->middleware('auth');
+//Route::resource('branches', BranchController::class)->middleware('auth');
 
-Route::resource('companies', CompanyController::class)->middleware('auth');
+//Route::resource('companies', CompanyController::class)->middleware('auth');
+
+Route::resource('cash_collateral_types', CashCollateralTypesController::class)->middleware('auth');
 
 ////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
 
