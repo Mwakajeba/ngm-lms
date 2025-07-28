@@ -24,6 +24,7 @@ class AccountClassGroup extends Model
         'class_id',
         'group_code',
         'name',
+        'company_id',
     ];
 
     /**
@@ -50,5 +51,13 @@ class AccountClassGroup extends Model
     public function chartAccounts(): HasMany
     {
         return $this->hasMany(ChartAccount::class, 'account_class_group_id');
+    }
+
+    /**
+     * Get the company that owns the account class group.
+     */
+    public function company(): BelongsTo
+    {
+        return $this->belongsTo(Company::class);
     }
 }
