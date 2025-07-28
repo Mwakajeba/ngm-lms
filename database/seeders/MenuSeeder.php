@@ -37,13 +37,8 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-cog',
                 'visibleRoutes' => [
                     ['name' => 'General Settings', 'route' => 'settings.index'],
-                    ['name' => 'Company Settings', 'route' => 'settings.company'],
-                    ['name' => 'Branch Settings', 'route' => 'settings.branches'],
-                    ['name' => 'User Settings', 'route' => 'settings.user'],
-                    ['name' => 'System Settings', 'route' => 'settings.system'],
-                    ['name' => 'Backup Settings', 'route' => 'settings.backup'],
                 ],
-                'hiddenRoutes' => ['settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
+                'hiddenRoutes' => ['settings.company', 'settings.branches', 'settings.user', 'settings.system', 'settings.backup', 'settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
             ],
             'Company' => [
                 'icon' => 'bx bx-building',
