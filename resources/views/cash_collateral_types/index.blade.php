@@ -64,16 +64,32 @@
                                     </td>
                                     <td>{{ $type->created_at->format('Y-m-d') }}</td>
                                     <td class="text-center">
-                                        <a href="{{ route('cash_collateral_types.edit', $type) }}" class="btn btn-sm btn-outline-warning"><i class="bx bx-edit"></i></a>
+                                    <div class="btn-group" role="group">
+                                        <a href="{{ route('cash_collateral_types.show', $type) }}"
+                                        class="btn btn-sm btn-outline-info"
+                                        title="View Details">
+                                        View
+                                        </a>
+                                        <a href="{{ route('cash_collateral_types.edit', $type) }}" 
+                                        class="btn btn-sm btn-outline-warning" 
+                                        title="Edit">
+                                        Edit
+                                        </a>
 
-                                        <form action="{{ route('cash_collateral_types.destroy', $type) }}" method="POST" class="d-inline delete-form">
+                                        <form action="{{ route('cash_collateral_types.destroy', $type) }}" 
+                                            method="POST" 
+                                            class="d-inline delete-form">
                                             @csrf
                                             @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" data-name="{{ $type->name }}">
-                                                <i class="bx bx-trash"></i>
+                                            <button type="submit" 
+                                                    class="btn btn-sm btn-outline-danger" 
+                                                    title="Delete" 
+                                                    data-name="{{ $type->name }}">
+                                                Delete
                                             </button>
                                         </form>
-                                    </td>
+                                    </div>
+                                </td>
                                 </tr>
                             @endforeach
                         </tbody>

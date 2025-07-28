@@ -50,7 +50,11 @@ class CashCollateralTypeController extends Controller
      */
     public function show(CashCollateralType $cashCollateralType)
     {
-        return view('cash_collateral_types.show', compact('cashCollateralType'));
+        $cashCollateralType->load('chartAccount'); // eager load relationship
+
+        return view('cash_collateral_types.show', [
+            'cashCollateral' => $cashCollateralType
+        ]);
     }
 
     /**

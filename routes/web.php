@@ -17,6 +17,7 @@ use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
+use App\Http\Controllers\CashCollateralController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -308,6 +309,22 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
+    Route::get('cash_collaterals', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
+    Route::get('cash_collaterals/create', [CashCollateralController::class, 'create'])->name('cash_collaterals.create');
+    Route::get('cash_collaterals/deposit', [CashCollateralController::class, 'create'])->name('cash_collaterals.deposit');
+    Route::get('cash_collaterals/withdraw', [CashCollateralController::class, 'create'])->name('cash_collaterals.withdraw');
+    Route::post('cash_collaterals', [CashCollateralController::class, 'store'])->name('cash_collaterals.store');
+    Route::get('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'show'])->name('cash_collaterals.show');
+    Route::get('cash_collaterals/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
+    Route::put('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
+    Route::delete('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
+});
+
+////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
 
 Route::get('/get-districts/{regionId}', [LocationController::class, 'getDistricts']);
 
