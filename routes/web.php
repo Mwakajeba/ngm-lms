@@ -15,6 +15,7 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\BankAccountController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -224,12 +225,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
 
     // Bank Accounts
-    Route::get('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'index'])->name('bank-accounts');
-    Route::get('/bank-accounts/create', [App\Http\Controllers\Accounting\BankAccountController::class, 'create'])->name('bank-accounts.create');
-    Route::post('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}/edit', [App\Http\Controllers\Accounting\BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
+    Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
+    Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
+    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Transfers
     Route::get('/bank-transfers', [App\Http\Controllers\Accounting\BankTransferController::class, 'index'])->name('bank-transfers');
