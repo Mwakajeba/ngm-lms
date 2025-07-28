@@ -33,7 +33,7 @@
                 @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}"
                         {{ old('chart_account_id', $cashCollateralType->chart_account_id ?? '') == $account->id ? 'selected' : '' }}>
-                        {{ $account->name }}
+                        {{ $account->account_name }}
                     </option>
                 @endforeach
             </select>
@@ -46,10 +46,13 @@
 
         <div class="col-md-6 d-flex align-items-center mb-3">
             <div class="form-check mt-3">
-                <input type="checkbox" name="is_active" id="is_active" class="form-check-input"
-                    {{ old('is_active', $cashCollateralType->is_active ?? true) ? 'checked' : '' }}>
-                <label for="is_active" class="form-check-label">Active</label>
-            </div>
+            <input type="hidden" name="is_active" value="0"> <!-- default if not checked -->
+            <input class="form-check-input" type="checkbox" name="is_active" value="1" id="is_active"
+                {{ old('is_active', $cashCollateralType->is_active ?? false) ? 'checked' : '' }}>
+            <label class="form-check-label" for="is_active">
+                Active
+            </label>
+        </div>
         </div>
     </div>
 

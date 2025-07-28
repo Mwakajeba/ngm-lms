@@ -146,7 +146,7 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
 //Route::resource('companies', CompanyController::class)->middleware('auth');
 
-Route::resource('cash_collateral_types', CashCollateralTypesController::class)->middleware('auth');
+Route::resource('cash_collateral_types', CashCollateralTypeController::class)->middleware('auth');
 
 ////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
 
