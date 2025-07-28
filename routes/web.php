@@ -14,6 +14,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
+use App\Http\Controllers\Accounting\BudgetController;
 use App\Http\Controllers\ChartAccountController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
@@ -256,12 +257,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/bill-purchases/{billPurchase}', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'destroy'])->name('bill-purchases.destroy');
 
     // Budget
-    Route::get('/budget', [App\Http\Controllers\Accounting\BudgetController::class, 'index'])->name('budget');
-    Route::get('/budget/create', [App\Http\Controllers\Accounting\BudgetController::class, 'create'])->name('budget.create');
-    Route::post('/budget', [App\Http\Controllers\Accounting\BudgetController::class, 'store'])->name('budget.store');
-    Route::get('/budget/{budget}/edit', [App\Http\Controllers\Accounting\BudgetController::class, 'edit'])->name('budget.edit');
-    Route::put('/budget/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'update'])->name('budget.update');
-    Route::delete('/budget/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'destroy'])->name('budget.destroy');
+    Route::get('/budgets', [App\Http\Controllers\Accounting\BudgetController::class, 'index'])->name('budgets.index');
+    Route::get('/budgets/create', [App\Http\Controllers\Accounting\BudgetController::class, 'create'])->name('budgets.create');
+    Route::post('/budgets', [App\Http\Controllers\Accounting\BudgetController::class, 'store'])->name('budgets.store');
+    Route::get('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'show'])->name('budgets.show');
+    Route::get('/budgets/{budget}/edit', [App\Http\Controllers\Accounting\BudgetController::class, 'edit'])->name('budgets.edit');
+    Route::put('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'update'])->name('budgets.update');
+    Route::delete('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     // Fees
     Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees');
@@ -311,6 +313,8 @@ Route::middleware(['auth'])->group(function () {
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
 
 Route::get('/get-districts/{regionId}', [LocationController::class, 'getDistricts']);
+
+
 
 
 Route::post('/logout', function () {

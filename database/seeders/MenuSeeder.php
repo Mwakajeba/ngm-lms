@@ -74,7 +74,6 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.fsli-accounts'],
-                    ['name' => 'Account Class Groups', 'route' => 'accounting.account-class-groups'],
                     ['name' => 'Charts of account', 'route' => 'accounting.accounts'],
                     ['name' => 'Suppliers', 'route' => 'accounting.suppliers'],
                     ['name' => 'Manual journal entries', 'route' => 'accounting.journal-entries'],
@@ -84,10 +83,10 @@ class MenuSeeder extends Seeder
                     ['name' => 'Bank transfer', 'route' => 'accounting.bank-transfers'],
                     ['name' => 'Bank reconciliation', 'route' => 'accounting.bank-reconciliation'],
                     ['name' => 'Bill purchases', 'route' => 'accounting.bill-purchases'],
-                    ['name' => 'Budget', 'route' => 'accounting.budget'],
+                    ['name' => 'Budget', 'route' => 'accounting.budgets.index'],
                     ['name' => 'Fees', 'route' => 'accounting.fees'],
                 ],
-                'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy', 'accounting.account-class-groups.create', 'accounting.account-class-groups.edit', 'accounting.account-class-groups.destroy', 'accounting.account-class-groups.show'],
+                'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy'],
             ],
             'Accounting Reports' => [
                 'icon' => 'bx bx-file',
