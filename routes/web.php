@@ -136,6 +136,14 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
             'message' => 'AI Assistant connection test successful'
         ]);
     })->name('ai.test');
+
+    // Penalty Settings
+    Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
+    Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
+
+    // Fees Settings
+    Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
+    Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////

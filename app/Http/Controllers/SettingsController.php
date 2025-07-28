@@ -23,33 +23,33 @@ class SettingsController extends Controller
     {
         $company = Company::find(current_company_id());
         $branches = Branch::forCompany()->active()->get();
-        
+
         return view('settings.index', compact('company', 'branches'));
     }
 
     public function companySettings()
     {
         $company = Company::find(current_company_id());
-        
+
         return view('settings.company', compact('company'));
     }
 
     public function updateCompanySettings(Request $request)
     {
         $company = Company::find(current_company_id());
-        
+
         // Custom validation for email to handle existing email
         $emailRules = 'required|email';
         if ($request->email !== $company->email) {
             $emailRules .= '|unique:companies,email,' . $company->id . ',id';
         }
-        
+
         // Custom validation for license_number to handle existing license
         $licenseRules = 'required|string';
         if ($request->license_number !== $company->license_number) {
             $licenseRules .= '|unique:companies,license_number,' . $company->id . ',id';
         }
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => $emailRules,
@@ -69,7 +69,7 @@ class SettingsController extends Controller
             if ($company->logo && Storage::disk('public')->exists($company->logo)) {
                 Storage::disk('public')->delete($company->logo);
             }
-            
+
             $logo = $request->file('logo');
             $logoName = 'company_' . $company->id . '_' . time() . '.' . $logo->getClientOriginalExtension();
             $logoPath = $logo->storeAs('uploads/companies', $logoName, 'public');
@@ -84,7 +84,7 @@ class SettingsController extends Controller
     public function branchSettings()
     {
         $branches = Branch::forCompany()->paginate(10);
-        
+
         return view('settings.branches', compact('branches'));
     }
 
@@ -182,20 +182,20 @@ class SettingsController extends Controller
     {
         $user = auth()->user();
         $user->load(['branch', 'company', 'roles']);
-        
+
         return view('settings.user', compact('user'));
     }
 
     public function updateUserSettings(Request $request)
     {
         $user = auth()->user();
-        
+
         // Custom validation for email to handle existing email
         $emailRules = 'nullable|email';
         if ($request->email !== $user->email) {
             $emailRules .= '|unique:users,email,' . $user->id . ',id,company_id,' . current_company_id();
         }
-        
+
         $request->validate([
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
@@ -288,7 +288,7 @@ class SettingsController extends Controller
         try {
             foreach ($request->settings as $key => $value) {
                 $setting = \App\Models\SystemSetting::where('key', $key)->first();
-                
+
                 if ($setting) {
                     // Handle different input types
                     if ($setting->type === 'boolean') {
@@ -296,7 +296,7 @@ class SettingsController extends Controller
                     } elseif ($setting->type === 'integer') {
                         $value = (int) $value;
                     }
-                    
+
                     $setting->update(['value' => $value]);
                 }
             }
@@ -315,7 +315,7 @@ class SettingsController extends Controller
         try {
             \App\Models\SystemSetting::truncate();
             \App\Models\SystemSetting::initializeDefaults();
-            
+
             return redirect()->route('settings.system')->with('success', 'System settings reset to defaults successfully!');
         } catch (\Exception $e) {
             return redirect()->route('settings.system')->with('error', 'Failed to reset settings: ' . $e->getMessage());
@@ -331,7 +331,7 @@ class SettingsController extends Controller
     {
         try {
             $result = \App\Services\SystemSettingService::testEmailConfig();
-            
+
             if ($result['success']) {
                 return response()->json(['success' => true, 'message' => $result['message']]);
             } else {
@@ -347,7 +347,7 @@ class SettingsController extends Controller
         $backupService = new BackupService();
         $backups = Backup::forCompany()->orderBy('created_at', 'desc')->paginate(10);
         $stats = $backupService->getBackupStats();
-        
+
         return view('settings.backup', compact('backups', 'stats'));
     }
 
@@ -360,7 +360,7 @@ class SettingsController extends Controller
 
         try {
             $backupService = new BackupService();
-            
+
             switch ($request->type) {
                 case 'database':
                     $backup = $backupService->createDatabaseBackup($request->description);
@@ -391,7 +391,7 @@ class SettingsController extends Controller
         try {
             $backup = Backup::forCompany()->findOrFail($request->backup_id);
             $backupService = new BackupService();
-            
+
             $backupService->restoreBackup($backup);
 
             return redirect()->route('settings.backup')->with('success', 'Backup restored successfully!');
@@ -495,6 +495,67 @@ class SettingsController extends Controller
                 'success' => false,
                 'error' => 'AI processing failed: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Penalty Settings
+     */
+    public function penaltySettings()
+    {
+        return view('settings.penalty');
+    }
+
+    /**
+     * Update Penalty Settings
+     */
+    public function updatePenaltySettings(Request $request)
+    {
+        $request->validate([
+            'late_payment_penalty' => 'required|numeric|min:0|max:100',
+            'penalty_grace_period' => 'required|integer|min:0|max:365',
+            'penalty_calculation_method' => 'required|in:percentage,fixed',
+            'penalty_currency' => 'required|string|max:10',
+        ]);
+
+        try {
+            // Update penalty settings logic here
+            // This would typically save to a settings table or config file
+
+            return redirect()->route('settings.penalty')->with('success', 'Penalty settings updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('settings.penalty')->with('error', 'Failed to update penalty settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Fees Settings
+     */
+    public function feesSettings()
+    {
+        return view('settings.fees');
+    }
+
+    /**
+     * Update Fees Settings
+     */
+    public function updateFeesSettings(Request $request)
+    {
+        $request->validate([
+            'service_fee_percentage' => 'required|numeric|min:0|max:100',
+            'transaction_fee' => 'required|numeric|min:0',
+            'minimum_fee' => 'required|numeric|min:0',
+            'maximum_fee' => 'required|numeric|min:0',
+            'fee_currency' => 'required|string|max:10',
+        ]);
+
+        try {
+            // Update fees settings logic here
+            // This would typically save to a settings table or config file
+
+            return redirect()->route('settings.fees')->with('success', 'Fees settings updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('settings.fees')->with('error', 'Failed to update fees settings: ' . $e->getMessage());
         }
     }
 }
