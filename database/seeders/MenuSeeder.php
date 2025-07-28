@@ -49,6 +49,15 @@ class MenuSeeder extends Seeder
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
 
+            'Cash Collaterals' => [
+                'icon' => 'bx bx-outline',
+                'visibleRoutes' => [
+                    ['name' => 'Cash Collateral Types', 'route' => 'cash_collateral_types.index'],
+                    ['name' => 'Cash Collaterals', 'route' => 'cash_collaterals.index'],
+                ],
+                'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show','cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
+            ],
+
             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
