@@ -187,10 +187,10 @@
                                             <div class="mb-3">
                                                 <i class="bx bx-dollar-circle fs-1 text-teal"></i>
                                             </div>
-                                            <h5 class="card-title">Fees Settings</h5>
+                                            <h5 class="card-title">Fees Management</h5>
                                             <p class="card-text">Manage service fees, charges, and payment structures.</p>
-                                            <a href="{{ route('settings.fees') }}" class="btn btn-teal">
-                                                <i class="bx bx-cog me-1"></i> Configure
+                                            <a href="{{ route('accounting.fees.index') }}" class="btn btn-teal">
+                                                <i class="bx bx-list-ul me-1"></i> Manage Fees
                                             </a>
                                         </div>
                                     </div>

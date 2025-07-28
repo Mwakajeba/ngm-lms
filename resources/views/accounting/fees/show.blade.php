@@ -11,122 +11,196 @@
                     <p class="text-muted mb-0">View fee information</p>
                 </div>
                 <div>
-                    <div class="btn-group" role="group">
-                        <a href="{{ route('accounting.fees.edit', $fee) }}" class="btn btn-warning">
-                            Edit Fee
-                        </a>
-                        <a href="{{ route('accounting.fees.index') }}" class="btn btn-secondary">
-                            Back to Fees
-                        </a>
-                    </div>
+                    <a href="{{ route('accounting.fees.edit', $fee) }}" class="btn btn-primary me-2">
+                        Edit Fee
+                    </a>
+                    <a href="{{ route('accounting.fees.index') }}" class="btn btn-secondary">
+                        Back to Fees
+                    </a>
                 </div>
             </div>
             <hr />
 
             <div class="row">
-                <div class="col-12">
-                    <div class="card">
+                <!-- Fee Header Card -->
+                <div class="col-12 mb-4">
+                    <div class="card radius-10 bg-primary">
+                        <div class="card-body py-4">
+                            <div class="d-flex align-items-center">
+                                <div class="me-3">
+                                    <div class="avatar-lg bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center">
+                                        <i class="bx bx-dollar-circle text-white" style="font-size: 2rem"></i>
+                                    </div>
+                                </div>
+                                <div class="flex-grow-1">
+                                    <h4 class="text-white mb-2">{{ $fee->name }}</h4>
+                                    @if($fee->description)
+                                        <p class="text-white text-opacity-75 mb-2">{{ Str::limit($fee->description, 100) }}</p>
+                                    @endif
+                                    <div class="d-flex align-items-center gap-2">
+                                        {!! $fee->status_badge !!}
+                                        {!! $fee->fee_type_badge !!}
+                                        <span class="badge bg-white bg-opacity-25 text-white">
+                                            <i class="bx bx-calendar me-1"></i>
+                                            {{ $fee->created_at->format('M d, Y') }}
+                                        </span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Basic Information -->
+                <div class="col-md-6 mb-4">
+                    <div class="card radius-10">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bx bx-info-circle me-2"></i>Basic Information</h5>
+                        </div>
                         <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="card-title mb-0">{{ $fee->name }}</h4>
-                                <div>
-                                    {!! $fee->status_badge !!}
-                                    {!! $fee->fee_type_badge !!}
-                                </div>
-                            </div>
-
-                            <!-- Quick Actions -->
-                            <div class="row mb-4">
-                                <div class="col-12">
-                                    <div class="btn-group" role="group">
-                                        <div class="dropdown">
-                                            <button class="btn btn-outline-primary dropdown-toggle" type="button"
-                                                data-bs-toggle="dropdown">
-                                                Change Status
-                                            </button>
-                                            <ul class="dropdown-menu">
-                                                <li><a class="dropdown-item" href="#"
-                                                        onclick="changeStatus('active')">Activate</a></li>
-                                                <li><a class="dropdown-item" href="#"
-                                                        onclick="changeStatus('inactive')">Deactivate</a></li>
-                                            </ul>
-                                        </div>
-                                        <button type="button" class="btn btn-outline-danger delete-fee-btn"
-                                            data-fee-id="{{ $fee->id }}" data-fee-name="{{ $fee->name }}">
-                                            Delete
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Fee Information -->
                             <div class="row">
-                                <div class="col-md-6">
-                                    <h5 class="text-primary mb-3">Basic Information</h5>
-                                    <table class="table table-borderless">
-                                        <tr>
-                                            <td class="fw-bold" width="40%">Fee Name:</td>
-                                            <td>{{ $fee->name }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Chart Account:</td>
-                                            <td>{{ $fee->chartAccount->name ?? 'N/A' }}
-                                                ({{ $fee->chartAccount->account_code ?? 'N/A' }})</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Fee Type:</td>
-                                            <td>{!! $fee->fee_type_badge !!}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Amount:</td>
-                                            <td class="fw-bold text-primary">{{ $fee->formatted_amount }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Status:</td>
-                                            <td>{!! $fee->status_badge !!}</td>
-                                        </tr>
-                                    </table>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Fee Name</label>
+                                    <p class="mb-0">{{ $fee->name }}</p>
                                 </div>
-                                <div class="col-md-6">
-                                    <h5 class="text-primary mb-3">Organization Details</h5>
-                                    <table class="table table-borderless">
-                                        <tr>
-                                            <td class="fw-bold" width="40%">Company:</td>
-                                            <td>{{ $fee->company->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Branch:</td>
-                                            <td>{{ $fee->branch->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Created By:</td>
-                                            <td>{{ $fee->createdBy->name ?? 'N/A' }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Created Date:</td>
-                                            <td>{{ $fee->created_at->format('M d, Y H:i') }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td class="fw-bold">Last Updated:</td>
-                                            <td>{{ $fee->updated_at->format('M d, Y H:i') }}</td>
-                                        </tr>
-                                    </table>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Chart Account</label>
+                                    <p class="mb-0">
+                                        <i class="bx bx-account me-1"></i>
+                                        {{ $fee->chartAccount->account_name ?? 'N/A' }}
+                                        @if($fee->chartAccount)
+                                            <span class="text-muted">({{ $fee->chartAccount->account_code }})</span>
+                                        @endif
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Fee Type</label>
+                                    <p class="mb-0">
+                                        {!! $fee->fee_type_badge !!}
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Amount</label>
+                                    <p class="mb-0 fw-bold text-primary h4">
+                                        {{ $fee->formatted_amount }}
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Status</label>
+                                    <p class="mb-0">
+                                        {!! $fee->status_badge !!}
+                                    </p>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            <!-- Description -->
-                            @if($fee->description)
-                                <div class="row mt-4">
-                                    <div class="col-12">
-                                        <h5 class="text-primary mb-3">Description</h5>
-                                        <div class="card bg-light">
-                                            <div class="card-body">
-                                                {{ $fee->description }}
-                                            </div>
-                                        </div>
-                                    </div>
+                <!-- Organization Details -->
+                <div class="col-md-6 mb-4">
+                    <div class="card radius-10">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bx bx-building me-2"></i>Organization Details</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Company</label>
+                                    <p class="mb-0">
+                                        <i class="bx bx-building me-1"></i>
+                                        {{ $fee->company->name ?? 'N/A' }}
+                                    </p>
                                 </div>
-                            @endif
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Branch</label>
+                                    <p class="mb-0">
+                                        <i class="bx bx-map me-1"></i>
+                                        {{ $fee->branch->name ?? 'N/A' }}
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Created By</label>
+                                    <p class="mb-0">
+                                        <i class="bx bx-user me-1"></i>
+                                        {{ $fee->createdBy->name ?? 'N/A' }}
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Created Date</label>
+                                    <p class="mb-0">
+                                        <i class="bx bx-calendar me-1"></i>
+                                        {{ $fee->created_at->format('M d, Y H:i') }}
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Last Updated</label>
+                                    <p class="mb-0">
+                                        <i class="bx bx-time me-1"></i>
+                                        {{ $fee->updated_at->format('M d, Y H:i') }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Description -->
+                @if($fee->description)
+                    <div class="col-12 mb-4">
+                        <div class="card radius-10">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bx bx-detail me-2"></i>Description</h5>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-0">{{ $fee->description }}</p>
+                            </div>
+                        </div>
+                    </div>
+                @endif
+            </div>
+
+            <!-- Quick Actions -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card radius-10">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bx bx-cog me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('accounting.fees.edit', $fee) }}" class="btn btn-primary">
+                                    <i class="bx bx-edit me-1"></i>Edit Fee
+                                </a>
+                                <a href="{{ route('accounting.fees.index') }}" class="btn btn-secondary">
+                                    <i class="bx bx-arrow-back me-1"></i>Back to Fees
+                                </a>
+                                <div class="dropdown">
+                                    <button class="btn btn-outline-primary dropdown-toggle" type="button"
+                                        data-bs-toggle="dropdown">
+                                        <i class="bx bx-toggle-right me-1"></i>Change Status
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="changeStatus('active')">
+                                                <i class="bx bx-check-circle me-1"></i>Activate
+                                            </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="changeStatus('inactive')">
+                                                <i class="bx bx-pause-circle me-1"></i>Deactivate
+                                            </a></li>
+                                    </ul>
+                                </div>
+                                <button type="button" class="btn btn-outline-danger delete-fee-btn"
+                                    data-fee-id="{{ $fee->id }}" data-fee-name="{{ $fee->name }}">
+                                    <i class="bx bx-trash me-1"></i>Delete
+                                </button>
+                            </div>
                         </div>
                     </div>
                 </div>

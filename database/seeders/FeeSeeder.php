@@ -35,11 +35,14 @@ class FeeSeeder extends Seeder
             $chartAccounts = ChartAccount::take(5)->get();
         }
 
+        // If still no chart accounts, we'll use null (remove the foreign key constraint temporarily)
+        $chartAccountId = $chartAccounts->first()->id ?? null;
+
         // Sample fee data
         $fees = [
             [
                 'name' => 'Application Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'fixed',
                 'amount' => 5000.00,
                 'description' => 'One-time application processing fee for new loan applications',
@@ -51,7 +54,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Processing Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'percentage',
                 'amount' => 2.50,
                 'description' => 'Processing fee calculated as percentage of loan amount',
@@ -63,7 +66,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Late Payment Penalty',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'percentage',
                 'amount' => 5.00,
                 'description' => 'Penalty fee for late loan payments',
@@ -75,7 +78,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Documentation Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'fixed',
                 'amount' => 3000.00,
                 'description' => 'Fee for document preparation and processing',
@@ -87,7 +90,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Insurance Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'percentage',
                 'amount' => 1.50,
                 'description' => 'Insurance coverage fee for loan protection',
@@ -99,7 +102,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Administrative Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'fixed',
                 'amount' => 2000.00,
                 'description' => 'Administrative handling fee for loan management',
@@ -111,7 +114,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Early Repayment Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'percentage',
                 'amount' => 3.00,
                 'description' => 'Fee charged for early loan repayment',
@@ -123,7 +126,7 @@ class FeeSeeder extends Seeder
             ],
             [
                 'name' => 'Consultation Fee',
-                'chart_account_id' => $chartAccounts->first()->id ?? 1,
+                'chart_account_id' => $chartAccountId,
                 'fee_type' => 'fixed',
                 'amount' => 10000.00,
                 'description' => 'Financial consultation and advisory services fee',

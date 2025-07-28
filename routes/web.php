@@ -276,11 +276,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/budget/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'destroy'])->name('budget.destroy');
 
     // Fees
-    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees');
+    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees.index');
     Route::get('/fees/create', [App\Http\Controllers\Accounting\FeeController::class, 'create'])->name('fees.create');
     Route::post('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'store'])->name('fees.store');
+    Route::get('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'show'])->name('fees.show');
     Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
     Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
+    Route::patch('/fees/{fee}/status', [App\Http\Controllers\Accounting\FeeController::class, 'changeStatus'])->name('fees.changeStatus');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
 
     // Reports Routes

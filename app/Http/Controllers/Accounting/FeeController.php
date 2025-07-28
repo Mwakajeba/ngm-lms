@@ -52,7 +52,7 @@ class FeeController extends Controller
             $branches = Branch::orderBy('name')->get();
         }
 
-        $chartAccounts = ChartAccount::orderBy('name')->get();
+        $chartAccounts = ChartAccount::orderBy('account_name')->get();
         $statusOptions = Fee::getStatusOptions();
         $feeTypeOptions = Fee::getFeeTypeOptions();
 
@@ -115,7 +115,7 @@ class FeeController extends Controller
             $branches = Branch::orderBy('name')->get();
         }
 
-        $chartAccounts = ChartAccount::orderBy('name')->get();
+        $chartAccounts = ChartAccount::orderBy('account_name')->get();
         $statusOptions = Fee::getStatusOptions();
         $feeTypeOptions = Fee::getFeeTypeOptions();
 
