@@ -21,14 +21,6 @@
             </div>
             <hr />
 
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bx bx-check-circle me-2"></i>
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
             <!-- Prominent Header Card -->
             <div class="card radius-10 bg-gradient-danger text-white mb-4">
                 <div class="card-body">
@@ -219,6 +211,9 @@
                                             </a></li>
                                     </ul>
                                 </div>
+                                <button type="button" class="btn btn-outline-danger" onclick="deletePenalty()">
+                                    <i class="bx bx-trash me-1"></i>Delete Penalty
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -230,35 +225,121 @@
 
 @push('scripts')
     <script>
+        const penaltyName = '{{ $penalty->name }}';
+
         function changeStatus(status) {
-            if (confirm(`Are you sure you want to ${status === 'active' ? 'activate' : 'deactivate'} this penalty?`)) {
-                const form = $('<form>', {
-                    'method': 'POST',
-                    'action': '{{ route("accounting.penalties.changeStatus", $penalty) }}'
-                });
+            const action = status === 'active' ? 'activate' : 'deactivate';
+            const icon = status === 'active' ? 'success' : 'warning';
 
-                form.append($('<input>', {
-                    'type': 'hidden',
-                    'name': '_token',
-                    'value': '{{ csrf_token() }}'
-                }));
+            Swal.fire({
+                title: `${action.charAt(0).toUpperCase() + action.slice(1)} Penalty`,
+                text: `Are you sure you want to ${action} this penalty?`,
+                icon: icon,
+                showCancelButton: true,
+                confirmButtonColor: status === 'active' ? '#28a745' : '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: `Yes, ${action} it!`,
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': '{{ route("accounting.penalties.changeStatus", $penalty) }}'
+                    });
 
-                form.append($('<input>', {
-                    'type': 'hidden',
-                    'name': '_method',
-                    'value': 'PATCH'
-                }));
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_token',
+                        'value': '{{ csrf_token() }}'
+                    }));
 
-                form.append($('<input>', {
-                    'type': 'hidden',
-                    'name': 'status',
-                    'value': status
-                }));
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_method',
+                        'value': 'PATCH'
+                    }));
 
-                $('body').append(form);
-                form.submit();
-            }
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': 'status',
+                        'value': status
+                    }));
+
+                    $('body').append(form);
+                    
+                    // Submit form and handle response
+                    form.submit().done(function(response) {
+                        // Show success toast notification
+                        toastr.success(`Penalty has been ${action}d successfully`);
+                    }).fail(function(xhr) {
+                        // Show error toast notification
+                        toastr.error('An error occurred while updating the status');
+                    });
+                }
+            });
         }
+
+        function deletePenalty() {
+            Swal.fire({
+                title: 'Delete Penalty',
+                text: `Are you sure you want to delete "${penaltyName}"? This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': '{{ route("accounting.penalties.destroy", $penalty) }}'
+                    });
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_token',
+                        'value': '{{ csrf_token() }}'
+                    }));
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_method',
+                        'value': 'DELETE'
+                    }));
+
+                    $('body').append(form);
+                    
+                    // Submit form and handle response
+                    form.submit().done(function(response) {
+                        // Show success toast notification
+                        toastr.success('Penalty has been deleted successfully');
+                        // Redirect to index page after short delay
+                        setTimeout(() => {
+                            window.location.href = '{{ route("accounting.penalties.index") }}';
+                        }, 1000);
+                    }).fail(function(xhr) {
+                        // Show error toast notification
+                        toastr.error('An error occurred while deleting the penalty');
+                    });
+                }
+            });
+        }
+
+        // Initialize toastr options
+        toastr.options = {
+            "closeButton": true,
+            "progressBar": true,
+            "positionClass": "toast-top-right",
+            "timeOut": "3000"
+        };
+
+        // Show success toast if session has success message
+        @if(session('success'))
+            toastr.success('{{ session('success') }}');
+        @endif
     </script>
 @endpush
 

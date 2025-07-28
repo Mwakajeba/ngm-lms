@@ -225,32 +225,44 @@
                 }
             });
 
-            // Delete penalty functionality
+            // Delete penalty functionality with SweetAlert
             $('.delete-penalty-btn').on('click', function () {
                 const penaltyId = $(this).data('penalty-id');
                 const penaltyName = $(this).data('penalty-name');
 
-                if (confirm(`Are you sure you want to delete the penalty "${penaltyName}"?`)) {
-                    const form = $('<form>', {
-                        'method': 'POST',
-                        'action': `/accounting/penalties/${penaltyId}`
-                    });
+                Swal.fire({
+                    title: 'Delete Penalty',
+                    text: `Are you sure you want to delete "${penaltyName}"?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#dc3545',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        const form = $('<form>', {
+                            'method': 'POST',
+                            'action': `/accounting/penalties/${penaltyId}`
+                        });
 
-                    form.append($('<input>', {
-                        'type': 'hidden',
-                        'name': '_token',
-                        'value': '{{ csrf_token() }}'
-                    }));
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': '_token',
+                            'value': '{{ csrf_token() }}'
+                        }));
 
-                    form.append($('<input>', {
-                        'type': 'hidden',
-                        'name': '_method',
-                        'value': 'DELETE'
-                    }));
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': '_method',
+                            'value': 'DELETE'
+                        }));
 
-                    $('body').append(form);
-                    form.submit();
-                }
+                        $('body').append(form);
+                        form.submit();
+                    }
+                });
             });
         });
     </script>
