@@ -426,6 +426,3 @@ class RolePermissionSeeder extends Seeder
         $riskOfficerRole->syncPermissions($riskOfficerPermissions);
     }
 }
-
-
-

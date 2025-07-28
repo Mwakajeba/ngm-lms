@@ -147,6 +147,30 @@
     </script>
     @endif
 
+    <script>
+function previewImage(event) {
+    const reader = new FileReader();
+    reader.onload = function(){
+        const output = document.getElementById('preview');
+        output.innerHTML = `<img src="${reader.result}" width="100">`;
+    }
+    reader.readAsDataURL(event.target.files[0]);
+}
+
+document.getElementById('region')?.addEventListener('change', function () {
+    const region = this.value;
+    fetch(`/get-districts/${region}`)
+        .then(res => res.json())
+        .then(data => {
+            let options = `<option value="">Select District</option>`;
+            data.forEach(district => {
+                options += `<option value="${district.name}">${district.name}</option>`;
+            });
+            document.getElementById('district').innerHTML = options;
+        });
+});
+</script>
+
 </body>
 
 </html>
