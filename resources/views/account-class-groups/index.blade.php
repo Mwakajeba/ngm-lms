@@ -1,0 +1,92 @@
+@extends('layouts.main')
+
+@section('title', 'Account Class Groups')
+@section('content')
+    <div class="page-wrapper">
+        <div class="page-content">
+            <div class="row row-cols-1 row-cols-lg-3">
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">Total</p>
+                                    <h4 class="font-weight-bold">{{ $accountClassGroups->total() }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-refresh'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!--end row-->
+
+            <h6 class="mb-0 text-uppercase">ACCOUNT CLASS GROUPS {{ __('app.accounting_class_groups') }}</h6>
+            <hr />
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">Chart of Accounts - Account Class Groups</h5>
+                        <a href="{{ route('accounting.fsli-accounts.create') }}" class="btn btn-primary">
+                            <i class="bx bx-plus"></i> Add New Group
+                        </a>
+                    </div>
+                    <div class="table-responsive">
+                        <table id="example" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>#</th>
+                                    <th>Account Class</th>
+                                    <th>Group Code</th>
+                                    <th>Name</th>
+                                    <th>Created At</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($accountClassGroups as $index => $group)
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
+                                        <td>{{ $group->accountClass->name ?? 'N/A' }}</td>
+                                        <td>{{ $group->group_code ?? 'N/A' }}</td>
+                                        <td>{{ $group->name }}</td>
+                                        <td>{{ $group->created_at->format('M d, Y') }}</td>
+                                        <td>
+                                            <a href="{{ route('accounting.fsli-accounts.show', $group->id) }}"
+                                                class="btn btn-sm btn-info">View</a>
+                                            <a href="{{ route('accounting.fsli-accounts.edit', $group->id) }}"
+                                                class="btn btn-sm btn-primary">Edit</a>
+
+                                            <form action="{{ route('accounting.fsli-accounts.destroy', $group->id) }}"
+                                                method="POST" class="d-inline delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                    data-name="{{ $group->name }}">Delete</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    <div class="d-flex justify-content-center mt-3">
+                        {{ $accountClassGroups->links() }}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!--end page wrapper -->
+    <!--start overlay-->
+    <div class="overlay toggle-icon"></div>
+    <!--end overlay-->
+    <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+    <!--End Back To Top Button-->
+    <footer class="page-footer">
+        <p class="mb-0">Copyright © 2021. All right reserved.</p>
+    </footer>
+@endsection
