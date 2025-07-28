@@ -61,6 +61,15 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['branches.edit', 'branches.destroy'],
             ],
+            'Customers' => [
+                'icon' => 'bx bx-group',
+                'visibleRoutes' => [
+                    ['name' => 'Customer List', 'route' => 'customers.index'],
+                    ['name' => 'Add New Customer', 'route' => 'customers.create'],
+                ],
+                'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
+            ],
+            
             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
@@ -79,7 +88,7 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy'],
             ],
-            'ACCOUNTING REPORTS' => [
+            'Accounting Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [
                     ['name' => 'Other income report', 'route' => 'accounting.reports.other-income'],

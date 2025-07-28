@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
         RolePermissionSeeder::class,
         MenuSeeder::class, 
         AccountingClassGroupSeeder::class,
+        RegionsTableSeeder::class,
+        DistrictsTableSeeder::class,
       ]);
     }
 }
