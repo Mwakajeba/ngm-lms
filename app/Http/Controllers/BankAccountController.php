@@ -17,7 +17,7 @@ class BankAccountController extends Controller
     {
         $bankAccounts = BankAccount::with('chartAccount.accountClassGroup.accountClass')
             ->orderBy('created_at', 'desc')
-            ->get();
+            ->paginate(10);
 
         return view('bank-accounts.index', compact('bankAccounts'));
     }
