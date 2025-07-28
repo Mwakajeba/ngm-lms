@@ -16,6 +16,9 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\Accounting\BudgetController;
 use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\CashCollateralTypeController;
+use App\Http\Controllers\CashCollateralController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -136,15 +139,25 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
             'message' => 'AI Assistant connection test successful'
         ]);
     })->name('ai.test');
+
+    // Penalty Settings
+    Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
+    Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
+
+    // Fees Settings
+    Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
+    Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
 
 ////////////////////////////////////////////// BRANCH MANAGEMENT ///////////////////////////////////////////////////
 
-Route::resource('branches', BranchController::class)->middleware('auth');
+//Route::resource('branches', BranchController::class)->middleware('auth');
 
-Route::resource('companies', CompanyController::class)->middleware('auth');
+//Route::resource('companies', CompanyController::class)->middleware('auth');
+
+Route::resource('cash_collateral_types', CashCollateralTypeController::class)->middleware('auth');
 
 ////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
 
@@ -193,11 +206,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
+    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers.index');
     Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'show'])->name('suppliers.show');
     Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
     Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
+    Route::patch('/suppliers/{supplier}/status', [App\Http\Controllers\Accounting\SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
     Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Manual Journal Entries
@@ -225,12 +240,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
 
     // Bank Accounts
-    Route::get('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'index'])->name('bank-accounts');
-    Route::get('/bank-accounts/create', [App\Http\Controllers\Accounting\BankAccountController::class, 'create'])->name('bank-accounts.create');
-    Route::post('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}/edit', [App\Http\Controllers\Accounting\BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
+    Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
+    Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
+    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Transfers
     Route::get('/bank-transfers', [App\Http\Controllers\Accounting\BankTransferController::class, 'index'])->name('bank-transfers');
@@ -266,20 +282,24 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     // Fees
-    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees');
+    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees.index');
     Route::get('/fees/create', [App\Http\Controllers\Accounting\FeeController::class, 'create'])->name('fees.create');
     Route::post('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'store'])->name('fees.store');
+    Route::get('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'show'])->name('fees.show');
     Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
     Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
+    Route::patch('/fees/{fee}/status', [App\Http\Controllers\Accounting\FeeController::class, 'changeStatus'])->name('fees.changeStatus');
     Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
 
-    // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers');
-    Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
-    Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
-    Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
-    Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
-    Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
+    // Penalties
+    Route::get('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'index'])->name('penalties.index');
+    Route::get('/penalties/create', [App\Http\Controllers\Accounting\PenaltyController::class, 'create'])->name('penalties.create');
+    Route::post('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'store'])->name('penalties.store');
+    Route::get('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'show'])->name('penalties.show');
+    Route::get('/penalties/{penalty}/edit', [App\Http\Controllers\Accounting\PenaltyController::class, 'edit'])->name('penalties.edit');
+    Route::put('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'update'])->name('penalties.update');
+    Route::patch('/penalties/{penalty}/status', [App\Http\Controllers\Accounting\PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
+    Route::delete('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'destroy'])->name('penalties.destroy');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -311,6 +331,22 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
+    Route::get('cash_collaterals', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
+    Route::get('cash_collaterals/create', [CashCollateralController::class, 'create'])->name('cash_collaterals.create');
+    Route::get('cash_collaterals/deposit', [CashCollateralController::class, 'create'])->name('cash_collaterals.deposit');
+    Route::get('cash_collaterals/withdraw', [CashCollateralController::class, 'create'])->name('cash_collaterals.withdraw');
+    Route::post('cash_collaterals', [CashCollateralController::class, 'store'])->name('cash_collaterals.store');
+    Route::get('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'show'])->name('cash_collaterals.show');
+    Route::get('cash_collaterals/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
+    Route::put('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
+    Route::delete('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
+});
+
+////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
 
 Route::get('/get-districts/{regionId}', [LocationController::class, 'getDistricts']);
 

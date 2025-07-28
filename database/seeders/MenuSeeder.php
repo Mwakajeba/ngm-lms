@@ -37,29 +37,8 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-cog',
                 'visibleRoutes' => [
                     ['name' => 'General Settings', 'route' => 'settings.index'],
-                    ['name' => 'Company Settings', 'route' => 'settings.company'],
-                    ['name' => 'Branch Settings', 'route' => 'settings.branches'],
-                    ['name' => 'User Settings', 'route' => 'settings.user'],
-                    ['name' => 'System Settings', 'route' => 'settings.system'],
-                    ['name' => 'Backup Settings', 'route' => 'settings.backup'],
                 ],
-                'hiddenRoutes' => ['settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
-            ],
-            'Company' => [
-                'icon' => 'bx bx-building',
-                'visibleRoutes' => [
-                    ['name' => 'Company List', 'route' => 'companies.index'],
-                    ['name' => 'Add New Company', 'route' => 'companies.create'],
-                ],
-                'hiddenRoutes' => ['companies.edit', 'companies.destroy'],
-            ],
-            'Branch' => [
-                'icon' => 'bx bx-git-branch',
-                'visibleRoutes' => [
-                    ['name' => 'Branch List', 'route' => 'branches.index'],
-                    ['name' => 'Add New Branch', 'route' => 'branches.create'],
-                ],
-                'hiddenRoutes' => ['branches.edit', 'branches.destroy'],
+                'hiddenRoutes' => ['settings.company', 'settings.branches', 'settings.user', 'settings.system', 'settings.backup', 'settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy'],
             ],
             'Customers' => [
                 'icon' => 'bx bx-group',
@@ -70,12 +49,21 @@ class MenuSeeder extends Seeder
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
 
+            'Cash Collaterals' => [
+                'icon' => 'bx bx-outline',
+                'visibleRoutes' => [
+                    ['name' => 'Cash Collateral Types', 'route' => 'cash_collateral_types.index'],
+                    ['name' => 'Cash Collaterals', 'route' => 'cash_collaterals.index'],
+                ],
+                'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show','cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
+            ],
+
             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.fsli-accounts'],
                     ['name' => 'Charts of account', 'route' => 'accounting.accounts'],
-                    ['name' => 'Suppliers', 'route' => 'accounting.suppliers'],
+                    ['name' => 'Suppliers', 'route' => 'accounting.suppliers.index'],
                     ['name' => 'Manual journal entries', 'route' => 'accounting.journal-entries'],
                     ['name' => 'Payment voucher', 'route' => 'accounting.payment-vouchers'],
                     ['name' => 'Receipt voucher', 'route' => 'accounting.receipt-vouchers'],

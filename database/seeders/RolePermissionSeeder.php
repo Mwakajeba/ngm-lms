@@ -161,6 +161,14 @@ class RolePermissionSeeder extends Seeder
             'view menus',
             'manage menus',
             'assign menu permissions',
+
+            //bank accounts
+            'view bank accounts',
+            'create bank account',
+            'edit bank account',
+            'delete bank account',
+            'view bank account details',
+            'manage bank account transactions',
         ];
 
         // Create or update permissions
