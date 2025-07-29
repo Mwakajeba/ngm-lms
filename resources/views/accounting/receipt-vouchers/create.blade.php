@@ -277,45 +277,45 @@
             function addLineItem() {
                 lineItemCount++;
                 const lineItemHtml = `
-                                                    <div class="line-item-row">
-                                                        <div class="row">
-                                                            <div class="col-md-4 mb-2">
-                                                                <label for="line_items_${lineItemCount}_chart_account_id" class="form-label fw-bold">
-                                                                    Account <span class="text-danger">*</span>
-                                                                </label>
-                                                                <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
-                                                                    <option value="">--- Select Account ---</option>
-                                                                    @foreach($chartAccounts as $chartAccount)
-                                                                        <option value="{{ $chartAccount->id }}">
-                                                                            {{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})
-                                                                        </option>
-                                                                    @endforeach
-                                                                </select>
-                                                            </div>
-                                                            <div class="col-md-4 mb-2">
-                                                                <label for="line_items_${lineItemCount}_description" class="form-label fw-bold">
-                                                                    Description
-                                                                </label>
-                                                                <input type="text" class="form-control description-input" 
-                                                                       name="line_items[${lineItemCount}][description]" 
-                                                                       placeholder="Enter description">
-                                                            </div>
-                                                            <div class="col-md-3 mb-2">
-                                                                <label for="line_items_${lineItemCount}_amount" class="form-label fw-bold">
-                                                                    Amount <span class="text-danger">*</span>
-                                                                </label>
-                                                                <input type="number" class="form-control amount-input" 
-                                                                       name="line_items[${lineItemCount}][amount]" 
-                                                                       step="0.01" min="0" placeholder="0.00" required>
-                                                            </div>
-                                                            <div class="col-md-1 mb-2 d-flex align-items-end">
-                                                                <button type="button" class="btn btn-outline-danger btn-sm remove-line-btn" title="Remove Line">
-                                                                    <i class="bx bx-trash"></i>
-                                                                </button>
+                                                        <div class="line-item-row">
+                                                            <div class="row">
+                                                                <div class="col-md-4 mb-2">
+                                                                    <label for="line_items_${lineItemCount}_chart_account_id" class="form-label fw-bold">
+                                                                        Account <span class="text-danger">*</span>
+                                                                    </label>
+                                                                    <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
+                                                                        <option value="">--- Select Account ---</option>
+                                                                        @foreach($chartAccounts as $chartAccount)
+                                                                            <option value="{{ $chartAccount->id }}">
+                                                                                {{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4 mb-2">
+                                                                    <label for="line_items_${lineItemCount}_description" class="form-label fw-bold">
+                                                                        Description
+                                                                    </label>
+                                                                    <input type="text" class="form-control description-input" 
+                                                                           name="line_items[${lineItemCount}][description]" 
+                                                                           placeholder="Enter description">
+                                                                </div>
+                                                                <div class="col-md-3 mb-2">
+                                                                    <label for="line_items_${lineItemCount}_amount" class="form-label fw-bold">
+                                                                        Amount <span class="text-danger">*</span>
+                                                                    </label>
+                                                                    <input type="number" class="form-control amount-input" 
+                                                                           name="line_items[${lineItemCount}][amount]" 
+                                                                           step="0.01" min="0" placeholder="0.00" required>
+                                                                </div>
+                                                                <div class="col-md-1 mb-2 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-line-btn" title="Remove Line">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </div>
                                                             </div>
                                                         </div>
-                                                    </div>
-                                                `;
+                                                    `;
 
                 $('#lineItemsContainer').append(lineItemHtml);
             }
