@@ -24,37 +24,52 @@
         <!-- Name -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Full Name <span class="text-danger">*</span></label>
-            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror" 
+            <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
                    value="{{ old('name', $customer->name ?? '') }}" placeholder="Enter full name">
             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+        <!-- Sex -->
         <div class="col-md-6 mb-3">
-            <div class="mb-3">
-                <label for="sex" class="form-label">Sex <span class="text-danger">*</span></label>
-                <select name="sex" id="sex" class="form-control @error('sex') is-invalid @enderror" required>
-                    <option value="">-- Select Sex --</option>
-                    <option value="M" {{ old('sex', $customer->sex ?? '') == 'M' ? 'selected' : '' }}>Male</option>
-                    <option value="F" {{ old('sex', $customer->sex ?? '') == 'F' ? 'selected' : '' }}>Female</option>
-                </select>
-                @error('sex')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
+            <label for="sex" class="form-label">Sex <span class="text-danger">*</span></label>
+            <select name="sex" id="sex" class="form-control @error('sex') is-invalid @enderror" required>
+                <option value="">-- Select Sex --</option>
+                <option value="M" {{ old('sex', $customer->sex ?? '') == 'M' ? 'selected' : '' }}>Male</option>
+                <option value="F" {{ old('sex', $customer->sex ?? '') == 'F' ? 'selected' : '' }}>Female</option>
+            </select>
+            @error('sex')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
         </div>
 
-        <!-- Phone -->
+        <!-- Description -->
+        <div class="col-md-12 mb-3">
+            <label class="form-label">Description</label>
+            <textarea name="description" class="form-control @error('description') is-invalid @enderror" 
+                      rows="3" placeholder="Enter customer description">{{ old('description', $customer->description ?? '') }}</textarea>
+            @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <!-- Phone 1 -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Phone Number <span class="text-danger">*</span></label>
-            <input type="text" name="phone1" class="form-control @error('phone1') is-invalid @enderror" 
+            <input type="text" name="phone1" class="form-control @error('phone1') is-invalid @enderror"
                    value="{{ old('phone1', $customer->phone1 ?? '') }}" placeholder="Enter phone number">
             @error('phone1') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+        <!-- Phone 2 -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Alternative Phone Number</label>
+            <input type="text" name="phone2" class="form-control @error('phone2') is-invalid @enderror"
+                   value="{{ old('phone2', $customer->phone2 ?? '') }}" placeholder="Enter alternative phone">
+            @error('phone2') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
         <!-- Region -->
         <div class="col-md-6 mb-3">
-            <label class="form-label">Region <!--<span class="text-danger">*</span>--></label>
-            <select name="region_id" id="region" class="form-select @error('region_id') is-invalid @enderror">
+            <label class="form-label">Region <span class="text-danger">*</span></label>
+            <select name="region_id" id="region" class="form-select @error('region_id') is-invalid @enderror" required>
                 <option value="">Select Region</option>
                 @foreach($regions as $region)
                     <option value="{{ $region->id }}" {{ old('region_id', $customer->region_id ?? '') == $region->id ? 'selected' : '' }}>
@@ -67,12 +82,16 @@
 
         <!-- District -->
         <div class="col-md-6 mb-3">
-            <label class="form-label">District <!--<span class="text-danger">*</span>--></label>
-            <select name="district_id" id="district" class="form-select @error('district_id') is-invalid @enderror">
+            <label class="form-label">District <span class="text-danger">*</span></label>
+            <select name="district_id" id="district" class="form-select @error('district_id') is-invalid @enderror" required>
                 <option value="">Select District</option>
-                @if(old('district_id', $customer->district_id ?? false))
-                    <option value="{{ old('district_id', $customer->district_id) }}" selected>
-                        {{ \App\Models\District::find(old('district_id', $customer->district_id))->name ?? 'Selected' }}
+                @if($isEdit && $customer->district_id)
+                    <option value="{{ $customer->district_id }}" selected>
+                        {{ $customer->district->name ?? 'Selected District' }}
+                    </option>
+                @elseif(old('district_id'))
+                    <option value="{{ old('district_id') }}" selected>
+                        {{ \App\Models\District::find(old('district_id'))->name ?? 'Selected District' }}
                     </option>
                 @endif
             </select>
@@ -82,7 +101,7 @@
         <!-- Work -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Work</label>
-            <input type="text" name="work" class="form-control @error('work') is-invalid @enderror" 
+            <input type="text" name="work" class="form-control @error('work') is-invalid @enderror"
                    value="{{ old('work', $customer->work ?? '') }}" placeholder="e.g. Teacher">
             @error('work') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
@@ -90,31 +109,47 @@
         <!-- Work Address -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Work Address</label>
-            <input type="text" name="workAddress" class="form-control @error('work_address') is-invalid @enderror" 
-                   value="{{ old('work_address', $customer->work_address ?? '') }}" placeholder="e.g. ABC School, Dar">
-            @error('work_address') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <input type="text" name="workAddress" class="form-control @error('workAddress') is-invalid @enderror"
+                   value="{{ old('workAddress', $customer->workAddress ?? '') }}" placeholder="e.g. ABC School, Dar">
+            @error('workAddress') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
         <!-- ID Type -->
         <div class="col-md-6 mb-3">
             <label class="form-label">ID Type</label>
-            <select name="idType" class="form-select @error('id_type') is-invalid @enderror">
+            <select name="idType" class="form-select @error('idType') is-invalid @enderror">
                 <option value="">Select ID Type</option>
                 @foreach(['National ID', 'License', 'Voter Registration', 'Other'] as $type)
-                    <option value="{{ $type }}" {{ old('id_type', $customer->id_type ?? '') == $type ? 'selected' : '' }}>
+                    <option value="{{ $type }}" {{ old('idType', $customer->idType ?? '') == $type ? 'selected' : '' }}>
                         {{ $type }}
                     </option>
                 @endforeach
             </select>
-            @error('id_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            @error('idType') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
         <!-- ID Number -->
         <div class="col-md-6 mb-3">
             <label class="form-label">ID Number</label>
-            <input type="text" name="idNumber" class="form-control @error('id_number') is-invalid @enderror" 
-                   value="{{ old('id_number', $customer->id_number ?? '') }}">
-            @error('id_number') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <input type="text" name="idNumber" class="form-control @error('idNumber') is-invalid @enderror"
+                   value="{{ old('idNumber', $customer->idNumber ?? '') }}">
+            @error('idNumber') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <!-- DOB -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
+            <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror"
+                   value="{{ old('dob', $customer->dob ?? '') }}">
+            @error('dob') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+        <!-- Relation -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Relation</label>
+            <input type="text" name="relation" class="form-control @error('relation') is-invalid @enderror"
+                   value="{{ old('relation', $customer->relation ?? '') }}" placeholder="e.g. Spouse, Parent">
+            @error('relation') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
         <!-- Photo Upload -->
@@ -123,59 +158,84 @@
             <input type="file" name="photo" accept="image/*" class="form-control" onchange="previewImage(event)">
             @error('photo') <div class="invalid-feedback">{{ $message }}</div> @enderror
             <div id="preview" class="mt-2">
-                @if(isset($customer->photo))
+                @if($isEdit && $customer->photo)
                     <img src="{{ asset('storage/'.$customer->photo) }}" width="100">
                 @endif
             </div>
         </div>
 
         <!-- Document Upload -->
-
-        <div class="col-md-6">
-            <div class="mb-3">
-                <label class="form-label">Upload Document</label>
-                <input type="file" name="document" class="form-control @error('document') is-invalid @enderror"
-                    accept=".pdf,.doc,.docx,image/*">
-                @error('document') <div class="invalid-feedback">{{ $message }}</div> @enderror
-
-                @if(isset($customer->document))
-                    <div class="mt-2">
-                        <a href="{{ asset('storage/' . $customer->document) }}" target="_blank">
-                            View Uploaded Document
-                        </a>
-                    </div>
-                @endif
-            </div>
-        </div>
-
-        <!-- DOB -->
         <div class="col-md-6 mb-3">
-            <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
-            <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror" 
-                   value="{{ old('dob', $customer->dob ?? '') }}">
-            @error('dob') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <label class="form-label">Upload Document</label>
+            <input type="file" name="document" class="form-control @error('document') is-invalid @enderror"
+                accept=".pdf,.doc,.docx,image/*">
+            @error('document') <div class="invalid-feedback">{{ $message }}</div> @enderror
+
+            @if($isEdit && $customer->document)
+                <div class="mt-2">
+                    <a href="{{ asset('storage/' . $customer->document) }}" target="_blank">
+                        View Uploaded Document
+                    </a>
+                </div>
+            @endif
         </div>
 
-        <div class="col-md-6">
-            <div class="form-check mb-3">
-                <input type="checkbox" class="form-check-input" name="has_cash_collateral" id="has_cash_collateral"
+        <!-- Cash Collateral -->
+        <div class="col-md-6 mb-3">
+            <div class="form-check">
+                <input type="checkbox" class="form-check-input" value="1" name="has_cash_collateral" id="has_cash_collateral"
                     {{ old('has_cash_collateral', $customer->has_cash_collateral ?? false) ? 'checked' : '' }}>
                 <label class="form-check-label" for="has_cash_collateral">Has Cash Collateral</label>
             </div>
         </div>
 
-        <div class="col-md-6">
-            <label class="form-label">Assign Loan Officer(s)</label>
-            @foreach($loanOfficers as $officer)
-                <div class="form-check">
-                    <input class="form-check-input" type="checkbox" name="loan_officer_ids[]"
-                        value="{{ $officer->id }}"
-                        {{ in_array($officer->id, old('loan_officer_ids', $customer->loan_officer_ids ?? [])) ? 'checked' : '' }}>
-                    <label class="form-check-label">{{ $officer->name }}</label>
-                </div>
-            @endforeach
+        <!-- Collateral Type -->
+        <div class="col-md-6 mb-3" id="collateral-type-container" style="display: none;">
+            <label class="form-label">Collateral Type</label>
+            <select name="collateral_type_id" class="form-select">
+                <option value="">Select Collateral Type</option>
+                @foreach($collateralTypes as $type)
+                    <option value="{{ $type->id }}" 
+                        {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
+                        {{ $type->name }}
+                    </option>
+                @endforeach
+            </select>
         </div>
 
+        <!-- Loan Officers -->
+        <div class="col-md-12 mb-3">
+            <label class="form-label">Assign Loan Officer(s)</label>
+            @if($loanOfficers->count() > 0)
+                <div class="row">
+                    @foreach($loanOfficers as $officer)
+                        <div class="col-md-4 mb-2">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="loan_officer_ids[]"
+                                    value="{{ $officer->id }}"
+                                    {{ in_array($officer->id, old('loan_officer_ids', $customer->loan_officer_ids ?? [])) ? 'checked' : '' }}>
+                                <label class="form-check-label">{{ $officer->name }}</label>
+                            </div>
+                        </div>
+                    @endforeach
+                </div>
+            @else
+                <div class="alert alert-info">
+                    <i class="bx bx-info-circle me-2"></i>
+                    No loan officers found. Please create loan officer roles first.
+                </div>
+            @endif
+        </div>
+
+        @if($isEdit)
+        <!-- Password (only for edit) -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">New Password (leave blank to keep current)</label>
+            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                   placeholder="Enter new password">
+            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+        @endif
     </div>
 
     <hr class="my-4">
@@ -189,3 +249,61 @@
         </button>
     </div>
 </form>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const checkbox = document.querySelector('#has_cash_collateral');
+        const collateralContainer = document.querySelector('#collateral-type-container');
+        const regionSelect = document.querySelector('#region');
+        const districtSelect = document.querySelector('#district');
+
+        // Show/hide collateral type
+        function toggleCollateralField() {
+            if (checkbox.checked) {
+                collateralContainer.style.display = 'block';
+            } else {
+                collateralContainer.style.display = 'none';
+            }
+        }
+
+        checkbox.addEventListener('change', toggleCollateralField);
+        toggleCollateralField(); // On load
+
+        // Load districts on region change
+        regionSelect.addEventListener('change', function () {
+            const regionId = this.value;
+
+            if (!regionId) {
+                districtSelect.innerHTML = '<option value="">Select District</option>';
+                return;
+            }
+
+            fetch(`/get-districts/${regionId}`)
+            .then(response => response.json())
+            .then(data => {
+                districtSelect.innerHTML = '<option value="">Select District</option>';
+                Object.entries(data).forEach(([id, name]) => {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = name;
+                    districtSelect.appendChild(option);
+                });
+            })
+            .catch(error => console.error('Error loading districts:', error));
+        });
+    });
+
+    // Image preview function
+    function previewImage(event) {
+        const file = event.target.files[0];
+        const preview = document.getElementById('preview');
+        
+        if (file) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                preview.innerHTML = `<img src="${e.target.result}" width="100" class="mt-2">`;
+            }
+            reader.readAsDataURL(file);
+        }
+    }
+</script>
