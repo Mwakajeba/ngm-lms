@@ -3,19 +3,16 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Foundation\Auth\User as Authenticatable; // Extend this if customers log in
 use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
     use HasFactory;
 
-    // If customers do NOT need to login, extend Model instead of Authenticatable
-    // use Illuminate\Database\Eloquent\Model;
-
     protected $fillable = [
         'customerNo',
         'name',
+        'description', // Added description
         'work',
         'workAddress',
         'phone1',
@@ -24,8 +21,8 @@ class Customer extends Model
         'idType',
         'idNumber',
         'dob',
-        'region',
-        'district',
+        'region_id',
+        'district_id',
         'branch_id',
         'company_id',
         'sex',
@@ -44,6 +41,7 @@ class Customer extends Model
     protected $casts = [
         'dob' => 'date',
         'dateRegistered' => 'date',
+        'has_cash_collateral' => 'boolean',
     ];
 
     // Relationships
@@ -80,5 +78,26 @@ class Customer extends Model
     public function loans()
     {
         return $this->hasMany(Loan::class);
+    }
+
+    public function loanOfficers()
+    {
+        return $this->belongsToMany(User::class, 'customer_officer', 'customer_id', 'officer_id');
+    }
+
+    // Accessor for loan officer IDs
+    public function getLoanOfficerIdsAttribute()
+    {
+        return $this->loanOfficers()->pluck('users.id')->toArray();
+    }
+
+    // Mutator for customer number
+    public function setCustomerNoAttribute($value)
+    {
+        if (empty($value)) {
+            $this->attributes['customerNo'] = 100000 + (self::max('id') ?? 0) + 1;
+        } else {
+            $this->attributes['customerNo'] = $value;
+        }
     }
 }
