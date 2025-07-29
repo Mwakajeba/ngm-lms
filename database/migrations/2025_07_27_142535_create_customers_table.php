@@ -12,42 +12,41 @@ return new class extends Migration
     public function up()
     {
         Schema::create('customers', function (Blueprint $table) {
-        $table->id();
-        $table->string('customerNo')->unique();
-        $table->string('name');
-        $table->string('work')->nullable();
-        $table->string('workAddress')->nullable();
-        $table->string('phone1');
-        $table->string('phone2')->nullable();
+            $table->id();
+            $table->string('customerNo')->unique();
+            $table->string('name');
+            $table->text('description')->nullable(); // Added description field
+            $table->string('work')->nullable();
+            $table->string('workAddress')->nullable();
+            $table->string('phone1');
+            $table->string('phone2')->nullable();
 
-        // Foreign key to users table (registrar)
-        $table->foreignId('registrar')->constrained('users')->onDelete('cascade');
+            // Foreign key to users table (registrar)
+            $table->foreignId('registrar')->constrained('users')->onDelete('cascade');
 
-        $table->string('idType')->nullable();
-        $table->string('idNumber')->nullable();
-        $table->date('dob');
-        $table->foreignId('region_id')->constrained('regions')->onDelete('cascade');
-        $table->foreignId('district_id')->constrained('districts')->onDelete('cascade');
+            $table->string('idType')->nullable();
+            $table->string('idNumber')->nullable();
+            $table->date('dob');
+            $table->foreignId('region_id')->constrained('regions')->onDelete('cascade');
+            $table->foreignId('district_id')->constrained('districts')->onDelete('cascade');
 
+            // Foreign key to branches
+            $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
 
-        // Foreign key to branches
-        $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
+            // Foreign key to companies
+            $table->foreignId('company_id')->constrained('companies')->onDelete('cascade');
 
-        // Foreign key to companies
-        $table->foreignId('company_id')->constrained('companies')->onDelete('cascade');
+            $table->enum('sex', ['M', 'F']);
+            $table->string('password');
+            $table->date('dateRegistered');
+            $table->string('relation')->nullable();
+            $table->string('photo')->nullable();
+            $table->string('document')->nullable();
+            $table->boolean('has_cash_collateral')->default(false); // Changed to boolean with default
 
-        $table->enum('sex', ['M', 'F']);
-        $table->string('password');
-        $table->date('dateRegistered');
-        $table->string('relation')->nullable();
-        $table->string('photo')->nullable();
-        $table->string('document')->nullable();
-        $table->string('has_cash_collateral')->nullable();
-
-        $table->timestamps();
+            $table->timestamps();
         });
     }
-
 
     /**
      * Reverse the migrations.
