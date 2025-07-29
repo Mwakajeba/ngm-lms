@@ -224,7 +224,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/journal-entries/{journalEntry}', [App\Http\Controllers\Accounting\JournalEntryController::class, 'destroy'])->name('journal-entries.destroy');
 
     // Payment Vouchers
-    Route::get('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'index'])->name('payment-vouchers');
+    Route::get('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'index'])->name('payment-vouchers.index');
     Route::get('/payment-vouchers/create', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'create'])->name('payment-vouchers.create');
     Route::post('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'store'])->name('payment-vouchers.store');
     Route::get('/payment-vouchers/{paymentVoucher}/edit', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'edit'])->name('payment-vouchers.edit');
@@ -232,9 +232,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/payment-vouchers/{paymentVoucher}', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'destroy'])->name('payment-vouchers.destroy');
 
     // Receipt Vouchers
-    Route::get('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'index'])->name('receipt-vouchers');
+    Route::get('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
     Route::get('/receipt-vouchers/create', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
     Route::post('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
+    Route::get('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
     Route::get('/receipt-vouchers/{receiptVoucher}/edit', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
     Route::put('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
     Route::delete('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');

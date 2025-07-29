@@ -19,7 +19,7 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.update', 1) }}"
+                            <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.update', $receiptVoucher) }}"
                                 method="POST">
                                 @csrf
                                 @method('PUT')
@@ -33,7 +33,7 @@
                                             </label>
                                             <input type="date"
                                                 class="form-control form-control-lg @error('date') is-invalid @enderror"
-                                                id="date" name="date" value="{{ old('date', date('Y-m-d')) }}" required>
+                                                id="date" name="date" value="{{ old('date', $receiptVoucher->date->format('Y-m-d')) }}" required>
                                             @error('date')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -43,17 +43,11 @@
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label for="reference" class="form-label fw-bold">
-                                                <i class="bx bx-hash me-1"></i>Reference
+                                                <i class="bx bx-hash me-1"></i>Reference Number
                                             </label>
-                                            <div class="form-check mb-2">
-                                                <input class="form-check-input" type="checkbox" id="reference_optional">
-                                                <label class="form-check-label text-muted" for="reference_optional">
-                                                    Optional
-                                                </label>
-                                            </div>
                                             <input type="text"
                                                 class="form-control form-control-lg @error('reference') is-invalid @enderror"
-                                                id="reference" name="reference" value="{{ old('reference', 'RV-001') }}"
+                                                id="reference" name="reference" value="{{ old('reference', $receiptVoucher->reference) }}"
                                                 placeholder="Enter reference number">
                                             @error('reference')
                                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -67,22 +61,14 @@
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">
-                                                <i class="bx bx-bank me-1"></i>Received in
+                                                <i class="bx bx-wallet me-1"></i>Bank Account
                                             </label>
-                                            <div class="btn-group w-100" role="group">
-                                                <input type="radio" class="btn-check" name="account_type" id="bank_account"
-                                                    value="bank" checked>
-                                                <label class="btn btn-outline-primary" for="bank_account">
-                                                    <i class="bx bx-bank me-1"></i>Bank Account
-                                                </label>
-                                            </div>
-
                                             <select
                                                 class="form-select form-select-lg mt-2 @error('bank_account_id') is-invalid @enderror"
                                                 id="bank_account_id" name="bank_account_id" required>
                                                 <option value="">-- Select Bank Account --</option>
                                                 @foreach($bankAccounts as $bankAccount)
-                                                    <option value="{{ $bankAccount->id }}" {{ old('bank_account_id', 1) == $bankAccount->id ? 'selected' : '' }}>
+                                                    <option value="{{ $bankAccount->id }}" {{ old('bank_account_id', $receiptVoucher->bank_account_id) == $bankAccount->id ? 'selected' : '' }}>
                                                         {{ $bankAccount->name }} - {{ $bankAccount->account_number }}
                                                     </option>
                                                 @endforeach
@@ -96,14 +82,14 @@
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label for="customer_id" class="form-label fw-bold">
-                                                <i class="bx bx-user me-1"></i>Payee
+                                                <i class="bx bx-user me-1"></i>Customer
                                             </label>
                                             <select
                                                 class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
                                                 id="customer_id" name="customer_id" required>
-                                                <option value="">-- Select Payee --</option>
+                                                <option value="">-- Select Customer --</option>
                                                 @foreach($customers as $customer)
-                                                    <option value="{{ $customer->id }}" {{ old('customer_id', 1) == $customer->id ? 'selected' : '' }}>
+                                                    <option value="{{ $customer->id }}" {{ old('customer_id', $receiptVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
                                                         {{ $customer->name }} ({{ $customer->customerNo }})
                                                     </option>
                                                 @endforeach
@@ -124,7 +110,7 @@
                                             </label>
                                             <textarea class="form-control @error('description') is-invalid @enderror"
                                                 id="description" name="description" rows="3"
-                                                placeholder="Enter transaction description">{{ old('description', 'Payment received for services rendered') }}</textarea>
+                                                placeholder="Enter transaction description">{{ old('description', $receiptVoucher->description) }}</textarea>
                                             @error('description')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -144,6 +130,49 @@
                                             <div class="card-body">
                                                 <div id="lineItemsContainer">
                                                     <!-- Line items will be added here dynamically -->
+                                                    @foreach($receiptVoucher->receiptItems as $index => $lineItem)
+                                                        @php
+                                                            $lineItemCount = $index + 1;
+                                                        @endphp
+                                                        <div class="line-item-row">
+                                                            <div class="row">
+                                                                <div class="col-md-4 mb-2">
+                                                                    <label for="line_items_{{ $lineItemCount }}_chart_account_id" class="form-label fw-bold">
+                                                                        Account <span class="text-danger">*</span>
+                                                                    </label>
+                                                                    <select class="form-select chart-account-select" name="line_items[{{ $lineItemCount }}][chart_account_id]" required>
+                                                                        <option value="">--- Select Account ---</option>
+                                                                        @foreach($chartAccounts as $chartAccount)
+                                                                            <option value="{{ $chartAccount->id }}" {{ $lineItem->chart_account_id == $chartAccount->id ? 'selected' : '' }}>
+                                                                                {{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4 mb-2">
+                                                                    <label for="line_items_{{ $lineItemCount }}_description" class="form-label fw-bold">
+                                                                        Description
+                                                                    </label>
+                                                                    <input type="text" class="form-control description-input" 
+                                                                           name="line_items[{{ $lineItemCount }}][description]" 
+                                                                           placeholder="Enter description" value="{{ $lineItem->description }}">
+                                                                </div>
+                                                                <div class="col-md-3 mb-2">
+                                                                    <label for="line_items_{{ $lineItemCount }}_amount" class="form-label fw-bold">
+                                                                        Amount <span class="text-danger">*</span>
+                                                                    </label>
+                                                                    <input type="number" class="form-control amount-input" 
+                                                                           name="line_items[{{ $lineItemCount }}][amount]" 
+                                                                           step="0.01" min="0" placeholder="0.00" value="{{ $lineItem->amount }}" required>
+                                                                </div>
+                                                                <div class="col-md-1 mb-2 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-line-btn" title="Remove Line">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    @endforeach
                                                 </div>
 
                                                 <div class="text-center mt-3">
@@ -160,7 +189,7 @@
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <div class="d-flex justify-content-start">
-                                            <a href="{{ route('accounting.receipt-vouchers.show', 1) }}"
+                                            <a href="{{ route('accounting.receipt-vouchers.show', $receiptVoucher) }}"
                                                 class="btn btn-secondary btn-lg me-2">
                                                 <i class="bx bx-arrow-back me-2"></i>Cancel
                                             </a>
@@ -247,11 +276,10 @@
 @push('scripts')
     <script>
         $(document).ready(function () {
-            let lineItemCount = 0;
+            let lineItemCount = {{ $receiptVoucher->receiptItems->count() }};
 
-            // Initialize with sample line items for editing
-            addLineItem('Cash Account (1001)', 3000.00, 'Cash payment received');
-            addLineItem('Service Revenue (4001)', 2000.00, 'Service fee payment');
+            // Initialize with existing line items (already rendered in HTML)
+            // No need to add sample items since they're already in the DOM
 
             // Add line item button
             $('#addLineBtn').on('click', function () {

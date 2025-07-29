@@ -11,7 +11,8 @@
                     <p class="text-muted mb-0">View receipt voucher information</p>
                 </div>
                 <div>
-                    <a href="{{ route('accounting.receipt-vouchers.edit', 1) }}" class="btn btn-primary me-2">
+                    <a href="{{ route('accounting.receipt-vouchers.edit', $receiptVoucher->id) }}"
+                        class="btn btn-primary me-2">
                         <i class="bx bx-edit me-2"></i>Edit Receipt Voucher
                     </a>
                     <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-secondary">
@@ -30,17 +31,18 @@
                             <i class="bx bx-receipt font-size-32"></i>
                         </div>
                         <div class="flex-grow-1">
-                            <h3 class="mb-1">Receipt Voucher #RV-001</h3>
-                            <p class="mb-0 opacity-75">Sample receipt voucher for demonstration</p>
+                            <h3 class="mb-1">Receipt Voucher #{{ $receiptVoucher->reference }}</h3>
+                            <p class="mb-0 opacity-75">{{ $receiptVoucher->description ?: 'No description provided' }}</p>
                         </div>
                         <div class="d-flex gap-2">
+                            {!! $receiptVoucher->status_badge !!}
                             <span class="badge bg-light text-dark">
                                 <i class="bx bx-calendar me-1"></i>
-                                {{ date('M d, Y') }}
+                                {{ $receiptVoucher->formatted_date }}
                             </span>
                             <span class="badge bg-light text-dark">
                                 <i class="bx bx-dollar me-1"></i>
-                                {{ number_format(5000.00, 2) }}
+                                {{ $receiptVoucher->formatted_amount }}
                             </span>
                         </div>
                     </div>
@@ -59,23 +61,28 @@
                             <div class="row">
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Date</label>
-                                    <p class="form-control-plaintext">{{ date('M d, Y') }}</p>
+                                    <p class="form-control-plaintext">{{ $receiptVoucher->formatted_date }}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Reference</label>
-                                    <p class="form-control-plaintext">RV-001</p>
+                                    <p class="form-control-plaintext">{{ $receiptVoucher->reference }}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Bank Account</label>
-                                    <p class="form-control-plaintext">Sample Bank - 1234567890</p>
+                                    <p class="form-control-plaintext">{{ $receiptVoucher->bankAccount->name ?? 'N/A' }} -
+                                        {{ $receiptVoucher->bankAccount->account_number ?? 'N/A' }}
+                                    </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Payee</label>
-                                    <p class="form-control-plaintext">John Doe (CUST-001)</p>
+                                    <label class="form-label fw-bold">Customer</label>
+                                    <p class="form-control-plaintext">{{ $receiptVoucher->customer->name ?? 'N/A' }}
+                                        ({{ $receiptVoucher->customer->customerNo ?? 'N/A' }})</p>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label fw-bold">Description</label>
-                                    <p class="form-control-plaintext">Payment received for services rendered</p>
+                                    <p class="form-control-plaintext">
+                                        {{ $receiptVoucher->description ?: 'No description provided' }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -97,27 +104,71 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        <tr>
-                                            <td>Cash Account (1001)</td>
-                                            <td>Cash payment received</td>
-                                            <td class="text-end fw-bold">{{ number_format(3000.00, 2) }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td>Service Revenue (4001)</td>
-                                            <td>Service fee payment</td>
-                                            <td class="text-end fw-bold">{{ number_format(2000.00, 2) }}</td>
-                                        </tr>
+                                        @forelse($receiptVoucher->receiptItems as $item)
+                                            <tr>
+                                                <td>{{ $item->chartAccount->account_name ?? 'N/A' }}
+                                                    ({{ $item->chartAccount->account_code ?? 'N/A' }})</td>
+                                                <td>{{ $item->description ?: 'No description' }}</td>
+                                                <td class="text-end fw-bold">{{ $item->formatted_amount }}</td>
+                                            </tr>
+                                        @empty
+                                            <tr>
+                                                <td colspan="3" class="text-center text-muted">No line items found</td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                     <tfoot class="table-light">
                                         <tr>
                                             <th>Total</th>
-                                            <th class="text-end fw-bold text-success">{{ number_format(5000.00, 2) }}</th>
+                                            <th class="text-end fw-bold text-success">
+                                                {{ number_format($receiptVoucher->total_amount, 2) }}
+                                            </th>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
                         </div>
                     </div>
+
+                    <!-- GL Transactions -->
+                    @if($receiptVoucher->glTransactions->count() > 0)
+                        <div class="card radius-10 mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bx bx-book me-2"></i>General Ledger Entries</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="40%">Account</th>
+                                                <th width="20%">Nature</th>
+                                                <th width="20%">Amount</th>
+                                                <th width="20%">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($receiptVoucher->glTransactions as $glTransaction)
+                                                <tr>
+                                                    <td>{{ $glTransaction->chartAccount->account_name ?? 'N/A' }}
+                                                        ({{ $glTransaction->chartAccount->account_code ?? 'N/A' }})</td>
+                                                    <td>
+                                                        <span
+                                                            class="badge bg-{{ $glTransaction->nature === 'debit' ? 'success' : 'warning' }}">
+                                                            {{ ucfirst($glTransaction->nature) }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-end fw-bold">{{ number_format($glTransaction->amount, 2) }}</td>
+                                                    <td>{{ $glTransaction->date ? \Carbon\Carbon::parse($glTransaction->date)->format('M d, Y') : 'N/A' }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
 
                 <!-- Right Column - Sidebar Information -->
@@ -132,13 +183,14 @@
                                 <label class="form-label fw-bold">
                                     <i class="bx bx-building me-2"></i>Company
                                 </label>
-                                <p class="form-control-plaintext">Sample Company Ltd</p>
+                                <p class="form-control-plaintext">{{ $receiptVoucher->customer->company->name ?? 'N/A' }}
+                                </p>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">
                                     <i class="bx bx-map-pin me-2"></i>Branch
                                 </label>
-                                <p class="form-control-plaintext">Main Branch</p>
+                                <p class="form-control-plaintext">{{ $receiptVoucher->branch->name ?? 'N/A' }}</p>
                             </div>
                         </div>
                     </div>
@@ -153,19 +205,23 @@
                                 <label class="form-label fw-bold">
                                     <i class="bx bx-user me-2"></i>Created By
                                 </label>
-                                <p class="form-control-plaintext">Admin User</p>
+                                <p class="form-control-plaintext">{{ $receiptVoucher->user->name ?? 'N/A' }}</p>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">
                                     <i class="bx bx-calendar me-2"></i>Created Date
                                 </label>
-                                <p class="form-control-plaintext">{{ date('M d, Y H:i A') }}</p>
+                                <p class="form-control-plaintext">
+                                    {{ $receiptVoucher->created_at ? $receiptVoucher->created_at->format('M d, Y H:i A') : 'N/A' }}
+                                </p>
                             </div>
                             <div class="mb-3">
                                 <label class="form-label fw-bold">
                                     <i class="bx bx-time me-2"></i>Last Updated
                                 </label>
-                                <p class="form-control-plaintext">{{ date('M d, Y H:i A') }}</p>
+                                <p class="form-control-plaintext">
+                                    {{ $receiptVoucher->updated_at ? $receiptVoucher->updated_at->format('M d, Y H:i A') : 'N/A' }}
+                                </p>
                             </div>
                         </div>
                     </div>
@@ -177,7 +233,8 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('accounting.receipt-vouchers.edit', 1) }}" class="btn btn-primary">
+                                <a href="{{ route('accounting.receipt-vouchers.edit', $receiptVoucher->id) }}"
+                                    class="btn btn-primary">
                                     <i class="bx bx-edit me-1"></i>Edit
                                 </a>
                                 <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-secondary">
@@ -212,7 +269,7 @@
                 if (result.isConfirmed) {
                     const form = $('<form>', {
                         'method': 'POST',
-                        'action': '{{ route("accounting.receipt-vouchers.destroy", 1) }}'
+                        'action': '{{ route("accounting.receipt-vouchers.destroy", $receiptVoucher->id) }}'
                     });
 
                     form.append($('<input>', {

@@ -108,36 +108,36 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($receiptVouchers ?? [] as $receiptVoucher)
+                                        @forelse($receipts ?? [] as $receipt)
                                             <tr>
-                                                <td>{{ $receiptVoucher->date ?? 'N/A' }}</td>
-                                                <td>{{ $receiptVoucher->reference ?? 'N/A' }}</td>
-                                                <td>{{ $receiptVoucher->bankAccount->name ?? 'N/A' }}</td>
-                                                <td>{{ $receiptVoucher->customer->name ?? 'N/A' }}</td>
+                                                <td>{{ $receipt->formatted_date }}</td>
+                                                <td>{{ $receipt->reference }}</td>
+                                                <td>{{ $receipt->bankAccount->name ?? 'N/A' }}</td>
+                                                <td>{{ $receipt->customer->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <span class="text-truncate d-inline-block" style="max-width: 200px;"
-                                                        title="{{ $receiptVoucher->description ?? 'No description' }}">
-                                                        {{ $receiptVoucher->description ?? 'No description' }}
+                                                        title="{{ $receipt->description ?? 'No description' }}">
+                                                        {{ $receipt->description ?? 'No description' }}
                                                     </span>
                                                 </td>
                                                 <td class="text-end fw-bold">
-                                                    {{ number_format($receiptVoucher->total_amount ?? 0, 2) }}
+                                                    {{ $receipt->formatted_amount }}
                                                 </td>
-                                                <td>{{ $receiptVoucher->createdBy->name ?? 'N/A' }}</td>
+                                                <td>{{ $receipt->user->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
-                                                        <a href="{{ route('accounting.receipt-vouchers.show', $receiptVoucher->id ?? 1) }}"
+                                                        <a href="{{ route('accounting.receipt-vouchers.show', $receipt) }}"
                                                             class="btn btn-sm btn-outline-primary" title="View">
                                                             <i class="bx bx-show"></i>
                                                         </a>
-                                                        <a href="{{ route('accounting.receipt-vouchers.edit', $receiptVoucher->id ?? 1) }}"
+                                                        <a href="{{ route('accounting.receipt-vouchers.edit', $receipt) }}"
                                                             class="btn btn-sm btn-outline-warning" title="Edit">
                                                             <i class="bx bx-edit"></i>
                                                         </a>
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-danger delete-receipt-btn"
-                                                            title="Delete" data-receipt-id="{{ $receiptVoucher->id ?? 1 }}"
-                                                            data-receipt-reference="{{ $receiptVoucher->reference ?? 'N/A' }}">
+                                                            title="Delete" data-receipt-id="{{ $receipt->id }}"
+                                                            data-receipt-reference="{{ $receipt->reference }}">
                                                             <i class="bx bx-trash"></i>
                                                         </button>
                                                     </div>
