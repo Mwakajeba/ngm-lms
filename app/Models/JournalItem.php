@@ -26,4 +26,5 @@ class JournalItem extends Model
     {
         return $this->belongsTo(ChartAccount::class);
     }
+
 }
