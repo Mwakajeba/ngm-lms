@@ -19,6 +19,17 @@ class Payment extends Model
         'attachment',
         'bank_account_id',
         'customer_id',
+        'branch_id',
+        'user_id',
+        'approved',
+        'approved_by',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'date' => 'datetime',
+        'approved_at' => 'datetime',
+        'amount' => 'decimal:2',
     ];
 
     // Relationships
@@ -45,5 +56,57 @@ class Payment extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function paymentItems()
+    {
+        return $this->hasMany(PaymentItem::class);
+    }
+
+    // Scopes
+    public function scopeApproved($query)
+    {
+        return $query->where('approved', true);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('approved', false);
+    }
+
+    public function scopeByDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('date', [$startDate, $endDate]);
+    }
+
+    public function scopeByReference($query, $reference)
+    {
+        return $query->where('reference', 'like', "%{$reference}%");
+    }
+
+    // Accessors
+    public function getStatusBadgeAttribute()
+    {
+        return $this->approved ? 
+            '<span class="badge bg-success">Approved</span>' : 
+            '<span class="badge bg-warning">Pending</span>';
+    }
+
+    public function getFormattedAmountAttribute()
+    {
+        return number_format($this->amount, 2);
+    }
+
+    public function getFormattedDateAttribute()
+    {
+        return $this->date->format('d/m/Y');
+    }
+
+    public function getAttachmentNameAttribute()
+    {
+        if (!$this->attachment) {
+            return null;
+        }
+        return basename($this->attachment);
     }
 }

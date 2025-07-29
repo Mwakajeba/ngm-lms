@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('receipt_id')->constrained('receipts')->onDelete('cascade');
             $table->foreignId('chart_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->decimal('amount', 20, 2);
-             $table->text('description')->nullable()->after('amount');
+             $table->text('description')->nullable();
             $table->timestamps(); // Optional, adds created_at and updated_at
         });
     }

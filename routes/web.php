@@ -227,9 +227,12 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'index'])->name('payment-vouchers');
     Route::get('/payment-vouchers/create', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'create'])->name('payment-vouchers.create');
     Route::post('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'store'])->name('payment-vouchers.store');
+    Route::get('/payment-vouchers/{paymentVoucher}', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'show'])->name('payment-vouchers.show');
     Route::get('/payment-vouchers/{paymentVoucher}/edit', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'edit'])->name('payment-vouchers.edit');
     Route::put('/payment-vouchers/{paymentVoucher}', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'update'])->name('payment-vouchers.update');
     Route::delete('/payment-vouchers/{paymentVoucher}', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'destroy'])->name('payment-vouchers.destroy');
+    Route::post('/payment-vouchers/{paymentVoucher}/approve', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'approve'])->name('payment-vouchers.approve');
+    Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
 
     // Receipt Vouchers
     Route::get('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'index'])->name('receipt-vouchers');
