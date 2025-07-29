@@ -100,7 +100,7 @@
                                             <th width="10%">Date</th>
                                             <th width="15%">Reference</th>
                                             <th width="15%">Bank Account</th>
-                                            <th width="15%">Payee</th>
+                                            <th width="15%">Customer</th>
                                             <th width="15%">Description</th>
                                             <th width="10%">Amount</th>
                                             <th width="10%">Created By</th>
@@ -108,24 +108,17 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($receipts ?? [] as $receipt)
+                                        @foreach($receipts as $receipt)
                                             <tr>
                                                 <td>{{ $receipt->formatted_date }}</td>
                                                 <td>{{ $receipt->reference }}</td>
                                                 <td>{{ $receipt->bankAccount->name ?? 'N/A' }}</td>
                                                 <td>{{ $receipt->customer->name ?? 'N/A' }}</td>
-                                                <td>
-                                                    <span class="text-truncate d-inline-block" style="max-width: 200px;"
-                                                        title="{{ $receipt->description ?? 'No description' }}">
-                                                        {{ $receipt->description ?? 'No description' }}
-                                                    </span>
-                                                </td>
-                                                <td class="text-end fw-bold">
-                                                    {{ $receipt->formatted_amount }}
-                                                </td>
+                                                <td>{{ Str::limit($receipt->description, 50) ?: 'No description' }}</td>
+                                                <td class="text-end fw-bold">{{ $receipt->formatted_amount }}</td>
                                                 <td>{{ $receipt->user->name ?? 'N/A' }}</td>
                                                 <td>
-                                                    <div class="d-flex gap-2">
+                                                    <div class="d-flex gap-1">
                                                         <a href="{{ route('accounting.receipt-vouchers.show', $receipt) }}"
                                                             class="btn btn-sm btn-outline-primary" title="View">
                                                             <i class="bx bx-show"></i>
@@ -134,30 +127,15 @@
                                                             class="btn btn-sm btn-outline-warning" title="Edit">
                                                             <i class="bx bx-edit"></i>
                                                         </a>
-                                                        <button type="button"
-                                                            class="btn btn-sm btn-outline-danger delete-receipt-btn"
-                                                            title="Delete" data-receipt-id="{{ $receipt->id }}"
-                                                            data-receipt-reference="{{ $receipt->reference }}">
+                                                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                                                            data-id="{{ $receipt->id }}"
+                                                            data-reference="{{ $receipt->reference }}" title="Delete">
                                                             <i class="bx bx-trash"></i>
                                                         </button>
                                                     </div>
                                                 </td>
                                             </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="8" class="text-center py-4">
-                                                    <div class="text-muted">
-                                                        <i class="bx bx-receipt font-size-48 mb-3"></i>
-                                                        <h5>No Receipt Vouchers Found</h5>
-                                                        <p>Start by creating your first receipt voucher entry.</p>
-                                                        <a href="{{ route('accounting.receipt-vouchers.create') }}"
-                                                            class="btn btn-primary">
-                                                            <i class="bx bx-plus me-2"></i>Create First Receipt Voucher
-                                                        </a>
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @endforelse
+                                        @endforeach
                                     </tbody>
                                 </table>
                             </div>
@@ -172,29 +150,54 @@
 @push('scripts')
     <script>
         $(document).ready(function () {
+            // Initialize DataTable
             $('#receiptVouchersTable').DataTable({
                 responsive: true,
-                order: [[0, 'desc']],
-                pageLength: 25,
+                pageLength: 10,
+                lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                order: [[0, 'desc']], // Sort by date descending by default
+                columnDefs: [
+                    {
+                        targets: -1, // Actions column
+                        orderable: false,
+                        searchable: false
+                    },
+                    {
+                        targets: 5, // Amount column
+                        className: 'text-end'
+                    }
+                ],
                 language: {
-                    search: "Search receipt vouchers:",
-                    lengthMenu: "Show _MENU_ receipt vouchers per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ receipt vouchers",
-                    infoEmpty: "Showing 0 to 0 of 0 receipt vouchers",
-                    infoFiltered: "(filtered from _MAX_ total receipt vouchers)",
-                    emptyTable: "No receipt vouchers available",
-                    zeroRecords: "No matching receipt vouchers found"
+                    search: "Search:",
+                    lengthMenu: "Show _MENU_ entries per page",
+                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                    infoEmpty: "Showing 0 to 0 of 0 entries",
+                    infoFiltered: "(filtered from _MAX_ total entries)",
+                    paginate: {
+                        first: "First",
+                        last: "Last",
+                        next: "Next",
+                        previous: "Previous"
+                    },
+                    emptyTable: "No receipt vouchers found"
+                },
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+                    '<"row"<"col-sm-12"tr>>' +
+                    '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+                initComplete: function () {
+                    // Add custom styling
+                    $('.dataTables_wrapper').addClass('mt-3');
                 }
             });
 
             // Delete receipt voucher functionality with SweetAlert
-            $('.delete-receipt-btn').on('click', function () {
-                const receiptId = $(this).data('receipt-id');
-                const receiptReference = $(this).data('receipt-reference');
+            $(document).on('click', '.delete-btn', function () {
+                const receiptId = $(this).data('id');
+                const receiptReference = $(this).data('reference');
 
                 Swal.fire({
                     title: 'Delete Receipt Voucher',
-                    text: `Are you sure you want to delete receipt voucher "${receiptReference}"?`,
+                    text: `Are you sure you want to delete receipt voucher "${receiptReference}"? This action cannot be undone.`,
                     icon: 'warning',
                     showCancelButton: true,
                     confirmButtonColor: '#dc3545',
@@ -204,6 +207,7 @@
                     reverseButtons: true
                 }).then((result) => {
                     if (result.isConfirmed) {
+                        // Create and submit form
                         const form = $('<form>', {
                             'method': 'POST',
                             'action': `/accounting/receipt-vouchers/${receiptId}`
@@ -228,4 +232,90 @@
             });
         });
     </script>
+@endpush
+
+@push('styles')
+    <style>
+        .dataTables_wrapper {
+            margin-top: 1rem;
+        }
+
+        .dataTables_length select {
+            min-width: 80px;
+        }
+
+        .dataTables_filter input {
+            min-width: 200px;
+        }
+
+        .table th {
+            background-color: #f8f9fa;
+            border-color: #dee2e6;
+            font-weight: 600;
+            font-size: 0.875rem;
+        }
+
+        .table td {
+            vertical-align: middle;
+            font-size: 0.875rem;
+        }
+
+        .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
+        }
+
+        .d-flex.gap-1>* {
+            margin-right: 0.25rem;
+        }
+
+        .d-flex.gap-1>*:last-child {
+            margin-right: 0;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 768px) {
+            .dataTables_filter input {
+                min-width: 150px;
+            }
+
+            .table-responsive {
+                font-size: 0.8rem;
+            }
+
+            .btn-sm {
+                padding: 0.2rem 0.4rem;
+                font-size: 0.7rem;
+            }
+        }
+
+        /* DataTable pagination styling */
+        .dataTables_paginate .paginate_button {
+            padding: 0.375rem 0.75rem;
+            margin-left: 2px;
+            border: 1px solid #dee2e6;
+            background-color: #fff;
+            color: #495057;
+            cursor: pointer;
+        }
+
+        .dataTables_paginate .paginate_button:hover {
+            background-color: #e9ecef;
+            border-color: #adb5bd;
+            color: #495057;
+        }
+
+        .dataTables_paginate .paginate_button.current {
+            background-color: #007bff;
+            border-color: #007bff;
+            color: #fff;
+        }
+
+        .dataTables_paginate .paginate_button.disabled {
+            color: #6c757d;
+            cursor: not-allowed;
+            background-color: #fff;
+            border-color: #dee2e6;
+        }
+    </style>
 @endpush
