@@ -224,12 +224,9 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/journal-entries/{journalEntry}', [App\Http\Controllers\Accounting\JournalEntryController::class, 'destroy'])->name('journal-entries.destroy');
 
     // Payment Vouchers
-    Route::get('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'index'])->name('payment-vouchers.index');
-    Route::get('/payment-vouchers/create', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'create'])->name('payment-vouchers.create');
-    Route::post('/payment-vouchers', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'store'])->name('payment-vouchers.store');
-    Route::get('/payment-vouchers/{paymentVoucher}/edit', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'edit'])->name('payment-vouchers.edit');
-    Route::put('/payment-vouchers/{paymentVoucher}', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'update'])->name('payment-vouchers.update');
-    Route::delete('/payment-vouchers/{paymentVoucher}', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'destroy'])->name('payment-vouchers.destroy');
+    Route::resource('payment-vouchers', App\Http\Controllers\Accounting\PaymentVoucherController::class);
+    Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
+    Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
 
     // Receipt Vouchers
     Route::get('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
@@ -241,13 +238,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
 
     // Bank Accounts
-    Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
-    Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
-    Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
-    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    Route::get('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'index'])->name('bank-accounts');
+    Route::get('/bank-accounts/create', [App\Http\Controllers\Accounting\BankAccountController::class, 'create'])->name('bank-accounts.create');
+    Route::post('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'store'])->name('bank-accounts.store');
+    Route::get('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{bankAccount}/edit', [App\Http\Controllers\Accounting\BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Transfers
     Route::get('/bank-transfers', [App\Http\Controllers\Accounting\BankTransferController::class, 'index'])->name('bank-transfers');
