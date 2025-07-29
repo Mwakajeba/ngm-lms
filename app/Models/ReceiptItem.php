@@ -13,6 +13,7 @@ class ReceiptItem extends Model
         'receipt_id',
         'chart_account_id',
         'amount',
+        'description',
     ];
 
     // Relationships

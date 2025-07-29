@@ -13,6 +13,7 @@ class PaymentItem extends Model
         'payment_id',
         'chart_account_id',
         'amount',
+        'description',
     ];
 
     public function payment()

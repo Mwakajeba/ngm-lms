@@ -13,6 +13,7 @@ class JournalItem extends Model
         'journal_id',
         'chart_account_id',
         'amount',
+        'description',
         'nature',
     ];
 
