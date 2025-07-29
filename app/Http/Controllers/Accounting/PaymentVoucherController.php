@@ -438,4 +438,42 @@ class PaymentVoucherController extends Controller
             return redirect()->back()->withErrors(['error' => 'Failed to remove attachment: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Export payment voucher to PDF
+     */
+    public function exportPdf(Payment $paymentVoucher)
+    {
+        try {
+            // Check if user has access to this payment voucher
+            $user = Auth::user();
+            if ($paymentVoucher->bankAccount->chartAccount->accountClassGroup->company_id !== $user->company_id) {
+                abort(403, 'Unauthorized access to this payment voucher.');
+            }
+
+            // Load relationships
+            $paymentVoucher->load([
+                'bankAccount.chartAccount',
+                'customer',
+                'user.company',
+                'branch',
+                'paymentItems.chartAccount'
+            ]);
+
+            // Generate PDF using DomPDF
+            $pdf = \PDF::loadView('accounting.payment-vouchers.pdf', compact('paymentVoucher'));
+
+            // Set paper size and orientation
+            $pdf->setPaper('A4', 'portrait');
+
+            // Generate filename
+            $filename = 'payment_voucher_' . $paymentVoucher->reference . '_' . date('Y-m-d_H-i-s') . '.pdf';
+
+            // Return PDF for download
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to export PDF: ' . $e->getMessage()]);
+        }
+    }
 }

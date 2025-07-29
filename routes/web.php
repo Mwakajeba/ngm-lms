@@ -227,6 +227,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::resource('payment-vouchers', App\Http\Controllers\Accounting\PaymentVoucherController::class);
     Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
     Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
+    Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
 
     // Receipt Vouchers
     Route::get('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
@@ -255,12 +256,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/bank-transfers/{bankTransfer}', [App\Http\Controllers\Accounting\BankTransferController::class, 'destroy'])->name('bank-transfers.destroy');
 
     // Bank Reconciliation
-    Route::get('/bank-reconciliation', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'index'])->name('bank-reconciliation');
-    Route::get('/bank-reconciliation/create', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'create'])->name('bank-reconciliation.create');
-    Route::post('/bank-reconciliation', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'store'])->name('bank-reconciliation.store');
-    Route::get('/bank-reconciliation/{bankReconciliation}/edit', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'edit'])->name('bank-reconciliation.edit');
-    Route::put('/bank-reconciliation/{bankReconciliation}', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'update'])->name('bank-reconciliation.update');
-    Route::delete('/bank-reconciliation/{bankReconciliation}', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'destroy'])->name('bank-reconciliation.destroy');
+    Route::resource('bank-reconciliation', App\Http\Controllers\Accounting\BankReconciliationController::class);
+    Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
+    Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
+               Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
+           Route::post('/bank-reconciliation/{bankReconciliation}/complete', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
+           Route::post('/bank-reconciliation/{bankReconciliation}/update-book-balance', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
+           Route::post('/bank-reconciliation/refresh-all', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'refreshAllReconciliations'])->name('bank-reconciliation.refresh-all');
 
     // Bill Purchases
     Route::get('/bill-purchases', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'index'])->name('bill-purchases');
@@ -311,6 +313,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/expenses-summary', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'index'])->name('expenses-summary');
         Route::get('/accounting-notes', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'index'])->name('accounting-notes');
         Route::get('/changes-equity', [App\Http\Controllers\Accounting\Reports\ChangesEquityReportController::class, 'index'])->name('changes-equity');
+        Route::get('/bank-reconciliation', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'index'])->name('bank-reconciliation-report');
+        Route::get('/bank-reconciliation/generate', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'generate'])->name('bank-reconciliation-report.generate');
+        Route::get('/bank-reconciliation/{bankReconciliation}/show', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
+        Route::get('/bank-reconciliation/{bankReconciliation}/export', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
     });
 });
 

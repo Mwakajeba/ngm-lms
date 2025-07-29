@@ -230,6 +230,14 @@ return [
     'reset_to_defaults' => 'Weka Upya kwa Chaguo-msingi',
     'settings_reset_success' => 'Mipangilio ya mfumo yamewekwa upya kwa chaguo-msingi kwa mafanikio!',
 
+    // System Configuration Permissions
+    'view_system_configurations' => 'Tazama Usanidi wa Mfumo',
+    'edit_system_configurations' => 'Hariri Usanidi wa Mfumo',
+    'manage_system_configurations' => 'Dhibiti Usanidi wa Mfumo',
+    'view_system_config' => 'Tazama Usanidi wa Mfumo',
+    'edit_system_config' => 'Hariri Usanidi wa Mfumo',
+    'manage_system_config' => 'Dhibiti Usanidi wa Mfumo',
+
     // Microfinance
     'loan_interest_rate_default' => 'Kiwango cha Riba cha Mikopo cha Chaguo-msingi (%)',
     'loan_processing_fee' => 'Ada ya Usindikaji wa Mikopo (%)',

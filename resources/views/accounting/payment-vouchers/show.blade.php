@@ -5,22 +5,32 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h6 class="mb-0 text-uppercase">PAYMENT VOUCHER DETAILS</h6>
-                    <p class="text-muted mb-0">View payment voucher information</p>
-                </div>
-                <div>
-                    <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
-                        class="btn btn-primary me-2">
-                        <i class="bx bx-edit me-2"></i>Edit Payment Voucher
-                    </a>
-                    <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
-                        <i class="bx bx-arrow-back me-2"></i>Back to Payment Vouchers
-                    </a>
+            <!-- Breadcrumb -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-breadcrumb d-flex align-items-center">
+                        <div class="me-auto">
+                            <h5 class="page-title text-dark fw-semibold fs-3">Payment Voucher #{{ $paymentVoucher->reference }}</h5>
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('accounting.payment-vouchers.index') }}">Payment Vouchers</a></li>
+                                <li class="breadcrumb-item active">Payment Voucher #{{ $paymentVoucher->reference }}</li>
+                            </ul>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="{{ route('accounting.payment-vouchers.export-pdf', $paymentVoucher->hash_id) }}" class="btn btn-danger me-2" target="_blank">
+                                <i class="bx bx-download"></i> Export PDF
+                            </a>
+                            <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}" class="btn btn-primary me-2">
+                                <i class="bx bx-edit"></i> Edit Payment Voucher
+                            </a>
+                            <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
+                                <i class="bx bx-arrow-back"></i> Back to Payment Vouchers
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <hr />
 
             <!-- Prominent Header Card -->
             <div class="card radius-10 bg-gradient-danger text-white mb-4">

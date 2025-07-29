@@ -44,4 +44,36 @@ class GlTransaction extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    /**
+     * Boot method to register model events
+     */
+    protected static function boot()
+    {
+        parent::boot();
+
+        // When a GL transaction is created
+        static::created(function ($glTransaction) {
+            $glTransaction->updateBankReconciliations();
+        });
+
+        // When a GL transaction is updated
+        static::updated(function ($glTransaction) {
+            $glTransaction->updateBankReconciliations();
+        });
+
+        // When a GL transaction is deleted
+        static::deleted(function ($glTransaction) {
+            $glTransaction->updateBankReconciliations();
+        });
+    }
+
+    /**
+     * Update bank reconciliations that are still in progress
+     */
+    public function updateBankReconciliations()
+    {
+        $service = app(\App\Services\BankReconciliationService::class);
+        $service->updateReconciliationsForTransaction($this);
+    }
 }
