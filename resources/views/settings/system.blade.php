@@ -31,18 +31,24 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h4 class="card-title mb-0">System Configuration</h4>
                             <div>
+                                @can('manage system configurations')
                                 <button type="button" class="btn btn-warning btn-sm" onclick="confirmReset()">
                                     <i class="bx bx-refresh me-1"></i> Reset to Defaults
                                 </button>
+                                @endcan
                                 <a href="{{ route('settings.index') }}" class="btn btn-secondary btn-sm">
                                     <i class="bx bx-arrow-back me-1"></i> Back to Settings
                                 </a>
                             </div>
                         </div>
 
+                        @can('edit system configurations')
                         <form action="{{ route('settings.system.update') }}" method="POST">
                             @csrf
                             @method('PUT')
+                        @else
+                        <div>
+                        @endcan
                             
                             <!-- Navigation Tabs -->
                             <ul class="nav nav-tabs nav-bordered" id="settingsTabs" role="tablist">
@@ -88,7 +94,8 @@
                                                                        id="{{ $setting->key }}" 
                                                                        name="settings[{{ $setting->key }}]" 
                                                                        value="1" 
-                                                                       {{ $setting->value ? 'checked' : '' }}>
+                                                                       {{ $setting->value ? 'checked' : '' }}
+                                                                       @cannot('edit system configurations') disabled @endcannot>
                                                                 <label class="form-check-label" for="{{ $setting->key }}">
                                                                     Enable {{ $setting->label }}
                                                                 </label>
@@ -99,11 +106,13 @@
                                                                    id="{{ $setting->key }}" 
                                                                    name="settings[{{ $setting->key }}]" 
                                                                    value="{{ $setting->value }}" 
-                                                                   min="0">
+                                                                   min="0"
+                                                                   @cannot('edit system configurations') readonly @endcannot>
                                                         @elseif($setting->key === 'timezone')
                                                             <select class="form-select" 
                                                                     id="{{ $setting->key }}" 
-                                                                    name="settings[{{ $setting->key }}]">
+                                                                    name="settings[{{ $setting->key }}]"
+                                                                    @cannot('edit system configurations') disabled @endcannot>
                                                                 @foreach($timezones as $timezone)
                                                                     <option value="{{ $timezone }}" 
                                                                             {{ $setting->value === $timezone ? 'selected' : '' }}>
@@ -114,7 +123,8 @@
                                                         @elseif($setting->key === 'locale')
                                                             <select class="form-select" 
                                                                     id="{{ $setting->key }}" 
-                                                                    name="settings[{{ $setting->key }}]">
+                                                                    name="settings[{{ $setting->key }}]"
+                                                                    @cannot('edit system configurations') disabled @endcannot>
                                                                 <option value="en" {{ $setting->value === 'en' ? 'selected' : '' }}>English</option>
                                                                 <option value="sw" {{ $setting->value === 'sw' ? 'selected' : '' }}>Swahili</option>
                                                                 <option value="fr" {{ $setting->value === 'fr' ? 'selected' : '' }}>French</option>
@@ -124,7 +134,8 @@
                                                         @elseif($setting->key === 'currency')
                                                             <select class="form-select" 
                                                                     id="{{ $setting->key }}" 
-                                                                    name="settings[{{ $setting->key }}]">
+                                                                    name="settings[{{ $setting->key }}]"
+                                                                    @cannot('edit system configurations') disabled @endcannot>
                                                                 <option value="TZS" {{ $setting->value === 'TZS' ? 'selected' : '' }}>TZS - Tanzania Shilling</option>
                                                                 <option value="USD" {{ $setting->value === 'USD' ? 'selected' : '' }}>USD - US Dollar</option>
                                                                 <option value="EUR" {{ $setting->value === 'EUR' ? 'selected' : '' }}>EUR - Euro</option>
@@ -143,7 +154,8 @@
                                                         @elseif($setting->key === 'backup_frequency')
                                                             <select class="form-select" 
                                                                     id="{{ $setting->key }}" 
-                                                                    name="settings[{{ $setting->key }}]">
+                                                                    name="settings[{{ $setting->key }}]"
+                                                                    @cannot('edit system configurations') disabled @endcannot>
                                                                 <option value="hourly" {{ $setting->value === 'hourly' ? 'selected' : '' }}>Hourly</option>
                                                                 <option value="daily" {{ $setting->value === 'daily' ? 'selected' : '' }}>Daily</option>
                                                                 <option value="weekly" {{ $setting->value === 'weekly' ? 'selected' : '' }}>Weekly</option>
@@ -152,7 +164,8 @@
                                                         @elseif($setting->key === 'log_level')
                                                             <select class="form-select" 
                                                                     id="{{ $setting->key }}" 
-                                                                    name="settings[{{ $setting->key }}]">
+                                                                    name="settings[{{ $setting->key }}]"
+                                                                    @cannot('edit system configurations') disabled @endcannot>
                                                                 <option value="emergency" {{ $setting->value === 'emergency' ? 'selected' : '' }}>Emergency</option>
                                                                 <option value="alert" {{ $setting->value === 'alert' ? 'selected' : '' }}>Alert</option>
                                                                 <option value="critical" {{ $setting->value === 'critical' ? 'selected' : '' }}>Critical</option>
@@ -165,7 +178,8 @@
                                                         @elseif($setting->key === 'mail_encryption')
                                                             <select class="form-select" 
                                                                     id="{{ $setting->key }}" 
-                                                                    name="settings[{{ $setting->key }}]">
+                                                                    name="settings[{{ $setting->key }}]"
+                                                                    @cannot('edit system configurations') disabled @endcannot>
                                                                 <option value="tls" {{ $setting->value === 'tls' ? 'selected' : '' }}>TLS</option>
                                                                 <option value="ssl" {{ $setting->value === 'ssl' ? 'selected' : '' }}>SSL</option>
                                                                 <option value="" {{ $setting->value === '' ? 'selected' : '' }}>None</option>
@@ -177,10 +191,13 @@
                                                                        id="{{ $setting->key }}" 
                                                                        name="settings[{{ $setting->key }}]" 
                                                                        value="{{ $setting->value }}" 
-                                                                       placeholder="Enter email address">
+                                                                       placeholder="Enter email address"
+                                                                       @cannot('edit system configurations') readonly @endcannot>
+                                                                @can('edit system configurations')
                                                                 <button type="button" class="btn btn-outline-primary" onclick="testEmailConfig()">
                                                                     <i class="bx bx-send me-1"></i> Test
                                                                 </button>
+                                                                @endcan
                                                             </div>
                                                         @else
                                                             <input type="text" 
@@ -188,7 +205,8 @@
                                                                    id="{{ $setting->key }}" 
                                                                    name="settings[{{ $setting->key }}]" 
                                                                    value="{{ $setting->value }}" 
-                                                                   placeholder="Enter {{ strtolower($setting->label) }}">
+                                                                   placeholder="Enter {{ strtolower($setting->label) }}"
+                                                                   @cannot('edit system configurations') readonly @endcannot>
                                                         @endif
                                                     </div>
                                                 </div>
@@ -198,13 +216,19 @@
                                 @endforeach
                             </div>
 
+                            @can('edit system configurations')
                             <div class="mt-4">
                                 {!! form_submit_button(__('app.save_settings'), 'btn btn-primary', 'bx bx-save') !!}
                                 <button type="reset" class="btn btn-secondary">
                                     <i class="bx bx-reset me-1"></i> {{ __('app.reset_form') }}
                                 </button>
                             </div>
+                            @endcan
+                        @can('edit system configurations')
                         </form>
+                        @else
+                        </div>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -226,10 +250,12 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                @can('manage system configurations')
                 <form action="{{ route('settings.system.reset') }}" method="POST" class="d-inline">
                     @csrf
                     <button type="submit" class="btn btn-warning" onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_reset_settings') }}')">{{ __('app.reset_to_defaults') }}</button>
                 </form>
+                @endcan
             </div>
         </div>
     </div>

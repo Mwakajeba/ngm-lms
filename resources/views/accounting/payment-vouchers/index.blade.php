@@ -5,15 +5,23 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <div>
-                    <h6 class="mb-0 text-uppercase">PAYMENT VOUCHERS</h6>
-                    <p class="text-muted mb-0">Manage payment voucher entries</p>
-                </div>
-                <div>
-                    <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
-                        <i class="bx bx-plus me-2"></i>New Payment Voucher
-                    </a>
+            <!-- Breadcrumb -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-breadcrumb d-flex align-items-center">
+                        <div class="me-auto">
+                            <h5 class="page-title text-dark fw-semibold fs-3">Payment Vouchers</h5>
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                                <li class="breadcrumb-item active">Payment Vouchers</li>
+                            </ul>
+                        </div>
+                        <div class="ms-auto">
+                            <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
+                                <i class="bx bx-plus"></i> New Payment Voucher
+                            </a>
+                        </div>
+                    </div>
                 </div>
             </div>
             <hr />

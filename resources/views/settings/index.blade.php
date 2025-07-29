@@ -85,6 +85,7 @@
                                 </div>
 
                                 <!-- System Settings -->
+                                @can('view system configurations')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-warning">
                                         <div class="card-body text-center">
@@ -99,8 +100,11 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
+                                </div>
 
                                 <!-- Backup Settings -->
+                                @can('view backup settings')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
@@ -115,6 +119,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- AI Assistant -->
                                 <div class="col-md-6 col-lg-4 mb-4">

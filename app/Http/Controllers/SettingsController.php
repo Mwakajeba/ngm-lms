@@ -228,6 +228,13 @@ class SettingsController extends Controller
 
     public function systemSettings()
     {
+        // Check permissions for system configurations
+        if (!auth()->user()->can('view system configurations') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to view system configurations.');
+        }
+
         $groups = [
             'general' => 'General Settings',
             'email' => 'Email Configuration',
@@ -280,6 +287,13 @@ class SettingsController extends Controller
 
     public function updateSystemSettings(Request $request)
     {
+        // Check permissions for editing system configurations
+        if (!auth()->user()->can('edit system configurations') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to edit system configurations.');
+        }
+
         $request->validate([
             'settings' => 'required|array',
             'settings.*' => 'nullable|string',
@@ -312,6 +326,13 @@ class SettingsController extends Controller
 
     public function resetSystemSettings()
     {
+        // Check permissions for managing system configurations
+        if (!auth()->user()->can('manage system configurations') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to reset system configurations.');
+        }
+
         try {
             \App\Models\SystemSetting::truncate();
             \App\Models\SystemSetting::initializeDefaults();
@@ -344,6 +365,13 @@ class SettingsController extends Controller
 
     public function backupSettings()
     {
+        // Check permissions for backup settings
+        if (!auth()->user()->can('view backup settings') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to view backup settings.');
+        }
+
         $backupService = new BackupService();
         $backups = Backup::forCompany()->orderBy('created_at', 'desc')->paginate(10);
         $stats = $backupService->getBackupStats();
@@ -353,6 +381,13 @@ class SettingsController extends Controller
 
     public function createBackup(Request $request)
     {
+        // Check permissions for creating backups
+        if (!auth()->user()->can('create backup') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to create backups.');
+        }
+
         $request->validate([
             'type' => 'required|in:database,files,full',
             'description' => 'nullable|string|max:500',
@@ -384,6 +419,13 @@ class SettingsController extends Controller
 
     public function restoreBackup(Request $request)
     {
+        // Check permissions for restoring backups
+        if (!auth()->user()->can('restore backup') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to restore backups.');
+        }
+
         $request->validate([
             'backup_id' => 'required|exists:backups,id',
         ]);
@@ -403,6 +445,13 @@ class SettingsController extends Controller
 
     public function downloadBackup($hash_id)
     {
+        // Check permissions for downloading backups
+        if (!auth()->user()->can('view backup settings') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to download backups.');
+        }
+
         // Decode hash ID to get backup ID
         $id = Hashids::decode($hash_id);
         if (empty($id)) {
@@ -424,6 +473,13 @@ class SettingsController extends Controller
 
     public function deleteBackup($hash_id)
     {
+        // Check permissions for deleting backups
+        if (!auth()->user()->can('delete backup') && 
+            !auth()->user()->can('manage system settings') && 
+            !auth()->user()->hasRole('admin')) {
+            abort(403, 'You do not have permission to delete backups.');
+        }
+
         // Decode hash ID to get backup ID
         $id = Hashids::decode($hash_id);
         if (empty($id)) {
