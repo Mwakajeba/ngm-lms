@@ -25,4 +25,10 @@ class PaymentItem extends Model
     {
         return $this->belongsTo(ChartAccount::class);
     }
+
+    // Accessors
+    public function getFormattedAmountAttribute()
+    {
+        return number_format($this->amount, 2);
+    }
 }

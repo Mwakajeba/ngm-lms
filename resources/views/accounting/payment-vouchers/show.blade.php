@@ -11,188 +11,391 @@
                     <p class="text-muted mb-0">View payment voucher information</p>
                 </div>
                 <div>
-                    @if(!$paymentVoucher->approved)
-                        <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher) }}" class="btn btn-warning me-2">
-                            <i class="bx bx-edit me-1"></i>Edit
-                        </a>
-                        <form action="{{ route('accounting.payment-vouchers.approve', $paymentVoucher) }}" method="POST" class="d-inline">
-                            @csrf
-                            <button type="submit" class="btn btn-success me-2" onclick="return confirm('Are you sure you want to approve this payment voucher?')">
-                                <i class="bx bx-check me-1"></i>Approve
-                            </button>
-                        </form>
-                    @endif
-                    <a href="{{ route('accounting.payment-vouchers') }}" class="btn btn-secondary">
-                        <i class="bx bx-arrow-back me-1"></i>Back to Payment Vouchers
+                    <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
+                        class="btn btn-primary me-2">
+                        <i class="bx bx-edit me-2"></i>Edit Payment Voucher
+                    </a>
+                    <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
+                        <i class="bx bx-arrow-back me-2"></i>Back to Payment Vouchers
                     </a>
                 </div>
             </div>
             <hr />
 
+            <!-- Prominent Header Card -->
+            <div class="card radius-10 bg-gradient-danger text-white mb-4">
+                <div class="card-body">
+                    <div class="d-flex align-items-center">
+                        <div
+                            class="avatar-lg bg-white text-danger rounded-circle me-3 d-flex align-items-center justify-content-center">
+                            <i class="bx bx-receipt font-size-32"></i>
+                        </div>
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1">Payment Voucher #{{ $paymentVoucher->reference }}</h3>
+                            <p class="mb-0 opacity-75">{{ $paymentVoucher->description ?: 'No description provided' }}</p>
+                        </div>
+                        <div class="d-flex gap-2">
+                            {!! $paymentVoucher->status_badge !!}
+                            <span class="badge bg-light text-dark">
+                                <i class="bx bx-calendar me-1"></i>
+                                {{ $paymentVoucher->formatted_date }}
+                            </span>
+                            <span class="badge bg-light text-dark">
+                                <i class="bx bx-dollar me-1"></i>
+                                {{ $paymentVoucher->formatted_amount }}
+                            </span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="row">
-                <!-- Payment Voucher Details -->
+                <!-- Left Column - Main Information -->
                 <div class="col-lg-8">
-                    <div class="card radius-10">
-                        <div class="card-header">
-                            <h6 class="mb-0">Payment Voucher Information</h6>
+                    <!-- Basic Information -->
+                    <div class="card radius-10 mb-4">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bx bx-info-circle me-2"></i>Basic Information</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Reference</label>
-                                    <p class="mb-0">{{ $paymentVoucher->reference }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Reference Type</label>
-                                    <p class="mb-0">{{ ucfirst($paymentVoucher->reference_type) }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Reference Number</label>
-                                    <p class="mb-0">{{ $paymentVoucher->reference_number }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Date</label>
-                                    <p class="mb-0">{{ $paymentVoucher->formatted_date }}</p>
+                                    <p class="form-control-plaintext">{{ $paymentVoucher->formatted_date }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Reference</label>
+                                    <p class="form-control-plaintext">{{ $paymentVoucher->reference }}</p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Bank Account</label>
+                                    <p class="form-control-plaintext">{{ $paymentVoucher->bankAccount->name ?? 'N/A' }} -
+                                        {{ $paymentVoucher->bankAccount->account_number ?? 'N/A' }}
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Customer</label>
+                                    <p class="form-control-plaintext">
+                                        @if($paymentVoucher->customer)
+                                            {{ $paymentVoucher->customer->name ?? 'N/A' }}
+                                            ({{ $paymentVoucher->customer->customerNo ?? 'N/A' }})
+                                        @else
+                                            <span class="text-muted">No customer selected</span>
+                                        @endif
+                                    </p>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label fw-bold">Description</label>
-                                    <p class="mb-0">{{ $paymentVoucher->description ?: 'No description provided' }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Total Amount</label>
-                                    <p class="mb-0 text-primary fw-bold">{{ $paymentVoucher->formatted_amount }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Status</label>
-                                    <p class="mb-0">{!! $paymentVoucher->status_badge !!}</p>
+                                    <p class="form-control-plaintext">
+                                        {{ $paymentVoucher->description ?: 'No description provided' }}
+                                    </p>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Payment Items -->
-                    <div class="card radius-10 mt-4">
-                        <div class="card-header">
-                            <h6 class="mb-0">Payment Items</h6>
+                    <!-- Line Items -->
+                    <div class="card radius-10 mb-4">
+                        <div class="card-header bg-danger text-white">
+                            <h5 class="mb-0"><i class="bx bx-list-ul me-2"></i>Line Items</h5>
                         </div>
                         <div class="card-body">
                             <div class="table-responsive">
                                 <table class="table table-bordered">
-                                    <thead>
+                                    <thead class="table-light">
                                         <tr>
-                                            <th>#</th>
-                                            <th>Chart Account</th>
-                                            <th>Description</th>
-                                            <th class="text-end">Amount</th>
+                                            <th width="35%">Account</th>
+                                            <th width="35%">Description</th>
+                                            <th width="30%" class="text-end">Amount</th>
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($paymentVoucher->paymentItems as $index => $item)
+                                        @forelse($paymentVoucher->paymentItems as $item)
                                             <tr>
-                                                <td>{{ $index + 1 }}</td>
-                                                <td>
-                                                    <strong>{{ $item->chartAccount->account_name }}</strong>
-                                                    <br>
-                                                    <small class="text-muted">
-                                                        {{ $item->chartAccount->accountClassGroup->accountClass->name }}
-                                                    </small>
-                                                </td>
+                                                <td>{{ $item->chartAccount->account_name ?? 'N/A' }}
+                                                    ({{ $item->chartAccount->account_code ?? 'N/A' }})</td>
                                                 <td>{{ $item->description ?: 'No description' }}</td>
-                                                <td class="text-end">
-                                                    <strong>{{ number_format($item->amount, 2) }}</strong>
-                                                </td>
+                                                <td class="text-end fw-bold">{{ $item->formatted_amount }}</td>
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="4" class="text-center">No payment items found</td>
+                                                <td colspan="3" class="text-center text-muted">No line items found</td>
                                             </tr>
                                         @endforelse
                                     </tbody>
-                                    <tfoot>
+                                    <tfoot class="table-light">
                                         <tr>
-                                            <th colspan="3" class="text-end">Total:</th>
-                                            <th class="text-end">{{ $paymentVoucher->formatted_amount }}</th>
+                                            <th>Total</th>
+                                            <th class="text-end fw-bold text-danger">
+                                                {{ number_format($paymentVoucher->total_amount, 2) }}
+                                            </th>
                                         </tr>
                                     </tfoot>
                                 </table>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <!-- Sidebar Information -->
-                <div class="col-lg-4">
-                    <!-- Payment Details -->
-                    <div class="card radius-10">
-                        <div class="card-header">
-                            <h6 class="mb-0">Payment Details</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Bank Account</label>
-                                <p class="mb-0">{{ $paymentVoucher->bankAccount->name ?? 'N/A' }}</p>
-                                @if($paymentVoucher->bankAccount)
-                                    <small class="text-muted">{{ $paymentVoucher->bankAccount->account_number }}</small>
-                                @endif
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Customer</label>
-                                <p class="mb-0">{{ $paymentVoucher->customer->name ?? 'N/A' }}</p>
-                            </div>
-                            <div class="mb-3">
-                                <label class="form-label fw-bold">Branch</label>
-                                <p class="mb-0">{{ $paymentVoucher->branch->name ?? 'N/A' }}</p>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Attachment -->
-                    @if($paymentVoucher->attachment)
-                        <div class="card radius-10 mt-4">
-                            <div class="card-header">
-                                <h6 class="mb-0">Attachment</h6>
+                    <!-- GL Transactions -->
+                    @if($paymentVoucher->glTransactions->count() > 0)
+                        <div class="card radius-10 mb-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bx bx-book me-2"></i>General Ledger Entries</h5>
                             </div>
                             <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <i class="bx bx-file font-size-24 me-3"></i>
-                                    <div class="flex-grow-1">
-                                        <p class="mb-1">{{ $paymentVoucher->attachment_name }}</p>
-                                        <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher) }}" 
-                                            class="btn btn-sm btn-outline-primary">
-                                            <i class="bx bx-download me-1"></i>Download
-                                        </a>
-                                    </div>
+                                <div class="table-responsive">
+                                    <table class="table table-bordered">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th width="40%">Account</th>
+                                                <th width="20%">Nature</th>
+                                                <th width="20%">Amount</th>
+                                                <th width="20%">Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($paymentVoucher->glTransactions as $glTransaction)
+                                                <tr>
+                                                    <td>{{ $glTransaction->chartAccount->account_name ?? 'N/A' }}
+                                                        ({{ $glTransaction->chartAccount->account_code ?? 'N/A' }})</td>
+                                                    <td>
+                                                        <span
+                                                            class="badge bg-{{ $glTransaction->nature === 'debit' ? 'danger' : 'warning' }}">
+                                                            {{ ucfirst($glTransaction->nature) }}
+                                                        </span>
+                                                    </td>
+                                                    <td class="text-end fw-bold">{{ number_format($glTransaction->amount, 2) }}</td>
+                                                    <td>{{ $glTransaction->date ? \Carbon\Carbon::parse($glTransaction->date)->format('M d, Y') : 'N/A' }}
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
                                 </div>
                             </div>
                         </div>
                     @endif
+                </div>
 
-                    <!-- Audit Information -->
-                    <div class="card radius-10 mt-4">
-                        <div class="card-header">
-                            <h6 class="mb-0">Audit Information</h6>
+                <!-- Right Column - Sidebar Information -->
+                <div class="col-lg-4">
+                    <!-- Organization Information -->
+                    <div class="card radius-10 mb-4">
+                        <div class="card-header bg-warning text-dark">
+                            <h5 class="mb-0"><i class="bx bx-building me-2"></i>Organization</h5>
                         </div>
                         <div class="card-body">
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Created By</label>
-                                <p class="mb-0">{{ $paymentVoucher->user->name }}</p>
-                                <small class="text-muted">{{ $paymentVoucher->created_at->format('d/m/Y H:i') }}</small>
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-building me-2"></i>Company
+                                </label>
+                                <p class="form-control-plaintext">
+                                    @if($paymentVoucher->customer && $paymentVoucher->customer->company)
+                                        {{ $paymentVoucher->customer->company->name ?? 'N/A' }}
+                                    @else
+                                        <span class="text-muted">No company information</span>
+                                    @endif
+                                </p>
                             </div>
-                            @if($paymentVoucher->approved)
-                                <div class="mb-3">
-                                    <label class="form-label fw-bold">Approved By</label>
-                                    <p class="mb-0">{{ $paymentVoucher->approvedBy->name ?? 'N/A' }}</p>
-                                    <small class="text-muted">{{ $paymentVoucher->approved_at ? $paymentVoucher->approved_at->format('d/m/Y H:i') : 'N/A' }}</small>
-                                </div>
-                            @endif
                             <div class="mb-3">
-                                <label class="form-label fw-bold">Last Updated</label>
-                                <p class="mb-0">{{ $paymentVoucher->updated_at->format('d/m/Y H:i') }}</p>
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-map-pin me-2"></i>Branch
+                                </label>
+                                <p class="form-control-plaintext">{{ $paymentVoucher->branch->name ?? 'N/A' }}</p>
                             </div>
                         </div>
                     </div>
+
+                    <!-- Audit Information -->
+                    <div class="card radius-10 mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="bx bx-history me-2"></i>Audit Information</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-user me-2"></i>Created By
+                                </label>
+                                <p class="form-control-plaintext">{{ $paymentVoucher->user->name ?? 'N/A' }}</p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-calendar me-2"></i>Created Date
+                                </label>
+                                <p class="form-control-plaintext">
+                                    {{ $paymentVoucher->created_at ? $paymentVoucher->created_at->format('M d, Y H:i A') : 'N/A' }}
+                                </p>
+                            </div>
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bx bx-time me-2"></i>Last Updated
+                                </label>
+                                <p class="form-control-plaintext">
+                                    {{ $paymentVoucher->updated_at ? $paymentVoucher->updated_at->format('M d, Y H:i A') : 'N/A' }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick Actions -->
+                    <div class="card radius-10">
+                        <div class="card-header bg-light">
+                            <h5 class="mb-0"><i class="bx bx-cog me-2"></i>Quick Actions</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex gap-2 flex-wrap">
+                                <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
+                                    class="btn btn-primary">
+                                    <i class="bx bx-edit me-1"></i>Edit
+                                </a>
+                                <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
+                                    <i class="bx bx-arrow-back me-1"></i>Back
+                                </a>
+                                @if($paymentVoucher->attachment)
+                                    <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher->hash_id) }}"
+                                        class="btn btn-info">
+                                        <i class="bx bx-download me-1"></i>Download Attachment
+                                    </a>
+                                @endif
+                                <button type="button" class="btn btn-outline-danger" onclick="deletePaymentVoucher()">
+                                    <i class="bx bx-trash me-1"></i>Delete
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Attachment Section -->
+                    @if($paymentVoucher->attachment)
+                        <div class="card radius-10 mt-4">
+                            <div class="card-header bg-info text-white">
+                                <h5 class="mb-0"><i class="bx bx-paperclip me-2"></i>Attachment</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <h6 class="mb-1">{{ $paymentVoucher->attachment_name }}</h6>
+                                        <p class="text-muted mb-0">
+                                            <i class="bx bx-file-pdf me-1"></i>
+                                            PDF document uploaded with this payment voucher
+                                        </p>
+                                    </div>
+                                    <div class="d-flex gap-2">
+                                        <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher->hash_id) }}"
+                                            class="btn btn-sm btn-primary">
+                                            <i class="bx bx-download me-1"></i>Download
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAttachment()">
+                                            <i class="bx bx-trash me-1"></i>Remove
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="card radius-10 mt-4">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bx bx-paperclip me-2"></i>Attachment</h5>
+                            </div>
+                            <div class="card-body text-center">
+                                <div class="py-4">
+                                    <i class="bx bx-file-pdf font-size-48 text-muted mb-3"></i>
+                                    <h6 class="text-muted">No PDF attachment uploaded</h6>
+                                    <p class="text-muted mb-0">You can add a PDF attachment when editing this payment voucher.</p>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
     </div>
-@endsection 
+@endsection
+
+@push('scripts')
+    <script>
+        function deletePaymentVoucher() {
+            Swal.fire({
+                title: 'Delete Payment Voucher',
+                text: 'Are you sure you want to delete this payment voucher? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': '{{ route("accounting.payment-vouchers.destroy", $paymentVoucher->hash_id) }}'
+                    });
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_token',
+                        'value': '{{ csrf_token() }}'
+                    }));
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_method',
+                        'value': 'DELETE'
+                    }));
+
+                    $('body').append(form);
+                    form.submit();
+                }
+            });
+        }
+
+        function deleteAttachment() {
+            Swal.fire({
+                title: 'Remove Attachment',
+                text: 'Are you sure you want to remove this attachment? This action cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, remove it!',
+                cancelButtonText: 'Cancel',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Create form to submit DELETE request
+                    const form = $('<form>', {
+                        'method': 'POST',
+                        'action': '{{ route("accounting.payment-vouchers.remove-attachment", $paymentVoucher->hash_id) }}'
+                    });
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_token',
+                        'value': '{{ csrf_token() }}'
+                    }));
+
+                    form.append($('<input>', {
+                        'type': 'hidden',
+                        'name': '_method',
+                        'value': 'DELETE'
+                    }));
+
+                    $('body').append(form);
+                    form.submit();
+                }
+            });
+        }
+    </script>
+@endpush
+
+@push('styles')
+    <style>
+        .bg-gradient-danger {
+            background: linear-gradient(135deg, #dc3545 0%, #fd7e14 100%);
+        }
+
+        .font-size-32 {
+            font-size: 2rem;
+        }
+    </style>
+@endpush 

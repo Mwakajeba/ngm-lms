@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Helpers\HashIdHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -63,6 +64,12 @@ class Payment extends Model
         return $this->hasMany(PaymentItem::class);
     }
 
+    public function glTransactions()
+    {
+        return $this->hasMany(GlTransaction::class, 'transaction_id')
+            ->where('transaction_type', 'payment');
+    }
+
     // Scopes
     public function scopeApproved($query)
     {
@@ -85,13 +92,6 @@ class Payment extends Model
     }
 
     // Accessors
-    public function getStatusBadgeAttribute()
-    {
-        return $this->approved ? 
-            '<span class="badge bg-success">Approved</span>' : 
-            '<span class="badge bg-warning">Pending</span>';
-    }
-
     public function getFormattedAmountAttribute()
     {
         return number_format($this->amount, 2);
@@ -99,7 +99,20 @@ class Payment extends Model
 
     public function getFormattedDateAttribute()
     {
-        return $this->date->format('d/m/Y');
+        return $this->date ? $this->date->format('M d, Y') : 'N/A';
+    }
+
+    public function getStatusBadgeAttribute()
+    {
+        if ($this->approved) {
+            return '<span class="badge bg-success">Approved</span>';
+        }
+        return '<span class="badge bg-warning">Pending</span>';
+    }
+
+    public function getTotalAmountAttribute()
+    {
+        return $this->paymentItems->sum('amount');
     }
 
     public function getAttachmentNameAttribute()
@@ -108,5 +121,44 @@ class Payment extends Model
             return null;
         }
         return basename($this->attachment);
+    }
+
+    /**
+     * Get the route key for the model.
+     */
+    public function getRouteKeyName()
+    {
+        return 'id';
+    }
+
+    /**
+     * Resolve the model instance for the given hash ID.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        // Try to decode as hash ID first
+        $id = HashIdHelper::decode($value);
+        if ($id !== null) {
+            return $this->findOrFail($id);
+        }
+        
+        // If not a hash ID, try as regular ID
+        return $this->findOrFail($value);
+    }
+
+    /**
+     * Get the hash ID for this model.
+     */
+    public function getHashIdAttribute()
+    {
+        return HashIdHelper::encode($this->id);
+    }
+
+    /**
+     * Get the hash ID for routing.
+     */
+    public function getRouteKey()
+    {
+        return HashIdHelper::encode($this->id);
     }
 }

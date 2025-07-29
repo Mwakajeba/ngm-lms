@@ -3,77 +3,54 @@
 namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankAccount;
+use App\Models\ChartAccount;
+use App\Models\Customer;
+use App\Models\GlTransaction;
 use App\Models\Payment;
 use App\Models\PaymentItem;
-use App\Models\ChartAccount;
-use App\Models\BankAccount;
-use App\Models\Supplier;
-use App\Models\Customer;
-use App\Models\Branch;
+use App\Traits\TransactionHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 
 class PaymentVoucherController extends Controller
 {
+    use TransactionHelper;
+
     /**
      * Display a listing of the resource.
      */
-    public function index(Request $request)
+    public function index()
     {
         $user = Auth::user();
-        $query = Payment::with(['user', 'bankAccount', 'customer', 'branch', 'approvedBy', 'paymentItems.chartAccount']);
 
-        // Filter by company scope
-        if ($user->company_id) {
-            $query->whereHas('branch', function ($q) use ($user) {
-                $q->where('company_id', $user->company_id);
-            });
-        }
+        // Get payment vouchers for the current company
+        $paymentVouchers = Payment::with(['bankAccount', 'customer', 'user'])
+            ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
 
-        // Filter by branch scope
-        if ($user->branch_id) {
-            $query->where('branch_id', $user->branch_id);
-        }
+        // Calculate stats
+        $allPayments = Payment::with(['bankAccount.chartAccount.accountClassGroup'])
+            ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->get();
 
-        // Apply search filters
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->where(function ($q) use ($search) {
-                $q->where('reference', 'like', "%{$search}%")
-                  ->orWhere('reference_number', 'like', "%{$search}%")
-                  ->orWhere('description', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('date_from')) {
-            $query->whereDate('date', '>=', $request->date_from);
-        }
-
-        if ($request->filled('date_to')) {
-            $query->whereDate('date', '<=', $request->date_to);
-        }
-
-        if ($request->filled('status')) {
-            if ($request->status === 'approved') {
-                $query->where('approved', true);
-            } elseif ($request->status === 'pending') {
-                $query->where('approved', false);
-            }
-        }
-
-        $payments = $query->orderBy('created_at', 'desc')->paginate(15);
-
-        // Calculate statistics
         $stats = [
-            'total' => $payments->total(),
-            'approved' => Payment::where('approved', true)->count(),
-            'pending' => Payment::where('approved', false)->count(),
-            'total_amount' => Payment::sum('amount'),
+            'total' => $allPayments->count(),
+            'this_month' => $allPayments->where('date', '>=', now()->startOfMonth())->count(),
+            'total_amount' => $allPayments->sum('amount'),
+            'this_month_amount' => $allPayments->where('date', '>=', now()->startOfMonth())->sum('amount'),
         ];
 
-        return view('accounting.payment-vouchers.index', compact('payments', 'stats'));
+        return view('accounting.payment-vouchers.index', compact('paymentVouchers', 'stats'));
     }
 
     /**
@@ -82,33 +59,36 @@ class PaymentVoucherController extends Controller
     public function create()
     {
         $user = Auth::user();
-        
-        // Get chart accounts for the company
+
+        // Get bank accounts for the current company
+        $bankAccounts = BankAccount::with('chartAccount')
+            ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Get customers for the current company/branch
+        $customers = Customer::where('company_id', $user->company_id)
+            ->when($user->branch_id, function ($query) use ($user) {
+                return $query->where('branch_id', $user->branch_id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Get chart accounts for the current company - only expense accounts
         $chartAccounts = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
             $query->where('company_id', $user->company_id);
-        })->with('accountClassGroup.accountClass')->get();
+        })
+            ->whereHas('accountClassGroup.accountClass', function ($query) {
+                $query->where('name', 'like', '%expense%')
+                      ->orWhere('name', 'like', '%cost%')
+                      ->orWhere('name', 'like', '%expenditure%');
+            })
+            ->orderBy('account_name')
+            ->get();
 
-        // Get bank accounts
-        $bankAccounts = BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
-            $query->where('company_id', $user->company_id);
-        })->get();
-
-        // Get suppliers
-        $suppliers = Supplier::where('company_id', $user->company_id)->get();
-
-        // Get customers
-        $customers = Customer::where('company_id', $user->company_id)->get();
-
-        // Get branches
-        $branches = Branch::where('company_id', $user->company_id)->get();
-
-        return view('accounting.payment-vouchers.create', compact(
-            'chartAccounts', 
-            'bankAccounts', 
-            'suppliers', 
-            'customers', 
-            'branches'
-        ));
+        return view('accounting.payment-vouchers.create', compact('bankAccounts', 'customers', 'chartAccounts'));
     }
 
     /**
@@ -116,77 +96,111 @@ class PaymentVoucherController extends Controller
      */
     public function store(Request $request)
     {
-        $request->validate([
-            'reference' => 'required|string|max:255',
-            'reference_type' => 'required|string|max:255',
-            'reference_number' => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
             'date' => 'required|date',
-            'description' => 'nullable|string',
+            'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'branch_id' => 'required|exists:branches,id',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'items' => 'required|array|min:1',
-            'items.*.chart_account_id' => 'required|exists:chart_accounts,id',
-            'items.*.amount' => 'required|numeric|min:0.01',
-            'items.*.description' => 'nullable|string',
+            'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf|max:2048',
+            'line_items' => 'required|array|min:1',
+            'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
+            'line_items.*.amount' => 'required|numeric|min:0.01',
+            'line_items.*.description' => 'nullable|string',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
         try {
-            DB::beginTransaction();
+            return $this->runTransaction(function () use ($request) {
+                $user = Auth::user();
+                $totalAmount = collect($request->line_items)->sum('amount');
 
-            $user = Auth::user();
-            
-            // Calculate total amount
-            $totalAmount = collect($request->items)->sum('amount');
+                // Handle file upload
+                $attachmentPath = null;
+                if ($request->hasFile('attachment')) {
+                    $file = $request->file('attachment');
+                    $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                    $attachmentPath = $file->storeAs('payment-attachments', $fileName, 'public');
+                }
 
-            // Handle file upload
-            $attachmentPath = null;
-            if ($request->hasFile('attachment')) {
-                $attachmentPath = $request->file('attachment')->store('payment-attachments', 'public');
-            }
-
-            // Create payment voucher
-            $payment = Payment::create([
-                'reference' => $request->reference,
-                'reference_type' => $request->reference_type,
-                'reference_number' => $request->reference_number,
-                'amount' => $totalAmount,
-                'date' => $request->date,
-                'description' => $request->description,
-                'user_id' => $user->id,
-                'attachment' => $attachmentPath,
-                'bank_account_id' => $request->bank_account_id,
-                'customer_id' => $request->customer_id,
-                'branch_id' => $request->branch_id,
-                'approved' => false,
-            ]);
-
-            // Create payment items
-            foreach ($request->items as $item) {
-                PaymentItem::create([
-                    'payment_id' => $payment->id,
-                    'chart_account_id' => $item['chart_account_id'],
-                    'amount' => $item['amount'],
-                    'description' => $item['description'] ?? null,
+                // Create payment
+                $payment = Payment::create([
+                    'reference' => $request->reference ?: 'PV-' . strtoupper(uniqid()),
+                    'reference_type' => 'manual',
+                    'reference_number' => $request->reference,
+                    'amount' => $totalAmount,
+                    'date' => $request->date,
+                    'description' => $request->description,
+                    'attachment' => $attachmentPath,
+                    'user_id' => $user->id,
+                    'bank_account_id' => $request->bank_account_id,
+                    'customer_id' => $request->customer_id,
+                    'branch_id' => $user->branch_id,
+                    'approved' => true, // Auto-approve for now
+                    'approved_by' => $user->id,
+                    'approved_at' => now(),
                 ]);
-            }
 
-            DB::commit();
+                // Create payment items
+                $paymentItems = [];
+                foreach ($request->line_items as $lineItem) {
+                    $paymentItems[] = [
+                        'payment_id' => $payment->id,
+                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'amount' => $lineItem['amount'],
+                        'description' => $lineItem['description'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
 
-            return redirect()->route('accounting.payment-vouchers')
-                ->with('success', 'Payment voucher created successfully!');
+                PaymentItem::insert($paymentItems);
 
+                // Create GL transactions
+                $bankAccount = BankAccount::find($request->bank_account_id);
+
+                // Credit bank account
+                GlTransaction::create([
+                    'chart_account_id' => $bankAccount->chart_account_id,
+                    'customer_id' => $request->customer_id,
+                    'amount' => $totalAmount,
+                    'nature' => 'credit',
+                    'transaction_id' => $payment->id,
+                    'transaction_type' => 'payment',
+                    'date' => $request->date,
+                    'description' => $request->description ?: "Payment voucher {$payment->reference}",
+                    'branch_id' => $user->branch_id,
+                    'user_id' => $user->id,
+                ]);
+
+                // Debit each chart account
+                foreach ($request->line_items as $lineItem) {
+                    GlTransaction::create([
+                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'customer_id' => $request->customer_id,
+                        'amount' => $lineItem['amount'],
+                        'nature' => 'debit',
+                        'transaction_id' => $payment->id,
+                        'transaction_type' => 'payment',
+                        'date' => $request->date,
+                        'description' => $lineItem['description'] ?: "Payment voucher {$payment->reference}",
+                        'branch_id' => $user->branch_id,
+                        'user_id' => $user->id,
+                    ]);
+                }
+
+                return redirect()->route('accounting.payment-vouchers.show', $payment)
+                    ->with('success', 'Payment voucher created successfully.');
+            });
         } catch (\Exception $e) {
-            DB::rollBack();
-            
-            // Delete uploaded file if payment creation fails
-            if ($attachmentPath && Storage::disk('public')->exists($attachmentPath)) {
-                Storage::disk('public')->delete($attachmentPath);
-            }
-
-            return back()->withInput()
-                ->with('error', 'Failed to create payment voucher. Please try again.');
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to create payment voucher: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -195,14 +209,7 @@ class PaymentVoucherController extends Controller
      */
     public function show(Payment $paymentVoucher)
     {
-        $paymentVoucher->load([
-            'user', 
-            'bankAccount', 
-            'customer', 
-            'branch', 
-            'approvedBy',
-            'paymentItems.chartAccount.accountClassGroup.accountClass'
-        ]);
+        $paymentVoucher->load(['bankAccount', 'customer', 'user', 'branch', 'paymentItems.chartAccount', 'glTransactions.chartAccount']);
 
         return view('accounting.payment-vouchers.show', compact('paymentVoucher'));
     }
@@ -212,43 +219,39 @@ class PaymentVoucherController extends Controller
      */
     public function edit(Payment $paymentVoucher)
     {
-        // Check if payment is approved
-        if ($paymentVoucher->approved) {
-            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
-                ->with('error', 'Cannot edit approved payment voucher.');
-        }
-
         $user = Auth::user();
-        
-        // Get chart accounts for the company
+
+        // Get bank accounts for the current company
+        $bankAccounts = BankAccount::with('chartAccount')
+            ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Get customers for the current company/branch
+        $customers = Customer::where('company_id', $user->company_id)
+            ->when($user->branch_id, function ($query) use ($user) {
+                return $query->where('branch_id', $user->branch_id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Get chart accounts for the current company - only expense accounts
         $chartAccounts = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
             $query->where('company_id', $user->company_id);
-        })->with('accountClassGroup.accountClass')->get();
-
-        // Get bank accounts
-        $bankAccounts = BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
-            $query->where('company_id', $user->company_id);
-        })->get();
-
-        // Get suppliers
-        $suppliers = Supplier::where('company_id', $user->company_id)->get();
-
-        // Get customers
-        $customers = Customer::where('company_id', $user->company_id)->get();
-
-        // Get branches
-        $branches = Branch::where('company_id', $user->company_id)->get();
+        })
+            ->whereHas('accountClassGroup.accountClass', function ($query) {
+                $query->where('name', 'like', '%expense%')
+                      ->orWhere('name', 'like', '%cost%')
+                      ->orWhere('name', 'like', '%expenditure%');
+            })
+            ->orderBy('account_name')
+            ->get();
 
         $paymentVoucher->load('paymentItems');
 
-        return view('accounting.payment-vouchers.edit', compact(
-            'paymentVoucher',
-            'chartAccounts', 
-            'bankAccounts', 
-            'suppliers', 
-            'customers', 
-            'branches'
-        ));
+        return view('accounting.payment-vouchers.edit', compact('paymentVoucher', 'bankAccounts', 'customers', 'chartAccounts'));
     }
 
     /**
@@ -256,80 +259,121 @@ class PaymentVoucherController extends Controller
      */
     public function update(Request $request, Payment $paymentVoucher)
     {
-        // Check if payment is approved
-        if ($paymentVoucher->approved) {
-            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
-                ->with('error', 'Cannot edit approved payment voucher.');
-        }
-
-        $request->validate([
-            'reference' => 'required|string|max:255',
-            'reference_type' => 'required|string|max:255',
-            'reference_number' => 'required|string|max:255',
+        $validator = Validator::make($request->all(), [
             'date' => 'required|date',
-            'description' => 'nullable|string',
+            'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'customer_id' => 'nullable|exists:customers,id',
-            'branch_id' => 'required|exists:branches,id',
-            'attachment' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'items' => 'required|array|min:1',
-            'items.*.chart_account_id' => 'required|exists:chart_accounts,id',
-            'items.*.amount' => 'required|numeric|min:0.01',
-            'items.*.description' => 'nullable|string',
+            'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf|max:2048',
+            'line_items' => 'required|array|min:1',
+            'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
+            'line_items.*.amount' => 'required|numeric|min:0.01',
+            'line_items.*.description' => 'nullable|string',
         ]);
 
+        if ($validator->fails()) {
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
         try {
-            DB::beginTransaction();
+            return $this->runTransaction(function () use ($request, $paymentVoucher) {
+                $user = Auth::user();
+                $totalAmount = collect($request->line_items)->sum('amount');
 
-            // Calculate total amount
-            $totalAmount = collect($request->items)->sum('amount');
+                // Handle file upload and attachment removal
+                $attachmentPath = $paymentVoucher->attachment;
+                
+                // Check if user wants to remove attachment
+                if ($request->has('remove_attachment') && $request->remove_attachment == '1') {
+                    // Delete old attachment if exists
+                    if ($paymentVoucher->attachment && Storage::disk('public')->exists($paymentVoucher->attachment)) {
+                        Storage::disk('public')->delete($paymentVoucher->attachment);
+                    }
+                    $attachmentPath = null;
+                } elseif ($request->hasFile('attachment')) {
+                    // Delete old attachment if exists
+                    if ($paymentVoucher->attachment && Storage::disk('public')->exists($paymentVoucher->attachment)) {
+                        Storage::disk('public')->delete($paymentVoucher->attachment);
+                    }
 
-            // Handle file upload
-            $attachmentPath = $paymentVoucher->attachment;
-            if ($request->hasFile('attachment')) {
-                // Delete old attachment
-                if ($attachmentPath && Storage::disk('public')->exists($attachmentPath)) {
-                    Storage::disk('public')->delete($attachmentPath);
+                    $file = $request->file('attachment');
+                    $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                    $attachmentPath = $file->storeAs('payment-attachments', $fileName, 'public');
                 }
-                $attachmentPath = $request->file('attachment')->store('payment-attachments', 'public');
-            }
 
-            // Update payment voucher
-            $paymentVoucher->update([
-                'reference' => $request->reference,
-                'reference_type' => $request->reference_type,
-                'reference_number' => $request->reference_number,
-                'amount' => $totalAmount,
-                'date' => $request->date,
-                'description' => $request->description,
-                'attachment' => $attachmentPath,
-                'bank_account_id' => $request->bank_account_id,
-                'customer_id' => $request->customer_id,
-                'branch_id' => $request->branch_id,
-            ]);
-
-            // Delete existing payment items
-            $paymentVoucher->paymentItems()->delete();
-
-            // Create new payment items
-            foreach ($request->items as $item) {
-                PaymentItem::create([
-                    'payment_id' => $paymentVoucher->id,
-                    'chart_account_id' => $item['chart_account_id'],
-                    'amount' => $item['amount'],
-                    'description' => $item['description'] ?? null,
+                // Update payment
+                $paymentVoucher->update([
+                    'reference' => $request->reference ?: $paymentVoucher->reference,
+                    'amount' => $totalAmount,
+                    'date' => $request->date,
+                    'description' => $request->description,
+                    'attachment' => $attachmentPath,
+                    'bank_account_id' => $request->bank_account_id,
+                    'customer_id' => $request->customer_id,
                 ]);
-            }
 
-            DB::commit();
+                // Delete existing payment items and GL transactions
+                $paymentVoucher->paymentItems()->delete();
+                $paymentVoucher->glTransactions()->delete();
 
-            return redirect()->route('accounting.payment-vouchers')
-                ->with('success', 'Payment voucher updated successfully!');
+                // Create new payment items
+                $paymentItems = [];
+                foreach ($request->line_items as $lineItem) {
+                    $paymentItems[] = [
+                        'payment_id' => $paymentVoucher->id,
+                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'amount' => $lineItem['amount'],
+                        'description' => $lineItem['description'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
 
+                PaymentItem::insert($paymentItems);
+
+                // Create new GL transactions
+                $bankAccount = BankAccount::find($request->bank_account_id);
+
+                // Credit bank account
+                GlTransaction::create([
+                    'chart_account_id' => $bankAccount->chart_account_id,
+                    'customer_id' => $request->customer_id,
+                    'amount' => $totalAmount,
+                    'nature' => 'credit',
+                    'transaction_id' => $paymentVoucher->id,
+                    'transaction_type' => 'payment',
+                    'date' => $request->date,
+                    'description' => $request->description ?: "Payment voucher {$paymentVoucher->reference}",
+                    'branch_id' => $user->branch_id,
+                    'user_id' => $user->id,
+                ]);
+
+                // Debit each chart account
+                foreach ($request->line_items as $lineItem) {
+                    GlTransaction::create([
+                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'customer_id' => $request->customer_id,
+                        'amount' => $lineItem['amount'],
+                        'nature' => 'debit',
+                        'transaction_id' => $paymentVoucher->id,
+                        'transaction_type' => 'payment',
+                        'date' => $request->date,
+                        'description' => $lineItem['description'] ?: "Payment voucher {$paymentVoucher->reference}",
+                        'branch_id' => $user->branch_id,
+                        'user_id' => $user->id,
+                    ]);
+                }
+
+                return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                    ->with('success', 'Payment voucher updated successfully.');
+            });
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->withInput()
-                ->with('error', 'Failed to update payment voucher. Please try again.');
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to update payment voucher: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 
@@ -338,68 +382,60 @@ class PaymentVoucherController extends Controller
      */
     public function destroy(Payment $paymentVoucher)
     {
-        // Check if payment is approved
-        if ($paymentVoucher->approved) {
-            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
-                ->with('error', 'Cannot delete approved payment voucher.');
-        }
-
         try {
-            DB::beginTransaction();
+            return $this->runTransaction(function () use ($paymentVoucher) {
+                // Delete attachment if exists
+                if ($paymentVoucher->attachment && Storage::disk('public')->exists($paymentVoucher->attachment)) {
+                    Storage::disk('public')->delete($paymentVoucher->attachment);
+                }
 
-            // Delete attachment
-            if ($paymentVoucher->attachment && Storage::disk('public')->exists($paymentVoucher->attachment)) {
-                Storage::disk('public')->delete($paymentVoucher->attachment);
-            }
+                // Delete related records
+                $paymentVoucher->paymentItems()->delete();
+                $paymentVoucher->glTransactions()->delete();
+                $paymentVoucher->delete();
 
-            // Delete payment items
-            $paymentVoucher->paymentItems()->delete();
-
-            // Delete payment voucher
-            $paymentVoucher->delete();
-
-            DB::commit();
-
-            return redirect()->route('accounting.payment-vouchers')
-                ->with('success', 'Payment voucher deleted successfully!');
-
+                return redirect()->route('accounting.payment-vouchers.index')
+                    ->with('success', 'Payment voucher deleted successfully.');
+            });
         } catch (\Exception $e) {
-            DB::rollBack();
-            return back()->with('error', 'Failed to delete payment voucher. Please try again.');
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to delete payment voucher: ' . $e->getMessage()]);
         }
     }
 
     /**
-     * Approve payment voucher
-     */
-    public function approve(Payment $paymentVoucher)
-    {
-        if ($paymentVoucher->approved) {
-            return back()->with('error', 'Payment voucher is already approved.');
-        }
-
-        $paymentVoucher->update([
-            'approved' => true,
-            'approved_by' => Auth::id(),
-            'approved_at' => now(),
-        ]);
-
-        return back()->with('success', 'Payment voucher approved successfully!');
-    }
-
-    /**
-     * Download attachment
+     * Download attachment.
      */
     public function downloadAttachment(Payment $paymentVoucher)
     {
         if (!$paymentVoucher->attachment) {
-            return back()->with('error', 'No attachment found.');
+            return redirect()->back()->withErrors(['error' => 'No attachment found.']);
         }
 
         if (!Storage::disk('public')->exists($paymentVoucher->attachment)) {
-            return back()->with('error', 'Attachment file not found.');
+            return redirect()->back()->withErrors(['error' => 'Attachment file not found.']);
         }
 
         return Storage::disk('public')->download($paymentVoucher->attachment);
+    }
+
+    /**
+     * Remove attachment.
+     */
+    public function removeAttachment(Payment $paymentVoucher)
+    {
+        try {
+            // Delete attachment file if exists
+            if ($paymentVoucher->attachment && Storage::disk('public')->exists($paymentVoucher->attachment)) {
+                Storage::disk('public')->delete($paymentVoucher->attachment);
+            }
+
+            // Update payment to remove attachment reference
+            $paymentVoucher->update(['attachment' => null]);
+
+            return redirect()->back()->with('success', 'Attachment removed successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to remove attachment: ' . $e->getMessage()]);
+        }
     }
 }
