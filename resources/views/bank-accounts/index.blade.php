@@ -13,7 +13,21 @@
                                         <p class="mb-0">Total</p>
                                         <h4 class="font-weight-bold">{{ $bankAccounts->total() }}</h4>
                                     </div>
-                                    <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-bank'></i>
+                                    <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-dollar'></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col">
+                        <div class="card radius-10">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center">
+                                    <div class="flex-grow-1">
+                                        <p class="mb-0">Total Balance</p>
+                                        <h4 class="font-weight-bold">{{ number_format($bankAccounts->sum('balance'), 0, ',', '.') }}</h4>
+                                    </div>
+                                    <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-wallet'></i>
                                     </div>
                                 </div>
                             </div>
