@@ -33,6 +33,7 @@ class UserSeeder extends Seeder
                 'email' => 'admin' . $index . '@safco.com',
                 'password' => Hash::make('12345'),
                 'branch_id' => $branch->id,
+                'company_id'=> $branch->company_id,
                 'role' => match($index % 3) {
                     0 => 'admin',
                     1 => 'manager',

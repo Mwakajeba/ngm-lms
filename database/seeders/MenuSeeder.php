@@ -49,6 +49,15 @@ class MenuSeeder extends Seeder
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
 
+            'Cash Collaterals' => [
+                'icon' => 'bx bx-outline',
+                'visibleRoutes' => [
+                    ['name' => 'Cash Collateral Types', 'route' => 'cash_collateral_types.index'],
+                    ['name' => 'Cash Collaterals', 'route' => 'cash_collaterals.index'],
+                ],
+                'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show','cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
+            ],
+
             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
@@ -62,9 +71,8 @@ class MenuSeeder extends Seeder
                     ['name' => 'Bank transfer', 'route' => 'accounting.bank-transfers'],
                     ['name' => 'Bank reconciliation', 'route' => 'accounting.bank-reconciliation'],
                     ['name' => 'Bill purchases', 'route' => 'accounting.bill-purchases'],
-                    ['name' => 'Budget', 'route' => 'accounting.budget'],
-                    ['name' => 'Fees', 'route' => 'accounting.fees.index'],
-                    ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
+                    ['name' => 'Budget', 'route' => 'accounting.budgets.index'],
+                    ['name' => 'Fees', 'route' => 'accounting.fees'],
                 ],
                 'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy'],
             ],
