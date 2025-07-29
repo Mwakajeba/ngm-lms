@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -16,7 +15,7 @@ return new class extends Migration
             $table->foreignId('receipt_id')->constrained('receipts')->onDelete('cascade');
             $table->foreignId('chart_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->decimal('amount', 20, 2);
-             $table->text('description')->nullable()->after('amount');
+            $table->text('description')->nullable();
             $table->timestamps(); // Optional, adds created_at and updated_at
         });
     }

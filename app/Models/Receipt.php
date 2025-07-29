@@ -16,9 +16,23 @@ class Receipt extends Model
         'amount',
         'date',
         'description',
+        'user_id',
         'attachment',
         'bank_account_id',
         'customer_id',
+        'branch_id',
+        'approved',
+        'approved_by',
+        'approved_at',
+    ];
+
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'date' => 'datetime',
+        'approved' => 'boolean',
+        'approved_at' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     // Relationships
@@ -45,5 +59,66 @@ class Receipt extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    public function receiptItems()
+    {
+        return $this->hasMany(ReceiptItem::class);
+    }
+
+    public function glTransactions()
+    {
+        return $this->hasMany(GlTransaction::class, 'transaction_id')
+            ->where('transaction_type', 'receipt');
+    }
+
+    // Scopes
+    public function scopeApproved($query)
+    {
+        return $query->where('approved', true);
+    }
+
+    public function scopePending($query)
+    {
+        return $query->where('approved', false);
+    }
+
+    public function scopeByDateRange($query, $startDate, $endDate)
+    {
+        return $query->whereBetween('date', [$startDate, $endDate]);
+    }
+
+    public function scopeByCustomer($query, $customerId)
+    {
+        return $query->where('customer_id', $customerId);
+    }
+
+    public function scopeByBankAccount($query, $bankAccountId)
+    {
+        return $query->where('bank_account_id', $bankAccountId);
+    }
+
+    // Accessors
+    public function getFormattedAmountAttribute()
+    {
+        return number_format($this->amount, 2);
+    }
+
+    public function getFormattedDateAttribute()
+    {
+        return $this->date->format('M d, Y');
+    }
+
+    public function getStatusBadgeAttribute()
+    {
+        if ($this->approved) {
+            return '<span class="badge bg-success">Approved</span>';
+        }
+        return '<span class="badge bg-warning">Pending</span>';
+    }
+
+    public function getTotalAmountAttribute()
+    {
+        return $this->receiptItems->sum('amount');
     }
 }
