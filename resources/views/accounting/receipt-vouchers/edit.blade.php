@@ -32,8 +32,8 @@
                                                 <i class="bx bx-calendar me-1"></i>Date <span class="text-danger">*</span>
                                             </label>
                                             <input type="date"
-                                                class="form-control form-control-lg @error('date') is-invalid @enderror"
-                                                id="date" name="date" value="{{ old('date', $receiptVoucher->date->format('Y-m-d')) }}" required>
+                                                class="form-control @error('date') is-invalid @enderror"
+                                                id="date" name="date" value="{{ old('date', $receiptVoucher->date ? $receiptVoucher->date->format('Y-m-d') : '') }}" required>
                                             @error('date')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
@@ -46,7 +46,7 @@
                                                 <i class="bx bx-hash me-1"></i>Reference Number
                                             </label>
                                             <input type="text"
-                                                class="form-control form-control-lg @error('reference') is-invalid @enderror"
+                                                class="form-control @error('reference') is-invalid @enderror"
                                                 id="reference" name="reference" value="{{ old('reference', $receiptVoucher->reference) }}"
                                                 placeholder="Enter reference number">
                                             @error('reference')
@@ -64,8 +64,8 @@
                                                 <i class="bx bx-wallet me-1"></i>Bank Account
                                             </label>
                                             <select
-                                                class="form-select form-select-lg mt-2 @error('bank_account_id') is-invalid @enderror"
-                                                id="bank_account_id" name="bank_account_id" required>
+                                                class="form-select @error('bank_account_id') is-invalid @enderror"
+                                                id="bank_account_id" name="bank_account_id" data-live-search="true" required>
                                                 <option value="">-- Select Bank Account --</option>
                                                 @foreach($bankAccounts as $bankAccount)
                                                     <option value="{{ $bankAccount->id }}" {{ old('bank_account_id', $receiptVoucher->bank_account_id) == $bankAccount->id ? 'selected' : '' }}>
@@ -85,8 +85,8 @@
                                                 <i class="bx bx-user me-1"></i>Customer
                                             </label>
                                             <select
-                                                class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
-                                                id="customer_id" name="customer_id" required>
+                                                class="form-select @error('customer_id') is-invalid @enderror"
+                                                id="customer_id" name="customer_id" data-live-search="true" required>
                                                 <option value="">-- Select Customer --</option>
                                                 @foreach($customers as $customer)
                                                     <option value="{{ $customer->id }}" {{ old('customer_id', $receiptVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
@@ -140,7 +140,7 @@
                                                                     <label for="line_items_{{ $lineItemCount }}_chart_account_id" class="form-label fw-bold">
                                                                         Account <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <select class="form-select chart-account-select" name="line_items[{{ $lineItemCount }}][chart_account_id]" required>
+                                                                    <select class="form-select chart-account-select" name="line_items[{{ $lineItemCount }}][chart_account_id]" data-live-search="true" required>
                                                                         <option value="">--- Select Account ---</option>
                                                                         @foreach($chartAccounts as $chartAccount)
                                                                             <option value="{{ $chartAccount->id }}" {{ $lineItem->chart_account_id == $chartAccount->id ? 'selected' : '' }}>
@@ -175,7 +175,7 @@
                                                     @endforeach
                                                 </div>
 
-                                                <div class="text-center mt-3">
+                                                <div class="text-left mt-3">
                                                     <button type="button" class="btn btn-success" id="addLineBtn">
                                                         <i class="bx bx-plus me-2"></i>Add Line
                                                     </button>
@@ -190,7 +190,7 @@
                                     <div class="col-lg-6">
                                         <div class="d-flex justify-content-start">
                                             <a href="{{ route('accounting.receipt-vouchers.show', $receiptVoucher) }}"
-                                                class="btn btn-secondary btn-lg me-2">
+                                                class="btn btn-secondary me-2">
                                                 <i class="bx bx-arrow-back me-2"></i>Cancel
                                             </a>
                                         </div>
@@ -202,7 +202,7 @@
                                                     Total Amount: <span id="totalAmount">0.00</span>
                                                 </h4>
                                             </div>
-                                            <button type="submit" class="btn btn-warning btn-lg" id="updateBtn">
+                                            <button type="submit" class="btn btn-warning" id="updateBtn">
                                                 <i class="bx bx-save me-2"></i>Update
                                             </button>
                                         </div>
@@ -219,15 +219,21 @@
 
 @push('styles')
     <style>
-        .form-control-lg,
-        .form-select-lg {
-            font-size: 1.1rem;
-            padding: 0.75rem 1rem;
+        .form-control,
+        .form-select {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
         }
 
-        .btn-lg {
-            padding: 0.75rem 1.5rem;
-            font-size: 1.1rem;
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
         }
 
         .line-item-row {
@@ -246,13 +252,18 @@
         }
 
         .line-item-row .form-label {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             margin-bottom: 0.5rem;
         }
 
         .line-item-row .form-select,
         .line-item-row .form-control {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+        }
+
+        .line-item-row .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
         }
 
         @media (max-width: 768px) {
@@ -319,7 +330,7 @@
                                                 <label for="line_items_${lineItemCount}_chart_account_id" class="form-label fw-bold">
                                                     Account <span class="text-danger">*</span>
                                                 </label>
-                                                <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
+                                                <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" data-live-search="true" required>
                                                     <option value="">--- Select Account ---</option>
                                                     @foreach($chartAccounts as $chartAccount)
                                                         <option value="{{ $chartAccount->id }}" ${accountName.includes('{{ $chartAccount->account_name }}') ? 'selected' : ''}>

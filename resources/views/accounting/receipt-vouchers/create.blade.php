@@ -30,8 +30,7 @@
                                             <label for="date" class="form-label fw-bold">
                                                 <i class="bx bx-calendar me-1"></i>Date <span class="text-danger">*</span>
                                             </label>
-                                            <input type="date"
-                                                class="form-control form-control-lg @error('date') is-invalid @enderror"
+                                            <input type="date" class="form-control @error('date') is-invalid @enderror"
                                                 id="date" name="date" value="{{ old('date', date('Y-m-d')) }}" required>
                                             @error('date')
                                                 <div class="invalid-feedback">{{ $message }}</div>
@@ -44,8 +43,7 @@
                                             <label for="reference" class="form-label fw-bold">
                                                 <i class="bx bx-hash me-1"></i>Reference Number
                                             </label>
-                                            <input type="text"
-                                                class="form-control form-control-lg @error('reference') is-invalid @enderror"
+                                            <input type="text" class="form-control @error('reference') is-invalid @enderror"
                                                 id="reference" name="reference" value="{{ old('reference') }}"
                                                 placeholder="Enter reference number">
                                             @error('reference')
@@ -62,9 +60,9 @@
                                             <label class="form-label fw-bold">
                                                 <i class="bx bx-wallet me-1"></i>Bank Account
                                             </label>
-                                            <select
-                                                class="form-select form-select-lg mt-2 @error('bank_account_id') is-invalid @enderror"
-                                                id="bank_account_id" name="bank_account_id" required>
+                                            <select class="form-select @error('bank_account_id') is-invalid @enderror"
+                                                id="bank_account_id" name="bank_account_id" data-live-search="true"
+                                                required>
                                                 <option value="">-- Select Bank Account --</option>
                                                 @foreach($bankAccounts as $bankAccount)
                                                     <option value="{{ $bankAccount->id }}" {{ old('bank_account_id') == $bankAccount->id ? 'selected' : '' }}>
@@ -83,10 +81,9 @@
                                             <label for="customer_id" class="form-label fw-bold">
                                                 <i class="bx bx-user me-1"></i>Customer
                                             </label>
-                                            <select
-                                                class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
+                                            <select class="form-select @error('customer_id') is-invalid @enderror"
                                                 id="customer_id" name="customer_id" required>
-                                                <option value="">-- Select Payee --</option>
+                                                <option value="">-- Select Customer --</option>
                                                 @foreach($customers as $customer)
                                                     <option value="{{ $customer->id }}" {{ old('customer_id') == $customer->id ? 'selected' : '' }}>
                                                         {{ $customer->name }} ({{ $customer->customerNo }})
@@ -175,15 +172,21 @@
 
 @push('styles')
     <style>
-        .form-control-lg,
-        .form-select-lg {
-            font-size: 1.1rem;
-            padding: 0.75rem 1rem;
+        .form-control,
+        .form-select {
+            font-size: 0.9rem;
+            padding: 0.5rem 0.75rem;
         }
 
-        .btn-lg {
-            padding: 0.75rem 1.5rem;
-            font-size: 1.1rem;
+        .form-label {
+            font-size: 0.875rem;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+        }
+
+        .btn {
+            font-size: 0.875rem;
+            padding: 0.5rem 1rem;
         }
 
         .line-item-row {
@@ -202,13 +205,18 @@
         }
 
         .line-item-row .form-label {
-            font-size: 0.875rem;
+            font-size: 0.8rem;
             margin-bottom: 0.5rem;
         }
 
         .line-item-row .form-select,
         .line-item-row .form-control {
-            font-size: 0.9rem;
+            font-size: 0.85rem;
+        }
+
+        .line-item-row .btn-sm {
+            padding: 0.25rem 0.5rem;
+            font-size: 0.75rem;
         }
 
         @media (max-width: 768px) {
@@ -269,45 +277,45 @@
             function addLineItem() {
                 lineItemCount++;
                 const lineItemHtml = `
-                                        <div class="line-item-row">
-                                            <div class="row">
-                                                <div class="col-md-4 mb-2">
-                                                    <label for="line_items_${lineItemCount}_chart_account_id" class="form-label fw-bold">
-                                                        Account <span class="text-danger">*</span>
-                                                    </label>
-                                                    <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
-                                                        <option value="">--- Select Account ---</option>
-                                                        @foreach($chartAccounts as $chartAccount)
-                                                            <option value="{{ $chartAccount->id }}">
-                                                                {{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})
-                                                            </option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-4 mb-2">
-                                                    <label for="line_items_${lineItemCount}_description" class="form-label fw-bold">
-                                                        Description
-                                                    </label>
-                                                    <input type="text" class="form-control description-input" 
-                                                           name="line_items[${lineItemCount}][description]" 
-                                                           placeholder="Enter description">
-                                                </div>
-                                                <div class="col-md-3 mb-2">
-                                                    <label for="line_items_${lineItemCount}_amount" class="form-label fw-bold">
-                                                        Amount <span class="text-danger">*</span>
-                                                    </label>
-                                                    <input type="number" class="form-control amount-input" 
-                                                           name="line_items[${lineItemCount}][amount]" 
-                                                           step="0.01" min="0" placeholder="0.00" required>
-                                                </div>
-                                                <div class="col-md-1 mb-2 d-flex align-items-end">
-                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-line-btn" title="Remove Line">
-                                                        <i class="bx bx-trash"></i>
-                                                    </button>
-                                                </div>
-                                            </div>
-                                        </div>
-                                    `;
+                                                        <div class="line-item-row">
+                                                            <div class="row">
+                                                                <div class="col-md-4 mb-2">
+                                                                    <label for="line_items_${lineItemCount}_chart_account_id" class="form-label fw-bold">
+                                                                        Account <span class="text-danger">*</span>
+                                                                    </label>
+                                                                    <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
+                                                                        <option value="">--- Select Account ---</option>
+                                                                        @foreach($chartAccounts as $chartAccount)
+                                                                            <option value="{{ $chartAccount->id }}">
+                                                                                {{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})
+                                                                            </option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                </div>
+                                                                <div class="col-md-4 mb-2">
+                                                                    <label for="line_items_${lineItemCount}_description" class="form-label fw-bold">
+                                                                        Description
+                                                                    </label>
+                                                                    <input type="text" class="form-control description-input" 
+                                                                           name="line_items[${lineItemCount}][description]" 
+                                                                           placeholder="Enter description">
+                                                                </div>
+                                                                <div class="col-md-3 mb-2">
+                                                                    <label for="line_items_${lineItemCount}_amount" class="form-label fw-bold">
+                                                                        Amount <span class="text-danger">*</span>
+                                                                    </label>
+                                                                    <input type="number" class="form-control amount-input" 
+                                                                           name="line_items[${lineItemCount}][amount]" 
+                                                                           step="0.01" min="0" placeholder="0.00" required>
+                                                                </div>
+                                                                <div class="col-md-1 mb-2 d-flex align-items-end">
+                                                                    <button type="button" class="btn btn-outline-danger btn-sm remove-line-btn" title="Remove Line">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    `;
 
                 $('#lineItemsContainer').append(lineItemHtml);
             }

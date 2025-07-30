@@ -5,6 +5,10 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard')],
+            ['label' => 'Customers']
+        ]" />
         <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
         <hr/>
 
