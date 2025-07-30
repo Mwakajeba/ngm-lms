@@ -14,6 +14,7 @@ use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
+use App\Http\Controllers\Accounting\BankReconciliationController;
 use App\Http\Controllers\Accounting\BudgetController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\BankAccountController;
@@ -256,13 +257,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/bank-transfers/{bankTransfer}', [App\Http\Controllers\Accounting\BankTransferController::class, 'destroy'])->name('bank-transfers.destroy');
 
     // Bank Reconciliation
-    Route::resource('bank-reconciliation', App\Http\Controllers\Accounting\BankReconciliationController::class);
-    Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
-    Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
-               Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
-           Route::post('/bank-reconciliation/{bankReconciliation}/complete', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
-           Route::post('/bank-reconciliation/{bankReconciliation}/update-book-balance', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
-           Route::post('/bank-reconciliation/refresh-all', [App\Http\Controllers\Accounting\BankReconciliationController::class, 'refreshAllReconciliations'])->name('bank-reconciliation.refresh-all');
+    Route::resource('bank-reconciliation', BankReconciliationController::class);
+    Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
+    Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
+               Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
+           Route::post('/bank-reconciliation/{bankReconciliation}/complete', [BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
+           Route::post('/bank-reconciliation/{bankReconciliation}/update-book-balance', [BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
+           Route::post('/bank-reconciliation/refresh-all', [BankReconciliationController::class, 'refreshAllReconciliations'])->name('bank-reconciliation.refresh-all');
 
     // Bill Purchases
     Route::get('/bill-purchases', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'index'])->name('bill-purchases');
