@@ -64,9 +64,9 @@ class MenuSeeder extends Seeder
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.fsli-accounts'],
                     ['name' => 'Charts of account', 'route' => 'accounting.accounts'],
                     ['name' => 'Suppliers', 'route' => 'accounting.suppliers.index'],
-                    ['name' => 'Manual journal entries', 'route' => 'accounting.journal-entries'],
-                    ['name' => 'Payment voucher', 'route' => 'accounting.payment-vouchers.index'],
-                    ['name' => 'Receipt voucher', 'route' => 'accounting.receipt-vouchers.index'],
+                    ['name' => 'Manual journals', 'route' => 'accounting.journals.index'],
+                    ['name' => 'Payment voucher', 'route' => 'accounting.payment-vouchers'],
+                    ['name' => 'Receipt voucher', 'route' => 'accounting.receipt-vouchers'],
                     ['name' => 'Bank accounts', 'route' => 'accounting.bank-accounts'],
                     ['name' => 'Bank transfer', 'route' => 'accounting.bank-transfers'],
                     ['name' => 'Bank reconciliation', 'route' => 'accounting.bank-reconciliation'],
@@ -75,7 +75,11 @@ class MenuSeeder extends Seeder
                     ['name' => 'Fees', 'route' => 'accounting.fees.index'],
                     ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
                 ],
-                'hiddenRoutes' => ['accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy', 'accounting.journal-entries.create', 'accounting.journal-entries.edit', 'accounting.journal-entries.destroy'],
+                'hiddenRoutes' => [
+                    'accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy',
+                    'accounting.journals.edit', 'accounting.journals.destroy','accounting.journals.create',
+                    'accounting.journals.show'
+                ],
             ],
             'Accounting Reports' => [
                 'icon' => 'bx bx-file',

@@ -6,6 +6,11 @@
 <div class="page-wrapper">
     <div class="page-content">
         <div class="d-flex justify-content-between align-items-center mb-2">
+            <x-breadcrumbs :links="[
+                ['label' => 'Dashboard', 'url' => route('dashboard')],
+                ['label' => 'Customers', 'url' => route('customers.index')],
+                ['label' => 'Customer Profile']
+            ]" />
             <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6>
             <a href="" class="btn btn-sm btn-primary">
                 <i class="bx bx-plus"></i> Apply for Loan

@@ -20,6 +20,7 @@ use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
 use App\Http\Controllers\CashCollateralController;
+use App\Http\Controllers\JournalController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -301,6 +302,15 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::put('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'update'])->name('penalties.update');
     Route::patch('/penalties/{penalty}/status', [App\Http\Controllers\Accounting\PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
     Route::delete('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'destroy'])->name('penalties.destroy');
+
+    // Journal Entries CRUD
+    Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
+    Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
+    Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
+    Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
+    Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
+    Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
+    Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
