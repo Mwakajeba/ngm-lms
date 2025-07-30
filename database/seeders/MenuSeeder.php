@@ -48,7 +48,14 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
-
+            'Loan' => [
+                'icon' => 'bx bx-credit-card',
+                'visibleRoutes' => [
+                    ['name' => 'Loan Products', 'route' => 'loan-products.index'],
+                    ['name' => 'Groups', 'route' => 'groups.index'],
+                ],
+                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create'],
+            ],
             'Cash Collaterals' => [
                 'icon' => 'bx bx-outline',
                 'visibleRoutes' => [
@@ -75,8 +82,12 @@ class MenuSeeder extends Seeder
                     ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
                 ],
                 'hiddenRoutes' => [
-                    'accounting.accounts.create', 'accounting.accounts.edit', 'accounting.accounts.destroy',
-                    'accounting.journals.edit', 'accounting.journals.destroy','accounting.journals.create',
+                    'accounting.accounts.create',
+                    'accounting.accounts.edit',
+                    'accounting.accounts.destroy',
+                    'accounting.journals.edit',
+                    'accounting.journals.destroy',
+                    'accounting.journals.create',
                     'accounting.journals.show'
                 ],
             ],
