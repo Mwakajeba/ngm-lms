@@ -15,7 +15,15 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\Accounting\BankReconciliationController;
+use App\Http\Controllers\Accounting\BillPurchaseController;
 use App\Http\Controllers\Accounting\BudgetController;
+use App\Http\Controllers\Accounting\FeeController;
+use App\Http\Controllers\Accounting\JournalEntryController;
+use App\Http\Controllers\Accounting\PaymentVoucherController;
+use App\Http\Controllers\Accounting\PenaltyController;
+use App\Http\Controllers\Accounting\ReceiptVoucherController;
+use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
+use App\Http\Controllers\Accounting\SupplierController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -208,100 +216,84 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
 
     // Suppliers
-    Route::get('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'index'])->name('suppliers.index');
-    Route::get('/suppliers/create', [App\Http\Controllers\Accounting\SupplierController::class, 'create'])->name('suppliers.create');
-    Route::post('/suppliers', [App\Http\Controllers\Accounting\SupplierController::class, 'store'])->name('suppliers.store');
-    Route::get('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'show'])->name('suppliers.show');
-    Route::get('/suppliers/{supplier}/edit', [App\Http\Controllers\Accounting\SupplierController::class, 'edit'])->name('suppliers.edit');
-    Route::put('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'update'])->name('suppliers.update');
-    Route::patch('/suppliers/{supplier}/status', [App\Http\Controllers\Accounting\SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
-    Route::delete('/suppliers/{supplier}', [App\Http\Controllers\Accounting\SupplierController::class, 'destroy'])->name('suppliers.destroy');
-
-    // Manual Journal Entries
-    Route::get('/journal-entries', [App\Http\Controllers\Accounting\JournalEntryController::class, 'index'])->name('journal-entries');
-    Route::get('/journal-entries/create', [App\Http\Controllers\Accounting\JournalEntryController::class, 'create'])->name('journal-entries.create');
-    Route::post('/journal-entries', [App\Http\Controllers\Accounting\JournalEntryController::class, 'store'])->name('journal-entries.store');
-    Route::get('/journal-entries/{journalEntry}/edit', [App\Http\Controllers\Accounting\JournalEntryController::class, 'edit'])->name('journal-entries.edit');
-    Route::put('/journal-entries/{journalEntry}', [App\Http\Controllers\Accounting\JournalEntryController::class, 'update'])->name('journal-entries.update');
-    Route::delete('/journal-entries/{journalEntry}', [App\Http\Controllers\Accounting\JournalEntryController::class, 'destroy'])->name('journal-entries.destroy');
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+    Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
+    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
+    Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::patch('/suppliers/{supplier}/status', [SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
+    Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Payment Vouchers
-    Route::resource('payment-vouchers', App\Http\Controllers\Accounting\PaymentVoucherController::class);
-    Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
-    Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
-    Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [App\Http\Controllers\Accounting\PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
+    Route::resource('payment-vouchers', PaymentVoucherController::class);
+    Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
+    Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
+    Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
 
     // Receipt Vouchers
-    Route::get('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
-    Route::get('/receipt-vouchers/create', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
-    Route::post('/receipt-vouchers', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
-    Route::get('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
-    Route::get('/receipt-vouchers/{receiptVoucher}/edit', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
-    Route::put('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
-    Route::delete('/receipt-vouchers/{receiptVoucher}', [App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
+    Route::get('/receipt-vouchers', [ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
+    Route::get('/receipt-vouchers/create', [ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
+    Route::post('/receipt-vouchers', [ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
+    Route::get('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
+    Route::get('/receipt-vouchers/{receiptVoucher}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
+    Route::put('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
+    Route::delete('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
 
     // Bank Accounts
-    Route::get('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'index'])->name('bank-accounts');
-    Route::get('/bank-accounts/create', [App\Http\Controllers\Accounting\BankAccountController::class, 'create'])->name('bank-accounts.create');
-    Route::post('/bank-accounts', [App\Http\Controllers\Accounting\BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'show'])->name('bank-accounts.show');
-    Route::get('/bank-accounts/{bankAccount}/edit', [App\Http\Controllers\Accounting\BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [App\Http\Controllers\Accounting\BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
-
-    // Bank Transfers
-    Route::get('/bank-transfers', [App\Http\Controllers\Accounting\BankTransferController::class, 'index'])->name('bank-transfers');
-    Route::get('/bank-transfers/create', [App\Http\Controllers\Accounting\BankTransferController::class, 'create'])->name('bank-transfers.create');
-    Route::post('/bank-transfers', [App\Http\Controllers\Accounting\BankTransferController::class, 'store'])->name('bank-transfers.store');
-    Route::get('/bank-transfers/{bankTransfer}/edit', [App\Http\Controllers\Accounting\BankTransferController::class, 'edit'])->name('bank-transfers.edit');
-    Route::put('/bank-transfers/{bankTransfer}', [App\Http\Controllers\Accounting\BankTransferController::class, 'update'])->name('bank-transfers.update');
-    Route::delete('/bank-transfers/{bankTransfer}', [App\Http\Controllers\Accounting\BankTransferController::class, 'destroy'])->name('bank-transfers.destroy');
+    Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
+    Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
+    Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
+    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Reconciliation
     Route::resource('bank-reconciliation', BankReconciliationController::class);
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
     Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
-               Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
-           Route::post('/bank-reconciliation/{bankReconciliation}/complete', [BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
-           Route::post('/bank-reconciliation/{bankReconciliation}/update-book-balance', [BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
-           Route::post('/bank-reconciliation/refresh-all', [BankReconciliationController::class, 'refreshAllReconciliations'])->name('bank-reconciliation.refresh-all');
+    Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
+    Route::post('/bank-reconciliation/{bankReconciliation}/complete', [BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
+    Route::post('/bank-reconciliation/{bankReconciliation}/update-book-balance', [BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
+    Route::post('/bank-reconciliation/refresh-all', [BankReconciliationController::class, 'refreshAllReconciliations'])->name('bank-reconciliation.refresh-all');
 
     // Bill Purchases
-    Route::get('/bill-purchases', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'index'])->name('bill-purchases');
-    Route::get('/bill-purchases/create', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'create'])->name('bill-purchases.create');
-    Route::post('/bill-purchases', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'store'])->name('bill-purchases.store');
-    Route::get('/bill-purchases/{billPurchase}/edit', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'edit'])->name('bill-purchases.edit');
-    Route::put('/bill-purchases/{billPurchase}', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'update'])->name('bill-purchases.update');
-    Route::delete('/bill-purchases/{billPurchase}', [App\Http\Controllers\Accounting\BillPurchaseController::class, 'destroy'])->name('bill-purchases.destroy');
+    Route::get('/bill-purchases', [BillPurchaseController::class, 'index'])->name('bill-purchases');
+    Route::get('/bill-purchases/create', [BillPurchaseController::class, 'create'])->name('bill-purchases.create');
+    Route::post('/bill-purchases', [BillPurchaseController::class, 'store'])->name('bill-purchases.store');
+    Route::get('/bill-purchases/{billPurchase}/edit', [BillPurchaseController::class, 'edit'])->name('bill-purchases.edit');
+    Route::put('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'update'])->name('bill-purchases.update');
+    Route::delete('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'destroy'])->name('bill-purchases.destroy');
 
     // Budget
-    Route::get('/budgets', [App\Http\Controllers\Accounting\BudgetController::class, 'index'])->name('budgets.index');
-    Route::get('/budgets/create', [App\Http\Controllers\Accounting\BudgetController::class, 'create'])->name('budgets.create');
-    Route::post('/budgets', [App\Http\Controllers\Accounting\BudgetController::class, 'store'])->name('budgets.store');
-    Route::get('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'show'])->name('budgets.show');
-    Route::get('/budgets/{budget}/edit', [App\Http\Controllers\Accounting\BudgetController::class, 'edit'])->name('budgets.edit');
-    Route::put('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'update'])->name('budgets.update');
-    Route::delete('/budgets/{budget}', [App\Http\Controllers\Accounting\BudgetController::class, 'destroy'])->name('budgets.destroy');
+    Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
+    Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
+    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
+    Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+    Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
+    Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     // Fees
-    Route::get('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'index'])->name('fees.index');
-    Route::get('/fees/create', [App\Http\Controllers\Accounting\FeeController::class, 'create'])->name('fees.create');
-    Route::post('/fees', [App\Http\Controllers\Accounting\FeeController::class, 'store'])->name('fees.store');
-    Route::get('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'show'])->name('fees.show');
-    Route::get('/fees/{fee}/edit', [App\Http\Controllers\Accounting\FeeController::class, 'edit'])->name('fees.edit');
-    Route::put('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'update'])->name('fees.update');
-    Route::patch('/fees/{fee}/status', [App\Http\Controllers\Accounting\FeeController::class, 'changeStatus'])->name('fees.changeStatus');
-    Route::delete('/fees/{fee}', [App\Http\Controllers\Accounting\FeeController::class, 'destroy'])->name('fees.destroy');
+    Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
+    Route::get('/fees/create', [FeeController::class, 'create'])->name('fees.create');
+    Route::post('/fees', [FeeController::class, 'store'])->name('fees.store');
+    Route::get('/fees/{fee}', [FeeController::class, 'show'])->name('fees.show');
+    Route::get('/fees/{fee}/edit', [FeeController::class, 'edit'])->name('fees.edit');
+    Route::put('/fees/{fee}', [FeeController::class, 'update'])->name('fees.update');
+    Route::patch('/fees/{fee}/status', [FeeController::class, 'changeStatus'])->name('fees.changeStatus');
+    Route::delete('/fees/{fee}', [FeeController::class, 'destroy'])->name('fees.destroy');
 
     // Penalties
-    Route::get('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'index'])->name('penalties.index');
-    Route::get('/penalties/create', [App\Http\Controllers\Accounting\PenaltyController::class, 'create'])->name('penalties.create');
-    Route::post('/penalties', [App\Http\Controllers\Accounting\PenaltyController::class, 'store'])->name('penalties.store');
-    Route::get('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'show'])->name('penalties.show');
-    Route::get('/penalties/{penalty}/edit', [App\Http\Controllers\Accounting\PenaltyController::class, 'edit'])->name('penalties.edit');
-    Route::put('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'update'])->name('penalties.update');
-    Route::patch('/penalties/{penalty}/status', [App\Http\Controllers\Accounting\PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
-    Route::delete('/penalties/{penalty}', [App\Http\Controllers\Accounting\PenaltyController::class, 'destroy'])->name('penalties.destroy');
+    Route::get('/penalties', [PenaltyController::class, 'index'])->name('penalties.index');
+    Route::get('/penalties/create', [PenaltyController::class, 'create'])->name('penalties.create');
+    Route::post('/penalties', [PenaltyController::class, 'store'])->name('penalties.store');
+    Route::get('/penalties/{penalty}', [PenaltyController::class, 'show'])->name('penalties.show');
+    Route::get('/penalties/{penalty}/edit', [PenaltyController::class, 'edit'])->name('penalties.edit');
+    Route::put('/penalties/{penalty}', [PenaltyController::class, 'update'])->name('penalties.update');
+    Route::patch('/penalties/{penalty}/status', [PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
+    Route::delete('/penalties/{penalty}', [PenaltyController::class, 'destroy'])->name('penalties.destroy');
 
     // Journal Entries CRUD
     Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
@@ -324,10 +316,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/expenses-summary', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'index'])->name('expenses-summary');
         Route::get('/accounting-notes', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'index'])->name('accounting-notes');
         Route::get('/changes-equity', [App\Http\Controllers\Accounting\Reports\ChangesEquityReportController::class, 'index'])->name('changes-equity');
-        Route::get('/bank-reconciliation', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'index'])->name('bank-reconciliation-report');
-        Route::get('/bank-reconciliation/generate', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'generate'])->name('bank-reconciliation-report.generate');
-        Route::get('/bank-reconciliation/{bankReconciliation}/show', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
-        Route::get('/bank-reconciliation/{bankReconciliation}/export', [App\Http\Controllers\Accounting\Reports\BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
+        Route::get('/bank-reconciliation', [BankReconciliationReportController::class, 'index'])->name('bank-reconciliation-report');
+        Route::get('/bank-reconciliation/generate', [BankReconciliationReportController::class, 'generate'])->name('bank-reconciliation-report.generate');
+        Route::get('/bank-reconciliation/{bankReconciliation}/show', [BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
+        Route::get('/bank-reconciliation/{bankReconciliation}/export', [BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
     });
 });
 
@@ -372,4 +364,3 @@ Route::post('/logout', function () {
     Auth::logout();
     return redirect('/')->with('success', 'You are successfully logout.');
 })->middleware('auth');
-
