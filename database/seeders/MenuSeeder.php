@@ -52,9 +52,9 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-credit-card',
                 'visibleRoutes' => [
                     ['name' => 'Loan Products', 'route' => 'loan-products.index'],
-                    
+                    ['name' => 'Groups', 'route' => 'groups.index'],
                 ],
-                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show'],
+                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create'],
             ],
             'Cash Collaterals' => [
                 'icon' => 'bx bx-outline',
