@@ -251,6 +251,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Bank Reconciliation
     Route::resource('bank-reconciliation', BankReconciliationController::class);
+    
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
     Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
     Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
