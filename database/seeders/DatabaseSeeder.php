@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
       UserSeeder::class,
       RolePermissionSeeder::class,
       MenuSeeder::class,
-      AccountingClassGroupSeeder::class,
+      // AccountingClassGroupSeeder::class,
       AccountClassSeeder::class,
       CashFlowCategorySeeder::class,
       EquityCategorySeeder::class,
