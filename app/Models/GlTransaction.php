@@ -14,6 +14,7 @@ class GlTransaction extends Model
     protected $fillable = [
         'chart_account_id',
         'customer_id',
+        'supplier_id',
         'amount',
         'nature',
         'transaction_id',
@@ -33,6 +34,11 @@ class GlTransaction extends Model
     public function customer()
     {
         return $this->belongsTo(Customer::class);
+    }
+
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class, 'supplier_id');
     }
 
     public function branch()
