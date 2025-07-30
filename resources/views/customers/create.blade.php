@@ -4,11 +4,19 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content"> 
-        <x-breadcrumbs :links="[
-            ['label' => 'Dashboard', 'url' => route('dashboard')],
-            ['label' => 'Customers', 'url' => route('customers.index')],
-            ['label' => 'Create Customer']
-        ]" />
+        <div class="row">
+                <div class="col-12">
+                    <div class="page-breadcrumb d-flex align-items-center">
+                        <div class="me-auto">
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('customers.index') }}">Customers</a></li>
+                                <li class="breadcrumb-item active">Create Customer</li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
         <h6 class="mb-0 text-uppercase">CREATE NEW CUSTOMER</h6>
         <hr/>
         <div class="card">
