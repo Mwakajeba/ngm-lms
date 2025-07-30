@@ -52,6 +52,7 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-credit-card',
                 'visibleRoutes' => [
                     ['name' => 'Loan Products', 'route' => 'loan-products.index'],
+                    
                 ],
                 'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show'],
             ],

@@ -106,16 +106,16 @@
                                                     <div class="btn-group" role="group">
                                                         <a href="{{ route('loan-products.show', $product) }}"
                                                             class="btn btn-sm btn-outline-info" title="View Details">
-                                                            <i class="bx bx-show"></i>
+                                                            view
                                                         </a>
                                                         <a href="{{ route('loan-products.edit', $product) }}"
                                                             class="btn btn-sm btn-outline-primary" title="Edit Product">
-                                                            <i class="bx bx-edit"></i>
+                                                            edit
                                                         </a>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                             title="Delete Product" data-product-id="{{ $product->id }}"
                                                             data-product-name="{{ $product->name }}">
-                                                            <i class="bx bx-trash"></i>
+                                                           delete
                                                         </button>
                                                     </div>
                                                 </td>
