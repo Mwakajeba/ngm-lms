@@ -230,6 +230,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
     Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
     Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
+    
+    // Bill and Payment PDF Export Routes
+    Route::get('/bill-purchases/{billPurchase}/export-pdf', [BillPurchaseController::class, 'exportPdf'])->name('bill-purchases.export-pdf');
+    Route::get('/payments/{payment}/export-pdf', [BillPurchaseController::class, 'exportPaymentPdf'])->name('bill-payments.export-pdf');
 
     // Receipt Vouchers
     Route::get('/receipt-vouchers', [ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
@@ -263,9 +267,19 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/bill-purchases', [BillPurchaseController::class, 'index'])->name('bill-purchases');
     Route::get('/bill-purchases/create', [BillPurchaseController::class, 'create'])->name('bill-purchases.create');
     Route::post('/bill-purchases', [BillPurchaseController::class, 'store'])->name('bill-purchases.store');
+    
+    // Bill Payment Management (must come before bill-purchases/{billPurchase} routes)
+    Route::get('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'showPayment'])->name('bill-purchases.payment.show');
+    Route::get('/bill-purchases/payment/{payment}/edit', [BillPurchaseController::class, 'editPayment'])->name('bill-purchases.payment.edit');
+    Route::put('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'updatePayment'])->name('bill-purchases.payment.update');
+    Route::delete('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'deletePayment'])->name('bill-purchases.payment.delete');
+    
+    Route::get('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'show'])->name('bill-purchases.show');
     Route::get('/bill-purchases/{billPurchase}/edit', [BillPurchaseController::class, 'edit'])->name('bill-purchases.edit');
     Route::put('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'update'])->name('bill-purchases.update');
     Route::delete('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'destroy'])->name('bill-purchases.destroy');
+    Route::get('/bill-purchases/{billPurchase}/payment', [BillPurchaseController::class, 'showPaymentForm'])->name('bill-purchases.payment');
+    Route::post('/bill-purchases/{billPurchase}/payment', [BillPurchaseController::class, 'processPayment'])->name('bill-purchases.process-payment');
 
     // Budget
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
@@ -298,12 +312,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Journal Entries CRUD
     Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
-    Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
-    Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
-    Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
-    Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
-    Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
-    Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
+Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
+Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
+Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
+Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
+Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
+Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
+Route::get('/journals/{journal}/export-pdf', [JournalController::class, 'exportPdf'])->name('journals.export-pdf');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {

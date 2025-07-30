@@ -15,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('reference');
             $table->string('reference_type'); // e.g. 'invoice', 'purchase', 'manual'
-            $table->string('reference_number');
+            $table->string('reference_number')->nullable();
             $table->decimal('amount', 20, 2);
             $table->timestamp('date')->useCurrent();
             $table->text('description')->nullable();

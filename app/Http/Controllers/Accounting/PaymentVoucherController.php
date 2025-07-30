@@ -209,7 +209,7 @@ class PaymentVoucherController extends Controller
      */
     public function show(Payment $paymentVoucher)
     {
-        $paymentVoucher->load(['bankAccount', 'customer', 'user', 'branch', 'paymentItems.chartAccount', 'glTransactions.chartAccount']);
+        $paymentVoucher->load(['bankAccount', 'customer', 'supplier', 'user', 'branch', 'paymentItems.chartAccount', 'glTransactions.chartAccount']);
 
         return view('accounting.payment-vouchers.show', compact('paymentVoucher'));
     }
@@ -237,6 +237,12 @@ class PaymentVoucherController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Get suppliers for bill payments
+        $suppliers = null;
+        if ($paymentVoucher->reference_type == 'Bill') {
+            $suppliers = \App\Models\Supplier::where('status', 'active')->orderBy('name')->get();
+        }
+
         // Get chart accounts for the current company - only expense accounts
         $chartAccounts = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
             $query->where('company_id', $user->company_id);
@@ -251,7 +257,7 @@ class PaymentVoucherController extends Controller
 
         $paymentVoucher->load('paymentItems');
 
-        return view('accounting.payment-vouchers.edit', compact('paymentVoucher', 'bankAccounts', 'customers', 'chartAccounts'));
+        return view('accounting.payment-vouchers.edit', compact('paymentVoucher', 'bankAccounts', 'customers', 'suppliers', 'chartAccounts'));
     }
 
     /**
@@ -305,15 +311,25 @@ class PaymentVoucherController extends Controller
                 }
 
                 // Update payment
-                $paymentVoucher->update([
+                $updateData = [
                     'reference' => $request->reference ?: $paymentVoucher->reference,
                     'amount' => $totalAmount,
                     'date' => $request->date,
                     'description' => $request->description,
                     'attachment' => $attachmentPath,
                     'bank_account_id' => $request->bank_account_id,
-                    'customer_id' => $request->customer_id,
-                ]);
+                ];
+
+                // Handle customer/supplier based on payment type
+                if ($paymentVoucher->reference_type == 'Bill') {
+                    $updateData['supplier_id'] = $request->customer_id; // customer_id field is used for supplier_id in form
+                    $updateData['customer_id'] = null;
+                } else {
+                    $updateData['customer_id'] = $request->customer_id;
+                    $updateData['supplier_id'] = null;
+                }
+
+                $paymentVoucher->update($updateData);
 
                 // Delete existing payment items and GL transactions
                 $paymentVoucher->paymentItems()->delete();
@@ -340,7 +356,8 @@ class PaymentVoucherController extends Controller
                 // Credit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
-                    'customer_id' => $request->customer_id,
+                    'customer_id' => $paymentVoucher->reference_type == 'Bill' ? null : $request->customer_id,
+                    'supplier_id' => $paymentVoucher->reference_type == 'Bill' ? $request->customer_id : null,
                     'amount' => $totalAmount,
                     'nature' => 'credit',
                     'transaction_id' => $paymentVoucher->id,
@@ -355,7 +372,8 @@ class PaymentVoucherController extends Controller
                 foreach ($request->line_items as $lineItem) {
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
-                        'customer_id' => $request->customer_id,
+                        'customer_id' => $paymentVoucher->reference_type == 'Bill' ? null : $request->customer_id,
+                        'supplier_id' => $paymentVoucher->reference_type == 'Bill' ? $request->customer_id : null,
                         'amount' => $lineItem['amount'],
                         'nature' => 'debit',
                         'transaction_id' => $paymentVoucher->id,

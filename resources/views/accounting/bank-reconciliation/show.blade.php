@@ -193,7 +193,7 @@
                                class="btn btn-sm btn-danger">
                                 <i class="bx bx-minus me-1"></i>Add Payment
                             </a>
-                            <a href="{{ route('accounting.journal-entries.create') }}?bank_account_id={{ $bankReconciliation->bank_account_id }}&reconciliation_id={{ $bankReconciliation->id }}" 
+                            <a href="{{ route('accounting.journals.create') }}?bank_account_id={{ $bankReconciliation->bank_account_id }}&reconciliation_id={{ $bankReconciliation->id }}" 
                                class="btn btn-sm btn-warning">
                                 <i class="bx bx-transfer me-1"></i>Add Journal
                             </a>
