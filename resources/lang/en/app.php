@@ -232,6 +232,14 @@ return [
     'reset_to_defaults' => 'Reset to Defaults',
     'settings_reset_success' => 'System settings reset to defaults successfully!',
 
+    // System Configuration Permissions
+    'view_system_configurations' => 'View System Configurations',
+    'edit_system_configurations' => 'Edit System Configurations',
+    'manage_system_configurations' => 'Manage System Configurations',
+    'view_system_config' => 'View System Config',
+    'edit_system_config' => 'Edit System Config',
+    'manage_system_config' => 'Manage System Config',
+
     // Microfinance
     'loan_interest_rate_default' => 'Default Loan Interest Rate (%)',
     'loan_processing_fee' => 'Loan Processing Fee (%)',

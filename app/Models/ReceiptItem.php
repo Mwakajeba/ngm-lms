@@ -16,6 +16,12 @@ class ReceiptItem extends Model
         'description',
     ];
 
+    protected $casts = [
+        'amount' => 'decimal:2',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
+    ];
+
     // Relationships
     public function receipt()
     {
@@ -25,5 +31,11 @@ class ReceiptItem extends Model
     public function chartAccount()
     {
         return $this->belongsTo(ChartAccount::class);
+    }
+
+    // Accessors
+    public function getFormattedAmountAttribute()
+    {
+        return number_format($this->amount, 2);
     }
 }

@@ -15,7 +15,12 @@ class AccountClassGroupController extends Controller
      */
     public function index(): View
     {
-        $accountClassGroups = AccountClassGroup::with('accountClass')->paginate(10);
+        $user = auth()->user();
+
+        $accountClassGroups = AccountClassGroup::with('accountClass')
+            ->where('company_id', $user->company_id)
+            ->paginate(10);
+
         return view('account-class-groups.index', compact('accountClassGroups'));
     }
 
@@ -24,7 +29,7 @@ class AccountClassGroupController extends Controller
      */
     public function create(): View
     {
-        $accountClasses = AccountClass::all();
+        $accountClasses = AccountClass::all(); // Account classes are global
         return view('account-class-groups.create', compact('accountClasses'));
     }
 
@@ -39,7 +44,14 @@ class AccountClassGroupController extends Controller
             'name' => 'required|string|max:255|unique:account_class_groups,name',
         ]);
 
-        AccountClassGroup::create($request->all());
+        $user = auth()->user();
+
+        AccountClassGroup::create([
+            'class_id' => $request->class_id,
+            'group_code' => $request->group_code,
+            'name' => $request->name,
+            'company_id' => $user->company_id,
+        ]);
 
         return redirect()->route('accounting.fsli-accounts')
             ->with('success', 'Account Class Group created successfully.');
@@ -50,6 +62,13 @@ class AccountClassGroupController extends Controller
      */
     public function show(AccountClassGroup $accountClassGroup): View
     {
+        $user = auth()->user();
+
+        // Ensure the account class group belongs to the current user's company
+        if ($accountClassGroup->company_id !== $user->company_id) {
+            abort(403, 'Unauthorized access to this account class group.');
+        }
+
         $accountClassGroup->load('accountClass');
         return view('account-class-groups.show', compact('accountClassGroup'));
     }
@@ -59,7 +78,14 @@ class AccountClassGroupController extends Controller
      */
     public function edit(AccountClassGroup $accountClassGroup): View
     {
-        $accountClasses = AccountClass::all();
+        $user = auth()->user();
+
+        // Ensure the account class group belongs to the current user's company
+        if ($accountClassGroup->company_id !== $user->company_id) {
+            abort(403, 'Unauthorized access to this account class group.');
+        }
+
+        $accountClasses = AccountClass::all(); // Account classes are global
         return view('account-class-groups.edit', compact('accountClassGroup', 'accountClasses'));
     }
 
@@ -74,7 +100,11 @@ class AccountClassGroupController extends Controller
             'name' => 'required|string|max:255|unique:account_class_groups,name,' . $accountClassGroup->id,
         ]);
 
-        $accountClassGroup->update($request->all());
+        $accountClassGroup->update([
+            'class_id' => $request->class_id,
+            'group_code' => $request->group_code,
+            'name' => $request->name,
+        ]);
 
         return redirect()->route('accounting.fsli-accounts')
             ->with('success', 'Account Class Group updated successfully.');
@@ -85,6 +115,13 @@ class AccountClassGroupController extends Controller
      */
     public function destroy(AccountClassGroup $accountClassGroup): RedirectResponse
     {
+        $user = auth()->user();
+
+        // Ensure the account class group belongs to the current user's company
+        if ($accountClassGroup->company_id !== $user->company_id) {
+            abort(403, 'Unauthorized access to this account class group.');
+        }
+
         $accountClassGroup->delete();
 
         return redirect()->route('accounting.fsli-accounts')

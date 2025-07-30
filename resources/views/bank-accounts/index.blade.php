@@ -4,22 +4,64 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
-            <div class="row row-cols-1 row-cols-lg-3">
-                    <div class="col">
-                        <div class="card radius-10">
-                            <div class="card-body">
-                                <div class="d-flex align-items-center">
-                                    <div class="flex-grow-1">
-                                        <p class="mb-0">Total</p>
-                                        <h4 class="font-weight-bold">{{ $bankAccounts->total() }}</h4>
-                                    </div>
-                                    <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-bank'></i>
-                                    </div>
+            <div class="row row-cols-1 row-cols-lg-4">
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">Total Accounts</p>
+                                    <h4 class="font-weight-bold">{{ $totalAccounts }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-dollar'></i>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">Total Balance</p>
+                                    <h4 class="font-weight-bold">{{ number_format($totalBalance, 2) }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-wallet'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">Positive Balance</p>
+                                    <h4 class="font-weight-bold text-success">{{ $positiveBalanceAccounts }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-success text-white"><i class='bx bx-trending-up'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">Negative Balance</p>
+                                    <h4 class="font-weight-bold text-danger">{{ $negativeBalanceAccounts }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-danger text-white"><i class='bx bx-trending-down'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
                 <!--end row-->
 
                 <h6 class="mb-0 text-uppercase">BANK ACCOUNTS</h6>
@@ -42,6 +84,7 @@
                                         <th>Chart Account</th>
                                         <th>Account Class</th>
                                         <th>Account Group</th>
+                                        <th>Balance</th>
                                         <th>Created At</th>
                                         <th>Actions</th>
                                     </tr>
@@ -56,6 +99,13 @@
                                             <td>{{ $bankAccount->chartAccount->accountClassGroup->accountClass->name ?? 'N/A' }}
                                             </td>
                                             <td>{{ $bankAccount->chartAccount->accountClassGroup->name ?? 'N/A' }}</td>
+                                            <td class="text-end fw-bold">
+                                                @if($bankAccount->balance >= 0)
+                                                    <span class="text-success">{{ number_format($bankAccount->balance, 2) }}</span>
+                                                @else
+                                                    <span class="text-danger">{{ number_format($bankAccount->balance, 2) }}</span>
+                                                @endif
+                                            </td>
                                             <td>{{ $bankAccount->created_at->format('M d, Y') }}</td>
                                             <td>
                                                 <a href="{{ route('accounting.bank-accounts.show', $bankAccount->id) }}"
