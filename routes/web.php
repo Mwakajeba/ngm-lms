@@ -29,6 +29,7 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
 use App\Http\Controllers\CashCollateralController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\LoanProductController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -251,7 +252,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Bank Reconciliation
     Route::resource('bank-reconciliation', BankReconciliationController::class);
-    
+
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
     Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
     Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
@@ -339,6 +340,20 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('loan-products', [LoanProductController::class, 'index'])->name('loan-products.index');
+    Route::get('loan-products/create', [LoanProductController::class, 'create'])->name('loan-products.create');
+    Route::post('loan-products', [LoanProductController::class, 'store'])->name('loan-products.store');
+    Route::get('loan-products/{loanProduct}', [LoanProductController::class, 'show'])->name('loan-products.show');
+    Route::get('loan-products/{loanProduct}/edit', [LoanProductController::class, 'edit'])->name('loan-products.edit');
+    Route::put('loan-products/{loanProduct}', [LoanProductController::class, 'update'])->name('loan-products.update');
+    Route::delete('loan-products/{loanProduct}', [LoanProductController::class, 'destroy'])->name('loan-products.destroy');
+});
+
+////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 
