@@ -29,9 +29,10 @@ class CustomerController extends Controller
         $loanOfficers = collect(); // empty by default
 
         // Get all users with loan officer role
-        if (Role::where('name', 'loanofficer')->where('guard_name', 'web')->exists()) {
-            $loanOfficers = User::role('loanofficer')->get(); // Removed branch filter to show all loan officers
-        }
+        // if (Role::where('name', 'loanofficer')->where('guard_name', 'web')->exists()) {
+        //     $loanOfficers = User::role('loanofficer')->get(); // Removed branch filter to show all loan officers
+        // }
+        $loanOfficers = User::all();
 
         $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
         $branches = Branch::all();
@@ -47,7 +48,7 @@ class CustomerController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'description' => 'nullable|string|max:1000', // Added description validation
+            'description' => 'nullable|string|max:1000',
             'phone1' => 'required|string|max:20',
             'phone2' => 'nullable|string|max:20',
             'dob' => 'required|date',
@@ -136,9 +137,11 @@ class CustomerController extends Controller
         $loanOfficers = collect(); // empty by default
 
         // Get all users with loan officer role
-        if (Role::where('name', 'loanofficer')->where('guard_name', 'web')->exists()) {
-            $loanOfficers = User::role('loanofficer')->get(); // Removed branch filter to show all loan officers
-        }
+        // if (Role::where('name', 'loanofficer')->where('guard_name', 'web')->exists()) {
+        //     $loanOfficers = User::role('loanofficer')->get(); // Removed branch filter to show all loan officers
+        // }
+
+        $loanOfficers = User::all();
 
         $collateralTypes = CashCollateralType::where('is_active', 1)->get();
         $branches = Branch::all();

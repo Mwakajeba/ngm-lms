@@ -1,0 +1,107 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use App\Models\Group;
+use App\Models\GroupMember;
+use App\Models\Customer;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
+
+class GroupMemberController extends Controller
+{
+    /**
+     * Show the form to add members to a group.
+     */
+    public function create(Group $group)
+    {
+        // Get customers who are not already members of this group
+        $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
+        $availableCustomers = Customer::whereNotIn('id', $existingMemberIds)->get();
+
+        return view('group-members.create', compact('group', 'availableCustomers'));
+    }
+
+    /**
+     * Add members to the group.
+     */
+    public function store(Request $request, Group $group)
+    {
+        $validator = Validator::make($request->all(), [
+            'customer_ids' => 'required|array|min:1',
+            'customer_ids.*' => 'exists:customers,id',
+            'notes' => 'nullable|string|max:500',
+        ], [
+            'customer_ids.required' => 'Please select at least one customer to add.',
+            'customer_ids.array' => 'Please select valid customers.',
+            'customer_ids.min' => 'Please select at least one customer.',
+            'customer_ids.*.exists' => 'One or more selected customers are invalid.',
+        ]);
+
+        if ($validator->fails()) {
+            return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        $customerIds = $request->customer_ids;
+        $addedCount = 0;
+        $errors = [];
+
+        foreach ($customerIds as $customerId) {
+            // Check if customer is already a member
+            if ($group->members()->where('customer_id', $customerId)->exists()) {
+                $customer = Customer::find($customerId);
+                $errors[] = "Customer '{$customer->name}' is already a member of this group.";
+                continue;
+            }
+
+            // Check if group can accept more members
+            if (!$group->canAcceptMoreMembers()) {
+                $errors[] = "This group has reached its maximum member limit ({$group->maximum_members}).";
+                break;
+            }
+
+            try {
+                GroupMember::create([
+                    'group_id' => $group->id,
+                    'customer_id' => $customerId,
+                    'status' => 'active',
+                    'joined_date' => now(),
+                    'notes' => $request->notes,
+                ]);
+                $addedCount++;
+            } catch (\Exception $e) {
+                $customer = Customer::find($customerId);
+                $errors[] = "Failed to add customer '{$customer->name}'. Please try again.";
+            }
+        }
+
+        if ($addedCount > 0) {
+            $message = $addedCount . ' customer(s) added successfully!';
+            if (!empty($errors)) {
+                $message .= ' Some customers could not be added: ' . implode(', ', $errors);
+            }
+            return redirect()->route('groups.show', $group)->with('success', $message);
+        } else {
+            return redirect()->back()->with('error', implode(' ', $errors))->withInput();
+        }
+    }
+
+    /**
+     * Remove a member from the group.
+     */
+    public function destroy(Group $group, GroupMember $member)
+    {
+        // Ensure the member belongs to this group
+        if ($member->group_id !== $group->id) {
+            return redirect()->back()->with('error', 'Invalid member.');
+        }
+
+        try {
+            $member->delete(); // Actually delete the record instead of making inactive
+
+            return redirect()->route('groups.show', $group)->with('success', 'Member removed successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to remove member. Please try again.');
+        }
+    }
+}

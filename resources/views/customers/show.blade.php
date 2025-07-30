@@ -6,12 +6,21 @@
 <div class="page-wrapper">
     <div class="page-content">
         <div class="d-flex justify-content-between align-items-center mb-2">
-            <x-breadcrumbs :links="[
-                ['label' => 'Dashboard', 'url' => route('dashboard')],
-                ['label' => 'Customers', 'url' => route('customers.index')],
-                ['label' => 'Customer Profile']
-            ]" />
-            <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6>
+            <div class="row">
+                <div class="col-12">
+                    <div class="page-breadcrumb d-flex align-items-center">
+                        <div class="me-auto">
+                            <ul class="breadcrumb">
+                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('customers.index') }}">Customers</a></li>
+                                <li class="breadcrumb-item active">Customer</li>
+                            </ul>
+                            <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6><hr/>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6> -->
             <a href="" class="btn btn-sm btn-primary">
                 <i class="bx bx-plus"></i> Apply for Loan
             </a>
@@ -106,7 +115,12 @@
                     <div class="card-body">
                         <div class="text-center">
                             <div class="avatar-lg mx-auto mb-4">
-                                <img src="{{ asset('assets/images/avatars/avatar-2.png')}}" alt="Admin" class="rounded-circle p-1 bg-primary" width="110">
+                                <img 
+                                    src="{{ $customer->photo ? asset('storage/' . $customer->photo) : asset('assets/images/avatars/default.png') }}" 
+                                    alt="{{ $customer->name }}" 
+                                    class="rounded-circle p-1 bg-primary" 
+                                    width="110"
+                                />
                             </div>
                             <h5 class="font-size-16 mb-1 text-truncate">{{ $customer->name }}</h5>
                             <p class="text-muted text-truncate mb-3">{{ $customer->phone1 ?? 'No phone' }}</p>
@@ -120,31 +134,59 @@
                                     <tbody>
                                         <tr><th scope="row">Customer ID :</th><td>{{ $customer->customerNo }}</td></tr>
                                         <tr><th scope="row">Phone :</th><td>{{ $customer->phone1 }}</td></tr>
-                                        <tr><th scope="row">Alt Phone :</th><td>{{ $customer->phone2 }}</td></tr>
+                                        <tr><th scope="row">Gender :</th><td>{{ $customer->sex }}</td></tr>
+                                        <tr><th scope="row">Alt Phone :</th><td>{{ $customer->phone2 ?? 'N/A'}}</td></tr>
+                                        <tr><th scope="row">Work :</th><td>{{ $customer->work ?? 'N/A'}}</td></tr>
+                                        <tr><th scope="row">Work Address :</th><td>{{ $customer->workAddress ?? 'N/A'}}</td></tr>
+                                        <tr><th scope="row">Id Type :</th><td>{{ $customer->idType ?? 'N/A'}}</td></tr>
+                                        <tr><th scope="row">Id Number :</th><td>{{ $customer->idNumber ?? 'N/A'}}</td></tr>
                                         <tr><th scope="row">Region :</th><td>{{ $customer->region->name ?? 'N/A' }}</td></tr>
                                         <tr><th scope="row">District :</th><td>{{ $customer->district->name ?? 'N/A' }}</td></tr>
                                         <tr><th scope="row">Branch :</th><td>{{ $customer->branch->name ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">Relation with business :</th><td>{{ $customer->relation ?? 'N/A' }}</td></tr>
                                         <tr><th scope="row">Company :</th><td>{{ $customer->company->name ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">Description :</th><td>{{ $customer->company->description ?? 'N/A' }}</td></tr>
+                                        <tr><th scope="row">Registrar :</th><td>{{ $customer->user->name ?? 'N/A' }}</td></tr>
                                         <tr><th scope="row">Joined :</th><td>{{ $customer->created_at->format('M d, Y') }}</td></tr>
                                         <tr><th scope="row">Last Updated :</th><td>{{ $customer->updated_at->format('M d, Y') }}</td></tr>
                                     </tbody>
+                                </table>
+                                <table class="table table-borderless">
+                                    <tr>
+                                        <th>Assigned Loan officers :</th>
+                                    </tr>
+                                    @foreach($customer->loanOfficers as $officers)
+                                    <tr>
+                                        <td>{{$officers->name}}</td>
+                                    </tr>
+                                    @endforeach
                                 </table>
                             </div>
                         </div>
 
                         <!-- Action Buttons -->
-                        <div class="mt-4 d-flex justify-content-between">
-                            <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-sm btn-warning w-50 me-2">
+                        <div class="mt-4 d-flex flex-wrap gap-2">
+                            <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-sm btn-warning flex-fill">
                                 <i class="bx bx-edit"></i> Edit
                             </a>
 
-                            <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="w-50">
+                            <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="flex-fill">
                                 @csrf
                                 @method('DELETE')
                                 <button type="submit" class="btn btn-sm btn-danger w-100" onclick="return confirm('Are you sure you want to delete this customer?');">
                                     <i class="bx bx-trash"></i> Delete
                                 </button>
                             </form>
+
+                            @if ($customer->document)
+                                <a href="{{ asset('storage/' . $customer->document) }}" 
+                                target="_blank" 
+                                class="btn btn-sm btn-outline-primary flex-fill">
+                                    <i class="bx bx-file"></i> View Document
+                                </a>
+                            @else
+                                <span class="text-muted mt-2">No document uploaded</span>
+                            @endif
                         </div>
 
                     </div>
@@ -156,7 +198,7 @@
             <div class="col-xl-8">
                 <div class="card">
                     <div class="card-body">
-                        <h4 class="card-title mb-4">Cash Collateral Records</h4>
+                        <h5 class="card-title mb-4">Cash Collateral Records</h5>
                         <hr class="my-4">
 
                         <div class="table-responsive">
@@ -207,7 +249,7 @@
                 <!-- Roles and Permissions Card -->
                 <div class="card">
                     <div class="card-body">
-                        <h4 class="card-title mb-4">Loans Records</h4>
+                        <h5 class="card-title mb-4">Loans Records</h5>
                         <hr class="my-4">
                         <div class="table-responsive">
                             <table class="table table-bordered dt-responsive nowrap" id="loansTable">

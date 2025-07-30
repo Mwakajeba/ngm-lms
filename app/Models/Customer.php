@@ -91,6 +91,12 @@ class Customer extends Model
         return $this->loanOfficers()->pluck('users.id')->toArray();
     }
 
+    public function ledGroups()
+    {
+        return $this->hasMany(Group::class, 'group_leader');
+    }
+
+
     // Mutator for customer number
     public function setCustomerNoAttribute($value)
     {
