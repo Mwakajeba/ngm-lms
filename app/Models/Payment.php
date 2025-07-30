@@ -20,6 +20,7 @@ class Payment extends Model
         'attachment',
         'bank_account_id',
         'customer_id',
+        'supplier_id',
         'branch_id',
         'user_id',
         'approved',
@@ -54,10 +55,17 @@ class Payment extends Model
         return $this->belongsTo(Customer::class);
     }
 
+    public function supplier()
+    {
+        return $this->belongsTo(Supplier::class);
+    }
+
     public function branch()
     {
         return $this->belongsTo(Branch::class);
     }
+
+
 
     public function paymentItems()
     {
@@ -128,7 +136,7 @@ class Payment extends Model
      */
     public function getRouteKeyName()
     {
-        return 'id';
+        return 'hash_id';
     }
 
     /**
@@ -136,10 +144,12 @@ class Payment extends Model
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        // Try to decode as hash ID first
-        $id = HashIdHelper::decode($value);
-        if ($id !== null) {
-            return $this->findOrFail($id);
+        // If field is hash_id, decode the hash ID
+        if ($field === 'hash_id' || $field === null) {
+            $id = HashIdHelper::decode($value);
+            if ($id !== null) {
+                return $this->findOrFail($id);
+            }
         }
         
         // If not a hash ID, try as regular ID

@@ -29,6 +29,9 @@ use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
 use App\Http\Controllers\CashCollateralController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\LoanProductController;
+use App\Http\Controllers\GroupController;
+use App\Http\Controllers\GroupMemberController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -230,6 +233,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
     Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
     Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
+    
+    // Bill and Payment PDF Export Routes
+    Route::get('/bill-purchases/{billPurchase}/export-pdf', [BillPurchaseController::class, 'exportPdf'])->name('bill-purchases.export-pdf');
+    Route::get('/payments/{payment}/export-pdf', [BillPurchaseController::class, 'exportPaymentPdf'])->name('bill-payments.export-pdf');
 
     // Receipt Vouchers
     Route::get('/receipt-vouchers', [ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
@@ -251,7 +258,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Bank Reconciliation
     Route::resource('bank-reconciliation', BankReconciliationController::class);
-    
+
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
     Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
     Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
@@ -263,9 +270,19 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/bill-purchases', [BillPurchaseController::class, 'index'])->name('bill-purchases');
     Route::get('/bill-purchases/create', [BillPurchaseController::class, 'create'])->name('bill-purchases.create');
     Route::post('/bill-purchases', [BillPurchaseController::class, 'store'])->name('bill-purchases.store');
+    
+    // Bill Payment Management (must come before bill-purchases/{billPurchase} routes)
+    Route::get('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'showPayment'])->name('bill-purchases.payment.show');
+    Route::get('/bill-purchases/payment/{payment}/edit', [BillPurchaseController::class, 'editPayment'])->name('bill-purchases.payment.edit');
+    Route::put('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'updatePayment'])->name('bill-purchases.payment.update');
+    Route::delete('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'deletePayment'])->name('bill-purchases.payment.delete');
+    
+    Route::get('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'show'])->name('bill-purchases.show');
     Route::get('/bill-purchases/{billPurchase}/edit', [BillPurchaseController::class, 'edit'])->name('bill-purchases.edit');
     Route::put('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'update'])->name('bill-purchases.update');
     Route::delete('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'destroy'])->name('bill-purchases.destroy');
+    Route::get('/bill-purchases/{billPurchase}/payment', [BillPurchaseController::class, 'showPaymentForm'])->name('bill-purchases.payment');
+    Route::post('/bill-purchases/{billPurchase}/payment', [BillPurchaseController::class, 'processPayment'])->name('bill-purchases.process-payment');
 
     // Budget
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
@@ -298,12 +315,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Journal Entries CRUD
     Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
-    Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
-    Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
-    Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
-    Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
-    Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
-    Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
+Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
+Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
+Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
+Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
+Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
+Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
+Route::get('/journals/{journal}/export-pdf', [JournalController::class, 'exportPdf'])->name('journals.export-pdf');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -339,6 +357,54 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('loan-products', [LoanProductController::class, 'index'])->name('loan-products.index');
+    Route::get('loan-products/create', [LoanProductController::class, 'create'])->name('loan-products.create');
+    Route::post('loan-products', [LoanProductController::class, 'store'])->name('loan-products.store');
+    Route::get('loan-products/{loanProduct}', [LoanProductController::class, 'show'])->name('loan-products.show');
+    Route::get('loan-products/{loanProduct}/edit', [LoanProductController::class, 'edit'])->name('loan-products.edit');
+    Route::put('loan-products/{loanProduct}', [LoanProductController::class, 'update'])->name('loan-products.update');
+    Route::delete('loan-products/{loanProduct}', [LoanProductController::class, 'destroy'])->name('loan-products.destroy');
+});
+
+////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// GROUP MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('groups', [GroupController::class, 'index'])->name('groups.index');
+    Route::get('groups/create', [GroupController::class, 'create'])->name('groups.create');
+    Route::post('groups', [GroupController::class, 'store'])->name('groups.store');
+    Route::get('groups/{group}', [GroupController::class, 'show'])->name('groups.show');
+    Route::get('groups/{group}/edit', [GroupController::class, 'edit'])->name('groups.edit');
+    Route::put('groups/{group}', [GroupController::class, 'update'])->name('groups.update');
+    Route::delete('groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
+});
+
+////////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('groups/{group}/members/create', [GroupMemberController::class, 'create'])->name('group-members.create');
+    Route::post('groups/{group}/members', [GroupMemberController::class, 'store'])->name('group-members.store');
+    Route::delete('groups/{group}/members/{member}', [GroupMemberController::class, 'destroy'])->name('group-members.destroy');
+});
+
+////////////////////////////////////////////// END GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
+    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
+    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
+    Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
+    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+});
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 

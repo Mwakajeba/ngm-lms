@@ -19,7 +19,38 @@ class BankAccountController extends Controller
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
-        return view('bank-accounts.index', compact('bankAccounts'));
+        // Calculate balance for each bank account in the paginated result
+        $bankAccounts->getCollection()->transform(function($bankAccount) {
+            $debits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+                ->where('nature', 'debit')
+                ->sum('amount');
+            $credits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+                ->where('nature', 'credit')
+                ->sum('amount');
+            $bankAccount->balance = $debits - $credits;
+            return $bankAccount;
+        });
+
+        // Calculate statistics
+        $totalAccounts = BankAccount::count();
+        
+        // Calculate balances from GL transactions for statistics
+        $allBankAccounts = BankAccount::with('chartAccount')->get()->map(function($bankAccount) {
+            $debits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+                ->where('nature', 'debit')
+                ->sum('amount');
+            $credits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+                ->where('nature', 'credit')
+                ->sum('amount');
+            $bankAccount->balance = $debits - $credits;
+            return $bankAccount;
+        });
+        
+        $totalBalance = $allBankAccounts->sum('balance');
+        $positiveBalanceAccounts = $allBankAccounts->where('balance', '>', 0)->count();
+        $negativeBalanceAccounts = $allBankAccounts->where('balance', '<', 0)->count();
+
+        return view('bank-accounts.index', compact('bankAccounts', 'totalAccounts', 'totalBalance', 'positiveBalanceAccounts', 'negativeBalanceAccounts'));
     }
 
     /**

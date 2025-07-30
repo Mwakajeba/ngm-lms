@@ -5,10 +5,20 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
-        <x-breadcrumbs :links="[
-            ['label' => 'Dashboard', 'url' => route('dashboard')],
-            ['label' => 'Customers']
-        ]" />
+         <!-- Breadcrumb -->
+        <div class="row">
+            <div class="col-12">
+                <div class="page-breadcrumb d-flex align-items-center">
+                    <div class="me-auto">
+                        <!-- <h5 class="page-title text-dark fw-semibold fs-3">Create Payment Voucher</h5> -->
+                        <ul class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item active">Customers</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
         <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
         <hr/>
 
@@ -21,11 +31,8 @@
                             <p class="text-muted mb-1">Total Customers</p>
                             <h4 class="mb-0">{{ $customers->count() ?? 0 }}</h4>
                         </div>
-                        <div class="ms-3">
-                            <div class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                                <i class="bx bx-user font-size-24"></i>
+                        <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i>
                             </div>
-                        </div>
                     </div>
                 </div>
             </div>
@@ -38,7 +45,7 @@
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h4 class="card-title mb-0">Customers List</h4>
+                            <h6 class="card-title mb-0">Customers List</h6>
                             <div>
                                 <a href="{{ route('customers.create') }}" class="btn btn-primary">
                                     <i class="bx bx-plus"></i> Add Customer
