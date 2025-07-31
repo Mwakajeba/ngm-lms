@@ -5,6 +5,12 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Penalties', 'url' => route('accounting.penalties.index'), 'icon' => 'bx bx-error-circle'],
+            ['label' => 'Create Penalty', 'url' => '#', 'icon' => 'bx bx-plus-circle']
+        ]" />
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="mb-0 text-uppercase">ADD NEW PENALTY</h6>
