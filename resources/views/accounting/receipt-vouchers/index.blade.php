@@ -5,6 +5,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Receipt Vouchers', 'url' => '#', 'icon' => 'bx bx-receipt']
+        ]" />
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="mb-0 text-uppercase">RECEIPT VOUCHERS</h6>
