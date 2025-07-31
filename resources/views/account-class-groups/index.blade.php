@@ -4,6 +4,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Account Class Groups', 'url' => '#', 'icon' => 'bx bx-category']
+        ]" />
+
             <div class="row row-cols-1 row-cols-lg-3">
                 <div class="col">
                     <div class="card radius-10">
