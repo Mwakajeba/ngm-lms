@@ -1,47 +1,117 @@
-<!-- <!DOCTYPE html>
-<html>
-<head>
-    <title>Dashboard</title>
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-</head>
-<body class="bg-light">
-
-<div class="container mt-5">
-    <div class="card shadow-sm">
-        <div class="card-header bg-info text-white">
-            Welcome, {{ auth()->user()->name }}
-        </div>
-        <div class="card-body">
-            <p>You are logged in with phone: <strong>{{ auth()->user()->phone }}</strong></p>
-
-            <form method="POST" action="{{ url('/logout') }}">
-                @csrf
-                <button type="submit" class="btn btn-danger">Logout</button>
-            </form>
-        </div>
-    </div>
-</div>
-
-</body>
-</html> -->
 @extends('layouts.main')
 
 @section('title', __('app.dashboard'))
+
+@php
+use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
+<style>
+.financial-section {
+    margin-bottom: 20px;
+}
+
+.section-header {
+    border-radius: 8px 8px 0 0 !important;
+}
+
+.section-content {
+    border-radius: 0 0 8px 8px !important;
+    border-top: none !important;
+}
+
+.account-row:hover {
+    background-color: #f8f9fa;
+    transition: background-color 0.2s ease;
+}
+
+.account-row a:hover {
+    color: #007bff !important;
+    text-decoration: underline !important;
+}
+
+.table-sm td {
+    padding: 0.5rem;
+    vertical-align: middle;
+}
+
+.section-title {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+}
+
+.bg-gradient-primary {
+    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+}
+
+.bg-gradient-info {
+    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+}
+
+.bg-gradient-success {
+    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+}
+
+@media print {
+    .btn, .overlay, .back-to-top, footer {
+        display: none !important;
+    }
+    
+    .card {
+        border: none !important;
+        box-shadow: none !important;
+    }
+    
+    .section-header {
+        background: #333 !important;
+        color: white !important;
+    }
+}
+</style>
+
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
-        <div class="row row-cols-1 row-cols-lg-3">
+        <!-- Welcome Section -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-top border-0 border-4 border-primary">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="card-title d-flex align-items-center">
+                                    <div><i class="bx bx-home me-1 font-22 text-primary"></i></div>
+                                    <h5 class="mb-0 text-primary">Welcome back, {{ auth()->user()->name }}!</h5>
+                                </div>
+                                <p class="mb-0 text-muted">Here's what's happening with your financial data today</p>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ route('accounting.journals.create') }}" class="btn btn-primary">
+                                        <i class="bx bx-plus me-1"></i> New Journal
+                                    </a>
+                                    <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-success">
+                                        <i class="bx bx-money me-1"></i> New Payment
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Stats -->
+        <div class="row row-cols-1 row-cols-lg-4">
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Sessions</p>
-                                <h4 class="font-weight-bold">32,842 <small class="text-success font-13">(+40%)</small></h4>
-                                <p class="text-success mb-0 font-13">Analytics for last week</p>
+                                <p class="mb-0">Total Journals</p>
+                                <h4 class="font-weight-bold">{{ $recentJournals->count() > 0 ? $recentJournals->count() : 0 }}</h4>
+                                <p class="text-success mb-0 font-13">This month</p>
                             </div>
-                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-refresh'></i>
-                            </div>
+                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-book-open'></i></div>
                         </div>
                     </div>
                 </div>
@@ -51,12 +121,11 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Users</p>
-                                <h4 class="font-weight-bold">16,352 <small class="text-success font-13">(+22%)</small></h4>
-                                <p class="text-secondary mb-0 font-13">Analytics for last week</p>
+                                <p class="mb-0">Total Payments</p>
+                                <h4 class="font-weight-bold">{{ $recentPayments->count() > 0 ? $recentPayments->count() : 0 }}</h4>
+                                <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
-                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
                         </div>
                     </div>
                 </div>
@@ -66,12 +135,11 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Time on Site</p>
-                                <h4 class="font-weight-bold">34m 14s <small class="text-success font-13">(+55%)</small></h4>
-                                <p class="text-secondary mb-0 font-13">Analytics for last week</p>
+                                <p class="mb-0">Total Bills</p>
+                                <h4 class="font-weight-bold">{{ $recentBills->count() > 0 ? $recentBills->count() : 0 }}</h4>
+                                <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
-                            <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-time'></i>
-                            </div>
+                            <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-receipt'></i></div>
                         </div>
                     </div>
                 </div>
@@ -81,48 +149,19 @@
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Goal Completions</p>
-                                <h4 class="font-weight-bold">1,94,2335</h4>
-                                <p class="text-secondary mb-0 font-13">Analytics for last month</p>
+                                <p class="mb-0">Bank Reconciliations</p>
+                                <h4 class="font-weight-bold">{{ $bankReconciliationStats->total ?? 0 }}</h4>
+                                <p class="text-secondary mb-0 font-13">Active reconciliations</p>
                             </div>
-                            <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bxs-cube'></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">Bounce Rate</p>
-                                <h4 class="font-weight-bold">58% <small class="text-danger font-13">(-16%)</small></h4>
-                                <p class="text-secondary mb-0 font-13">Analytics for last week</p>
-                            </div>
-                            <div class="widgets-icons bg-gradient-blues text-white"><i class='bx bx-line-chart'></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">New Sessions</p>
-                                <h4 class="font-weight-bold">96% <small class="text-danger font-13">(+54%)</small></h4>
-                                <p class="text-secondary mb-0 font-13">Analytics for last week</p>
-                            </div>
-                            <div class="widgets-icons bg-gradient-moonlit text-white"><i class='bx bx-bar-chart'></i>
-                            </div>
+                            <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-bank'></i></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
         <!--end row-->
+
+        <!-- Charts Row -->
         <div class="row">
             <div class="col-12 col-lg-6">
                 <div class="card radius-10">
@@ -140,21 +179,23 @@
             </div>
         </div>
         <!--end row-->
+
+        <!-- Balance Sheet Overview -->
         <div class="row">
             <div class="col-12 col-lg-8 d-lg-flex align-items-lg-stretch">
                 <div class="card radius-10 w-100">
                     <div class="card-header border-bottom-0 bg-transparent">
                         <div class="d-lg-flex align-items-center">
                             <div class="">
-                                <h5 class="mb-1">Website Audience Overview</h5>
-                                <p class="text-secondary mb-2 mb-lg-0 font-14">There are plenty of free web proxy sites that you can use</p>
+                                <h5 class="mb-1">Balance Sheet Overview</h5>
+                                <p class="text-secondary mb-2 mb-lg-0 font-14">Financial position by account class</p>
                             </div>
                             <div class="ms-lg-auto">
                                 <div class="btn-group-round">
                                     <div class="btn-group">
-                                        <button type="button" class="btn btn-white">Day</button>
-                                        <button type="button" class="btn btn-white">Week</button>
-                                        <button type="button" class="btn btn-white">Month</button>
+                                        <button type="button" class="btn btn-white">Assets</button>
+                                        <button type="button" class="btn btn-white">Liabilities</button>
+                                        <button type="button" class="btn btn-white">Equity</button>
                                     </div>
                                 </div>
                             </div>
@@ -167,58 +208,41 @@
             </div>
             <div class="col-12 col-lg-4 d-lg-flex align-items-lg-stretch">
                 <div class="card radius-10 w-100">
-                    <div class="card-header bg-transparent">Traffic Sources</div>
+                    <div class="card-header bg-transparent">Account Class Balances</div>
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-striped mb-0">
                                 <thead>
                                     <tr>
-                                        <th>Source</th>
-                                        <th>Visitors</th>
-                                        <th>Bounce Rate</th>
+                                        <th>Class</th>
+                                        <th>Balance</th>
+                                        <th>Accounts</th>
                                     </tr>
                                 </thead>
                                 <tbody>
+                                    @forelse($balanceSheetData as $item)
                                     <tr>
-                                        <td>(direct)</td>
-                                        <td>56</td>
-                                        <td>10%</td>
+                                        <td>
+                                            <div>
+                                                <strong>{{ $item['class_code'] }}</strong>
+                                                <br>
+                                                <small class="text-muted">{{ $item['class_name'] }}</small>
+                                            </div>
+                                        </td>
+                                        <td>
+                                            <span class="badge {{ $item['balance'] >= 0 ? 'bg-success' : 'bg-danger' }}">
+                                                TZS {{ number_format(abs($item['balance']), 2) }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ $item['account_count'] }}</span>
+                                        </td>
                                     </tr>
+                                    @empty
                                     <tr>
-                                        <td>google</td>
-                                        <td>29</td>
-                                        <td>12%</td>
+                                        <td colspan="3" class="text-center text-muted">No account data available</td>
                                     </tr>
-                                    <tr>
-                                        <td>linkedin.com</td>
-                                        <td>68</td>
-                                        <td>33%</td>
-                                    </tr>
-                                    <tr>
-                                        <td>bing</td>
-                                        <td>14</td>
-                                        <td>24%</td>
-                                    </tr>
-                                    <tr>
-                                        <td>facebook.com</td>
-                                        <td>87</td>
-                                        <td>22%</td>
-                                    </tr>
-                                    <tr>
-                                        <td>other</td>
-                                        <td>98</td>
-                                        <td>27%</td>
-                                    </tr>
-                                    <tr>
-                                        <td>linkedin.com</td>
-                                        <td>68</td>
-                                        <td>33%</td>
-                                    </tr>
-                                    <tr>
-                                        <td>bing</td>
-                                        <td>14</td>
-                                        <td>24%</td>
-                                    </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -228,29 +252,345 @@
         </div>
         <!--end row-->
         
+        <!-- Recent Activities -->
         <div class="row row-cols-1 row-cols-lg-3">
             <div class="col">
                 <div class="card radius-10">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="bx bx-book-open me-2"></i>Recent Journals</h6>
+                    </div>
                     <div class="card-body">
-                        <div id="chart4"></div>
+                        @forelse($recentJournals as $journal)
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="widgets-icons bg-light-primary text-primary me-3">
+                                <i class="bx bx-book"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ $journal->reference }}</h6>
+                                <p class="mb-0 text-muted">{{ Str::limit($journal->description, 30) }}</p>
+                                <small class="text-muted">{{ $journal->date ? $journal->date->format('M d, Y') : 'N/A' }}</small>
+                            </div>
+                        </div>
+                        @empty
+                        <p class="text-muted text-center">No recent journals</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
             <div class="col">
                 <div class="card radius-10">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="bx bx-money me-2"></i>Recent Payments</h6>
+                    </div>
                     <div class="card-body">
-                        <div id="chart5"></div>
+                        @forelse($recentPayments as $payment)
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="widgets-icons bg-light-success text-success me-3">
+                                <i class="bx bx-money"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ $payment->reference }}</h6>
+                                <p class="mb-0 text-muted">{{ Str::limit($payment->description, 30) }}</p>
+                                <small class="text-muted">{{ $payment->date ? $payment->date->format('M d, Y') : 'N/A' }}</small>
+                            </div>
+                        </div>
+                        @empty
+                        <p class="text-muted text-center">No recent payments</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
             <div class="col">
                 <div class="card radius-10">
+                    <div class="card-header bg-transparent">
+                        <h6 class="mb-0"><i class="bx bx-receipt me-2"></i>Recent Bills</h6>
+                    </div>
                     <div class="card-body">
-                        <div id="chart6"></div>
+                        @forelse($recentBills as $bill)
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="widgets-icons bg-light-warning text-warning me-3">
+                                <i class="bx bx-receipt"></i>
+                            </div>
+                            <div class="flex-grow-1">
+                                <h6 class="mb-1">{{ $bill->reference }}</h6>
+                                <p class="mb-0 text-muted">{{ $bill->supplier->name ?? 'N/A' }}</p>
+                                <small class="text-muted">{{ $bill->date ? $bill->date->format('M d, Y') : 'N/A' }}</small>
+                            </div>
+                        </div>
+                        @empty
+                        <p class="text-muted text-center">No recent bills</p>
+                        @endforelse
                     </div>
                 </div>
             </div>
         </div>
+
+        <!-- Financial Report Summary -->
+        @can('view FINANCIAL REPORT SUMMARY')
+        <div class="row">
+            <div class="col-12">
+                <div class="card radius-10 border-0 shadow-sm">
+                    <div class="card-header bg-gradient-primary text-white border-0">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <h5 class="mb-0"><i class="bx bx-bar-chart me-2"></i>FINANCIAL REPORT SUMMARY</h5>
+                                <small class="text-white-50">Comprehensive financial overview as of {{ date('d-m-Y') }}</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-body p-4">
+                        <div class="row">
+                            <!-- Balance Sheet Section -->
+                            <div class="col-md-6">
+                                <div class="financial-section">
+                                    <div class="section-header bg-gradient-info text-white p-3 rounded-top">
+                                        <h4 class="mb-0"><i class="bx bx-balance me-2"></i>BALANCE SHEET</h4>
+                                        <small class="text-white-50">As of {{ date('d-m-Y') }}</small>
+                                    </div>
+                                    
+                                    <!-- Assets Section -->
+                                    <div class="section-content border rounded-bottom">
+                                        <div class="section-title bg-light p-2 border-bottom">
+                                            <h6 class="mb-0 text-success"><i class="bx bx-trending-up me-1"></i>ASSETS</h6>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0">
+                                                @php $sumAsset = 0; @endphp
+                                                @foreach($financialReportData['chartAccountsAssets'] as $groupName => $accounts)
+                                                    @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
+                                                    @if($groupTotal != 0)
+                                                        <tr class="table-light">
+                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                        </tr>
+                                                        @foreach($accounts as $chartAccountAsset)
+                                                            @if($chartAccountAsset['sum'] != 0)
+                                                                @php $sumAsset += $chartAccountAsset['sum'] ?? 0; @endphp
+                                                                <tr class="account-row">
+                                                                    <td>
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountAsset['account_id'])) }}" 
+                                                                           class="text-decoration-none text-dark fw-medium">
+                                                                            <i class="bx bx-chevron-right me-1 text-success"></i>
+                                                                            {{ $chartAccountAsset['account'] }}
+                                                                        </a>
+                                                                    </td>
+                                                                                                                                         <td class="text-end">
+                                                                         <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountAsset['account_id'])) }}" 
+                                                                            class="text-decoration-none fw-bold text-success">
+                                                                            {{ number_format($chartAccountAsset['sum'] ?? 0,2) }}
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                @endforeach
+                                                <tr class="table-success fw-bold">
+                                                    <td>TOTAL ASSETS</td>
+                                                    <td class="text-end">{{ number_format($sumAsset,2) }}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                        <!-- Equity Section -->
+                                        <div class="section-title bg-light p-2 border-bottom mt-3">
+                                            <h6 class="mb-0 text-info"><i class="bx bx-user me-1"></i>EQUITY</h6>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0">
+                                                @php $sumEquity = 0; @endphp
+                                                @foreach($financialReportData['chartAccountsEquitys'] as $groupName => $accounts)
+                                                    @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
+                                                    @if($groupTotal != 0)
+                                                        <tr class="table-light">
+                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                        </tr>
+                                                                                                                @foreach($accounts as $chartAccountEquity)
+                                                            @if($chartAccountEquity['sum'] != 0)
+                                                                @php $sumEquity += abs($chartAccountEquity['sum'] ?? 0); @endphp
+                                                                <tr class="account-row">
+                                                                    <td>
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountEquity['account_id'])) }}" 
+                                                                           class="text-decoration-none text-dark fw-medium">
+                                                                            <i class="bx bx-chevron-right me-1 text-info"></i>
+                                                                            {{ $chartAccountEquity['account'] }}
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="text-end">
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountEquity['account_id'])) }}" 
+                                                                           class="text-decoration-none fw-bold text-info">
+                                                                            {{ number_format(abs($chartAccountEquity['sum'] ?? 0),2) }}
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                @endforeach
+                                                <tr class="table-info">
+                                                    <td>Profit And Loss</td>
+                                                    <td class="text-end fw-bold">{{ number_format($financialReportData['profitLoss'],2) }}</td> 
+                                                </tr>
+                                                <tr class="table-info fw-bold">
+                                                    <td>TOTAL EQUITY</td>
+                                                    <td class="text-end">{{ number_format($sumEquity + $financialReportData['profitLoss'],2) }}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                        <!-- Liabilities Section -->
+                                        <div class="section-title bg-light p-2 border-bottom mt-3">
+                                            <h6 class="mb-0 text-warning"><i class="bx bx-trending-down me-1"></i>LIABILITIES</h6>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0">
+                                                @php $sumLiability = 0; @endphp
+                                                @foreach($financialReportData['chartAccountsLiabilities'] as $groupName => $accounts)
+                                                    @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
+                                                    @if($groupTotal != 0)
+                                                        <tr class="table-light">
+                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                        </tr>
+                                                                                                                @foreach($accounts as $chartAccountLiability)
+                                                            @if($chartAccountLiability['sum'] != 0)
+                                                                @php $sumLiability += abs($chartAccountLiability['sum'] ?? 0); @endphp
+                                                                <tr class="account-row">
+                                                                    <td>
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountLiability['account_id'])) }}" 
+                                                                           class="text-decoration-none text-dark fw-medium">
+                                                                            <i class="bx bx-chevron-right me-1 text-warning"></i>
+                                                                            {{ $chartAccountLiability['account'] }}
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="text-end">
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountLiability['account_id'])) }}" 
+                                                                           class="text-decoration-none fw-bold text-warning">
+                                                                            {{ number_format(abs($chartAccountLiability['sum'] ?? 0),2) }}
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                @endforeach
+                                                <tr class="table-warning fw-bold">
+                                                    <td>TOTAL LIABILITIES</td>
+                                                    <td class="text-end">{{ number_format($sumLiability,2) }}</td>
+                                                </tr>
+                                                <tr class="table-dark fw-bold">
+                                                    <td>TOTAL EQUITY & LIABILITY</td>
+                                                    <td class="text-end">{{ number_format($sumLiability + $sumEquity + $financialReportData['profitLoss'],2) }}</td> 
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Profit & Loss Section -->
+                            <div class="col-md-6">
+                                <div class="financial-section">
+                                    <div class="section-header bg-gradient-success text-white p-3 rounded-top">
+                                        <h4 class="mb-0"><i class="bx bx-line-chart me-2"></i>PROFIT & LOSS STATEMENT</h4>
+                                        <small class="text-white-50">From 01-01-{{date('Y')}} to {{ date('d-m-Y') }}</small>
+                                    </div>
+                                    
+                                    <div class="section-content border rounded-bottom">
+                                        <!-- Revenue Section -->
+                                        <div class="section-title bg-light p-2 border-bottom">
+                                            <h6 class="mb-0 text-success"><i class="bx bx-trending-up me-1"></i>INCOME</h6>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0">
+                                                @php $sumRevenue = 0; @endphp
+                                                @foreach($financialReportData['chartAccountsRevenues'] as $groupName => $accounts)
+                                                    @php $groupTotal = collect($accounts)->sum('sum'); @endphp
+                                                    @if($groupTotal != 0)
+                                                        <tr class="table-light">
+                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                        </tr>
+                                                        @foreach($accounts as $chartAccountRevenue)
+                                                            @if($chartAccountRevenue['sum'] != 0)
+                                                                @php $sumRevenue += $chartAccountRevenue['sum']; @endphp
+                                                                <tr class="account-row">
+                                                                    <td>
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountRevenue['account_id'])) }}" 
+                                                                           class="text-decoration-none text-dark fw-medium">
+                                                                            <i class="bx bx-chevron-right me-1 text-success"></i>
+                                                                            {{ $chartAccountRevenue['account'] }}
+                                                                        </a>
+                                                                    </td>
+                                                                                                                                         <td class="text-end">
+                                                                         <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountRevenue['account_id'])) }}" 
+                                                                            class="text-decoration-none fw-bold text-success">
+                                                                            {{ number_format($chartAccountRevenue['sum'],2) }}
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                @endforeach
+                                                <tr class="table-success fw-bold">
+                                                    <td>TOTAL INCOME</td>
+                                                    <td class="text-end">{{ number_format($sumRevenue,2) }}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                        
+                                        <!-- Expenses Section -->
+                                        <div class="section-title bg-light p-2 border-bottom mt-3">
+                                            <h6 class="mb-0 text-danger"><i class="bx bx-trending-down me-1"></i>EXPENSES</h6>
+                                        </div>
+                                        <div class="table-responsive">
+                                            <table class="table table-sm mb-0">
+                                                @php $sumExpense = 0; @endphp
+                                                @foreach($financialReportData['chartAccountsExpense'] as $groupName => $accounts)
+                                                    @php $groupTotal = collect($accounts)->sum('sum'); @endphp
+                                                    @if($groupTotal != 0)
+                                                        <tr class="table-light">
+                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                        </tr>
+                                                                                                                @foreach($accounts as $chartAccountExpense)
+                                                            @if($chartAccountExpense['sum'] != 0)
+                                                                @php $sumExpense += abs($chartAccountExpense['sum']); @endphp
+                                                                <tr class="account-row">
+                                                                    <td>
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountExpense['account_id'])) }}" 
+                                                                           class="text-decoration-none text-dark fw-medium">
+                                                                            <i class="bx bx-chevron-right me-1 text-danger"></i>
+                                                                            {{ $chartAccountExpense['account'] }}
+                                                                        </a>
+                                                                    </td>
+                                                                    <td class="text-end">
+                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountExpense['account_id'])) }}" 
+                                                                           class="text-decoration-none fw-bold text-danger">
+                                                                            {{ number_format(abs($chartAccountExpense['sum']),2) }}
+                                                                        </a>
+                                                                    </td>
+                                                                </tr>
+                                                            @endif
+                                                        @endforeach
+                                                    @endif
+                                                @endforeach
+                                                <tr class="table-danger fw-bold">
+                                                    <td>TOTAL EXPENSES</td>
+                                                    <td class="text-end">{{ number_format($sumExpense,2) }}</td>
+                                                </tr>
+                                                <tr class="table-{{ ($sumRevenue - $sumExpense) >= 0 ? 'success' : 'danger' }} fw-bold fs-5">
+                                                    <td>NET PROFIT/LOSS</td>
+                                                    <td class="text-end">{{ number_format($sumRevenue - $sumExpense,2) }}</td>
+                                                </tr>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endcan
 
     </div>
 </div>
