@@ -5,6 +5,12 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Fees', 'url' => route('accounting.fees.index'), 'icon' => 'bx bx-dollar-circle'],
+            ['label' => 'Fee Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
+        ]" />
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="mb-0 text-uppercase">FEE DETAILS</h6>
@@ -28,7 +34,8 @@
                         <div class="card-body py-4">
                             <div class="d-flex align-items-center">
                                 <div class="me-3">
-                                    <div class="avatar-lg bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center">
+                                    <div
+                                        class="avatar-lg bg-white bg-opacity-25 rounded-circle d-flex align-items-center justify-content-center">
                                         <i class="bx bx-dollar-circle text-white" style="font-size: 2rem"></i>
                                     </div>
                                 </div>
