@@ -8,6 +8,7 @@ use App\Models\Company;
 use App\Models\Region;
 use App\Models\User;
 use App\Models\CashCollateralType;
+use App\Models\Filetype;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -28,11 +29,8 @@ class CustomerController extends Controller
         $branchId = auth()->user()->branch_id;
         $loanOfficers = collect(); // empty by default
 
-        // Get all users with loan officer role
-        // if (Role::where('name', 'loanofficer')->where('guard_name', 'web')->exists()) {
-        //     $loanOfficers = User::role('loanofficer')->get(); // Removed branch filter to show all loan officers
-        // }
         $loanOfficers = User::all();
+        $filetypes = Filetype::orderBy('name')->get();
 
         $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
         $branches = Branch::all();
@@ -40,13 +38,14 @@ class CustomerController extends Controller
         $registrars = User::all();
         $regions = Region::all();
         
-        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes'));
+        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes','filetypes'));
     }
 
     // Store a new customer
     public function store(Request $request)
     {
-        $request->validate([
+        // Basic validation rules
+        $rules = [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'phone1' => 'required|string|max:20',
@@ -61,39 +60,49 @@ class CustomerController extends Controller
             'idNumber' => 'nullable|string|max:100',
             'relation' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
             'loan_officer_ids' => 'nullable|array',
             'loan_officer_ids.*' => 'exists:users,id',
             'has_cash_collateral' => 'nullable|boolean',
-            'collateral_type_id' => 'nullable|exists:cash_collateral_types,id', // Made optional
-        ]);
+            'collateral_type_id' => 'nullable|exists:cash_collateral_types,id',
 
-        $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id']);
+            // Dynamic filetypes + documents
+            'filetypes'   => 'nullable|array',
+            'filetypes.*' => 'exists:filetypes,id',
+            'documents'   => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+        ];
+
+        $validated = $request->validate($rules);
+
+        // Prepare customer data
+        $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents']);
         $password = 12345;
-        $date = date('Y-m-d');
+        $date = now()->toDateString();
+
         $data['customerNo'] = 100000 + (\App\Models\Customer::max('id') ?? 0) + 1;
         $data['password'] = Hash::make($password);
         $data['branch_id'] = auth()->user()->branch_id;
         $data['company_id'] = auth()->user()->company_id;
         $data['registrar'] = auth()->id();
         $data['dateRegistered'] = $date;
-        $data['has_cash_collateral'] = $request->has('has_cash_collateral') ? true : false; // Set boolean value
+        $data['has_cash_collateral'] = $request->has('has_cash_collateral');
 
-        // Upload files
+        // Upload photo
         if ($request->hasFile('photo')) {
             $data['photo'] = $request->file('photo')->store('photos', 'public');
         }
 
+        // Upload document
         if ($request->hasFile('document')) {
             $data['document'] = $request->file('document')->store('documents', 'public');
         }
 
         DB::beginTransaction();
         try {
-            $customer = Customer::create($data);
+            $customer = \App\Models\Customer::create($data);
 
-            // Attach loan officers if any selected
-            if ($request->has('loan_officer_ids') && !empty($request->loan_officer_ids)) {
+            // Attach loan officers
+            if ($request->has('loan_officer_ids')) {
                 foreach ($request->loan_officer_ids as $officerId) {
                     DB::table('customer_officer')->insert([
                         'customer_id' => $customer->id,
@@ -104,8 +113,8 @@ class CustomerController extends Controller
                 }
             }
 
-            // Create cash collateral only if selected and type provided
-            if ($request->has('has_cash_collateral') && $request->has('collateral_type_id') && $request->collateral_type_id) {
+            // Add cash collateral
+            if ($request->has('has_cash_collateral') && $request->input('collateral_type_id')) {
                 \App\Models\CashCollateral::create([
                     'customer_id' => $customer->id,
                     'type_id' => $request->input('collateral_type_id'),
@@ -115,18 +124,41 @@ class CustomerController extends Controller
                 ]);
             }
 
+            // Save uploaded filetypes + documents
+            if ($request->has('filetypes') && $request->hasFile('documents')) {
+                $filetypes = $request->input('filetypes');
+                $documents = $request->file('documents');
+
+                foreach ($filetypes as $index => $filetypeId) {
+                    if (isset($documents[$index])) {
+                        $file = $documents[$index];
+                        $path = $file->store('documents', 'public');
+
+                        DB::table('customer_file_types')->insert([
+                            'customer_id'   => $customer->id,
+                            'filetype_id'   => $filetypeId,
+                            'document_path' => $path,
+                            'created_at'    => now(),
+                            'updated_at'    => now(),
+                        ]);
+                    }
+                }
+            }
+
             DB::commit();
             return redirect()->route('customers.index')->with('success', 'Customer created successfully.');
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->with('error', 'Failed to create customer: ' . $e->getMessage());
+            return back()->withInput()->with('error', 'Failed to create customer: ' . $e->getMessage());
         }
     }
+
 
     // Display one customer
     public function show(Customer $customer)
     {
-        $customer->load('collaterals.type', 'loans', 'loanOfficers');
+        $customer->load('collaterals.type', 'loans', 'loanOfficers','filetypes');
+        //$customer = Customer::with('filetypes')->findOrFail($id);
         return view('customers.show', compact('customer'));
     }
 
@@ -136,11 +168,6 @@ class CustomerController extends Controller
         $branchId = auth()->user()->branch_id;
         $loanOfficers = collect(); // empty by default
 
-        // Get all users with loan officer role
-        // if (Role::where('name', 'loanofficer')->where('guard_name', 'web')->exists()) {
-        //     $loanOfficers = User::role('loanofficer')->get(); // Removed branch filter to show all loan officers
-        // }
-
         $loanOfficers = User::all();
 
         $collateralTypes = CashCollateralType::where('is_active', 1)->get();
@@ -148,11 +175,13 @@ class CustomerController extends Controller
         $companies = Company::all();
         $registrars = User::all();
         $regions = Region::all();
+
+        $filetypes = Filetype::orderBy('name')->get();
         
         // Load loan officers for this customer
         $customer->load('loanOfficers');
         
-        return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer'));
+        return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes'));
     }
 
     // Update customer data
@@ -173,12 +202,16 @@ class CustomerController extends Controller
             'idNumber' => 'nullable|string|max:100',
             'relation' => 'nullable|string|max:255',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
-            'document' => 'nullable|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
             'password' => 'nullable|min:6',
             'loan_officer_ids' => 'nullable|array',
             'loan_officer_ids.*' => 'exists:users,id',
             'has_cash_collateral' => 'nullable|boolean',
             'collateral_type_id' => 'nullable|exists:cash_collateral_types,id', // Made optional
+
+            'filetypes' => 'nullable|array',
+            'filetypes.*' => 'exists:filetypes,id',
+            'documents' => 'nullable|array',
+            'documents.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ]);
 
         $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id']);
@@ -252,6 +285,30 @@ class CustomerController extends Controller
             } else {
                 // If not checked, remove existing collateral
                 \App\Models\CashCollateral::where('customer_id', $customer->id)->delete();
+            }
+
+            // Sync File Types and Uploaded Documents
+            if ($request->has('filetypes') && $request->hasFile('documents')) {
+                $filetypes = $request->filetypes;
+                $documents = $request->file('documents');
+
+                // Delete existing filetype entries to prevent duplicates
+                DB::table('customer_file_types')->where('customer_id', $customer->id)->delete();
+
+                foreach ($filetypes as $index => $filetypeId) {
+                    if (isset($documents[$index])) {
+                        $file = $documents[$index];
+                        $path = $file->store('documents', 'public');
+
+                        DB::table('customer_file_types')->insert([
+                            'customer_id' => $customer->id,
+                            'filetype_id' => $filetypeId,
+                            'document_path' => $path,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
             }
 
             DB::commit();

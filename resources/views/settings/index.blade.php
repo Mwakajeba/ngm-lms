@@ -5,6 +5,10 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Settings', 'url' => '#', 'icon' => 'bx bx-cog']
+            ]" />
             <h6 class="mb-0 text-uppercase">SETTINGS</h6>
             <hr />
 
@@ -101,7 +105,7 @@
                                     </div>
                                 </div>
                                 @endcan
-                                </div>
+        
 
                                 <!-- Backup Settings -->
                                 @can('view backup settings')
@@ -196,6 +200,22 @@
                                             <p class="card-text">Configure late payment penalties and fee structures.</p>
                                             <a href="{{ route('accounting.penalties.index') }}" class="btn btn-danger">
                                                 <i class="bx bx-list-ul me-1"></i> Manage Penalties
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                 <!-- Filetypes Settings -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-danger">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-file fs-1 text-primary"></i>
+                                            </div>
+                                            <h5 class="card-title">File Types Management</h5>
+                                            <p class="card-text">Configure the filetypes to be used in uploading documents.</p>
+                                            <a href="{{ route('settings.filetypes.index') }}" class="btn btn-primary">
+                                                <i class="bx bx-list-ul me-1"></i> Manage File Types
                                             </a>
                                         </div>
                                     </div>
