@@ -166,15 +166,21 @@ var chart = new ApexCharts(document.querySelector("#chart2"), options);
 chart.render();
 
 
-// chart 3
+// chart 3 - Balance Sheet Overview
 var options = {
     series: [{
-        name: 'Page Views',
-        data: [414, 555, 257, 901, 613, 727, 414, 555, 257]
+        name: 'Assets',
+        data: [120000, 135000, 150000, 165000, 180000, 195000, 210000, 225000, 240000, 255000, 270000, 285000]
+    }, {
+        name: 'Liabilities',
+        data: [80000, 85000, 90000, 95000, 100000, 105000, 110000, 115000, 120000, 125000, 130000, 135000]
+    }, {
+        name: 'Equity',
+        data: [40000, 50000, 60000, 70000, 80000, 90000, 100000, 110000, 120000, 130000, 140000, 150000]
     }],
     chart: {
         type: 'area',
-        height: 60,
+        height: 350,
         toolbar: {
             show: false
         },
@@ -187,15 +193,12 @@ var options = {
             left: 14,
             blur: 4,
             opacity: 0.12,
-            color: '#ffc107',
-        },
-        sparkline: {
-            enabled: true
+            color: '#007bff',
         }
     },
     markers: {
         size: 0,
-        colors: ["#ffc107"],
+        colors: ["#007bff", "#dc3545", "#28a745"],
         strokeColors: "#fff",
         strokeWidth: 2,
         hover: {
@@ -217,12 +220,12 @@ var options = {
         width: 2.5,
         curve: 'smooth'
     },
-    colors: ["#ffc107"],
+    colors: ["#007bff", "#dc3545", "#28a745"],
     xaxis: {
         categories: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     },
     fill: {
-        opacity: 1
+        opacity: 0.3
     },
     tooltip: {
         theme: 'dark',
@@ -230,18 +233,22 @@ var options = {
             enabled: false
         },
         x: {
-            show: false
+            show: true
         },
         y: {
             title: {
                 formatter: function (seriesName) {
-                    return ''
+                    return seriesName
                 }
             }
         },
         marker: {
             show: false
         }
+    },
+    legend: {
+        position: 'top',
+        horizontalAlign: 'right'
     }
 };
 var chart = new ApexCharts(document.querySelector("#chart3"), options);

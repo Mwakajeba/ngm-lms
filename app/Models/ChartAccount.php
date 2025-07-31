@@ -51,6 +51,14 @@ class ChartAccount extends Model
     }
 
     /**
+     * Get the account class through the account class group.
+     */
+    public function accountClass()
+    {
+        return $this->accountClassGroup->accountClass;
+    }
+
+    /**
      * Get the cash flow category for this chart account.
      */
     public function cashFlowCategory(): BelongsTo
@@ -72,5 +80,13 @@ class ChartAccount extends Model
     public function bankAccounts(): HasMany
     {
         return $this->hasMany(BankAccount::class, 'chart_account_id');
+    }
+
+    /**
+     * Get the GL transactions for this chart account.
+     */
+    public function glTransactions(): HasMany
+    {
+        return $this->hasMany(GlTransaction::class, 'chart_account_id');
     }
 }
