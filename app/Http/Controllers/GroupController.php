@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Customer;
 use App\Models\Group;
 use App\Models\User;
+use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 
@@ -14,7 +16,7 @@ class GroupController extends Controller
      */
     public function index()
     {
-        $groups = Group::with('loanOfficer')->get();
+        $groups = Group::with(['loanOfficer', 'branch'])->get();
         return view('groups.index', compact('groups'));
     }
 
@@ -27,9 +29,10 @@ class GroupController extends Controller
             $query->where('name', 'loan-officer');
         })->get();
 
-        $groupLeaders = User::all(); // All users can be group leaders
+        $groupLeaders = Customer::all(); // All customer can be group leaders
+        $branches = Branch::all();
 
-        return view('groups.create', compact('loanOfficers', 'groupLeaders'));
+        return view('groups.create', compact('loanOfficers', 'groupLeaders', 'branches'));
     }
 
     /**
@@ -40,6 +43,7 @@ class GroupController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:groups,name',
             'loan_officer' => 'required|exists:users,id',
+            'branch_id' => 'required|exists:branches,id',
             'minimum_members' => 'required|integer|min:1|max:50',
             'maximum_members' => 'required|integer|min:1|max:100',
             'group_leader' => 'nullable|exists:users,id',
@@ -50,6 +54,8 @@ class GroupController extends Controller
             'name.unique' => 'A group with this name already exists.',
             'loan_officer.required' => 'Please select a loan officer.',
             'loan_officer.exists' => 'The selected loan officer is invalid.',
+            'branch_id.required' => 'Please select a branch.',
+            'branch_id.exists' => 'The selected branch is invalid.',
             'minimum_members.required' => 'Minimum members is required.',
             'minimum_members.min' => 'Minimum members must be at least 1.',
             'minimum_members.max' => 'Minimum members cannot exceed 50.',
@@ -74,6 +80,7 @@ class GroupController extends Controller
             Group::create([
                 'name' => $request->name,
                 'loan_officer' => $request->loan_officer,
+                'branch_id' => $request->branch_id,
                 'minimum_members' => $request->minimum_members,
                 'maximum_members' => $request->maximum_members,
                 'group_leader' => $request->group_leader,
@@ -92,7 +99,7 @@ class GroupController extends Controller
      */
     public function show(Group $group)
     {
-        $group->load(['loanOfficer', 'groupLeader', 'members.customer']);
+        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer']);
         // TODO: Uncomment when Loan model is properly set up
         // $group->load(['loanOfficer', 'loans']);
         return view('groups.show', compact('group'));
@@ -107,9 +114,10 @@ class GroupController extends Controller
             $query->where('name', 'loan-officer');
         })->get();
 
-        $groupLeaders = User::all(); // All users can be group leaders
+        $groupLeaders = Customer::all(); // All customer can be group leaders
+        $branches = Branch::all();
 
-        return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders'));
+        return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders', 'branches'));
     }
 
     /**
@@ -120,6 +128,7 @@ class GroupController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:groups,name,' . $group->id,
             'loan_officer' => 'required|exists:users,id',
+            'branch_id' => 'required|exists:branches,id',
             'minimum_members' => 'required|integer|min:1|max:50',
             'maximum_members' => 'required|integer|min:1|max:100',
             'group_leader' => 'nullable|exists:users,id',
@@ -130,6 +139,8 @@ class GroupController extends Controller
             'name.unique' => 'A group with this name already exists.',
             'loan_officer.required' => 'Please select a loan officer.',
             'loan_officer.exists' => 'The selected loan officer is invalid.',
+            'branch_id.required' => 'Please select a branch.',
+            'branch_id.exists' => 'The selected branch is invalid.',
             'minimum_members.required' => 'Minimum members is required.',
             'minimum_members.min' => 'Minimum members must be at least 1.',
             'minimum_members.max' => 'Minimum members cannot exceed 50.',
@@ -159,6 +170,7 @@ class GroupController extends Controller
             $group->update([
                 'name' => $request->name,
                 'loan_officer' => $request->loan_officer,
+                'branch_id' => $request->branch_id,
                 'minimum_members' => $request->minimum_members,
                 'maximum_members' => $request->maximum_members,
                 'group_leader' => $request->group_leader,

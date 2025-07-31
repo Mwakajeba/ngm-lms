@@ -68,6 +68,7 @@
                                         <tr>
                                             <th class="text-nowrap">Group Name</th>
                                             <th class="text-nowrap">Loan Officer</th>
+                                            <th class="text-nowrap">Branch</th>
                                             <th class="text-nowrap">Total Loans</th>
                                             <th class="text-nowrap">Created Date</th>
                                             <th class="text-center text-nowrap">Actions</th>
@@ -96,6 +97,17 @@
                                                     </div>
                                                 </td>
                                                 <td class="text-nowrap">
+                                                    <div class="d-flex align-items-center">
+                                                        <div
+                                                            class="avatar-sm bg-light-success rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                            <i class="bx bx-building font-size-16"></i>
+                                                        </div>
+                                                        <div>
+                                                            <strong>{{ $group->branch->name ?? 'N/A' }}</strong>
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                                <td class="text-nowrap">
                                                     <span class="badge bg-info">{{ $group->loans_count ?? 0 }} loans</span>
                                                     {{-- TODO: Uncomment when Loan model is properly set up
                                                     <span class="badge bg-info">{{ $group->loans->count() ?? 0 }} loans</span>
@@ -108,16 +120,16 @@
                                                     <div class="btn-group" role="group">
                                                         <a href="{{ route('groups.show', $group) }}"
                                                             class="btn btn-sm btn-outline-info" title="View Details">
-                                                            <i class="bx bx-show"></i>
+                                                            View
                                                         </a>
                                                         <a href="{{ route('groups.edit', $group) }}"
                                                             class="btn btn-sm btn-outline-primary" title="Edit Group">
-                                                            <i class="bx bx-edit"></i>
+                                                            Edit
                                                         </a>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                             title="Delete Group" data-group-id="{{ $group->id }}"
                                                             data-group-name="{{ $group->name }}">
-                                                            <i class="bx bx-trash"></i>
+                                                            Delete
                                                         </button>
                                                     </div>
                                                 </td>
@@ -176,11 +188,15 @@
                         width: '30%'
                     },
                     {
-                        targets: 2, // Total Loans
+                        targets: 2, // Branch
                         width: '15%'
                     },
                     {
-                        targets: 3, // Created Date
+                        targets: 3, // Total Loans
+                        width: '15%'
+                    },
+                    {
+                        targets: 4, // Created Date
                         width: '15%'
                     },
                     {
