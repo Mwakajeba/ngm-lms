@@ -5,20 +5,10 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
-         <!-- Breadcrumb -->
-        <div class="row">
-            <div class="col-12">
-                <div class="page-breadcrumb d-flex align-items-center">
-                    <div class="me-auto">
-                        <!-- <h5 class="page-title text-dark fw-semibold fs-3">Create Payment Voucher</h5> -->
-                        <ul class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active">Customers</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+         <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Customers', 'url' => '#', 'icon' => 'bx bx-group']
+        ]" />
         <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
         <hr/>
 

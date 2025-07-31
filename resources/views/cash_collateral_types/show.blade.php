@@ -5,6 +5,11 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Cash Collateral Types', 'url' => route('cash_collateral_types.index'), 'icon' => 'bx bx-credit-card'],
+            ['label' => $cashCollateral->name, 'url' => '#', 'icon' => 'bx bx-info-circle']
+        ]" />
         <!-- Header Section -->
         <div class="row mb-4">
             <div class="col-12">
