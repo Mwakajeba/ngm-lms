@@ -5,6 +5,12 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Penalties', 'url' => route('accounting.penalties.index'), 'icon' => 'bx bx-error-circle'],
+            ['label' => 'Penalty Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
+        ]" />
+
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
                     <h6 class="mb-0 text-uppercase">PENALTY DETAILS</h6>
@@ -267,12 +273,12 @@
                     }));
 
                     $('body').append(form);
-                    
+
                     // Submit form and handle response
-                    form.submit().done(function(response) {
+                    form.submit().done(function (response) {
                         // Show success toast notification
                         toastr.success(`Penalty has been ${action}d successfully`);
-                    }).fail(function(xhr) {
+                    }).fail(function (xhr) {
                         // Show error toast notification
                         toastr.error('An error occurred while updating the status');
                     });
@@ -311,16 +317,16 @@
                     }));
 
                     $('body').append(form);
-                    
+
                     // Submit form and handle response
-                    form.submit().done(function(response) {
+                    form.submit().done(function (response) {
                         // Show success toast notification
                         toastr.success('Penalty has been deleted successfully');
                         // Redirect to index page after short delay
                         setTimeout(() => {
                             window.location.href = '{{ route("accounting.penalties.index") }}';
                         }, 1000);
-                    }).fail(function(xhr) {
+                    }).fail(function (xhr) {
                         // Show error toast notification
                         toastr.error('An error occurred while deleting the penalty');
                     });

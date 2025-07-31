@@ -5,6 +5,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Suppliers', 'url' => '#', 'icon' => 'bx bx-store']
+        ]" />
+
             <h6 class="mb-0 text-uppercase">SUPPLIER MANAGEMENT</h6>
             <hr />
 
