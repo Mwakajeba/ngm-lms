@@ -5,23 +5,14 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
-        <div class="d-flex justify-content-between align-items-center mb-2">
-            <div class="row">
-                <div class="col-12">
-                    <div class="page-breadcrumb d-flex align-items-center">
-                        <div class="me-auto">
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                                <li class="breadcrumb-item"><a href="{{ route('customers.index') }}">Customers</a></li>
-                                <li class="breadcrumb-item active">Customer</li>
-                            </ul>
-                            <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6><hr/>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <!-- <h6 class="mb-0 text-uppercase">CUSTOMER PROFILE</h6> -->
-            <a href="" class="btn btn-sm btn-primary">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Customers', 'url' => route('customers.index'), 'icon' => 'bx bx-group'],
+            ['label' => 'Customer', 'url' => '#', 'icon' => 'bx bx-user']
+        ]" />
+        <div class="d-flex justify-content-between align-items-center mb-3">
+            <h6 class="mb-0 text-uppercase">Customer Profile</h6>
+            <a href="#" class="btn btn-sm btn-primary">
                 <i class="bx bx-plus"></i> Apply for Loan
             </a>
         </div>

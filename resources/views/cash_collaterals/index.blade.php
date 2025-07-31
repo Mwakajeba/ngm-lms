@@ -5,6 +5,10 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Cash Collaterals', 'url' => '#', 'icon' => 'bx bx-credit-card']
+        ]" />
         <h6 class="mb-0 text-uppercase">CASH COLLATERALS</h6>
         <hr/>
 
