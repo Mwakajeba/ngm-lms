@@ -7,10 +7,10 @@
         <div class="page-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <x-breadcrumbs-with-icons :links="[
-            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
-            ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
-        ]" />
+        ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+        ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
+        ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
+    ]" />
                 <div>
                     <a href="{{ route('groups.edit', $group) }}" class="btn btn-primary">
                         <i class="bx bx-edit"></i> Edit Group
@@ -75,9 +75,9 @@
                             </div>
                             <h5 class="card-title text-muted mb-1">Meeting Schedule</h5>
                             <h4 class="text-info mb-0">
-                                @if($group->meeting_day && $group->meeting_time)
+                                @if($group->meeting_day)
                                     {{ ucfirst($group->meeting_day) }}<br>
-                                    <small>{{ $group->meeting_time->format('H:i') }}</small>
+                                    <small>{{ $group->meeting_time ? $group->meeting_time->format('H:i') : '9:00 AM' }}</small>
                                 @else
                                     Not Set
                                 @endif
@@ -90,7 +90,7 @@
             <!-- Main Content Cards -->
             <div class="row">
                 <!-- Group Information Card -->
-                <div class="col-lg-6 mb-4">
+                <div class="col-lg-4 mb-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-primary text-white">
                             <h5 class="card-title mb-0">
@@ -100,8 +100,8 @@
                         <div class="card-body">
                             <div class="row">
                                 <div class="col-12 mb-3">
-                                    <label class="form-label text-muted small">Group Name</label>
-                                    <p class="mb-0 fw-bold">{{ $group->name }}</p>
+                                    <label class="form-label text-muted small">Branch</label>
+                                    <p class="mb-0 fw-bold">{{ $group->branch->name ?? 'N/A' }}</p>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label text-muted small">Created Date</label>
@@ -117,7 +117,7 @@
                 </div>
 
                 <!-- Loan Officer Information Card -->
-                <div class="col-lg-6 mb-4">
+                <div class="col-lg-4 mb-4">
                     <div class="card border-0 shadow-sm h-100">
                         <div class="card-header bg-success text-white">
                             <h5 class="card-title mb-0">
@@ -137,6 +137,32 @@
                                 <div class="col-12">
                                     <label class="form-label text-muted small">Phone Number</label>
                                     <p class="mb-0 fw-bold">{{ $group->loanOfficer->phone ?? 'N/A' }}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <!-- Group Leader Information Card -->
+                <div class="col-lg-4 mb-4">
+                    <div class="card border-0 shadow-sm h-100">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bx bx-user me-2"></i>Group Leader Information
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-12 mb-3">
+                                    <label class="form-label text-muted small">Group Leader Name</label>
+                                    <p class="mb-0 fw-bold">{{ $group->groupLeader->name ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label text-muted small">Email Address</label>
+                                    <p class="mb-0 fw-bold">{{ $group->groupLeader->email ?? 'N/A' }}</p>
+                                </div>
+                                <div class="col-12">
+                                    <label class="form-label text-muted small">Phone Number</label>
+                                    <p class="mb-0 fw-bold">{{ $group->groupLeader->phone ?? 'N/A' }}</p>
                                 </div>
                             </div>
                         </div>

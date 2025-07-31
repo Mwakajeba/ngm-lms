@@ -11,7 +11,8 @@ class Group extends Model
 
     protected $fillable = [
         'name',
-        'loan_officer',
+        'loan_officer', 
+        'branch_id',
         'minimum_members',
         'maximum_members',
         'group_leader',
@@ -32,11 +33,19 @@ class Group extends Model
     }
 
     /**
+     * Get the branch for this group.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
      * Get the group leader (user) for this group.
      */
     public function groupLeader()
     {
-        return $this->belongsTo(User::class, 'group_leader');
+        return $this->belongsTo(Customer::class, 'group_leader');
     }
 
     /**
@@ -73,11 +82,19 @@ class Group extends Model
     }
 
     /**
+     * Get the current member count.
+     */
+    public function getCurrentMemberCount()
+    {
+        return $this->activeMembers()->count();
+    }
+
+    /**
      * Check if group can accept more members.
      */
     public function canAcceptMoreMembers()
     {
-        return $this->current_member_count < $this->maximum_members;
+        return $this->getCurrentMemberCount() < $this->maximum_members;
     }
 
     /**
@@ -85,6 +102,44 @@ class Group extends Model
      */
     public function hasMinimumMembers()
     {
-        return $this->current_member_count >= $this->minimum_members;
+        return $this->getCurrentMemberCount() >= $this->minimum_members;
+    }
+
+    /**
+     * Check if group has a valid meeting schedule.
+     */
+    public function hasValidMeetingSchedule()
+    {
+        return !empty($this->meeting_day) && !empty($this->meeting_time);
+    }
+
+    /**
+     * Check if group has a leader assigned.
+     */
+    public function hasLeader()
+    {
+        return !empty($this->group_leader);
+    }
+
+    /**
+     * Check if group is at maximum capacity.
+     */
+    public function isAtMaxCapacity()
+    {
+        return $this->getCurrentMemberCount() >= $this->maximum_members;
+    }
+
+    /**
+     * Get the status of the group based on member count.
+     */
+    public function getStatus()
+    {
+        if ($this->getCurrentMemberCount() < $this->minimum_members) {
+            return 'Incomplete';
+        } elseif ($this->isAtMaxCapacity()) {
+            return 'Full';
+        } else {
+            return 'Active';
+        }
     }
 }

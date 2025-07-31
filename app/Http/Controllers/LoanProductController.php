@@ -74,6 +74,7 @@ class LoanProductController extends Controller
         $topUpTypes = [
             'percentage' => 'Percentage',
             'fixed_amount' => 'Fixed Amount',
+            'number_of_installments' => 'Number of Installments',
             'none' => 'None'
         ];
 
@@ -137,12 +138,13 @@ class LoanProductController extends Controller
                 ->withInput();
         }
 
-        // Custom validation for approval levels
+       
         if ($request->has('has_approval_levels') && $request->approval_levels) {
             $approvalRoles = explode(',', $request->approval_levels);
             $validRoles = Role::pluck('id')->toArray();
 
             foreach ($approvalRoles as $roleId) {
+                // Remove any whitespace from the role ID before validation
                 $roleId = trim($roleId);
                 if (!empty($roleId) && !in_array((int) $roleId, $validRoles)) {
                     return redirect()->back()
@@ -158,6 +160,7 @@ class LoanProductController extends Controller
             $validComponents = ['principal', 'interest', 'fees', 'penalties'];
 
             foreach ($repaymentComponents as $component) {
+                // Remove any whitespace from the component before validation
                 $component = trim($component);
                 if (!empty($component) && !in_array($component, $validComponents)) {
                     return redirect()->back()
@@ -331,6 +334,7 @@ class LoanProductController extends Controller
             $validRoles = Role::pluck('id')->toArray();
 
             foreach ($approvalRoles as $roleId) {
+                // Remove any whitespace from the role ID before validation
                 $roleId = trim($roleId);
                 if (!empty($roleId) && !in_array((int) $roleId, $validRoles)) {
                     return redirect()->back()
@@ -346,6 +350,7 @@ class LoanProductController extends Controller
             $validComponents = ['principal', 'interest', 'fees', 'penalties'];
 
             foreach ($repaymentComponents as $component) {
+                // Remove any whitespace from the component before validation
                 $component = trim($component);
                 if (!empty($component) && !in_array($component, $validComponents)) {
                     return redirect()->back()

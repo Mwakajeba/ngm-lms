@@ -27,7 +27,7 @@
             </div>
             <!--end row-->
 
-            <h6 class="mb-0 text-uppercase">ACCOUNT CLASS GROUPS {{ __('app.accounting_class_groups') }}</h6>
+            <h6 class="mb-0 text-uppercase">ACCOUNT CLASS GROUPS </h6>
             <hr />
             <div class="card">
                 <div class="card-body">

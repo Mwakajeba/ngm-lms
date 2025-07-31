@@ -66,6 +66,23 @@
                                         @enderror
                                     </div>
 
+                                    <!-- Branch -->
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Branch <span class="text-danger">*</span></label>
+                                        <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror" required>
+                                            <option value="">-- Select Branch --</option>
+                                            @foreach($branches as $branch)
+                                                <option value="{{ $branch->id }}" 
+                                                    {{ old('branch_id', $group->branch_id) == $branch->id ? 'selected' : '' }}>
+                                                    {{ $branch->name }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                        @error('branch_id') 
+                                            <div class="invalid-feedback">{{ $message }}</div> 
+                                        @enderror
+                                    </div>
+
                                     <!-- Minimum Members -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Minimum Members <span class="text-danger">*</span></label>
