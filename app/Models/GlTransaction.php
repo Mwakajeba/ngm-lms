@@ -25,6 +25,10 @@ class GlTransaction extends Model
         'user_id',
     ];
 
+    protected $casts = [
+        'date' => 'datetime',
+    ];
+
     // Optional: Define relationships
     public function chartAccount()
     {
@@ -49,6 +53,21 @@ class GlTransaction extends Model
     public function user()
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function journal()
+    {
+        return $this->belongsTo(Journal::class, 'transaction_id');
+    }
+
+    public function paymentVoucher()
+    {
+        return $this->belongsTo(Payment::class, 'transaction_id');
+    }
+
+    public function bill()
+    {
+        return $this->belongsTo(Bill::class, 'transaction_id');
     }
 
     /**

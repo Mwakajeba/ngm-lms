@@ -65,9 +65,7 @@ Route::get('/test-language', function () {
 Route::get('/request-email-otp', [OtpEmailController::class, 'showEmailForm'])->name('email-otp-form');
 Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->name('email-otp-send');
 
-Route::get('/dashboard', function () {
-    return view('dashboard');
-})->middleware('auth')->name('dashboard');
+Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->middleware('auth')->name('dashboard');
 
 ////////////////////////////////////////////// ROLES & PERMISSIONS MANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
@@ -345,6 +343,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/bank-reconciliation/{bankReconciliation}/show', [BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
         Route::get('/bank-reconciliation/{bankReconciliation}/export', [BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
     });
+    
+    // Transaction Routes
+    Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
+    Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
 });
 
 ////////////////////////////////////////////// END ACCOUNTING MANAGEMENT ///////////////////////////////////////////
