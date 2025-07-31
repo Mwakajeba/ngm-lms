@@ -5,6 +5,12 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Receipt Vouchers', 'url' => route('accounting.receipt-vouchers.index'), 'icon' => 'bx bx-receipt'],
+                ['label' => 'Edit Voucher', 'url' => '#', 'icon' => 'bx bx-edit']
+            ]" />
+            
             <div class="row">
                 <div class="col-12">
                     <div class="card radius-10">
