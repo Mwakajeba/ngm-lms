@@ -32,6 +32,7 @@ use App\Http\Controllers\JournalController;
 use App\Http\Controllers\LoanProductController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
+use App\Http\Controllers\FiletypeController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -110,6 +111,10 @@ Route::post('/users/{user}/roles', [UserController::class, 'assignRoles'])->name
 ////////////////////////////////////////////// SETTINGS ROUTES ////////////////////////////////////////////////
 
 Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope'])->group(function () {
+
+    //Filetypes settings
+    Route::resource('filetypes', FileTypeController::class);
+
     Route::get('/', [SettingsController::class, 'index'])->name('index');
 
     // Company Settings
@@ -315,13 +320,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Journal Entries CRUD
     Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
-Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
-Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
-Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
-Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
-Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
-Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
-Route::get('/journals/{journal}/export-pdf', [JournalController::class, 'exportPdf'])->name('journals.export-pdf');
+    Route::get('/journals/create', [JournalController::class, 'create'])->name('journals.create');
+    Route::post('/journals', [JournalController::class, 'store'])->name('journals.store');
+    Route::get('/journals/{journal}', [JournalController::class, 'show'])->name('journals.show');
+    Route::get('/journals/{journal}/edit', [JournalController::class, 'edit'])->name('journals.edit');
+    Route::put('/journals/{journal}', [JournalController::class, 'update'])->name('journals.update');
+    Route::delete('/journals/{journal}', [JournalController::class, 'destroy'])->name('journals.destroy');
+    Route::get('/journals/{journal}/export-pdf', [JournalController::class, 'exportPdf'])->name('journals.export-pdf');
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -423,6 +428,9 @@ Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
 ////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
 
 Route::get('/get-districts/{regionId}', [LocationController::class, 'getDistricts']);
+
+
+
 
 
 

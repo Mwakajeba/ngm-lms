@@ -169,14 +169,20 @@
                                 </button>
                             </form>
 
-                            @if ($customer->document)
-                                <a href="{{ asset('storage/' . $customer->document) }}" 
-                                target="_blank" 
-                                class="btn btn-sm btn-outline-primary flex-fill">
-                                    <i class="bx bx-file"></i> View Document
-                                </a>
+                            @if ($customer->filetypes->count())
+                                @foreach ($customer->filetypes as $type)
+                                    @if ($type->pivot->document_path)
+                                        <a href="{{ asset('storage/' . $type->pivot->document_path) }}"
+                                        target="_blank"
+                                        class="btn btn-sm btn-outline-primary mb-2">
+                                            <i class="bx bx-file"></i> {{ $type->name }}
+                                        </a>
+                                    @else
+                                        <p class="text-muted">No document for {{ $type->name }}</p>
+                                    @endif
+                                @endforeach
                             @else
-                                <span class="text-muted mt-2">No document uploaded</span>
+                                <p class="text-muted">No documents uploaded</p>
                             @endif
                         </div>
 
