@@ -106,17 +106,30 @@
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label for="customer_id" class="form-label fw-bold">
-                                                <i class="bx bx-user me-1"></i>Customer
+                                                <i class="bx bx-user me-1"></i>
+                                                @if($paymentVoucher->reference_type == 'Bill')
+                                                    Supplier
+                                                @else
+                                                    Customer
+                                                @endif
                                             </label>
                                             <select
                                                 class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
                                                 id="customer_id" name="customer_id">
-                                                <option value="">-- Select Customer (Optional) --</option>
-                                                @foreach($customers as $customer)
-                                                    <option value="{{ $customer->id }}" {{ old('customer_id', $paymentVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
-                                                        {{ $customer->name }} ({{ $customer->customerNo }})
-                                                    </option>
-                                                @endforeach
+                                                <option value="">-- Select {{ $paymentVoucher->reference_type == 'Bill' ? 'Supplier' : 'Customer' }} (Optional) --</option>
+                                                @if($paymentVoucher->reference_type == 'Bill')
+                                                    @foreach($suppliers ?? [] as $supplier)
+                                                        <option value="{{ $supplier->id }}" {{ old('customer_id', $paymentVoucher->supplier_id) == $supplier->id ? 'selected' : '' }}>
+                                                            {{ $supplier->name }}
+                                                        </option>
+                                                    @endforeach
+                                                @else
+                                                    @foreach($customers as $customer)
+                                                        <option value="{{ $customer->id }}" {{ old('customer_id', $paymentVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
+                                                            {{ $customer->name }} ({{ $customer->customerNo }})
+                                                        </option>
+                                                    @endforeach
+                                                @endif
                                             </select>
                                             @error('customer_id')
                                                 <div class="invalid-feedback">{{ $message }}</div>

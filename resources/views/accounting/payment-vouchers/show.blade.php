@@ -84,13 +84,27 @@
                                     </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Customer</label>
+                                    <label class="form-label fw-bold">
+                                        @if($paymentVoucher->reference_type == 'Bill')
+                                            Supplier
+                                        @else
+                                            Customer
+                                        @endif
+                                    </label>
                                     <p class="form-control-plaintext">
-                                        @if($paymentVoucher->customer)
+                                        @if($paymentVoucher->reference_type == 'Bill' && $paymentVoucher->supplier)
+                                            {{ $paymentVoucher->supplier->name ?? 'N/A' }}
+                                        @elseif($paymentVoucher->customer)
                                             {{ $paymentVoucher->customer->name ?? 'N/A' }}
                                             ({{ $paymentVoucher->customer->customerNo ?? 'N/A' }})
                                         @else
-                                            <span class="text-muted">No customer selected</span>
+                                            <span class="text-muted">
+                                                @if($paymentVoucher->reference_type == 'Bill')
+                                                    No supplier selected
+                                                @else
+                                                    No customer selected
+                                                @endif
+                                            </span>
                                         @endif
                                     </p>
                                 </div>
