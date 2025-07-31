@@ -4,6 +4,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Account Class Groups', 'url' => '#', 'icon' => 'bx bx-category']
+        ]" />
+
             <div class="row row-cols-1 row-cols-lg-3">
                 <div class="col">
                     <div class="card radius-10">
@@ -22,7 +27,7 @@
             </div>
             <!--end row-->
 
-            <h6 class="mb-0 text-uppercase">ACCOUNT CLASS GROUPS {{ __('app.accounting_class_groups') }}</h6>
+            <h6 class="mb-0 text-uppercase">ACCOUNT CLASS GROUPS </h6>
             <hr />
             <div class="card">
                 <div class="card-body">

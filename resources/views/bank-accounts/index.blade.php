@@ -4,6 +4,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Bank Accounts', 'url' => '#', 'icon' => 'bx bx-bank']
+            ]" />
+            
             <div class="row row-cols-1 row-cols-lg-4">
                 <div class="col">
                     <div class="card radius-10">
@@ -11,7 +16,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Total Accounts</p>
-                                    <h4 class="font-weight-bold">{{ $totalAccounts }}</h4>
+                                    <h4 class="font-weight-bold">{{ $bankAccounts->total() }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-dollar'></i>
                                 </div>
@@ -25,7 +30,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Total Balance</p>
-                                    <h4 class="font-weight-bold">{{ number_format($totalBalance, 2) }}</h4>
+                                    <h4 class="font-weight-bold">{{ number_format($bankAccounts->sum('balance') ?? 0, 2) }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-wallet'></i>
                                 </div>
@@ -39,7 +44,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Positive Balance</p>
-                                    <h4 class="font-weight-bold text-success">{{ $positiveBalanceAccounts }}</h4>
+                                    <h4 class="font-weight-bold text-success">{{ $bankAccounts->filter(function($account) { return $account->balance > 0; })->count() }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-success text-white"><i class='bx bx-trending-up'></i>
                                 </div>
@@ -53,7 +58,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Negative Balance</p>
-                                    <h4 class="font-weight-bold text-danger">{{ $negativeBalanceAccounts }}</h4>
+                                    <h4 class="font-weight-bold text-danger">{{ $bankAccounts->filter(function($account) { return $account->balance < 0; })->count() }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-danger text-white"><i class='bx bx-trending-down'></i>
                                 </div>

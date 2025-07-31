@@ -5,6 +5,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Penalties', 'url' => '#', 'icon' => 'bx bx-error-circle']
+        ]" />
+
             <h6 class="mb-0 text-uppercase">PENALTIES MANAGEMENT</h6>
             <hr />
 

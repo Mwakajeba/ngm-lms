@@ -4,6 +4,12 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Bank Accounts', 'url' => route('accounting.bank-accounts'), 'icon' => 'bx bx-bank'],
+            ['label' => 'Edit Account', 'url' => '#', 'icon' => 'bx bx-edit']
+        ]" />
+
             <!-- Header Section -->
             <div class="row mb-4">
                 <div class="col-12">
