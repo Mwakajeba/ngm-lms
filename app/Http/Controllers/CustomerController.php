@@ -6,6 +6,7 @@ use App\Models\Customer;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Region;
+use App\Models\District;
 use App\Models\User;
 use App\Models\CashCollateralType;
 use App\Models\Filetype;
@@ -37,8 +38,9 @@ class CustomerController extends Controller
         $companies = Company::all();
         $registrars = User::all();
         $regions = Region::all();
-        
-        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes','filetypes'));
+        $customers = Customer::all();
+
+        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'customers'));
     }
 
     // Store a new customer
@@ -66,9 +68,9 @@ class CustomerController extends Controller
             'collateral_type_id' => 'nullable|exists:cash_collateral_types,id',
 
             // Dynamic filetypes + documents
-            'filetypes'   => 'nullable|array',
+            'filetypes' => 'nullable|array',
             'filetypes.*' => 'exists:filetypes,id',
-            'documents'   => 'nullable|array',
+            'documents' => 'nullable|array',
             'documents.*' => 'file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
         ];
 
@@ -135,11 +137,11 @@ class CustomerController extends Controller
                         $path = $file->store('documents', 'public');
 
                         DB::table('customer_file_types')->insert([
-                            'customer_id'   => $customer->id,
-                            'filetype_id'   => $filetypeId,
+                            'customer_id' => $customer->id,
+                            'filetype_id' => $filetypeId,
                             'document_path' => $path,
-                            'created_at'    => now(),
-                            'updated_at'    => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
                         ]);
                     }
                 }
@@ -157,7 +159,7 @@ class CustomerController extends Controller
     // Display one customer
     public function show(Customer $customer)
     {
-        $customer->load('collaterals.type', 'loans', 'loanOfficers','filetypes');
+        $customer->load('collaterals.type', 'loans', 'loanOfficers', 'filetypes');
         //$customer = Customer::with('filetypes')->findOrFail($id);
         return view('customers.show', compact('customer'));
     }
@@ -177,10 +179,10 @@ class CustomerController extends Controller
         $regions = Region::all();
 
         $filetypes = Filetype::orderBy('name')->get();
-        
+
         // Load loan officers for this customer
         $customer->load('loanOfficers');
-        
+
         return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes'));
     }
 
@@ -268,7 +270,7 @@ class CustomerController extends Controller
             if ($request->has('has_cash_collateral') && $request->has('collateral_type_id') && $request->collateral_type_id) {
                 // Check if collateral already exists
                 $existingCollateral = \App\Models\CashCollateral::where('customer_id', $customer->id)->first();
-                
+
                 if ($existingCollateral) {
                     $existingCollateral->update([
                         'type_id' => $request->input('collateral_type_id'),
@@ -328,5 +330,194 @@ class CustomerController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete customer: ' . $e->getMessage());
         }
+    }
+
+    // Show bulk upload form
+    public function bulkUpload()
+    {
+        $collateralTypes = CashCollateralType::where('is_active', 1)->get();
+        return view('customers.bulk-upload', compact('collateralTypes'));
+    }
+
+    // Process bulk upload
+    public function bulkUploadStore(Request $request)
+    {
+        $request->validate([
+            'csv_file' => 'required|file|mimes:csv,txt|max:5120', // 5MB max
+            'has_cash_collateral' => 'nullable|boolean',
+            'collateral_type_id' => 'nullable|exists:cash_collateral_types,id',
+        ]);
+
+        if ($request->has('has_cash_collateral') && !$request->collateral_type_id) {
+            return back()->withErrors(['collateral_type_id' => 'Please select a collateral type when applying cash collateral.']);
+        }
+
+        try {
+            $file = $request->file('csv_file');
+            $path = $file->getRealPath();
+
+            $data = array_map('str_getcsv', file($path));
+            $header = array_shift($data); // Remove header row
+
+            // Validate CSV structure
+            $requiredColumns = ['name', 'phone1', 'dob', 'sex'];
+            $missingColumns = array_diff($requiredColumns, array_map('strtolower', $header));
+
+            if (!empty($missingColumns)) {
+                return back()->withErrors(['csv_file' => 'Missing required columns: ' . implode(', ', $missingColumns)]);
+            }
+
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+
+            DB::beginTransaction();
+
+            foreach ($data as $rowIndex => $row) {
+                try {
+                    $rowData = array_combine(array_map('strtolower', $header), $row);
+
+                    // Validate required fields
+                    if (
+                        empty($rowData['name']) || empty($rowData['phone1']) || empty($rowData['dob']) ||
+                        empty($rowData['sex'])
+                    ) {
+                        $errors[] = "Row " . ($rowIndex + 2) . ": Missing required fields";
+                        $errorCount++;
+                        continue;
+                    }
+
+                    // Validate sex
+                    if (!in_array(strtoupper($rowData['sex']), ['M', 'F'])) {
+                        $errors[] = "Row " . ($rowIndex + 2) . ": Sex must be M or F";
+                        $errorCount++;
+                        continue;
+                    }
+
+                    // Create customer data
+                    $customerData = [
+                        'name' => trim($rowData['name']),
+                        'phone1' => trim($rowData['phone1']),
+                        'phone2' => trim($rowData['phone2'] ?? ''),
+                        'dob' => $rowData['dob'],
+                        'sex' => strtoupper($rowData['sex']),
+                        'region_id' => $rowData['region_id'] ?? null,
+                        'district_id' => $rowData['district_id'] ?? null,
+                        'work' => trim($rowData['work'] ?? ''),
+                        'workAddress' => trim($rowData['workaddress'] ?? ''),
+                        'idType' => trim($rowData['idtype'] ?? ''),
+                        'idNumber' => trim($rowData['idnumber'] ?? ''),
+                        'relation' => trim($rowData['relation'] ?? ''),
+                        'description' => trim($rowData['description'] ?? ''),
+                        'customerNo' => 100000 + (Customer::max('id') ?? 0) + 1,
+                        'password' => Hash::make('12345'),
+                        'branch_id' => auth()->user()->branch_id,
+                        'company_id' => auth()->user()->company_id,
+                        'registrar' => auth()->id(),
+                        'dateRegistered' => now()->toDateString(),
+                        'has_cash_collateral' => $request->has('has_cash_collateral'),
+                    ];
+
+                    $customer = Customer::create($customerData);
+
+                    // Add cash collateral if selected
+                    if ($request->has('has_cash_collateral') && $request->collateral_type_id) {
+                        \App\Models\CashCollateral::create([
+                            'customer_id' => $customer->id,
+                            'type_id' => $request->collateral_type_id,
+                            'amount' => 0,
+                            'branch_id' => auth()->user()->branch_id,
+                            'company_id' => auth()->user()->company_id,
+                        ]);
+                    }
+
+                    $successCount++;
+
+                } catch (\Exception $e) {
+                    $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                    $errorCount++;
+                }
+            }
+
+            if ($errorCount > 0) {
+                DB::rollBack();
+                return back()->withErrors(['csv_file' => 'Upload completed with errors. ' . $errorCount . ' rows failed.'])->with('upload_errors', $errors);
+            }
+
+            DB::commit();
+
+            $message = "Successfully uploaded {$successCount} customers.";
+            if ($request->has('has_cash_collateral')) {
+                $message .= " Cash collateral applied to all customers.";
+            }
+
+            return redirect()->route('customers.index')->with('success', $message);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors(['csv_file' => 'Failed to process CSV file: ' . $e->getMessage()]);
+        }
+    }
+
+    // Download sample CSV
+    public function downloadSample()
+    {
+        $filename = 'customer_bulk_upload_sample.csv';
+        $headers = [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ];
+
+        $callback = function () {
+            $file = fopen('php://output', 'w');
+
+            // Add headers
+            fputcsv($file, [
+                'name',
+                'phone1',
+                'phone2',
+                'dob',
+                'sex',
+                'work',
+                'workaddress',
+                'idtype',
+                'idnumber',
+                'relation',
+                'description'
+            ]);
+
+            // Add sample data
+            fputcsv($file, [
+                'John Doe',
+                '0712345678',
+                '0755123456',
+                '1990-01-15',
+                'M',
+                'Teacher',
+                'ABC School, Dar es Salaam',
+                'National ID',
+                '123456789',
+                'Spouse',
+                'Sample customer'
+            ]);
+
+            fputcsv($file, [
+                'Jane Smith',
+                '0723456789',
+                '',
+                '1985-05-20',
+                'F',
+                'Nurse',
+                'City Hospital',
+                'License',
+                '987654321',
+                'Parent',
+                'Another sample'
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 }

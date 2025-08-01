@@ -236,7 +236,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
     Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
     Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
-    
+
     // Bill and Payment PDF Export Routes
     Route::get('/bill-purchases/{billPurchase}/export-pdf', [BillPurchaseController::class, 'exportPdf'])->name('bill-purchases.export-pdf');
     Route::get('/payments/{payment}/export-pdf', [BillPurchaseController::class, 'exportPaymentPdf'])->name('bill-payments.export-pdf');
@@ -273,13 +273,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/bill-purchases', [BillPurchaseController::class, 'index'])->name('bill-purchases');
     Route::get('/bill-purchases/create', [BillPurchaseController::class, 'create'])->name('bill-purchases.create');
     Route::post('/bill-purchases', [BillPurchaseController::class, 'store'])->name('bill-purchases.store');
-    
+
     // Bill Payment Management (must come before bill-purchases/{billPurchase} routes)
     Route::get('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'showPayment'])->name('bill-purchases.payment.show');
     Route::get('/bill-purchases/payment/{payment}/edit', [BillPurchaseController::class, 'editPayment'])->name('bill-purchases.payment.edit');
     Route::put('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'updatePayment'])->name('bill-purchases.payment.update');
     Route::delete('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'deletePayment'])->name('bill-purchases.payment.delete');
-    
+
     Route::get('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'show'])->name('bill-purchases.show');
     Route::get('/bill-purchases/{billPurchase}/edit', [BillPurchaseController::class, 'edit'])->name('bill-purchases.edit');
     Route::put('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'update'])->name('bill-purchases.update');
@@ -343,7 +343,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/bank-reconciliation/{bankReconciliation}/show', [BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
         Route::get('/bank-reconciliation/{bankReconciliation}/export', [BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
     });
-    
+
     // Transaction Routes
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
@@ -357,6 +357,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
     Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+
+    // Bulk upload routes (must come before parameterized routes)
+    Route::get('customers/bulk-upload', [CustomerController::class, 'bulkUpload'])->name('customers.bulk-upload');
+    Route::post('customers/bulk-upload', [CustomerController::class, 'bulkUploadStore'])->name('customers.bulk-upload.store');
+    Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
+
+    // Parameterized routes (must come after specific routes)
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
@@ -402,16 +409,6 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
-    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
-    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
-    Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
-    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
-    Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
-    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
-});
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 

@@ -4,8 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     /**
      * Run the migrations.
      */
@@ -27,8 +26,8 @@ return new class extends Migration
             $table->string('idType')->nullable();
             $table->string('idNumber')->nullable();
             $table->date('dob');
-            $table->foreignId('region_id')->constrained('regions')->onDelete('cascade');
-            $table->foreignId('district_id')->constrained('districts')->onDelete('cascade');
+            $table->foreignId('region_id')->nullable()->constrained('regions')->onDelete('set null');
+            $table->foreignId('district_id')->nullable()->constrained('districts')->onDelete('set null');
 
             // Foreign key to branches
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');

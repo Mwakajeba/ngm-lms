@@ -15,8 +15,8 @@
     </div>
 @endif
 
-<form action="{{ $isEdit ? route('customers.update', $customer) : route('customers.store') }}" 
-      method="POST" enctype="multipart/form-data">
+<form action="{{ $isEdit ? route('customers.update', $customer) : route('customers.store') }}" method="POST"
+    enctype="multipart/form-data">
     @csrf
     @if($isEdit) @method('PUT') @endif
 
@@ -25,7 +25,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Full Name <span class="text-danger">*</span></label>
             <input type="text" name="name" class="form-control @error('name') is-invalid @enderror"
-                   value="{{ old('name', $customer->name ?? '') }}" placeholder="Enter full name">
+                value="{{ old('name', $customer->name ?? '') }}" placeholder="Enter full name">
             @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -45,8 +45,8 @@
         <!-- Description -->
         <div class="col-md-12 mb-3">
             <label class="form-label">Description</label>
-            <textarea name="description" class="form-control @error('description') is-invalid @enderror" 
-                      rows="3" placeholder="Enter customer description">{{ old('description', $customer->description ?? '') }}</textarea>
+            <textarea name="description" class="form-control @error('description') is-invalid @enderror" rows="3"
+                placeholder="Enter customer description">{{ old('description', $customer->description ?? '') }}</textarea>
             @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -54,7 +54,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Phone Number <span class="text-danger">*</span></label>
             <input type="text" name="phone1" class="form-control @error('phone1') is-invalid @enderror"
-                   value="{{ old('phone1', $customer->phone1 ?? '') }}" placeholder="Enter phone number">
+                value="{{ old('phone1', $customer->phone1 ?? '') }}" placeholder="Enter phone number">
             @error('phone1') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -62,7 +62,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Alternative Phone Number</label>
             <input type="text" name="phone2" class="form-control @error('phone2') is-invalid @enderror"
-                   value="{{ old('phone2', $customer->phone2 ?? '') }}" placeholder="Enter alternative phone">
+                value="{{ old('phone2', $customer->phone2 ?? '') }}" placeholder="Enter alternative phone">
             @error('phone2') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -83,9 +83,10 @@
         <!-- District -->
         <div class="col-md-6 mb-3">
             <label class="form-label">District <span class="text-danger">*</span></label>
-            <select name="district_id" id="district" class="form-select @error('district_id') is-invalid @enderror" required>
+            <select name="district_id" id="district" class="form-select @error('district_id') is-invalid @enderror"
+                required>
                 <option value="">Select District</option>
-                @if($isEdit && $customer->district_id)
+                @if($isEdit && isset($customer) && $customer->district_id)
                     <option value="{{ $customer->district_id }}" selected>
                         {{ $customer->district->name ?? 'Selected District' }}
                     </option>
@@ -102,7 +103,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Work</label>
             <input type="text" name="work" class="form-control @error('work') is-invalid @enderror"
-                   value="{{ old('work', $customer->work ?? '') }}" placeholder="e.g. Teacher">
+                value="{{ old('work', $customer->work ?? '') }}" placeholder="e.g. Teacher">
             @error('work') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -110,7 +111,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Work Address</label>
             <input type="text" name="workAddress" class="form-control @error('workAddress') is-invalid @enderror"
-                   value="{{ old('workAddress', $customer->workAddress ?? '') }}" placeholder="e.g. ABC School, Dar">
+                value="{{ old('workAddress', $customer->workAddress ?? '') }}" placeholder="e.g. ABC School, Dar">
             @error('workAddress') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -132,7 +133,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">ID Number</label>
             <input type="text" name="idNumber" class="form-control @error('idNumber') is-invalid @enderror"
-                   value="{{ old('idNumber', $customer->idNumber ?? '') }}">
+                value="{{ old('idNumber', $customer->idNumber ?? '') }}">
             @error('idNumber') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -140,7 +141,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
             <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror"
-                   value="{{ old('dob', $customer->dob ?? '') }}">
+                value="{{ old('dob', $customer->dob ?? '') }}">
             @error('dob') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -148,7 +149,7 @@
         <div class="col-md-6 mb-3">
             <label class="form-label">Relation</label>
             <input type="text" name="relation" class="form-control @error('relation') is-invalid @enderror"
-                   value="{{ old('relation', $customer->relation ?? '') }}" placeholder="e.g. Spouse, Parent">
+                value="{{ old('relation', $customer->relation ?? '') }}" placeholder="e.g. Spouse, Parent">
             @error('relation') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -158,8 +159,8 @@
             <input type="file" name="photo" accept="image/*" class="form-control" onchange="previewImage(event)">
             @error('photo') <div class="invalid-feedback">{{ $message }}</div> @enderror
             <div id="preview" class="mt-2">
-                @if($isEdit && $customer->photo)
-                    <img src="{{ asset('storage/'.$customer->photo) }}" width="100">
+                @if($isEdit && isset($customer) && $customer->photo)
+                    <img src="{{ asset('storage/' . $customer->photo) }}" width="100">
                 @endif
             </div>
         </div>
@@ -171,7 +172,7 @@
                 accept=".pdf,.doc,.docx,image/*">
             @error('document') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
-            @if($isEdit && $customer->document)
+            @if($isEdit && isset($customer) && $customer->document)
                 <div class="mt-2">
                     <a href="{{ asset('storage/' . $customer->document) }}" target="_blank">
                         View Uploaded Document
@@ -181,20 +182,20 @@
         </div> -->
 
         @if($isEdit)
-        <!-- Password (only for edit) -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">New Password (leave blank to keep current)</label>
-            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                   placeholder="Enter new password">
-            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
+            <!-- Password (only for edit) -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">New Password (leave blank to keep current)</label>
+                <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                    placeholder="Enter new password">
+                @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
         @endif
 
         <!-- Cash Collateral -->
         <div class="col-md-6 mb-3">
             <div class="form-check">
-                <input type="checkbox" class="form-check-input" value="1" name="has_cash_collateral" id="has_cash_collateral"
-                    {{ old('has_cash_collateral', $customer->has_cash_collateral ?? false) ? 'checked' : '' }}>
+                <input type="checkbox" class="form-check-input" value="1" name="has_cash_collateral"
+                    id="has_cash_collateral" {{ old('has_cash_collateral', $customer->has_cash_collateral ?? false) ? 'checked' : '' }}>
                 <label class="form-check-label" for="has_cash_collateral">Has Cash Collateral</label>
             </div>
         </div>
@@ -205,8 +206,7 @@
             <select name="collateral_type_id" class="form-select">
                 <option value="">Select Collateral Type</option>
                 @foreach($collateralTypes as $type)
-                    <option value="{{ $type->id }}" 
-                        {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
+                    <option value="{{ $type->id }}" {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
                         {{ $type->name }}
                     </option>
                 @endforeach
@@ -222,8 +222,7 @@
                         <div class="col-md-4 mb-2">
                             <div class="form-check">
                                 <input class="form-check-input" type="checkbox" name="loan_officer_ids[]"
-                                    value="{{ $officer->id }}"
-                                    {{ in_array($officer->id, old('loan_officer_ids', $customer->loan_officer_ids ?? [])) ? 'checked' : '' }}>
+                                    value="{{ $officer->id }}" {{ in_array($officer->id, old('loan_officer_ids', isset($customer) ? $customer->loanOfficers->pluck('id')->toArray() : [])) ? 'checked' : '' }}>
                                 <label class="form-check-label">{{ $officer->name }}</label>
                             </div>
                         </div>
@@ -238,33 +237,56 @@
         </div>
 
         <!-- Multiple File Types and Documents Upload -->
-        <hr class="my-4">    
+        <hr class="my-4">
         <div class="col-md-12 mb-3">
-        <label class="form-label">Upload Documents</label>
+            <label class="form-label">Upload Documents</label>
 
-        <div id="file-type-upload-container">
-            {{-- Show existing uploaded documents --}}
-            @foreach ($customer->filetypes as $index => $filetype)
+            <div id="file-type-upload-container">
+                {{-- Show existing uploaded documents only when editing --}}
+                @if(isset($customer) && $customer->filetypes)
+                    @foreach ($customer->filetypes as $index => $filetype)
+                        <div class="row mb-2 file-type-upload-row">
+                            <div class="col-md-5">
+                                <select name="filetypes[]" class="form-select" required>
+                                    <option value="">Select File Type</option>
+                                    @foreach($filetypes as $type)
+                                        <option value="{{ $type->id }}" {{ $type->id == $filetype->id ? 'selected' : '' }}>
+                                            {{ $type->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-5">
+                                <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
+                                @if($filetype->pivot->document_path)
+                                    <small>
+                                        <a href="{{ asset('storage/' . $filetype->pivot->document_path) }}" target="_blank">
+                                            View Uploaded File
+                                        </a>
+                                    </small>
+                                @endif
+                            </div>
+                            <div class="col-md-2 d-flex align-items-center">
+                                <button type="button" class="btn btn-danger btn-sm remove-filetype-row">
+                                    <i class="bx bx-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    @endforeach
+                @endif
+
+                {{-- Empty row for adding new filetypes --}}
                 <div class="row mb-2 file-type-upload-row">
                     <div class="col-md-5">
                         <select name="filetypes[]" class="form-select" required>
                             <option value="">Select File Type</option>
                             @foreach($filetypes as $type)
-                                <option value="{{ $type->id }}" {{ $type->id == $filetype->id ? 'selected' : '' }}>
-                                    {{ $type->name }}
-                                </option>
+                                <option value="{{ $type->id }}">{{ $type->name }}</option>
                             @endforeach
                         </select>
                     </div>
                     <div class="col-md-5">
                         <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
-                        @if($filetype->pivot->document_path)
-                            <small>
-                                <a href="{{ asset('storage/' . $filetype->pivot->document_path) }}" target="_blank">
-                                    View Uploaded File
-                                </a>
-                            </small>
-                        @endif
                     </div>
                     <div class="col-md-2 d-flex align-items-center">
                         <button type="button" class="btn btn-danger btn-sm remove-filetype-row">
@@ -272,45 +294,24 @@
                         </button>
                     </div>
                 </div>
-            @endforeach
-
-            {{-- Empty row for adding new filetypes --}}
-            <div class="row mb-2 file-type-upload-row">
-                <div class="col-md-5">
-                    <select name="filetypes[]" class="form-select" required>
-                        <option value="">Select File Type</option>
-                        @foreach($filetypes as $type)
-                            <option value="{{ $type->id }}">{{ $type->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
-                <div class="col-md-5">
-                    <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
-                </div>
-                <div class="col-md-2 d-flex align-items-center">
-                    <button type="button" class="btn btn-danger btn-sm remove-filetype-row">
-                        <i class="bx bx-trash"></i>
-                    </button>
-                </div>
             </div>
+
+            <button type="button" class="btn btn-outline-primary btn-sm" id="add-filetype-row">
+                <i class="bx bx-plus"></i> Add Another
+            </button>
         </div>
 
-        <button type="button" class="btn btn-outline-primary btn-sm" id="add-filetype-row">
-            <i class="bx bx-plus"></i> Add Another
-        </button>
-    </div>
 
+        <hr class="my-4">
 
-    <hr class="my-4">
-
-    <div class="d-flex justify-content-between">
-        <a href="{{ route('customers.index') }}" class="btn btn-secondary">
-            <i class="bx bx-arrow-back me-1"></i> Back to Customers
-        </a>
-        <button type="submit" class="btn btn-primary">
-            <i class="bx bx-save me-1"></i> {{ $isEdit ? 'Update Customer' : 'Create Customer' }}
-        </button>
-    </div>
+        <div class="d-flex justify-content-between">
+            <a href="{{ route('customers.index') }}" class="btn btn-secondary">
+                <i class="bx bx-arrow-back me-1"></i> Back to Customers
+            </a>
+            <button type="submit" class="btn btn-primary">
+                <i class="bx bx-save me-1"></i> {{ $isEdit ? 'Update Customer' : 'Create Customer' }}
+            </button>
+        </div>
 </form>
 
 <script>
@@ -342,17 +343,17 @@
             }
 
             fetch(`/get-districts/${regionId}`)
-            .then(response => response.json())
-            .then(data => {
-                districtSelect.innerHTML = '<option value="">Select District</option>';
-                Object.entries(data).forEach(([id, name]) => {
-                    const option = document.createElement('option');
-                    option.value = id;
-                    option.textContent = name;
-                    districtSelect.appendChild(option);
-                });
-            })
-            .catch(error => console.error('Error loading districts:', error));
+                .then(response => response.json())
+                .then(data => {
+                    districtSelect.innerHTML = '<option value="">Select District</option>';
+                    Object.entries(data).forEach(([id, name]) => {
+                        const option = document.createElement('option');
+                        option.value = id;
+                        option.textContent = name;
+                        districtSelect.appendChild(option);
+                    });
+                })
+                .catch(error => console.error('Error loading districts:', error));
         });
     });
 
@@ -360,10 +361,10 @@
     function previewImage(event) {
         const file = event.target.files[0];
         const preview = document.getElementById('preview');
-        
+
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 preview.innerHTML = `<img src="${e.target.result}" width="100" class="mt-2">`;
             }
             reader.readAsDataURL(file);
