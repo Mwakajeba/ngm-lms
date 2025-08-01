@@ -24,6 +24,11 @@ class Group extends Model
         'meeting_time' => 'datetime:H:i',
     ];
 
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
+    }
+
     /**
      * Get the loan officer (user) for this group.
      */

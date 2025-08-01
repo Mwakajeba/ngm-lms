@@ -63,4 +63,9 @@ class BankAccount extends Model
     {
         return number_format($this->balance, 2);
     }
+
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
+    }
 }
