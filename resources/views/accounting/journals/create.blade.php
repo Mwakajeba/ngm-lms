@@ -4,7 +4,7 @@
 
 @section('content')
 <div class="page-wrapper">
-    <div class="page-content">
+    <div class="page-content"> 
         <!-- Breadcrumb -->
         <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
             <div class="breadcrumb-title pe-3">Accounting</div>
@@ -52,12 +52,12 @@
                     <div class="card-header bg-transparent border-0">
                         <h6 class="mb-0"><i class="bx bx-edit me-2"></i>Journal Entry Details</h6>
                     </div>
-                    <div class="card-body">
-                        @include('accounting.journals.form')
+            <div class="card-body">
+                @include('accounting.journals.form')
                     </div>
                 </div>
             </div>
-        </div>
+        </div>       
     </div>
 </div>
 @endsection
