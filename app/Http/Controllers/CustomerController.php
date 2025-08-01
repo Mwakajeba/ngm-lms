@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\Branch;
 use App\Models\Company;
@@ -12,6 +13,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
+use Vinkla\Hashids\Facades\Hashids;
 
 class CustomerController extends Controller
 {
@@ -39,7 +41,7 @@ class CustomerController extends Controller
         $companies = Company::all();
         $registrars = User::all();
         $regions = Region::all();
-        
+
         return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes'));
     }
 
@@ -124,9 +126,16 @@ class CustomerController extends Controller
     }
 
     // Display one customer
-    public function show(Customer $customer)
+    public function show($encodedId)
     {
-        $customer->load('collaterals.type', 'loans', 'loanOfficers');
+        $id = Hashids::decode($encodedId)[0] ?? null;
+    
+        if (!$id) {
+            abort(404);
+        }
+    
+        $customer = Customer::with('collaterals.type', 'loans', 'loanOfficers')->findOrFail($id);
+    
         return view('customers.show', compact('customer'));
     }
 
@@ -148,10 +157,10 @@ class CustomerController extends Controller
         $companies = Company::all();
         $registrars = User::all();
         $regions = Region::all();
-        
+
         // Load loan officers for this customer
         $customer->load('loanOfficers');
-        
+
         return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer'));
     }
 
@@ -235,7 +244,7 @@ class CustomerController extends Controller
             if ($request->has('has_cash_collateral') && $request->has('collateral_type_id') && $request->collateral_type_id) {
                 // Check if collateral already exists
                 $existingCollateral = \App\Models\CashCollateral::where('customer_id', $customer->id)->first();
-                
+
                 if ($existingCollateral) {
                     $existingCollateral->update([
                         'type_id' => $request->input('collateral_type_id'),
@@ -272,4 +281,7 @@ class CustomerController extends Controller
             return back()->with('error', 'Failed to delete customer: ' . $e->getMessage());
         }
     }
+
+
+    
 }

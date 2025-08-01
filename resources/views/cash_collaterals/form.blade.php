@@ -1,10 +1,9 @@
-<form 
-    action="{{ isset($collateral) ? route('cash_collaterals.update', $collateral->id) : route('cash_collaterals.store') }}" 
-    method="POST"
->
+<form
+    action="{{ isset($collateral) ? route('cash_collaterals.update', $collateral) : route('cash_collaterals.store') }}"
+    method="POST">
     @csrf
     @if(isset($collateral))
-        @method('PUT')
+    @method('PUT')
     @endif
 
     <div class="row">
@@ -13,10 +12,10 @@
             <select name="customer_id" id="customer_id" class="form-select" required>
                 <option value="">-- Select Customer --</option>
                 @foreach($customers as $customer)
-                    <option value="{{ $customer->id }}"
-                        {{ old('customer_id', $collateral->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
-                        {{ $customer->name }}
-                    </option>
+                <option value="{{ $customer->id }}"
+                    {{ old('customer_id', $collateral->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
+                    {{ $customer->name }}
+                </option>
                 @endforeach
             </select>
             @error('customer_id') <span class="text-danger">{{ $message }}</span> @enderror
@@ -27,10 +26,10 @@
             <select name="type_id" id="type_id" class="form-select" required>
                 <option value="">-- Select Type --</option>
                 @foreach($types as $type)
-                    <option value="{{ $type->id }}"
-                        {{ old('type_id', $collateral->type_id ?? '') == $type->id ? 'selected' : '' }}>
-                        {{ $type->name }}
-                    </option>
+                <option value="{{ $type->id }}"
+                    {{ old('type_id', $collateral->type_id ?? '') == $type->id ? 'selected' : '' }}>
+                    {{ $type->name }}
+                </option>
                 @endforeach
             </select>
             @error('type_id') <span class="text-danger">{{ $message }}</span> @enderror

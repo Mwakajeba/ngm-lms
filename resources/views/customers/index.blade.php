@@ -68,9 +68,9 @@
                                         <td>{{ optional($customer->branch)->name }}</td>
                                         <td>{{ optional($customer->company)->name }}</td>
                                         <td class="text-center">
-                                            <a href="{{ route('customers.show', $customer) }}" class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
-                                            <a href="{{ route('customers.edit', $customer) }}" class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
-                                            <form action="{{ route('customers.destroy', $customer) }}" method="POST" class="d-inline-block delete-form" onsubmit="return confirm('Delete this customer?');">
+                                            <a href="{{ route('customers.show', Hashids::encode($customer->id)) }}" class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
+                                            <a href="{{ route('customers.edit',  Hashids::encode($customer->id)) }}" class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
+                                            <form action="{{ route('customers.destroy',  Hashids::encode($customer->id)) }}" method="POST" class="d-inline-block delete-form" onsubmit="return confirm('Delete this customer?');">
                                                 @csrf @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger"><i class="bx bx-trash"></i></button>
                                             </form>

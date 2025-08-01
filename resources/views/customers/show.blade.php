@@ -209,23 +209,23 @@
                                             <td>{{ number_format($collateral->amount, 2) }}</td> {{-- Assuming 'amount' field --}}
                                             <td>{{ $collateral->created_at->format('M d, Y') }}</td>
                                             <td class="text-center">
-                                                <a href="{{ route('cash_collaterals.show', $collateral->id) }}" class="btn btn-sm btn-warning">
+                                                <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-warning">
                                                     View
                                                 </a>
-                                                <a href="{{ route('cash_collaterals.edit', $collateral->id) }}" class="btn btn-sm btn-info">
+                                                <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-info">
                                                     Edit
                                                 </a>
-                                                <form action="{{ route('cash_collaterals.destroy', $collateral->id) }}" method="POST" style="display:inline;">
+                                                <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" style="display:inline;">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                                 </form>
 
-                                                <a href="{{ route('cash_collaterals.deposit', $collateral->id) }}" class="btn btn-sm btn-primary">
+                                                <a href="{{ route('cash_collaterals.deposit',Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-primary">
                                                     Deposit
                                                 </a>
 
-                                                <a href="{{ route('cash_collaterals.withdraw', $collateral->id) }}" class="btn btn-sm btn-success">
+                                                <a href="{{ route('cash_collaterals.withdraw', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-success">
                                                     Withdraw
                                                 </a>
                                             </td>
