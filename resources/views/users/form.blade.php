@@ -5,6 +5,12 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'User Management', 'url' => route('users.index'), 'icon' => 'bx bx-user'],
+            ['label' => isset($user) ? 'Edit User' : 'Create User', 'url' => '#', 'icon' => isset($user) ? 'bx bx-edit' : 'bx bx-plus-circle']
+        ]" />
+
         <h6 class="mb-0 text-uppercase">{{ isset($user) ? 'EDIT USER' : 'CREATE NEW USER' }}</h6>
         <hr/>
         <div class="card">
@@ -145,32 +151,21 @@
 
                             <!-- Role Assignment -->
                             <div class="row">
-                                <div class="col-12">
+                                <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label class="form-label">Roles <span class="text-danger">*</span></label>
-                                        <div class="row">
+                                        <label for="role_id" class="form-label">Role <span class="text-danger">*</span></label>
+                                        <select class="form-select @error('role_id') is-invalid @enderror" 
+                                                id="role_id" name="role_id" required>
+                                            <option value="">Select Role</option>
                                             @foreach($roles as $role)
-                                            <div class="col-md-4 mb-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input @error('roles') is-invalid @enderror" 
-                                                           type="checkbox" name="roles[]" 
-                                                           value="{{ $role->id }}" 
-                                                           id="role_{{ $role->id }}"
-                                                           {{ in_array($role->id, old('roles', isset($user) ? $user->roles->pluck('id')->toArray() : [])) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="role_{{ $role->id }}">
-                                                        <strong>{{ ucfirst($role->name) }}</strong>
-                                                        @if($role->permissions->count() > 0)
-                                                            <br><small class="text-muted">
-                                                                Permissions: {{ $role->permissions->pluck('name')->implode(', ') }}
-                                                            </small>
-                                                        @endif
-                                                    </label>
-                                                </div>
-                                            </div>
+                                                <option value="{{ $role->id }}" 
+                                                        {{ old('role_id', isset($user) ? $user->roles->first()->id ?? '' : '') == $role->id ? 'selected' : '' }}>
+                                                    {{ ucfirst($role->name) }}
+                                                </option>
                                             @endforeach
-                                        </div>
-                                        @error('roles')
-                                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                                        </select>
+                                        @error('role_id')
+                                            <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
@@ -190,10 +185,12 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <p class="mb-1"><strong>Current Branch:</strong> {{ $user->branch->name ?? 'N/A' }}</p>
-                                                <p class="mb-1"><strong>Current Roles:</strong> 
-                                                    @foreach($user->roles as $role)
-                                                        <span class="badge bg-primary me-1">{{ $role->name }}</span>
-                                                    @endforeach
+                                                <p class="mb-1"><strong>Current Role:</strong> 
+                                                    @if($user->roles->first())
+                                                        <span class="badge bg-primary me-1">{{ $user->roles->first()->name }}</span>
+                                                    @else
+                                                        <span class="text-muted">No role assigned</span>
+                                                    @endif
                                                 </p>
                                                 <p class="mb-1"><strong>Status:</strong> 
                                                     @if($user->status === 'active')
@@ -349,7 +346,7 @@ document.getElementById('password').addEventListener('input', function() {
 document.getElementById('userForm').addEventListener('submit', function(e) {
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('password_confirmation').value;
-    const roles = document.querySelectorAll('input[name="roles[]"]:checked');
+    const role = document.getElementById('role_id').value; // Get selected role
     const isEdit = {{ isset($user) ? 'true' : 'false' }};
     
     // Password validation
@@ -366,9 +363,9 @@ document.getElementById('userForm').addEventListener('submit', function(e) {
     }
     
     // Role validation
-    if (roles.length === 0) {
+    if (!role) { // Check if a role is selected
         e.preventDefault();
-        alert('Please select at least one role!');
+        alert('Please select a role!');
         return false;
     }
     

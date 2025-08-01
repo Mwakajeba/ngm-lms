@@ -3,220 +3,233 @@
 @section('title', __('app.user_management'))
 
 @section('content')
-<div class="page-wrapper">
-    <div class="page-content">
-        <div class="row row-cols-1 row-cols-lg-4">
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.total_users') }}</p>
-                                <h4 class="font-weight-bold">{{ $totalUsers }}</h4>
+    <div class="page-wrapper">
+        <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'User Management', 'url' => '#', 'icon' => 'bx bx-user']
+        ]" />
+
+            <div class="row row-cols-1 row-cols-lg-4">
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.total_users') }}</p>
+                                    <h4 class="font-weight-bold">{{ $totalUsers }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-user'></i>
+                                </div>
                             </div>
-                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-user'></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.active_users') }}</p>
+                                    <h4 class="font-weight-bold">{{ $activeUsers }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-check-circle'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.inactive_users') }}</p>
+                                    <h4 class="font-weight-bold">{{ $inactiveUsers }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-time'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.this_month') }}</p>
+                                    <h4 class="font-weight-bold">
+                                        {{ $users->where('created_at', '>=', now()->startOfMonth())->count() }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-calendar'></i>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.active_users') }}</p>
-                                <h4 class="font-weight-bold">{{ $activeUsers }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-check-circle'></i>
+            <!--end row-->
+
+            <h6 class="mb-0 text-uppercase">{{ __('app.users') }}</h6>
+            <hr />
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">{{ __('app.user_list') }}</h5>
+                        <a href="{{ route('users.create') }}" class="btn btn-primary">
+                            <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
+                        </a>
+                    </div>
+
+
+                    <div class="table-responsive">
+                        <table id="example2" class="table table-striped table-bordered" style="width:100%">
+                            <thead>
+                                <tr>
+                                    <th>{{ __('app.name') }}</th>
+                                    <th>{{ __('app.email') }}</th>
+                                    <th>{{ __('app.phone') }}</th>
+                                    <th>{{ __('app.branch') }}</th>
+                                    <th>{{ __('app.roles') }}</th>
+                                    <th>{{ __('app.status') }}</th>
+                                    <th>{{ __('app.created_at') }}</th>
+                                    <th>{{ __('app.actions') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($users as $user)
+                                    <tr>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                <div class="avatar avatar-sm bg-primary rounded-circle me-2">
+                                                    <span class="avatar-title text-white">{{ substr($user->name, 0, 1) }}</span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">
+                                                        <a href="{{ route('users.profile') }}"
+                                                            class="text-decoration-none">{{ $user->name }}</a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </td>
+                                        <td>{{ $user->email }}</td>
+                                        <td>{{ $user->phone }}</td>
+                                        <td>{{ $user->branch->name ?? __('app.not_available') }}</td>
+                                        <td>
+                                            @foreach($user->roles as $role)
+                                                <span class="badge bg-primary me-1">{{ $role->name }}</span>
+                                            @endforeach
+                                        </td>
+                                        <td>
+                                            @if($user->status === 'active')
+                                                <span class="badge bg-success">{{ __('app.active') }}</span>
+                                            @elseif($user->status === 'inactive')
+                                                <span class="badge bg-warning">{{ __('app.inactive') }}</span>
+                                            @else
+                                                <span class="badge bg-danger">{{ __('app.suspended') }}</span>
+                                            @endif
+                                        </td>
+                                        <td>{{ $user->created_at->format('M d, Y') }}</td>
+                                        <td>
+                                            <a href="{{ route('users.profile') }}"
+                                                class="btn btn-sm btn-info">{{ __('app.profile') }}</a>
+                                            <a href="{{ route('users.edit', $user) }}"
+                                                class="btn btn-sm btn-primary">{{ __('app.edit') }}</a>
+                                            <form action="{{ route('users.destroy', $user) }}" method="POST"
+                                                style="display:inline-block;" class="delete-form">
+                                                @csrf
+                                                @method('DELETE')
+                                                <button type="submit" class="btn btn-sm btn-danger"
+                                                    data-name="{{ $user->name }}"
+                                                    onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_delete_user') }}')">{{ __('app.delete') }}</button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Pagination -->
+                    @if($users->hasPages())
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                {{ $users->links() }}
                             </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.inactive_users') }}</p>
-                                <h4 class="font-weight-bold">{{ $inactiveUsers }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-time'></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.this_month') }}</p>
-                                <h4 class="font-weight-bold">{{ $users->where('created_at', '>=', now()->startOfMonth())->count() }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-calendar'></i>
-                            </div>
-                        </div>
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>
-        <!--end row-->
-        
-        <h6 class="mb-0 text-uppercase">{{ __('app.users') }}</h6>
-        <hr/>
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">{{ __('app.user_list') }}</h5>
-                    <a href="{{ route('users.create') }}" class="btn btn-primary">
-                        <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
-                    </a>
-                </div>
-                
-
-                <div class="table-responsive">
-                    <table id="example2" class="table table-striped table-bordered" style="width:100%">
-                        <thead>
-                             <tr>
-                                <th>{{ __('app.name') }}</th>
-                                <th>{{ __('app.email') }}</th>
-                                <th>{{ __('app.phone') }}</th>
-                                <th>{{ __('app.branch') }}</th>
-                                <th>{{ __('app.roles') }}</th>
-                                <th>{{ __('app.status') }}</th>
-                                <th>{{ __('app.created_at') }}</th>
-                                <th>{{ __('app.actions') }}</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                          @foreach($users as $user)
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div class="avatar avatar-sm bg-primary rounded-circle me-2">
-                                            <span class="avatar-title text-white">{{ substr($user->name, 0, 1) }}</span>
-                                        </div>
-                                        <div>
-                                            <div class="fw-bold">
-                                                <a href="{{ route('users.profile') }}" class="text-decoration-none">{{ $user->name }}</a>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>{{ $user->email }}</td>
-                                <td>{{ $user->phone }}</td>
-                                <td>{{ $user->branch->name ?? __('app.not_available') }}</td>
-                                <td>
-                                    @foreach($user->roles as $role)
-                                        <span class="badge bg-primary me-1">{{ $role->name }}</span>
-                                    @endforeach
-                                </td>
-                                <td>
-                                    @if($user->status === 'active')
-                                        <span class="badge bg-success">{{ __('app.active') }}</span>
-                                    @elseif($user->status === 'inactive')
-                                        <span class="badge bg-warning">{{ __('app.inactive') }}</span>
-                                    @else
-                                        <span class="badge bg-danger">{{ __('app.suspended') }}</span>
-                                    @endif
-                                </td>
-                                <td>{{ $user->created_at->format('M d, Y') }}</td>
-                                <td>
-                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-info">{{ __('app.profile') }}</a>
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-primary">{{ __('app.edit') }}</a>
-                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $user->name }}" onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_delete_user') }}')">{{ __('app.delete') }}</button>
-                                    </form>
-                                </td>
-                            </tr>
-                          @endforeach
-                        </tbody>
-                    </table>
-                </div>
-
-                <!-- Pagination -->
-                @if($users->hasPages())
-                <div class="row mt-4">
-                    <div class="col-12">
-                        {{ $users->links() }}
-                    </div>
-                </div>
-                @endif
-            </div>
-        </div>       
     </div>
-</div>
-<!--end page wrapper -->
-<!--start overlay-->
-<div class="overlay toggle-icon"></div>
-<!--end overlay-->
-<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
-<!--End Back To Top Button-->
-<footer class="page-footer">
-    <p class="mb-0">{{ __('app.copyright') }} © {{ date('Y') }}. {{ __('app.all_rights_reserved') }} -- {{ __('app.by_safco_fintech') }}</p>
-</footer>
+    <!--end page wrapper -->
+    <!--start overlay-->
+    <div class="overlay toggle-icon"></div>
+    <!--end overlay-->
+    <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+    <!--End Back To Top Button-->
+    <footer class="page-footer">
+        <p class="mb-0">{{ __('app.copyright') }} © {{ date('Y') }}. {{ __('app.all_rights_reserved') }} --
+            {{ __('app.by_safco_fintech') }}</p>
+    </footer>
 
-<!-- Delete User Form -->
-<form id="deleteUserForm" method="POST" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
+    <!-- Delete User Form -->
+    <form id="deleteUserForm" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
 
 @endsection
 
 @push('scripts')
-{!! confirm_delete() !!}
-<script>
-function deleteUser(userHashId) {
-    if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
-        const form = document.getElementById('deleteUserForm');
-        form.action = `/users/${userHashId}`;
-        form.submit();
-    }
-}
-
-// Search functionality
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
-
-// Status filter
-document.getElementById('statusFilter').addEventListener('change', function() {
-    const status = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const statusCell = row.querySelector('td:nth-child(6)');
-        if (statusCell) {
-            const userStatus = statusCell.textContent.toLowerCase();
-            row.style.display = !status || userStatus.includes(status) ? '' : 'none';
+    {!! confirm_delete() !!}
+    <script>
+        function deleteUser(userHashId) {
+            if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
+                const form = document.getElementById('deleteUserForm');
+                form.action = `/users/${userHashId}`;
+                form.submit();
+            }
         }
-    });
-});
 
-// Role filter
-document.getElementById('roleFilter').addEventListener('change', function() {
-    const role = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const roleCell = row.querySelector('td:nth-child(5)');
-        if (roleCell) {
-            const userRoles = roleCell.textContent.toLowerCase();
-            row.style.display = !role || userRoles.includes(role) ? '' : 'none';
-        }
-    });
-});
-</script>
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
+
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function () {
+            const status = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const statusCell = row.querySelector('td:nth-child(6)');
+                if (statusCell) {
+                    const userStatus = statusCell.textContent.toLowerCase();
+                    row.style.display = !status || userStatus.includes(status) ? '' : 'none';
+                }
+            });
+        });
+
+        // Role filter
+        document.getElementById('roleFilter').addEventListener('change', function () {
+            const role = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const roleCell = row.querySelector('td:nth-child(5)');
+                if (roleCell) {
+                    const userRoles = roleCell.textContent.toLowerCase();
+                    row.style.display = !role || userRoles.includes(role) ? '' : 'none';
+                }
+            });
+        });
+    </script>
 @endpush
