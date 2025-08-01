@@ -106,4 +106,12 @@ class Customer extends Model
             $this->attributes['customerNo'] = $value;
         }
     }
+
+    public function filetypes()
+    {
+        return $this->belongsToMany(Filetype::class, 'customer_file_types')
+                    ->withTimestamps();
+    }
+
+
 }

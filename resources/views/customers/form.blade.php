@@ -165,7 +165,7 @@
         </div>
 
         <!-- Document Upload -->
-        <div class="col-md-6 mb-3">
+        <!-- <div class="col-md-6 mb-3">
             <label class="form-label">Upload Document</label>
             <input type="file" name="document" class="form-control @error('document') is-invalid @enderror"
                 accept=".pdf,.doc,.docx,image/*">
@@ -178,7 +178,17 @@
                     </a>
                 </div>
             @endif
+        </div> -->
+
+        @if($isEdit)
+        <!-- Password (only for edit) -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">New Password (leave blank to keep current)</label>
+            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+                   placeholder="Enter new password">
+            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
+        @endif
 
         <!-- Cash Collateral -->
         <div class="col-md-6 mb-3">
@@ -227,16 +237,69 @@
             @endif
         </div>
 
-        @if($isEdit)
-        <!-- Password (only for edit) -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">New Password (leave blank to keep current)</label>
-            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
-                   placeholder="Enter new password">
-            @error('password') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <!-- Multiple File Types and Documents Upload -->
+        <hr class="my-4">    
+        <div class="col-md-12 mb-3">
+        <label class="form-label">Upload Documents</label>
+
+        <div id="file-type-upload-container">
+            {{-- Show existing uploaded documents --}}
+            @foreach ($customer->filetypes as $index => $filetype)
+                <div class="row mb-2 file-type-upload-row">
+                    <div class="col-md-5">
+                        <select name="filetypes[]" class="form-select" required>
+                            <option value="">Select File Type</option>
+                            @foreach($filetypes as $type)
+                                <option value="{{ $type->id }}" {{ $type->id == $filetype->id ? 'selected' : '' }}>
+                                    {{ $type->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="col-md-5">
+                        <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
+                        @if($filetype->pivot->document_path)
+                            <small>
+                                <a href="{{ asset('storage/' . $filetype->pivot->document_path) }}" target="_blank">
+                                    View Uploaded File
+                                </a>
+                            </small>
+                        @endif
+                    </div>
+                    <div class="col-md-2 d-flex align-items-center">
+                        <button type="button" class="btn btn-danger btn-sm remove-filetype-row">
+                            <i class="bx bx-trash"></i>
+                        </button>
+                    </div>
+                </div>
+            @endforeach
+
+            {{-- Empty row for adding new filetypes --}}
+            <div class="row mb-2 file-type-upload-row">
+                <div class="col-md-5">
+                    <select name="filetypes[]" class="form-select" required>
+                        <option value="">Select File Type</option>
+                        @foreach($filetypes as $type)
+                            <option value="{{ $type->id }}">{{ $type->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+                <div class="col-md-5">
+                    <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
+                </div>
+                <div class="col-md-2 d-flex align-items-center">
+                    <button type="button" class="btn btn-danger btn-sm remove-filetype-row">
+                        <i class="bx bx-trash"></i>
+                    </button>
+                </div>
+            </div>
         </div>
-        @endif
+
+        <button type="button" class="btn btn-outline-primary btn-sm" id="add-filetype-row">
+            <i class="bx bx-plus"></i> Add Another
+        </button>
     </div>
+
 
     <hr class="my-4">
 
@@ -306,4 +369,32 @@
             reader.readAsDataURL(file);
         }
     }
+
+
+    // Add/remove filetype-document upload rows
+    document.addEventListener('DOMContentLoaded', function () {
+        const container = document.getElementById('file-type-upload-container');
+        const addBtn = document.getElementById('add-filetype-row');
+
+        addBtn.addEventListener('click', function () {
+            const row = document.querySelector('.file-type-upload-row');
+            const newRow = row.cloneNode(true);
+
+            // Clear values
+            newRow.querySelector('select').selectedIndex = 0;
+            newRow.querySelector('input[type="file"]').value = '';
+
+            container.appendChild(newRow);
+        });
+
+        container.addEventListener('click', function (e) {
+            if (e.target.closest('.remove-filetype-row')) {
+                const rows = container.querySelectorAll('.file-type-upload-row');
+                if (rows.length > 1) {
+                    e.target.closest('.file-type-upload-row').remove();
+                }
+            }
+        });
+    });
+
 </script>

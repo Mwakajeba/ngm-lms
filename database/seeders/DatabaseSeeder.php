@@ -27,6 +27,7 @@ class DatabaseSeeder extends Seeder
       DistrictsTableSeeder::class,
       SupplierSeeder::class,
       FeeSeeder::class,
+      FiletypeSeeder::class,
     ]);
   }
 }
