@@ -10,17 +10,17 @@ return new class extends Migration {
         $table->id();
         
         $table->foreignId('customer_id')
-            ->constrained()
+            ->constrained('customers') // Assuming customers table exists
             ->onDelete('cascade');
 
         $table->foreignId('group_id')
             ->nullable()
-            ->constrained()
+            ->constrained('groups') // Assuming groups table exists
             ->onDelete('set null'); // Assuming groups table exists
 
         $table->foreignId('product_id')
             ->nullable()
-            ->constrained()
+            ->constrained('loan_products') // Assuming loan_products table exists
             ->onDelete('set null'); // Assuming products table exists
 
         $table->decimal('amount', 15, 2)->default(0);
