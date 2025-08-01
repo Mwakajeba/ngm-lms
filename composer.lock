@@ -2802,16 +2802,16 @@
         },
         {
             "name": "nikic/php-parser",
-            "version": "v5.5.0",
+            "version": "v5.6.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/nikic/PHP-Parser.git",
-                "reference": "ae59794362fe85e051a58ad36b289443f57be7a9"
+                "reference": "221b0d0fdf1369c71047ad1d18bb5880017bbc56"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/ae59794362fe85e051a58ad36b289443f57be7a9",
-                "reference": "ae59794362fe85e051a58ad36b289443f57be7a9",
+                "url": "https://api.github.com/repos/nikic/PHP-Parser/zipball/221b0d0fdf1369c71047ad1d18bb5880017bbc56",
+                "reference": "221b0d0fdf1369c71047ad1d18bb5880017bbc56",
                 "shasum": ""
             },
             "require": {
@@ -2854,9 +2854,9 @@
             ],
             "support": {
                 "issues": "https://github.com/nikic/PHP-Parser/issues",
-                "source": "https://github.com/nikic/PHP-Parser/tree/v5.5.0"
+                "source": "https://github.com/nikic/PHP-Parser/tree/v5.6.0"
             },
-            "time": "2025-05-31T08:24:38+00:00"
+            "time": "2025-07-27T20:03:57+00:00"
         },
         {
             "name": "nunomaduro/termwind",
@@ -3777,16 +3777,16 @@
         },
         {
             "name": "spatie/laravel-permission",
-            "version": "6.20.0",
+            "version": "6.21.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-permission.git",
-                "reference": "31c05679102c73f3b0d05790d2400182745a5615"
+                "reference": "6a118e8855dfffcd90403aab77bbf35a03db51b3"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-permission/zipball/31c05679102c73f3b0d05790d2400182745a5615",
-                "reference": "31c05679102c73f3b0d05790d2400182745a5615",
+                "url": "https://api.github.com/repos/spatie/laravel-permission/zipball/6a118e8855dfffcd90403aab77bbf35a03db51b3",
+                "reference": "6a118e8855dfffcd90403aab77bbf35a03db51b3",
                 "shasum": ""
             },
             "require": {
@@ -3848,7 +3848,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-permission/issues",
-                "source": "https://github.com/spatie/laravel-permission/tree/6.20.0"
+                "source": "https://github.com/spatie/laravel-permission/tree/6.21.0"
             },
             "funding": [
                 {
@@ -3856,7 +3856,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-06-05T07:33:07+00:00"
+            "time": "2025-07-23T16:08:05+00:00"
         },
         {
             "name": "symfony/clock",
@@ -7526,16 +7526,16 @@
         },
         {
             "name": "phpunit/phpunit",
-            "version": "11.5.27",
+            "version": "11.5.28",
             "source": {
                 "type": "git",
                 "url": "https://github.com/sebastianbergmann/phpunit.git",
-                "reference": "446d43867314781df7e9adf79c3ec7464956fd8f"
+                "reference": "93f30aa3889e785ac63493d4976df0ae9fdecb60"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/446d43867314781df7e9adf79c3ec7464956fd8f",
-                "reference": "446d43867314781df7e9adf79c3ec7464956fd8f",
+                "url": "https://api.github.com/repos/sebastianbergmann/phpunit/zipball/93f30aa3889e785ac63493d4976df0ae9fdecb60",
+                "reference": "93f30aa3889e785ac63493d4976df0ae9fdecb60",
                 "shasum": ""
             },
             "require": {
@@ -7607,7 +7607,7 @@
             "support": {
                 "issues": "https://github.com/sebastianbergmann/phpunit/issues",
                 "security": "https://github.com/sebastianbergmann/phpunit/security/policy",
-                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.27"
+                "source": "https://github.com/sebastianbergmann/phpunit/tree/11.5.28"
             },
             "funding": [
                 {
@@ -7631,7 +7631,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2025-07-11T04:10:06+00:00"
+            "time": "2025-07-31T07:10:28+00:00"
         },
         {
             "name": "sebastian/cli-parser",

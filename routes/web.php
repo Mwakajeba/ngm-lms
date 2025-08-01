@@ -416,15 +416,29 @@ Route::middleware(['auth'])->group(function () {
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
-    Route::get('cash_collaterals', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
-    Route::get('cash_collaterals/create', [CashCollateralController::class, 'create'])->name('cash_collaterals.create');
-    Route::get('cash_collaterals/deposit', [CashCollateralController::class, 'create'])->name('cash_collaterals.deposit');
-    Route::get('cash_collaterals/withdraw', [CashCollateralController::class, 'create'])->name('cash_collaterals.withdraw');
-    Route::post('cash_collaterals', [CashCollateralController::class, 'store'])->name('cash_collaterals.store');
-    Route::get('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'show'])->name('cash_collaterals.show');
-    Route::get('cash_collaterals/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
-    Route::put('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
-    Route::delete('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
+    Route::get('/', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
+    Route::get('/create', [CashCollateralController::class, 'create'])->name('cash_collaterals.create');
+    Route::post('/', [CashCollateralController::class, 'store'])->name('cash_collaterals.store');
+    Route::get('/{cashcollateral}', [CashCollateralController::class, 'show'])->name('cash_collaterals.show');
+    Route::get('/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
+    Route::delete('/{cashcollateral}/delete', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
+    Route::put('/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
+
+
+    // Direct Receipt and Payment Routes for Cash Collateral
+    Route::get('/receipts/{receipt}/edit', [CashCollateralController::class, 'editReceipt'])->name('receipts.edit');
+    Route::put('/receipts/{receipt}', [CashCollateralController::class, 'updateReceipt'])->name('receipts.update');
+    Route::delete('/receipts/{receipt}', [CashCollateralController::class, 'deleteReceipt'])->name('receipts.destroy');
+    
+    Route::get('/payments/{payment}/edit', [CashCollateralController::class, 'editPayment'])->name('payments.edit');
+    Route::put('/payments/{payment}', [CashCollateralController::class, 'updatePayment'])->name('payments.update');
+    Route::delete('/payments/{payment}', [CashCollateralController::class, 'deletePayment'])->name('payments.destroy');
+    
+    // Deposit and Withdrawal routes
+    Route::get('/{cashcollateral}/deposit', [CashCollateralController::class, 'deposit'])->name('cash_collaterals.deposit');
+    Route::post('/deposit-store', [CashCollateralController::class, 'depositStore'])->name('cash_collaterals.depositStore');
+    Route::get('/{cashcollateral}/withdraw', [CashCollateralController::class, 'withdraw'])->name('cash_collaterals.withdraw');
+    Route::post('/withdraw-store', [CashCollateralController::class, 'withdrawStore'])->name('cash_collaterals.withdrawStore');
 });
 
 ////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
