@@ -24,17 +24,17 @@
                         <i class="bx bx-edit me-2"></i>Edit Reconciliation
                     </a>
                 @endif
-                                        @if($bankReconciliation->status !== 'completed')
+                @if($bankReconciliation->status !== 'completed')
                             <button type="button" class="btn btn-info me-2" onclick="refreshBookBalance()" id="refreshBookBalanceBtn">
                                 <i class="bx bx-refresh me-2"></i>Refresh Book Balance
                             </button>
-                            <form action="{{ route('accounting.bank-reconciliation.complete', $bankReconciliation) }}" method="POST" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-success me-2" onclick="return confirm('Mark this reconciliation as completed?')">
-                                    <i class="bx bx-check me-2"></i>Complete
-                                </button>
-                            </form>
-                        @endif
+                    <form action="{{ route('accounting.bank-reconciliation.complete', $bankReconciliation) }}" method="POST" class="d-inline">
+                        @csrf
+                        <button type="submit" class="btn btn-success me-2" onclick="return confirm('Mark this reconciliation as completed?')">
+                            <i class="bx bx-check me-2"></i>Complete
+                        </button>
+                    </form>
+                @endif
                 <a href="{{ route('accounting.bank-reconciliation.index') }}" class="btn btn-secondary">
                     <i class="bx bx-arrow-back me-2"></i>Back to Reconciliations
                 </a>
@@ -204,7 +204,7 @@
                         <ul class="nav nav-tabs" id="reconciliationTabs" role="tablist">
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link active" id="unreconciled-tab" data-bs-toggle="tab" data-bs-target="#unreconciled" type="button" role="tab">
-                                    Unreconciled Items 
+                                    Unreconciled Items
                                     <span class="badge bg-warning ms-1">{{ $unreconciledBankItems->count() + $unreconciledBookItems->count() }}</span>
                                 </button>
                             </li>

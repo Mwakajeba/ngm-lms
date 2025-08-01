@@ -26,9 +26,9 @@
                     <div class="card-body p-5">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <div class="card-title d-flex align-items-center">
-                                    <div><i class="bx bx-money me-1 font-22 text-success"></i></div>
-                                    <h5 class="mb-0 text-success">Bill Payment Details</h5>
+                        <div class="card-title d-flex align-items-center">
+                            <div><i class="bx bx-money me-1 font-22 text-success"></i></div>
+                            <h5 class="mb-0 text-success">Bill Payment Details</h5>
                                 </div>
                                 <p class="mb-0 text-muted">Created on {{ $payment->created_at->format('F d, Y \a\t g:i A') }}</p>
                             </div>
