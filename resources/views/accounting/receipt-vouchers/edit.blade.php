@@ -26,7 +26,7 @@
                         </div>
                         <div class="card-body">
                             <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.update', $receiptVoucher) }}"
-                                method="POST">
+                                method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
 
@@ -62,12 +62,12 @@
                                     </div>
                                 </div>
 
-                                <!-- Bank Account and Customer Section -->
+                                <!-- Bank Account Section -->
                                 <div class="row mb-4">
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">
-                                                <i class="bx bx-wallet me-1"></i>Bank Account
+                                                <i class="bx bx-wallet me-1"></i>Bank Account <span class="text-danger">*</span>
                                             </label>
                                             <select
                                                 class="form-select @error('bank_account_id') is-invalid @enderror"
@@ -84,30 +84,86 @@
                                             @enderror
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div class="col-lg-6">
-                                        <div class="mb-3">
-                                            <label for="customer_id" class="form-label fw-bold">
-                                                <i class="bx bx-user me-1"></i>Customer
-                                            </label>
-                                            <select
-                                                class="form-select @error('customer_id') is-invalid @enderror"
-                                                id="customer_id" name="customer_id" data-live-search="true" required>
-                                                <option value="">-- Select Customer --</option>
-                                                @foreach($customers as $customer)
-                                                    <option value="{{ $customer->id }}" {{ old('customer_id', $receiptVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
-                                                        {{ $customer->name }} ({{ $customer->customerNo }})
-                                                    </option>
-                                                @endforeach
-                                            </select>
-                                            @error('customer_id')
-                                                <div class="invalid-feedback">{{ $message }}</div>
-                                            @enderror
+                                <!-- Payee Section -->
+                                <div class="row mb-4">
+                                    <div class="col-lg-12">
+                                        <div class="card border-primary">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0 fw-bold">
+                                                    <i class="bx bx-user me-2"></i>Payee Information
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-lg-6">
+                                                        <div class="mb-3">
+                                                            <label for="payee_type" class="form-label fw-bold">
+                                                                Payee Type <span class="text-danger">*</span>
+                                                            </label>
+                                                            <select
+                                                                class="form-select @error('payee_type') is-invalid @enderror"
+                                                                id="payee_type" name="payee_type" required>
+                                                                <option value="">-- Select Payee Type --</option>
+                                                                <option value="customer" {{ old('payee_type', $receiptVoucher->payee_type) == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                                <option value="other" {{ old('payee_type', $receiptVoucher->payee_type) == 'other' ? 'selected' : '' }}>Other</option>
+                                                            </select>
+                                                            @error('payee_type')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Customer Selection (shown when payee_type is customer) -->
+                                                <div class="row" id="customerSection" style="display: none;">
+                                                    <div class="col-lg-6">
+                                                        <div class="mb-3">
+                                                            <label for="customer_id" class="form-label fw-bold">
+                                                                Select Customer <span class="text-danger">*</span>
+                                                            </label>
+                                                            <select
+                                                                class="form-select @error('customer_id') is-invalid @enderror"
+                                                                id="customer_id" name="customer_id">
+                                                                <option value="">-- Select Customer --</option>
+                                                                @foreach($customers as $customer)
+                                                                    <option value="{{ $customer->id }}" {{ old('customer_id', $receiptVoucher->payee_id) == $customer->id ? 'selected' : '' }}>
+                                                                        {{ $customer->name }} ({{ $customer->customerNo }})
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            @error('customer_id')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+                                                </div>
+
+                                                <!-- Other Payee Name (shown when payee_type is other) -->
+                                                <div class="row" id="otherPayeeSection" style="display: none;">
+                                                    <div class="col-lg-6">
+                                                        <div class="mb-3">
+                                                            <label for="payee_name" class="form-label fw-bold">
+                                                                Payee Name <span class="text-danger">*</span>
+                                                            </label>
+                                                            <input type="text"
+                                                                class="form-control @error('payee_name') is-invalid @enderror"
+                                                                id="payee_name" name="payee_name"
+                                                                value="{{ old('payee_name', $receiptVoucher->payee_name) }}"
+                                                                placeholder="Enter payee name">
+                                                            @error('payee_name')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Transaction Description -->
+                                <!-- Transaction Description and Attachment -->
                                 <div class="row mb-4">
                                     <div class="col-12">
                                         <div class="mb-3">
@@ -118,6 +174,38 @@
                                                 id="description" name="description" rows="3"
                                                 placeholder="Enter transaction description">{{ old('description', $receiptVoucher->description) }}</textarea>
                                             @error('description')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+
+                                    <div class="col-12">
+                                        <div class="mb-3">
+                                            <label for="attachment" class="form-label fw-bold">
+                                                <i class="bx bx-paperclip me-1"></i>Attachment (Optional)
+                                            </label>
+                                            @if($receiptVoucher->attachment)
+                                                <div class="mb-2">
+                                                    <div class="d-flex align-items-center">
+                                                        <i class="bx bx-file-pdf me-2 text-danger"></i>
+                                                        <span class="me-3">{{ basename($receiptVoucher->attachment) }}</span>
+                                                        <a href="{{ route('accounting.receipt-vouchers.download-attachment', $receiptVoucher) }}" 
+                                                           class="btn btn-sm btn-outline-primary me-2">
+                                                            <i class="bx bx-download"></i> Download
+                                                        </a>
+                                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                onclick="removeAttachment()">
+                                                            <i class="bx bx-trash"></i> Remove
+                                                        </button>
+                                                    </div>
+                                                    <input type="hidden" name="remove_attachment" id="remove_attachment" value="0">
+                                                </div>
+                                            @endif
+                                            <input type="file"
+                                                class="form-control @error('attachment') is-invalid @enderror"
+                                                id="attachment" name="attachment" accept=".pdf">
+                                            <div class="form-text">Supported format: PDF only (Max: 2MB)</div>
+                                            @error('attachment')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
                                         </div>
@@ -295,8 +383,40 @@
         $(document).ready(function () {
             let lineItemCount = {{ $receiptVoucher->receiptItems->count() }};
 
-            // Initialize with existing line items (already rendered in HTML)
-            // No need to add sample items since they're already in the DOM
+            // Handle payee type change
+            $('#payee_type').change(function() {
+                const payeeType = $(this).val();
+                
+                if (payeeType === 'customer') {
+                    $('#customerSection').show();
+                    $('#otherPayeeSection').hide();
+                    $('#customer_id').prop('required', true);
+                    $('#payee_name').prop('required', false);
+                } else if (payeeType === 'other') {
+                    $('#customerSection').hide();
+                    $('#otherPayeeSection').show();
+                    $('#customer_id').prop('required', false);
+                    $('#payee_name').prop('required', true);
+                } else {
+                    $('#customerSection').hide();
+                    $('#otherPayeeSection').hide();
+                    $('#customer_id').prop('required', false);
+                    $('#payee_name').prop('required', false);
+                }
+            });
+
+            // Trigger change event on page load if value exists
+            if ($('#payee_type').val()) {
+                $('#payee_type').trigger('change');
+            }
+
+            // Attachment removal function
+            window.removeAttachment = function() {
+                if (confirm('Are you sure you want to remove the attachment?')) {
+                    $('#remove_attachment').val('1');
+                    $('.attachment-display').hide();
+                }
+            };
 
             // Add line item button
             $('#addLineBtn').on('click', function () {

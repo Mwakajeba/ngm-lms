@@ -80,9 +80,38 @@
                                     </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Customer</label>
-                                    <p class="form-control-plaintext">{{ $receiptVoucher->customer->name ?? 'N/A' }}
-                                        ({{ $receiptVoucher->customer->customerNo ?? 'N/A' }})</p>
+                                    <label class="form-label fw-bold">Payee Type</label>
+                                    <p class="form-control-plaintext">
+                                        <span
+                                            class="badge bg-{{ $receiptVoucher->payee_type === 'customer' ? 'primary' : 'secondary' }}">
+                                            {{ ucfirst($receiptVoucher->payee_type ?? 'N/A') }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Payee</label>
+                                    <p class="form-control-plaintext">
+                                        @if($receiptVoucher->payee_type === 'customer' && $receiptVoucher->customer)
+                                            {{ $receiptVoucher->customer->name }} ({{ $receiptVoucher->customer->customerNo }})
+                                        @elseif($receiptVoucher->payee_type === 'other')
+                                            {{ $receiptVoucher->payee_name }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Attachment</label>
+                                    <p class="form-control-plaintext">
+                                        @if($receiptVoucher->attachment)
+                                            <a href="{{ route('accounting.receipt-vouchers.download-attachment', $receiptVoucher) }}"
+                                                class="btn btn-sm btn-outline-primary">
+                                                <i class="bx bx-download me-1"></i>Download Attachment
+                                            </a>
+                                        @else
+                                            <span class="text-muted">No attachment</span>
+                                        @endif
+                                    </p>
                                 </div>
                                 <div class="col-12 mb-3">
                                     <label class="form-label fw-bold">Description</label>

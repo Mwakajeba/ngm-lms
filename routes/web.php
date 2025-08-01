@@ -249,6 +249,9 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/receipt-vouchers/{receiptVoucher}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
     Route::put('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
     Route::delete('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
+    Route::get('/receipt-vouchers/{receiptVoucher}/download-attachment', [ReceiptVoucherController::class, 'downloadAttachment'])->name('receipt-vouchers.download-attachment');
+    Route::delete('/receipt-vouchers/{receiptVoucher}/remove-attachment', [ReceiptVoucherController::class, 'removeAttachment'])->name('receipt-vouchers.remove-attachment');
+    Route::get('/receipt-vouchers-debug', [ReceiptVoucherController::class, 'debug'])->name('receipt-vouchers.debug');
 
     // Bank Accounts
     Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
