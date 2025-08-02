@@ -301,7 +301,7 @@
                                             <td>{{ $loan->id }}</td>
                                             <td>{{ number_format($loan->amount, 2) }}</td>
                                             <td>{{ $loan->status }}</td>
-                                            <td>{{ $loan->disbursed_at->format('M d, Y') }}</td>
+                                            <td>{{ $loan->disbursed_on }}</td>
                                             <td class="text-center">
                                                 <a href="{{ route('loans.show', $loan->id) }}" class="btn btn-sm btn-info">View</a>
                                                 @if($loan->status == 'Pending')

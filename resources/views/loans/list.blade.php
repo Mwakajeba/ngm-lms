@@ -75,9 +75,9 @@
                                         <td>{{ optional($loan->branch)->name }}</td>
                                         <td>{{ $loan->date_applied }}</td>
                                         <td class="text-center">
-                                            <a href="{{ route('loans.show', $loan->id) }}" class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
-                                            <a href="{{ route('loans.edit', $loan->id) }}" class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
-                                            <form action="{{ route('loans.destroy', $loan->id) }}" method="POST" class="d-inline-block delete-form" onsubmit="return confirm('Delete this loan?');">
+                                            <a href="{{ route('loans.show', Hashids::encode($loan->id)) }}" class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
+                                            <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}" class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
+                                            <form action="{{ route('loans.destroy', Hashids::encode($loan->id)) }}" method="POST" class="d-inline-block delete-form" onsubmit="return confirm('Delete this loan?');">
                                                 @csrf @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger"><i class="bx bx-trash"></i></button>
                                             </form>
