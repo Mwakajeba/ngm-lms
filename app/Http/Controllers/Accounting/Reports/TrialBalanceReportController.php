@@ -70,8 +70,17 @@ class TrialBalanceReportController extends Controller
 
         // Add reporting type filter (cash vs accrual)
         if ($reportingType === 'cash') {
-            // For cash basis, only include cash and cash equivalents accounts
-            $query->where('account_class_groups.name', 'Cash and Cash Equivalents');
+            // For cash basis, select all GL transactions that are part of the same transaction when any bank account is involved
+            $query->whereExists(function ($subquery) {
+                $subquery->select(DB::raw(1))
+                    ->from('gl_transactions as gl2')
+                    ->whereColumn('gl2.transaction_id', 'gl_transactions.transaction_id')
+                    ->whereColumn('gl2.transaction_type', 'gl_transactions.transaction_type')
+                    ->whereIn('gl2.chart_account_id', function($bankSubquery) {
+                        $bankSubquery->select('chart_account_id')
+                            ->from('bank_accounts');
+                    });
+            });
         }
 
         // Select fields based on layout
