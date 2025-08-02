@@ -16,7 +16,10 @@ class GroupController extends Controller
      */
     public function index()
     {
-        $groups = Group::with(['loanOfficer', 'branch'])->get();
+        $branchId = auth()->user()->branch_id;
+        $groups = Group::with(['loanOfficer', 'branch'])
+            ->where('branch_id', $branchId)
+            ->get();
         return view('groups.index', compact('groups'));
     }
 
@@ -26,11 +29,13 @@ class GroupController extends Controller
     public function create()
     {
         $loanOfficers = User::whereHas('roles', function ($query) {
-            $query->where('name', 'loan-officer');
+            $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
 
-        $groupLeaders = Customer::all(); // All customer can be group leaders
-        $branches = Branch::all();
+        
+        $branchId = auth()->user()->branch_id;
+        $branches = Branch::where('id', $branchId)->get();
+        $groupLeaders = Customer::where('branch_id', $branchId)->get();
 
         return view('groups.create', compact('loanOfficers', 'groupLeaders', 'branches'));
     }
@@ -111,11 +116,12 @@ class GroupController extends Controller
     public function edit(Group $group)
     {
         $loanOfficers = User::whereHas('roles', function ($query) {
-            $query->where('name', 'loan-officer');
+            $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
 
         $groupLeaders = Customer::all(); // All customer can be group leaders
-        $branches = Branch::all();
+        $branchId = auth()->user()->branch_id;
+        $branches = Branch::where('id', $branchId)->get();
 
         return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders', 'branches'));
     }
