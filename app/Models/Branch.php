@@ -30,6 +30,11 @@ class Branch extends Model
         return $query->where('status', 'active');
     }
 
+    public function loans()
+    {
+        return $this->hasMany(Loan::class, 'branch_id');
+    }
+
     /**
      * Get the hash ID for the branch
      *

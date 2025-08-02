@@ -26,6 +26,7 @@ class Loan extends Model
         'top_up_id',
         'first_repayment_date',
         'last_repayment_date',
+        'branch_id',
     ];
 
     // Relationships
@@ -57,6 +58,11 @@ class Loan extends Model
     public function topUpChildren()
     {
         return $this->hasMany(Loan::class, 'top_up_id');
+    }
+
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 }
 
