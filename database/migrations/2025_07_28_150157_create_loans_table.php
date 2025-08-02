@@ -34,6 +34,11 @@ return new class extends Migration {
             ->constrained('bank_accounts') // assuming `bank_accounts` table exists
             ->onDelete('set null');
 
+        $table->foreignId('branch_id')
+            ->nullable()
+            ->constrained('branches') // assuming `bank_accounts` table exists
+            ->onDelete('cascade');
+
         $table->date('date_applied')->nullable();
         $table->date('disbursed_on')->nullable();
         $table->date('first_repayment_date')->nullable();
