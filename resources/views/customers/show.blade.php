@@ -225,51 +225,6 @@
                 </div>
             </div>
 
-            <!---- document card --->
-
-            <div class="col-xl-12">
-                <div class="card">
-                    <div class="card-body">
-                        <div class="text-center mb-3">
-                            <h5 class="font-size-16 text-truncate">Customer File Types</h5>
-                        </div>
-
-                        @if ($customer->filetypes->count())
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-hover">
-                                <thead class="thead-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>File Name</th>
-                                        <th>Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach ($customer->filetypes as $index => $file)
-                                    <tr>
-                                        <td>{{ $index + 1 }}</td>
-                                        <td>{{ $file->name }}</td>
-                                        <td>
-                                            <a href="{{ asset('document/'.$file->filename) }}" class="btn btn-sm btn-info" target="_blank">View</a>
-                                            <a href="{{ asset('document/'.$file->filename) }}" class="btn btn-sm btn-success" download>Download</a>
-                                            <a href="{{ route('files.edit', $file->id) }}" class="btn btn-sm btn-warning">Edit</a>
-                                            <form action="{{ route('files.destroy', $file->id) }}" method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this file?');">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button class="btn btn-sm btn-danger">Delete</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
-                        </div>
-                        @else
-                        <p class="text-center text-muted">No files uploaded.</p>
-                        @endif
-                    </div>
-                </div>
-            </div>
 
 
             <!-- Profile Details -->
@@ -362,7 +317,53 @@
                         </div>
                     </div>
                 </div>
+
+                <!---- document card --->
+
+                <div class="col-xl-12">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="text-center mb-3">
+                                <h5 class="font-size-16 text-truncate">Customer File Types</h5>
+                            </div>
+
+                            @if ($customer->filetypes->count())
+                            <div class="table-responsive">
+                                <table class="table table-bordered dt-responsive nowrap" id="fileTable">
+                                    <thead class="thead-light">
+                                        <tr>
+                                            <th>#</th>
+                                            <th>File Name</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($customer->filetypes as $index => $file)
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $file->name }}</td>
+                                            <td>
+                                                <a href="{{ asset('storage/documents/' . $file->filename) }}" class="btn btn-sm btn-info" target="_blank">
+                                                    View
+                                                </a>
+                                                <a href="{{ asset('storage/documents/' . $file->filename) }}" class="btn btn-sm btn-success" download>
+                                                    Download
+                                                </a>
+                                            </td>
+
+                                        </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                            @else
+                            <p class="text-center text-muted">No files uploaded.</p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
             </div>
+
         </div>
         <!--end page wrapper -->
         <!--start overlay-->
