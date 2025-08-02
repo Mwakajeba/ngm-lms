@@ -16,9 +16,8 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
-
                             <div class="row">
-                                <!-- Company Settings -->
+                                <!-- Active Loans -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-primary">
                                         <div class="card-body text-center">
@@ -34,171 +33,85 @@
                                     </div>
                                 </div>
 
-                                <!-- Branch Settings -->
+                                <!-- Loan Applications -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-git-branch fs-1 text-success"></i>
+                                                <i class="bx bx-plus-circle fs-1 text-success"></i>
                                             </div>
-                                            <h5 class="card-title">Branch Settings</h5>
-                                            <p class="card-text">Manage branches and their configurations.</p>
+                                            <h5 class="card-title">Loan Applications</h5>
+                                            <p class="card-text">Manage and initiate loan applications.</p>
                                             <a href="{{ route('settings.branches') }}" class="btn btn-success">
-                                                <i class="bx bx-cog me-1"></i> Configure
+                                                <i class="bx bx-cog me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- User Settings -->
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-info">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-user fs-1 text-info"></i>
-                                            </div>
-                                            <h5 class="card-title">User Settings</h5>
-                                            <p class="card-text">Manage user preferences and permissions.</p>
-                                            <a href="{{ route('settings.user') }}" class="btn btn-info">
-                                                <i class="bx bx-cog me-1"></i> Configure
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- System Settings -->
-                                @can('view system configurations')
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-warning">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-cog fs-1 text-warning"></i>
-                                            </div>
-                                            <h5 class="card-title">System Settings</h5>
-                                            <p class="card-text">Configure system-wide settings and preferences.</p>
-                                            <a href="{{ route('settings.system') }}" class="btn btn-warning">
-                                                <i class="bx bx-cog me-1"></i> Configure
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endcan
-        
-
-                                <!-- Backup Settings -->
-                                @can('view backup settings')
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-danger">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-data fs-1 text-danger"></i>
-                                            </div>
-                                            <h5 class="card-title">Backup Settings</h5>
-                                            <p class="card-text">Manage data backup and restore operations.</p>
-                                            <a href="{{ route('settings.backup') }}" class="btn btn-danger">
-                                                <i class="bx bx-cog me-1"></i> Configure
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-                                @endcan
-
-                                <!-- AI Assistant -->
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-purple">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-bot fs-1 text-purple"></i>
-                                            </div>
-                                            <h5 class="card-title">AI Assistant</h5>
-                                            <p class="card-text">Get intelligent reports and insights with AI-powered
-                                                analysis.</p>
-                                            <a href="{{ route('settings.ai') }}" class="btn btn-purple">
-                                                <i class="bx bx-bot me-1"></i> Start Chat
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Roles & Permissions -->
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-secondary">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-shield fs-1 text-secondary"></i>
-                                            </div>
-                                            <h5 class="card-title">Roles & Permissions</h5>
-                                            <p class="card-text">Manage user roles, permissions, and access control.</p>
-                                            <a href="{{ route('roles.index') }}" class="btn btn-secondary">
-                                                <i class="bx bx-shield me-1"></i> Manage
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-info">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-globe fs-1 text-info"></i>
-                                            </div>
-                                            <h5 class="card-title">Language Test</h5>
-                                            <p class="card-text">Test the multi-language functionality of the system.</p>
-                                            <a href="{{ route('test.language') }}" class="btn btn-info">
-                                                <i class="bx bx-globe me-1"></i> Test Language
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Fees Settings -->
+                                <!-- Checked Applications -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-teal">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-dollar-circle fs-1 text-teal"></i>
+                                                <i class="bx bx-check-circle fs-1 text-secondary"></i>
                                             </div>
-                                            <h5 class="card-title">Fees Management</h5>
-                                            <p class="card-text">Manage service fees, charges, and payment structures.</p>
-                                            <a href="{{ route('accounting.fees.index') }}" class="btn btn-teal">
-                                                <i class="bx bx-list-ul me-1"></i> Manage Fees
+                                            <h5 class="card-title">Checked Applications</h5>
+                                            <p class="card-text">Manage and check applied loans.</p>
+                                            <a href="{{ route('settings.user') }}" class="btn btn-secondary">
+                                                <i class="bx bx-cog me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Penalties Settings -->
+                                <!-- Verified Applications -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-purple">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-check-circle fs-1 text-info"></i>
+                                            </div>
+                                            <h5 class="card-title">Verified Applications</h5>
+                                            <p class="card-text">Manage and verify applied loans.</p>
+                                            <a href="{{ route('settings.user') }}" class="btn btn-info">
+                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Approved Applications -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-orange">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-badge-check fs-1 text-warning"></i>
+                                            </div>
+                                            <h5 class="card-title">Approved Applications</h5>
+                                            <p class="card-text">Manage and approve applied loans.</p>
+                                            <a href="{{ route('settings.user') }}" class="btn btn-warning">
+                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Defaulted Loans -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-error-circle fs-1 text-danger"></i>
+                                                <i class="bx bx-error fs-1 text-danger"></i>
                                             </div>
-                                            <h5 class="card-title">Penalties Management</h5>
-                                            <p class="card-text">Configure late payment penalties and fee structures.</p>
-                                            <a href="{{ route('accounting.penalties.index') }}" class="btn btn-danger">
-                                                <i class="bx bx-list-ul me-1"></i> Manage Penalties
+                                            <h5 class="card-title">Defaulted Loans</h5>
+                                            <p class="card-text">Manage all defaulted loans.</p>
+                                            <a href="{{ route('settings.user') }}" class="btn btn-danger">
+                                                <i class="bx bx-cog me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
                                 </div>
-
-                                 <!-- Filetypes Settings -->
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-danger">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-file fs-1 text-primary"></i>
-                                            </div>
-                                            <h5 class="card-title">File Types Management</h5>
-                                            <p class="card-text">Configure the filetypes to be used in uploading documents.</p>
-                                            <a href="{{ route('settings.filetypes.index') }}" class="btn btn-primary">
-                                                <i class="bx bx-list-ul me-1"></i> Manage File Types
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
                             </div>
                         </div>
                     </div>
