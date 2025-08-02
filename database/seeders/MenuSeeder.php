@@ -48,13 +48,14 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
-            'Loan' => [
+            'Loan Management' => [
                 'icon' => 'bx bx-credit-card',
                 'visibleRoutes' => [
                     ['name' => 'Loan Products', 'route' => 'loan-products.index'],
                     ['name' => 'Groups', 'route' => 'groups.index'],
+                    ['name' => 'Loans', 'route' => 'loans.index'],
                 ],
-                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create'],
+                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
             'Cash Collaterals' => [
                 'icon' => 'bx bx-outline',
@@ -84,7 +85,7 @@ class MenuSeeder extends Seeder
                 'hiddenRoutes' => [
                     'accounting.accounts.create',
                     'accounting.accounts.edit',
-                    'accoun                                             ting.accounts.destroy',
+                    'accounting.accounts.destroy',
                     'accounting.journals.edit',
                     'accounting.journals.destroy',
                     'accounting.journals.create',
@@ -97,7 +98,7 @@ class MenuSeeder extends Seeder
                     ['name' => 'Accounting Reports', 'route' => 'reports.index'],
                     ['name' => 'Loans Reports', 'route' => 'reports.loans'],
                     ['name' => 'Customer Reports', 'route' => 'reports.customers'],
-                    ['name' => 'Transaction Reports', 'route' => 're                                                                                                                                                                        ports.transactions'],
+                    ['name' => 'Transaction Reports', 'route' => 'reports.transactions'],
                 ],
                 'hiddenRoutes' => [],
             ],
