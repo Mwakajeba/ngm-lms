@@ -418,6 +418,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans/{loan}/edit', [LoanController::class, 'edit'])->name('loans.edit');
     Route::put('loans/{loan}', [LoanController::class, 'update'])->name('loans.update');
     Route::delete('loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
+    Route::get('loans/applist', [LoanController::class, 'appList'])->name('loans.applist');
+    Route::get('loans/appcreate', [LoanController::class, 'appCreate'])->name('loans.appcreate');
+    Route::post('loans/appstore', [LoanController::class, 'appStore'])->name('loans.appstore');
+    Route::get('loans/{loan}/appedit', [LoanController::class, 'appEdit'])->name('loans.appedit');
+    Route::put('loans/{loan}/appupdate', [LoanController::class, 'appUpdate'])->name('loans.appupdate');
+    Route::delete('loans/{loan}/appdestroy', [LoanController::class, 'appDestroy'])->name('loans.appdestroy');
+    Route::get('loans/{loan}/appshow', [LoanController::class, 'appShow'])->name('loans.appshow');
 });
 
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
