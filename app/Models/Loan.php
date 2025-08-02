@@ -66,7 +66,7 @@ class Loan extends Model
     {
         return $this->belongsTo(Branch::class, 'branch_id');
     }
-
+    
     public function calculateInterestAmount(float $rate = null): float
     {
         $product = $this->product;
@@ -78,10 +78,10 @@ class Loan extends Model
         $period = $this->period;
         $method = $product->interest_method ?? 'flat_rate';
 
+      
 
 
-
-        $ratePerPeriod = $rate / 100;
+        $ratePerPeriod = $rate/100 ; 
 
         switch ($method) {
             case 'flat_rate':
@@ -98,7 +98,7 @@ class Loan extends Model
                 $interestAmount = $totalPayable - $P;
                 break;
 
-            case 'reducing_balance_with_equal_principal':
+            case 'Reducing Balance with Equal Principal':
                 $monthlyPrincipal = $principal / $period;
                 $balance = $principal;
                 $totalInterest = 0;
