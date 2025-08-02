@@ -165,7 +165,7 @@ class CustomerController extends Controller
             abort(404);
         }
     
-        $customer = Customer::with('collaterals.type', 'loans', 'loanOfficers')->findOrFail($id);
+        $customer = Customer::with('collaterals.type', 'loans', 'loanOfficers','filetypes')->findOrFail($id);
     
         return view('customers.show', compact('customer'));
     }
