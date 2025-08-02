@@ -33,6 +33,7 @@ use App\Http\Controllers\LoanProductController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
 use App\Http\Controllers\FiletypeController;
+use App\Http\Controllers\LoanController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -401,6 +402,22 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// LOAN MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
+    Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
+    Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
+    Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
+    Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
+    Route::get('loans/{loan}/edit', [LoanController::class, 'edit'])->name('loans.edit');
+    Route::put('loans/{loan}', [LoanController::class, 'update'])->name('loans.update');
+    Route::delete('loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
+});
+
+////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
+
 
 ////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
