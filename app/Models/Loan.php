@@ -62,15 +62,27 @@ class Loan extends Model
         return $this->hasMany(Loan::class, 'top_up_id');
     }
 
+    public function schedule()
+    {
+        return $this->hasMany(LoanSchedule::class, 'loan_id');
+    }
+
+
+    public function loanFiles()
+    {
+        return $this->hasMany(LoanFile::class, 'loan_id');
+    }
+
     public function branch()
     {
         return $this->belongsTo(Branch::class, 'branch_id');
     }
-    
-    public function calculateInterestAmount(float $rate = null): float
+
+
+    public function calculateInterestAmount(float $rate = null, bool $returnSchedule = false): float|array
     {
         $product = $this->product;
-        if (!$product) return 0;
+        if (!$product) return $returnSchedule ? [] : 0;
 
         $principal = $this->amount;
         $rate = $rate ?? $this->interest ?? $product->interest ?? 0;
@@ -78,14 +90,25 @@ class Loan extends Model
         $period = $this->period;
         $method = $product->interest_method ?? 'flat_rate';
 
-      
+        $ratePerPeriod = $rate / 100;
 
-
-        $ratePerPeriod = $rate/100 ; 
+        $schedule = [];
+        $interestAmount = 0;
 
         switch ($method) {
             case 'flat_rate':
                 $interestAmount = $principal * $ratePerPeriod * $period;
+                if ($returnSchedule) {
+                    $monthlyPrincipal = $principal / $period;
+                    $monthlyInterest = $interestAmount / $period;
+                    for ($i = 1; $i <= $period; $i++) {
+                        $schedule[] = [
+                            'principal' => round($monthlyPrincipal, 2),
+                            'interest' => round($monthlyInterest, 2),
+                            'total' => round($monthlyPrincipal + $monthlyInterest, 2),
+                        ];
+                    }
+                }
                 break;
 
             case 'reducing_balance_with_equal_installment':
@@ -96,17 +119,45 @@ class Loan extends Model
                 $emi = ($P * $r * pow(1 + $r, $n)) / (pow(1 + $r, $n) - 1);
                 $totalPayable = $emi * $n;
                 $interestAmount = $totalPayable - $P;
+
+                if ($returnSchedule) {
+                    $balance = $P;
+                    for ($i = 1; $i <= $n; $i++) {
+                        $interest = $balance * $r;
+                        $principalPart = $emi - $interest;
+                        $balance -= $principalPart;
+
+                        $schedule[] = [
+                            'principal' => round($principalPart, 2),
+                            'interest' => round($interest, 2),
+                            'total' => round($emi, 2),
+                        ];
+                    }
+                }
                 break;
 
-            case 'Reducing Balance with Equal Principal':
+            case 'reducing_balance_with_equal_principal':
                 $monthlyPrincipal = $principal / $period;
                 $balance = $principal;
                 $totalInterest = 0;
 
-                for ($i = 1; $i <= $period; $i++) {
-                    $interest = $balance * $ratePerPeriod;
-                    $totalInterest += $interest;
-                    $balance -= $monthlyPrincipal;
+                if ($returnSchedule) {
+                    for ($i = 1; $i <= $period; $i++) {
+                        $interest = $balance * $ratePerPeriod;
+                        $totalInterest += $interest;
+                        $schedule[] = [
+                            'principal' => round($monthlyPrincipal, 2),
+                            'interest' => round($interest, 2),
+                            'total' => round($monthlyPrincipal + $interest, 2),
+                        ];
+                        $balance -= $monthlyPrincipal;
+                    }
+                } else {
+                    for ($i = 1; $i <= $period; $i++) {
+                        $interest = $balance * $ratePerPeriod;
+                        $totalInterest += $interest;
+                        $balance -= $monthlyPrincipal;
+                    }
                 }
 
                 $interestAmount = $totalInterest;
@@ -117,8 +168,9 @@ class Loan extends Model
                 break;
         }
 
-        return round($interestAmount, 2);
+        return $returnSchedule ? $schedule : round($interestAmount, 2);
     }
+
 
 
     public function getRepaymentDates()
@@ -169,5 +221,57 @@ class Loan extends Model
             'first_repayment_date' => $first->toDateString(),
             'last_repayment_date'  => $last->toDateString(),
         ];
+    }
+
+    public function generateRepaymentSchedule(float $rate)
+    {
+        $product = $this->product;
+        if (!$product) return;
+
+        $principal = $this->amount;
+        $interestAmount = $this->interest_amount;
+        $period = $this->period;
+        $method = strtolower($product->interest_method ?? 'flat_rate');
+        $startDate = Carbon::parse($this->first_repayment_date);
+        $gracePeriod = $product->grace_period ?? 0;
+
+        switch ($method) {
+            case 'flat_rate':
+                $principalInstallment = round($principal / $period, 2);
+                $interestInstallment  = round($interestAmount / $period, 2);
+
+                for ($i = 0; $i < $period; $i++) {
+                    $dueDate = $startDate->copy()->addMonths($i);
+                    LoanSchedule::create([
+                        'loan_id'         => $this->id,
+                        'customer_id'     => $this->customer_id,
+                        'due_date'        => $dueDate,
+                        'end_date'        => $dueDate->copy()->addDays(5),
+                        'end_grace_date'  => $dueDate->copy()->addDays($gracePeriod),
+                        'principal'       => $principalInstallment,
+                        'interest'        => $interestInstallment,
+                    ]);
+                }
+                break;
+
+            case 'reducing_balance_with_equal_installment':
+            case 'reducing_balance_with_equal_principal':
+                // ✅ FIXED: return schedule as array
+                $schedule = $this->calculateInterestAmount($rate, true);
+
+                foreach ($schedule as $i => $row) {
+                    $dueDate = $startDate->copy()->addMonths($i);
+                    LoanSchedule::create([
+                        'loan_id'         => $this->id,
+                        'customer_id'     => $this->customer_id,
+                        'due_date'        => $dueDate,
+                        'end_date'        => $dueDate->copy()->addDays(5),
+                        'end_grace_date'  => $dueDate->copy()->addDays($gracePeriod),
+                        'principal'       => $row['principal'],
+                        'interest'        => $row['interest'],
+                    ]);
+                }
+                break;
+        }
     }
 }

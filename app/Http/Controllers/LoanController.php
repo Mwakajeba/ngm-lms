@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
 use App\Models\Customer;
+use App\Models\GlTransaction;
 use App\Models\Group;
 use App\Models\Loan;
 use App\Models\LoanProduct;
+use App\Models\Payment;
+use App\Models\PaymentItem;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
@@ -40,7 +43,6 @@ class LoanController extends Controller
         return view('loans.create', compact('customers', 'groups', 'products', 'sectors', 'bankAccounts'));
     }
 
-
     public function store(Request $request)
     {
         $validated = $request->validate([
@@ -55,47 +57,111 @@ class LoanController extends Controller
             'sector'        => 'required|string',
         ]);
 
-        $product = LoanProduct::findOrFail($validated['product_id']);
-
-        // Validate product constraints
+        $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
 
+        $userId = auth()->id();
+        $branchId = auth()->user()->branch_id;
+
         try {
-            DB::transaction(function () use ($validated, $product) {
-                // Step 1: Create the loan
+            DB::transaction(function () use ($validated, $product, $userId, $branchId) {
+                // Step 1: Create Loan
                 $loan = Loan::create([
                     'product_id'      => $validated['product_id'],
                     'period'          => $validated['period'],
                     'interest'        => $validated['interest'],
-                    'date_applied'    => $validated['date_applied'],
                     'amount'          => $validated['amount'],
-                    'group_id'        => $validated['group_id'],
                     'customer_id'     => $validated['customer_id'],
+                    'group_id'        => $validated['group_id'],
                     'bank_account_id' => $validated['account_id'],
+                    'date_applied'    => $validated['date_applied'],
                     'disbursed_on'    => $validated['date_applied'],
                     'sector'          => $validated['sector'],
-                    'branch_id'       => auth()->user()->branch_id,
+                    'branch_id'       => $branchId,
                     'status'          => 'active',
                 ]);
 
-                // Step 2: Calculate interest and dates
+                // Step 2: Calculate interest and repayment dates
                 $interestAmount = $loan->calculateInterestAmount($validated['interest']);
-                $dates = $loan->getRepaymentDates();
+                $repaymentDates = $loan->getRepaymentDates();
 
-                // Step 3: Update loan with totals and dates
+                // Step 3: Update Loan with totals and schedule
                 $loan->update([
                     'interest_amount'       => $interestAmount,
                     'amount_total'          => $loan->amount + $interestAmount,
-                    'first_repayment_date'  => $dates['first_repayment_date'],
-                    'last_repayment_date'   => $dates['last_repayment_date'],
+                    'first_repayment_date'  => $repaymentDates['first_repayment_date'],
+                    'last_repayment_date'   => $repaymentDates['last_repayment_date'],
+                ]);
+
+                // Step 4: Generate repayment schedule
+                $loan->generateRepaymentSchedule($validated['interest']);
+
+                // Step 5: Record Payment
+                $bankAccount = BankAccount::findOrFail($validated['account_id']);
+                $notes =  "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
+                $principalReceivable = optional($product->principalReceivableAccount)->id;
+                if (!$principalReceivable) {
+                    throw new \Exception('Principal receivable account not set for this loan product.');
+                }
+
+
+                $payment = Payment::create([
+                    'reference'        => $loan->id,
+                    'reference_type'   => 'Loan Payment',
+                    'reference_number' => null,
+                    'date'             => $validated['date_applied'],
+                    'amount'           => $validated['amount'],
+                    'description'      => $notes,
+                    'user_id'          => $userId,
+                    'customer_id'      => $validated['customer_id'],
+                    'bank_account_id'  => $validated['account_id'],
+                    'branch_id'        => $branchId,
+                    'approved'         => true,
+                    'approved_by'      => $userId,
+                    'approved_at'      => now(),
+                ]);
+
+                PaymentItem::create([
+                    'payment_id'       => $payment->id,
+                    'chart_account_id' => $principalReceivable,
+                    'amount'           => $validated['amount'],
+                    'description'      => $notes,
+                ]);
+
+                // Step 6: GL Transactions
+                GlTransaction::insert([
+                    [
+                        'chart_account_id' => $bankAccount->chart_account_id,
+                        'customer_id'      => $loan->customer_id,
+                        'amount'           => $validated['amount'],
+                        'nature'           => 'credit',
+                        'transaction_id'   => $loan->id,
+                        'transaction_type' => 'Loan Disbursement',
+                        'date'             => $validated['date_applied'],
+                        'description'      => $notes,
+                        'branch_id'        => $branchId,
+                        'user_id'          => $userId,
+                    ],
+                    [
+                        'chart_account_id' => $principalReceivable,
+                        'customer_id'      => $loan->customer_id,
+                        'amount'           => $validated['amount'],
+                        'nature'           => 'debit',
+                        'transaction_id'   => $loan->id,
+                        'transaction_type' => 'Loan Disbursement',
+                        'date'             => $validated['date_applied'],
+                        'description'      => $notes,
+                        'branch_id'        => $branchId,
+                        'user_id'          => $userId,
+                    ]
                 ]);
             });
 
             return redirect()->route('loans.list')->with('success', 'Loan application created successfully.');
         } catch (\Throwable $th) {
-            return redirect()->back()
-                ->withErrors(['error' => 'Failed to process loan application: ' . $th->getMessage()])
-                ->withInput();
+            return back()->withErrors([
+                'error' => 'Failed to process loan application: ' . $th->getMessage()
+            ])->withInput();
         }
     }
 
@@ -129,15 +195,13 @@ class LoanController extends Controller
 
     public function update(Request $request, $encodedId)
     {
-        // Decode loan ID
         $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
-            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+            return redirect()->route('loans.index')->withErrors(['Loan not found.']);
         }
 
         $loan = Loan::findOrFail($decoded[0]);
 
-        // Validate incoming request
         $validated = $request->validate([
             'product_id'    => 'required|exists:loan_products,id',
             'period'        => 'required|integer|min:1',
@@ -150,29 +214,31 @@ class LoanController extends Controller
             'sector'        => 'required|string',
         ]);
 
+        $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
+        $this->validateProductLimits($validated, $product);
+
+        $userId = auth()->id();
+        $branchId = auth()->user()->branch_id;
+
         try {
-            DB::transaction(function () use ($validated, $loan) {
-                $product = LoanProduct::findOrFail($validated['product_id']);
+            DB::transaction(function () use ($loan, $validated, $product, $userId, $branchId) {
 
-                // Validate product constraints
-                $this->validateProductLimits($validated, $product);
-
-                // Update base loan details
-                $loan->fill([
+                // Step 1: Update base loan fields
+                $loan->update([
                     'product_id'      => $validated['product_id'],
                     'period'          => $validated['period'],
                     'interest'        => $validated['interest'],
-                    'date_applied'    => $validated['date_applied'],
                     'amount'          => $validated['amount'],
-                    'group_id'        => $validated['group_id'],
                     'customer_id'     => $validated['customer_id'],
+                    'group_id'        => $validated['group_id'],
                     'bank_account_id' => $validated['account_id'],
+                    'date_applied'    => $validated['date_applied'],
                     'disbursed_on'    => $validated['date_applied'],
                     'sector'          => $validated['sector'],
-                    'branch_id'       => auth()->user()->branch_id,
-                ])->save();
+                    'branch_id'       => $branchId,
+                ]);
 
-                // Recalculate interest and repayment dates
+                // Step 2: Calculate interest and repayment dates
                 $interestAmount = $loan->calculateInterestAmount($validated['interest']);
                 $repaymentDates = $loan->getRepaymentDates();
 
@@ -182,13 +248,88 @@ class LoanController extends Controller
                     'first_repayment_date'  => $repaymentDates['first_repayment_date'],
                     'last_repayment_date'   => $repaymentDates['last_repayment_date'],
                 ]);
+
+                // Step 3: Clear and regenerate loan schedule
+                $loan->schedule()->delete();
+                $loan->generateRepaymentSchedule($validated['interest']);
+
+                // Step 4: Clear previous payment + GL records
+                Payment::where('reference', $loan->id)->delete();
+                PaymentItem::whereHas('payment', function ($query) use ($loan) {
+                    $query->where('reference', $loan->id);
+                })->delete();
+                GlTransaction::where('transaction_id', $loan->id)
+                    ->where('transaction_type', 'Loan Disbursement')
+                    ->delete();
+
+                // Step 5: Create payment record
+                $bankAccount = BankAccount::findOrFail($validated['account_id']);
+                $notes =  "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
+                $principalReceivable = optional($product->principalReceivableAccount)->id;
+                if (!$principalReceivable) {
+                    throw new \Exception('Principal receivable account not set for this loan product.');
+                }
+
+
+                $payment = Payment::create([
+                    'reference'         => $loan->id,
+                    'reference_type'    => 'Loan Payment',
+                    'reference_number'  => null,
+                    'date'              => $validated['date_applied'],
+                    'amount'            => $validated['amount'],
+                    'description'       => $notes,
+                    'user_id'           => $userId,
+                    'customer_id'       => $validated['customer_id'],
+                    'bank_account_id'   => $validated['account_id'],
+                    'branch_id'         => $branchId,
+                    'approved'          => true,
+                    'approved_by'       => $userId,
+                    'approved_at'       => now(),
+                ]);
+
+                PaymentItem::create([
+                    'payment_id'        => $payment->id,
+                    'chart_account_id'  => $principalReceivable,
+                    'amount'            => $validated['amount'],
+                    'description'       => $notes,
+                ]);
+
+                // Step 6: Create GL entries
+                GlTransaction::create([
+                    'chart_account_id'  => $bankAccount->chart_account_id,
+                    'customer_id'       => $loan->customer_id,
+                    'amount'            => $validated['amount'],
+                    'nature'            => 'credit',
+                    'transaction_id'    => $loan->id,
+                    'transaction_type'  => 'Loan Disbursement',
+                    'date'              => $validated['date_applied'],
+                    'description'       => $notes,
+                    'branch_id'         => $branchId,
+                    'user_id'           => $userId,
+                ]);
+
+                GlTransaction::create([
+                    'chart_account_id'  => $principalReceivable,
+                    'customer_id'       => $loan->customer_id,
+                    'amount'            => $validated['amount'],
+                    'nature'            => 'debit',
+                    'transaction_id'    => $loan->id,
+                    'transaction_type'  => 'Loan Disbursement',
+                    'date'              => $validated['date_applied'],
+                    'description'       => $notes,
+                    'branch_id'         => $branchId,
+                    'user_id'           => $userId,
+                ]);
             });
 
-            return redirect()->route('loans.list')->with('success', 'Loan updated successfully.');
+            return redirect()->route('loans.index')->with('success', 'Loan updated successfully.');
         } catch (\Throwable $th) {
-            return back()->withErrors(['error' => 'Failed to update loan: ' . $th->getMessage()])->withInput();
+            return back()->withErrors([
+                'error' => 'Failed to update loan: ' . $th->getMessage()
+            ])->withInput();
         }
     }
+
 
     //////PRODUCT LIMITS ////////////////////////////////
     protected function validateProductLimits(array $data, LoanProduct $product)
@@ -240,21 +381,24 @@ class LoanController extends Controller
     }
 
     public function show($encodedId)
-{
-    $decoded = Hashids::decode($encodedId);
-    if (empty($decoded)) {
-        return redirect()->route('loans.index')->withErrors(['Loan not found.']);
+    {
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.index')->withErrors(['Loan not found.']);
+        }
+
+        $loan = Loan::with([
+            'customer.region',
+            'customer.district',
+            'customer.branch',
+            'customer.company',
+            'customer.user',
+            'product',
+            'bankAccount',
+            'group'
+
+        ])->findOrFail($decoded[0]);
+
+        return view('loans.show', compact('loan'));
     }
-
-    $loan = Loan::with([
-        'customer.region', 'customer.district', 'customer.branch', 'customer.company', 'customer.user',
-        'product',
-        'bankAccount',
-        'group'
-        
-    ])->findOrFail($decoded[0]);
-
-    return view('loans.show', compact('loan'));
-}
-
 }

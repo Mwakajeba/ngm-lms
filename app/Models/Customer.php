@@ -80,6 +80,11 @@ class Customer extends Model
         return $this->hasMany(Loan::class);
     }
 
+    public function loanShedule()
+    {
+        return $this->hasMany(LoanShedule::class, 'customer_id');
+    }
+
     public function loanOfficers()
     {
         return $this->belongsToMany(User::class, 'customer_officer', 'customer_id', 'officer_id');

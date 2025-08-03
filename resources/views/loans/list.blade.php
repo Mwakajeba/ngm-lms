@@ -47,7 +47,6 @@
                                 <thead>
                                     <tr>
                                         <th>#</th>
-                                        <th>Loan No</th>
                                         <th>Customer</th>
                                         <th>Product</th>
                                         <th>Amount</th>
@@ -64,7 +63,6 @@
                                     @foreach($loans as $index => $loan)
                                     <tr>
                                         <td>{{ $index+1 }}</td>
-                                        <td>{{ $loan->id }}</td>
                                         <td>{{ optional($loan->customer)->name }}</td>
                                         <td>{{ optional($loan->product)->name ?? '-' }}</td>
                                         <td>{{ number_format($loan->amount, 2) }}</td>
@@ -102,7 +100,7 @@
     $(document).ready(function() {
         $('#loansTable').DataTable({
             responsive: true,
-            order: [[1, 'asc']],
+            order: [[1, 'desc']],
             pageLength: 10,
             language: {
                 search: "",
