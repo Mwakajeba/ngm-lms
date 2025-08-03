@@ -30,11 +30,13 @@ class BalanceSheetReportController extends Controller
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         $branchId = $request->get('branch_id', $user->branch_id);
-        $comparativeYears = $request->get('comparative_years', 1);
         $levelOfDetail = $request->get('level_of_detail', 'summary');
 
+        // Get comparative columns from request
+        $comparativeColumns = $request->get('comparative_columns', []);
+
         // Get balance sheet data
-        $balanceSheetData = $this->getBalanceSheetData($asOfDate, $reportingType, $branchId, $comparativeYears, $levelOfDetail);
+        $balanceSheetData = $this->getBalanceSheetData($asOfDate, $reportingType, $branchId, $levelOfDetail, $comparativeColumns);
 
         return view('accounting.reports.balance-sheet.index', compact(
             'balanceSheetData',
@@ -42,13 +44,54 @@ class BalanceSheetReportController extends Controller
             'asOfDate',
             'reportingType',
             'branchId',
-            'comparativeYears',
             'levelOfDetail',
+            'comparativeColumns',
             'user'
         ));
     }
 
-    private function getBalanceSheetData($asOfDate, $reportingType, $branchId, $comparativeYears, $levelOfDetail)
+    private function getBalanceSheetData($asOfDate, $reportingType, $branchId, $levelOfDetail, $comparativeColumns = [])
+    {
+        $user = Auth::user();
+        $company = $user->company;
+
+        // Get current period data
+        $currentData = $this->getPeriodData($asOfDate, $reportingType, $branchId, $levelOfDetail);
+
+        // Get comparative period data
+        $comparativeData = [];
+        foreach ($comparativeColumns as $column) {
+            if (!empty($column['date']) && !empty($column['name'])) {
+                $comparativeData[$column['name']] = $this->getPeriodData($column['date'], $reportingType, $branchId, $levelOfDetail);
+            }
+        }
+
+        // Organize current data by account class
+        $organizedCurrentData = $this->organizeDataByClass($currentData);
+
+        // Organize comparative data by account class
+        $organizedComparativeData = [];
+        foreach ($comparativeData as $columnName => $data) {
+            $organizedComparativeData[$columnName] = $this->organizeDataByClass($data);
+        }
+
+        // Calculate profit/loss for current period
+        $profitLoss = $this->calculateProfitLoss($organizedCurrentData);
+
+        return [
+            'current' => $organizedCurrentData,
+            'comparative' => $organizedComparativeData,
+            'profit_loss' => $profitLoss,
+            'filters' => [
+                'as_of_date' => $asOfDate,
+                'reporting_type' => $reportingType,
+                'branch_id' => $branchId,
+                'level_of_detail' => $levelOfDetail
+            ]
+        ];
+    }
+
+    private function getPeriodData($asOfDate, $reportingType, $branchId, $levelOfDetail)
     {
         $user = Auth::user();
         $company = $user->company;
@@ -105,114 +148,72 @@ class BalanceSheetReportController extends Controller
             ->groupBy('account_class_groups.id', 'account_class_groups.name', 'account_class.name');
         }
 
-        $currentData = $query->get();
+        return $query->get();
+    }
 
-        // Get comparative data for previous years
-        $comparativeData = [];
-        for ($i = 1; $i <= $comparativeYears; $i++) {
-            $comparativeDate = Carbon::parse($asOfDate)->subYears($i)->format('Y-m-d');
+    private function organizeDataByClass($data)
+    {
+        $organized = [
+            'assets' => collect(),
+            'liabilities' => collect(),
+            'equity' => collect()
+        ];
+
+        foreach ($data as $item) {
+            $class_name = strtolower($item->class_name);
             
-            $comparativeQuery = DB::table('gl_transactions')
-                ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
-                ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
-                ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
-                ->where('account_class_groups.company_id', $company->id)
-                ->where('gl_transactions.date', '<=', $comparativeDate);
-
-            if ($branchId && $branchId != 'all') {
-                $comparativeQuery->where('gl_transactions.branch_id', $branchId);
+            switch ($class_name) {
+                case 'assets':
+                case 'asset':
+                    $organized['assets']->push($item);
+                    break;
+                case 'liabilities':
+                case 'liability':
+                    $organized['liabilities']->push($item);
+                    break;
+                case 'equity':
+                    $organized['equity']->push($item);
+                    break;
             }
-
-            if ($reportingType === 'cash') {
-                // For cash basis, select all GL transactions that are part of the same transaction when any bank account is involved
-                $comparativeQuery->whereExists(function ($subquery) {
-                    $subquery->select(DB::raw(1))
-                        ->from('gl_transactions as gl2')
-                        ->whereColumn('gl2.transaction_id', 'gl_transactions.transaction_id')
-                        ->whereColumn('gl2.transaction_type', 'gl_transactions.transaction_type')
-                        ->whereIn('gl2.chart_account_id', function($bankSubquery) {
-                            $bankSubquery->select('chart_account_id')
-                                ->from('bank_accounts');
-                        });
-                });
-            }
-
-            if ($levelOfDetail === 'detailed') {
-                $comparativeQuery->select(
-                    'chart_accounts.id as account_id',
-                    'chart_accounts.account_name',
-                    'chart_accounts.account_code',
-                    'account_class.name as class_name',
-                    'account_class_groups.name as group_name',
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
-                )
-                ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code', 'account_class.name', 'account_class_groups.name');
-            } else {
-                $comparativeQuery->select(
-                    'account_class_groups.id as group_id',
-                    'account_class_groups.name as group_name',
-                    'account_class.name as class_name',
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
-                )
-                ->groupBy('account_class_groups.id', 'account_class_groups.name', 'account_class.name');
-            }
-
-            $comparativeData[$i] = $comparativeQuery->get();
         }
 
-        // Categorize data into Assets, Liabilities, and Equity
-        $assets = $currentData->filter(function ($item) {
-            return in_array(strtolower($item->class_name), ['assets', 'asset']);
-        });
+        return $organized;
+    }
 
-        $liabilities = $currentData->filter(function ($item) {
-            return in_array(strtolower($item->class_name), ['liabilities', 'liability']);
-        });
+    private function calculateProfitLoss($organizedData)
+    {
+        $user = Auth::user();
+        $company = $user->company;
 
-        $equity = $currentData->filter(function ($item) {
-            return in_array(strtolower($item->class_name), ['equity', 'capital']);
-        });
+        // Get revenue and expense data
+        $revenueExpenseData = DB::table('gl_transactions')
+            ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
+            ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
+            ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
+            ->where('account_class_groups.company_id', $company->id)
+            ->whereIn('account_class.name', ['income', 'revenue', 'expenses', 'expense'])
+            ->select(
+                'account_class.name as class_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as revenue_total'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as expense_total')
+            )
+            ->groupBy('account_class.name')
+            ->get();
 
-        // Calculate Profit & Loss (Income - Expenses)
-        $income = $currentData->filter(function ($item) {
-            return in_array(strtolower($item->class_name), ['income', 'revenue']);
-        });
+        $totalRevenue = 0;
+        $totalExpenses = 0;
 
-        $expenses = $currentData->filter(function ($item) {
-            return in_array(strtolower($item->class_name), ['expenses', 'expense']);
-        });
+        foreach ($revenueExpenseData as $item) {
+            $class_name = strtolower($item->class_name);
+            
+            if (in_array($class_name, ['income', 'revenue'])) {
+                $totalRevenue += $item->revenue_total;
+            } elseif (in_array($class_name, ['expenses', 'expense'])) {
+                $totalExpenses += $item->expense_total;
+            }
+        }
 
-        $totalIncome = $income->sum(function ($item) {
-            return $item->credit_total - $item->debit_total;
-        });
-
-        $totalExpenses = $expenses->sum(function ($item) {
-            return $item->debit_total - $item->credit_total;
-        });
-
-        $profitLoss = $totalIncome - $totalExpenses;
-
-        return [
-            'current' => [
-                'assets' => $assets,
-                'liabilities' => $liabilities,
-                'equity' => $equity,
-                'income' => $income,
-                'expenses' => $expenses,
-            ],
-            'comparative' => $comparativeData,
-            'as_of_date' => $asOfDate,
-            'reporting_type' => $reportingType,
-            'branch_id' => $branchId,
-            'comparative_years' => $comparativeYears,
-            'level_of_detail' => $levelOfDetail,
-            'balance_check_type' => 'with_pnl', // Always use with P&L
-            'profit_loss' => $profitLoss,
-            'total_income' => $totalIncome,
-            'total_expenses' => $totalExpenses,
-        ];
+        return $totalRevenue - $totalExpenses;
     }
 
     public function export(Request $request)
@@ -224,12 +225,14 @@ class BalanceSheetReportController extends Controller
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         $branchId = $request->get('branch_id', $user->branch_id);
-        $comparativeYears = $request->get('comparative_years', 1);
         $levelOfDetail = $request->get('level_of_detail', 'summary');
         $exportType = $request->get('export_type', 'pdf');
 
+        // Get comparative columns from request
+        $comparativeColumns = $request->get('comparative_columns', []);
+
         // Get balance sheet data
-        $balanceSheetData = $this->getBalanceSheetData($asOfDate, $reportingType, $branchId, $comparativeYears, $levelOfDetail);
+        $balanceSheetData = $this->getBalanceSheetData($asOfDate, $reportingType, $branchId, $levelOfDetail, $comparativeColumns);
 
         if ($exportType === 'excel') {
             return $this->exportExcel($balanceSheetData, $company, $asOfDate, $reportingType);
@@ -240,8 +243,25 @@ class BalanceSheetReportController extends Controller
 
     private function exportPdf($balanceSheetData, $company, $asOfDate, $reportingType)
     {
+        $user = Auth::user();
+        
+        // Get branches for header
+        $branches = [];
+        if ($user->hasRole('admin')) {
+            $branches = DB::table('branches')
+                ->where('company_id', $company->id)
+                ->select('id', 'name')
+                ->get();
+        }
+        
         // Generate PDF
-        $pdf = \PDF::loadView('accounting.reports.balance-sheet.pdf', compact('balanceSheetData', 'company'));
+        $pdf = \PDF::loadView('accounting.reports.balance-sheet.pdf', compact(
+            'balanceSheetData', 
+            'company', 
+            'branches',
+            'asOfDate',
+            'reportingType'
+        ));
         $pdf->setPaper('A4', 'portrait');
         
         $filename = 'balance_sheet_' . $asOfDate . '_' . $reportingType . '.pdf';
@@ -278,9 +298,9 @@ class BalanceSheetReportController extends Controller
         $col++;
         $worksheet->setCellValue($col . $row, 'Current Period');
         
-        for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
+        foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
             $col++;
-            $worksheet->setCellValue($col . $row, $i . ' Year' . ($i > 1 ? 's' : '') . ' Ago');
+            $worksheet->setCellValue($col . $row, $comparativeColumn . ' Ago');
         }
 
         // Style headers
@@ -307,9 +327,9 @@ class BalanceSheetReportController extends Controller
             $worksheet->setCellValue($col . $row, $currentAmount);
             $worksheet->getStyle($col . $row)->getNumberFormat()->setFormatCode('#,##0.00');
 
-            for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
+            foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
                 $col++;
-                $comparativeAsset = $balanceSheetData['comparative'][$i]->first(function($item) use ($asset) {
+                $comparativeAsset = $balanceSheetData['comparative'][$comparativeColumn]->first(function($item) use ($asset) {
                     return $balanceSheetData['level_of_detail'] === 'detailed' 
                         ? $item->account_id == $asset->account_id
                         : $item->group_id == $asset->group_id;
@@ -348,9 +368,9 @@ class BalanceSheetReportController extends Controller
             $worksheet->setCellValue($col . $row, $currentAmount);
             $worksheet->getStyle($col . $row)->getNumberFormat()->setFormatCode('#,##0.00');
 
-            for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
+            foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
                 $col++;
-                $comparativeLiability = $balanceSheetData['comparative'][$i]->first(function($item) use ($liability) {
+                $comparativeLiability = $balanceSheetData['comparative'][$comparativeColumn]->first(function($item) use ($liability) {
                     return $balanceSheetData['level_of_detail'] === 'detailed' 
                         ? $item->account_id == $liability->account_id
                         : $item->group_id == $liability->group_id;
@@ -389,8 +409,8 @@ class BalanceSheetReportController extends Controller
             $col = 'C';
         }
         
-        for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
-            $worksheet->setCellValue($col . $row, $i . ' Year' . ($i > 1 ? 's' : '') . ' Ago');
+        foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
+            $worksheet->setCellValue($col . $row, $comparativeColumn . ' Ago');
             $col++;
         }
         $worksheet->getStyle('A' . $row . ':' . $col . $row)->getFont()->setBold(true);
@@ -412,8 +432,8 @@ class BalanceSheetReportController extends Controller
             }
             
             // Add comparative data
-            for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
-                $compData = collect($balanceSheetData['comparative'][$i] ?? [])->first(function($comp) use ($item) {
+            foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
+                $compData = collect($balanceSheetData['comparative'][$comparativeColumn] ?? [])->first(function($comp) use ($item) {
                     return $balanceSheetData['level_of_detail'] === 'detailed' 
                         ? $comp->account_id == $item->account_id
                         : $comp->group_id == $item->group_id;
@@ -436,14 +456,14 @@ class BalanceSheetReportController extends Controller
         }
         
         // Add comparative P&L data
-        for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
-            $compIncome = collect($balanceSheetData['comparative'][$i] ?? [])->filter(function($item) {
+        foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
+            $compIncome = collect($balanceSheetData['comparative'][$comparativeColumn] ?? [])->filter(function($item) {
                 return in_array(strtolower($item->class_name), ['income', 'revenue']);
             })->sum(function($item) {
                 return $item->credit_total - $item->debit_total;
             });
             
-            $compExpenses = collect($balanceSheetData['comparative'][$i] ?? [])->filter(function($item) {
+            $compExpenses = collect($balanceSheetData['comparative'][$comparativeColumn] ?? [])->filter(function($item) {
                 return in_array(strtolower($item->class_name), ['expenses', 'expense']);
             })->sum(function($item) {
                 return $item->debit_total - $item->credit_total;
@@ -471,20 +491,20 @@ class BalanceSheetReportController extends Controller
         }
         
         // Add comparative total equity
-        for ($i = 1; $i <= $balanceSheetData['comparative_years']; $i++) {
-            $compEquity = collect($balanceSheetData['comparative'][$i] ?? [])->filter(function($item) {
+        foreach ($balanceSheetData['comparative_columns'] as $i => $comparativeColumn) {
+            $compEquity = collect($balanceSheetData['comparative'][$comparativeColumn] ?? [])->filter(function($item) {
                 return in_array(strtolower($item->class_name), ['equity', 'capital']);
             })->sum(function($item) {
                 return $item->credit_total - $item->debit_total;
             });
             
-            $compIncome = collect($balanceSheetData['comparative'][$i] ?? [])->filter(function($item) {
+            $compIncome = collect($balanceSheetData['comparative'][$comparativeColumn] ?? [])->filter(function($item) {
                 return in_array(strtolower($item->class_name), ['income', 'revenue']);
             })->sum(function($item) {
                 return $item->credit_total - $item->debit_total;
             });
             
-            $compExpenses = collect($balanceSheetData['comparative'][$i] ?? [])->filter(function($item) {
+            $compExpenses = collect($balanceSheetData['comparative'][$comparativeColumn] ?? [])->filter(function($item) {
                 return in_array(strtolower($item->class_name), ['expenses', 'expense']);
             })->sum(function($item) {
                 return $item->debit_total - $item->credit_total;
