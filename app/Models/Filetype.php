@@ -16,4 +16,9 @@ class Filetype extends Model
         return $this->belongsToMany(Customer::class, 'customer_file_types')
                     ->withTimestamps();
     }
+
+    public function loanFiles()
+    {
+        return $this->hasMany(LoanFile::class, 'file_type_id');
+    }
 }

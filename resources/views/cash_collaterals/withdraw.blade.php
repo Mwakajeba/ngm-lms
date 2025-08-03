@@ -8,7 +8,7 @@
         <x-breadcrumbs-with-icons :links="[
     ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
     ['label' => 'Customers', 'url' => route('customers.index'), 'icon' => 'bx bx-group'],
-    ['label' => 'Customer', 'url' => route('customers.show', $customer->id), 'icon' => 'bx bx-user'],
+    ['label' => 'Customer', 'url' => route('customers.show', Hashids::encode($customer->id)), 'icon' => 'bx bx-user'],
     ['label' => 'Withdrawal', 'url' => '#', 'icon' => 'bx bx-user']
 ]" />
         
@@ -67,7 +67,7 @@
                                     placeholder="0.00"
                                     required>
                             </div>
-                            <small class="form-text text-muted">Available collateral: ${{ number_format($collateral->amount, 2) }}</small>
+                            <small class="form-text text-muted">Available collateral: TSHS:{{ number_format($collateral->amount, 2) }}</small>
                             @error('amount')
                             <span class="text-danger">{{ $message }}</span>
                             @enderror

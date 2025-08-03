@@ -344,4 +344,21 @@
         });
     }
 </script>
+<script>
+    $(document).ready(function() {
+        $('#transactionsTable').DataTable({
+            responsive: true,
+            order: [[1, 'desc']],
+            pageLength: 10,
+            language: {
+                search: "",
+                searchPlaceholder: "Search transactions..."
+            },
+            columnDefs: [
+                { targets: -1, responsivePriority: 1, orderable: false, searchable: false },
+                { targets: [0,1,2], responsivePriority: 2 }
+            ]
+        });
+    });
+</script>
 @endpush
