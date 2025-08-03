@@ -160,7 +160,7 @@ class JournalController extends Controller
             $journal->items()->delete();
             
             // Delete the journal
-            $journal->delete();
+        $journal->delete();
         });
 
         return redirect()->route('accounting.journals.index')->with('success', 'Journal entry deleted.');

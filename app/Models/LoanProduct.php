@@ -49,6 +49,19 @@ class LoanProduct extends Model
         'penalty_ids' => 'array',
     ];
 
+
+    public static function frequencies()
+    {
+        return [
+            'Daily'          => 365,
+            'Weekly'         => 52,
+            'Monthly'        => 12,
+            'Quarterly'      => 4,
+            'Semi Annually'  => 2,
+            'Annually'       => 1,
+        ];
+    }
+
     /**
      * Get the principal receivable account for this loan product
      */

@@ -48,13 +48,14 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
-            'Loan' => [
+            'Loan Management' => [
                 'icon' => 'bx bx-credit-card',
                 'visibleRoutes' => [
                     ['name' => 'Loan Products', 'route' => 'loan-products.index'],
                     ['name' => 'Groups', 'route' => 'groups.index'],
+                    ['name' => 'Loans', 'route' => 'loans.index'],
                 ],
-                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create'],
+                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
             'Cash Collaterals' => [
                 'icon' => 'bx bx-outline',
@@ -91,19 +92,13 @@ class MenuSeeder extends Seeder
                     'accounting.journals.show'
                 ],
             ],
-            'Accounting Reports' => [
+            'Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [
-                    ['name' => 'Other income report', 'route' => 'accounting.reports.other-income'],
-                    ['name' => 'Trial balance report', 'route' => 'accounting.reports.trial-balance'],
-                    ['name' => 'Income statement report', 'route' => 'accounting.reports.income-statement'],
-                    ['name' => 'Balance sheet report', 'route' => 'accounting.reports.balance-sheet'],
-                    ['name' => 'Cash book report', 'route' => 'accounting.reports.cash-book'],
-                    ['name' => 'Cash flow report', 'route' => 'accounting.reports.cash-flow'],
-                    ['name' => 'General ledger transactions', 'route' => 'accounting.reports.general-ledger'],
-                    ['name' => 'Expenses summary report', 'route' => 'accounting.reports.expenses-summary'],
-                    ['name' => 'Accounting notes', 'route' => 'accounting.reports.accounting-notes'],
-                    ['name' => 'Changes in equity', 'route' => 'accounting.reports.changes-equity'],
+                    ['name' => 'Accounting Reports', 'route' => 'reports.index'],
+                    ['name' => 'Loans Reports', 'route' => 'reports.loans'],
+                    ['name' => 'Customer Reports', 'route' => 'reports.customers'],
+                    ['name' => 'Transaction Reports', 'route' => 'reports.transactions'],
                 ],
                 'hiddenRoutes' => [],
             ],
@@ -111,7 +106,7 @@ class MenuSeeder extends Seeder
 
         foreach ($entities as $parentName => $data) {
             $parent = Menu::firstOrCreate([
-                'name' => $parentName,
+                'name' => $parentName,              
                 'route' => null,
                 'parent_id' => null,
                 'icon' => $data['icon'],

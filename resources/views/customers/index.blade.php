@@ -46,48 +46,43 @@
                                 </div>
                             </div>
 
-                            <div class="table-responsive">
-                                <table class="table table-bordered dt-responsive nowrap" id="customersTable">
-                                    <thead>
-                                        <tr>
-                                            <th>Customer No</th>
-                                            <th>Name</th>
-                                            <th>Phone</th>
-                                            <th>Region</th>
-                                            <th>District</th>
-                                            <th>Branch</th>
-                                            <th>Company</th>
-                                            <th class="text-center">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @foreach($customers as $customer)
-                                            <tr>
-                                                <td>{{ $customer->customerNo }}</td>
-                                                <td>{{ $customer->name }}</td>
-                                                <td>{{ $customer->phone1 }}</td>
-                                                <td>{{ $customer->region->name ?? '' }}</td>
-                                                <td>{{ $customer->district->name ?? '' }}</td>
-                                                <td>{{ optional($customer->branch)->name }}</td>
-                                                <td>{{ optional($customer->company)->name }}</td>
-                                                <td class="text-center">
-                                                    <a href="{{ route('customers.show', $customer) }}"
-                                                        class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
-                                                    <a href="{{ route('customers.edit', $customer) }}"
-                                                        class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
-                                                    <form action="{{ route('customers.destroy', $customer) }}" method="POST"
-                                                        class="d-inline-block delete-form"
-                                                        onsubmit="return confirm('Delete this customer?');">
-                                                        @csrf @method('DELETE')
-                                                        <button class="btn btn-sm btn-outline-danger"><i
-                                                                class="bx bx-trash"></i></button>
-                                                    </form>
-                                                </td>
-                                            </tr>
-                                        @endforeach
-                                    </tbody>
-                                </table>
-                            </div>
+                        <div class="table-responsive">
+                            <table class="table table-bordered dt-responsive nowrap" id="customersTable">
+                                <thead>
+                                    <tr>
+                                        <th>Customer No</th>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th>Region</th>
+                                        <th>District</th>
+                                        <th>Branch</th>
+                                        <th>Company</th>
+                                        <th class="text-center">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                @foreach($customers as $customer)
+                                    <tr>
+                                        <td>{{ $customer->customerNo }}</td>
+                                        <td>{{ $customer->name }}</td>
+                                        <td>{{ $customer->phone1 }}</td>
+                                        <td>{{ $customer->region->name ?? '' }}</td>
+                                        <td>{{ $customer->district->name ?? '' }}</td>
+                                        <td>{{ optional($customer->branch)->name }}</td>
+                                        <td>{{ optional($customer->company)->name }}</td>
+                                        <td class="text-center">
+                                            <a href="{{ route('customers.show', Hashids::encode($customer->id)) }}" class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
+                                            <a href="{{ route('customers.edit',  Hashids::encode($customer->id)) }}" class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
+                                            <form action="{{ route('customers.destroy',  Hashids::encode($customer->id)) }}" method="POST" class="d-inline-block delete-form" onsubmit="return confirm('Delete this customer?');">
+                                                @csrf @method('DELETE')
+                                                <button class="btn btn-sm btn-outline-danger"><i class="bx bx-trash"></i></button>
+                                            </form>
+                                        </td>
+                                    </tr>
+                                @endforeach
+                                </tbody>
+                            </table>
+                        </div>
 
                         </div>
                     </div>

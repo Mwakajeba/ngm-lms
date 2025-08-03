@@ -33,6 +33,7 @@ use App\Http\Controllers\LoanProductController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
 use App\Http\Controllers\FiletypeController;
+use App\Http\Controllers\LoanController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -66,6 +67,12 @@ Route::get('/request-email-otp', [OtpEmailController::class, 'showEmailForm'])->
 Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->name('email-otp-send');
 
 Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->middleware('auth')->name('dashboard');
+
+// Reports Route
+Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->middleware('auth')->name('reports.index');
+Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'loans'])->middleware('auth')->name('reports.loans');
+Route::get('/reports/customers', [App\Http\Controllers\ReportsController::class, 'customers'])->middleware('auth')->name('reports.customers');
+Route::get('/reports/transactions', [App\Http\Controllers\ReportsController::class, 'transactions'])->middleware('auth')->name('reports.transactions');
 
 ////////////////////////////////////////////// ROLES & PERMISSIONS MANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
@@ -332,10 +339,17 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');
+        // Trial Balance Report
         Route::get('/trial-balance', [App\Http\Controllers\Accounting\Reports\TrialBalanceReportController::class, 'index'])->name('trial-balance');
+        Route::get('/trial-balance/export', [App\Http\Controllers\Accounting\Reports\TrialBalanceReportController::class, 'export'])->name('trial-balance.export');
         Route::get('/income-statement', [App\Http\Controllers\Accounting\Reports\IncomeStatementReportController::class, 'index'])->name('income-statement');
-        Route::get('/balance-sheet', [App\Http\Controllers\Accounting\Reports\BalanceSheetReportController::class, 'index'])->name('balance-sheet');
+        Route::get('/income-statement/export', [App\Http\Controllers\Accounting\Reports\IncomeStatementReportController::class, 'export'])->name('income-statement.export');
         Route::get('/cash-book', [App\Http\Controllers\Accounting\Reports\CashBookReportController::class, 'index'])->name('cash-book');
+        Route::get('/cash-book/export', [App\Http\Controllers\Accounting\Reports\CashBookReportController::class, 'export'])->name('cash-book.export');
+        Route::get('/accounting-notes', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'index'])->name('accounting-notes');
+        Route::get('/accounting-notes/export', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'export'])->name('accounting-notes.export');
+        Route::get('/balance-sheet', [App\Http\Controllers\Accounting\Reports\BalanceSheetReportController::class, 'index'])->name('balance-sheet');
+Route::get('/balance-sheet/export', [App\Http\Controllers\Accounting\Reports\BalanceSheetReportController::class, 'export'])->name('balance-sheet.export');
         Route::get('/cash-flow', [App\Http\Controllers\Accounting\Reports\CashFlowReportController::class, 'index'])->name('cash-flow');
         Route::get('/general-ledger', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'index'])->name('general-ledger');
         Route::get('/expenses-summary', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'index'])->name('expenses-summary');
@@ -403,6 +417,29 @@ Route::middleware(['auth'])->group(function () {
 
 ////////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
 
+////////////////////////////////////////////// LOAN MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
+    Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
+    Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
+    Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
+    Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
+    Route::get('loans/{loan}/edit', [LoanController::class, 'edit'])->name('loans.edit');
+    Route::put('loans/{loan}', [LoanController::class, 'update'])->name('loans.update');
+    Route::delete('loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
+    Route::get('loans/applist', [LoanController::class, 'appList'])->name('loans.applist');
+    Route::get('loans/appcreate', [LoanController::class, 'appCreate'])->name('loans.appcreate');
+    Route::post('loans/appstore', [LoanController::class, 'appStore'])->name('loans.appstore');
+    Route::get('loans/{loan}/appedit', [LoanController::class, 'appEdit'])->name('loans.appedit');
+    Route::put('loans/{loan}/appupdate', [LoanController::class, 'appUpdate'])->name('loans.appupdate');
+    Route::delete('loans/{loan}/appdestroy', [LoanController::class, 'appDestroy'])->name('loans.appdestroy');
+    Route::get('loans/{loan}/appshow', [LoanController::class, 'appShow'])->name('loans.appshow');
+});
+
+////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
+
+
 ////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
@@ -416,15 +453,29 @@ Route::middleware(['auth'])->group(function () {
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
-    Route::get('cash_collaterals', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
-    Route::get('cash_collaterals/create', [CashCollateralController::class, 'create'])->name('cash_collaterals.create');
-    Route::get('cash_collaterals/deposit', [CashCollateralController::class, 'create'])->name('cash_collaterals.deposit');
-    Route::get('cash_collaterals/withdraw', [CashCollateralController::class, 'create'])->name('cash_collaterals.withdraw');
-    Route::post('cash_collaterals', [CashCollateralController::class, 'store'])->name('cash_collaterals.store');
-    Route::get('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'show'])->name('cash_collaterals.show');
-    Route::get('cash_collaterals/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
-    Route::put('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
-    Route::delete('cash_collaterals/{cashcollateral}', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
+    Route::get('/', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
+    Route::get('/create', [CashCollateralController::class, 'create'])->name('cash_collaterals.create');
+    Route::post('/', [CashCollateralController::class, 'store'])->name('cash_collaterals.store');
+    Route::get('/{cashcollateral}', [CashCollateralController::class, 'show'])->name('cash_collaterals.show');
+    Route::get('/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
+    Route::delete('/{cashcollateral}/delete', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
+    Route::put('/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
+
+
+    // Direct Receipt and Payment Routes for Cash Collateral
+    Route::get('/receipts/{receipt}/edit', [CashCollateralController::class, 'editReceipt'])->name('receipts.edit');
+    Route::put('/receipts/{receipt}', [CashCollateralController::class, 'updateReceipt'])->name('receipts.update');
+    Route::delete('/receipts/{receipt}', [CashCollateralController::class, 'deleteReceipt'])->name('receipts.destroy');
+    
+    Route::get('/payments/{payment}/edit', [CashCollateralController::class, 'editPayment'])->name('payments.edit');
+    Route::put('/payments/{payment}', [CashCollateralController::class, 'updatePayment'])->name('payments.update');
+    Route::delete('/payments/{payment}', [CashCollateralController::class, 'deletePayment'])->name('payments.destroy');
+    
+    // Deposit and Withdrawal routes
+    Route::get('/{cashcollateral}/deposit', [CashCollateralController::class, 'deposit'])->name('cash_collaterals.deposit');
+    Route::post('/deposit-store', [CashCollateralController::class, 'depositStore'])->name('cash_collaterals.depositStore');
+    Route::get('/{cashcollateral}/withdraw', [CashCollateralController::class, 'withdraw'])->name('cash_collaterals.withdraw');
+    Route::post('/withdraw-store', [CashCollateralController::class, 'withdrawStore'])->name('cash_collaterals.withdrawStore');
 });
 
 ////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////

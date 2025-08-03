@@ -196,13 +196,13 @@
                                             <a href="{{ route('accounting.journals.show', $journal) }}" 
                                                class="btn btn-sm btn-primary" 
                                                title="View Details">
-                                                <i class="bx bx-show"></i>
-                                            </a>
+                                            <i class="bx bx-show"></i>
+                                        </a>
                                             <a href="{{ route('accounting.journals.edit', $journal) }}" 
                                                class="btn btn-sm btn-warning" 
                                                title="Edit">
-                                                <i class="bx bx-edit"></i>
-                                            </a>
+                                            <i class="bx bx-edit"></i>
+                                        </a>
                                             <button type="button" 
                                                     class="btn btn-sm btn-danger" 
                                                     title="Delete"

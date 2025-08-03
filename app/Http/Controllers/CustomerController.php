@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\Branch;
 use App\Models\Company;
@@ -14,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
+use Vinkla\Hashids\Facades\Hashids;
 
 class CustomerController extends Controller
 {
@@ -38,9 +40,8 @@ class CustomerController extends Controller
         $companies = Company::all();
         $registrars = User::all();
         $regions = Region::all();
-        $customers = Customer::all();
 
-        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'customers'));
+        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes','filetypes'));
     }
 
     // Store a new customer
@@ -157,10 +158,16 @@ class CustomerController extends Controller
 
 
     // Display one customer
-    public function show(Customer $customer)
+    public function show($encodedId)
     {
-        $customer->load('collaterals.type', 'loans', 'loanOfficers', 'filetypes');
-        //$customer = Customer::with('filetypes')->findOrFail($id);
+        $id = Hashids::decode($encodedId)[0] ?? null;
+
+        if (!$id) {
+            abort(404);
+        }
+
+        $customer = Customer::with('collaterals.type', 'loans', 'loanOfficers','filetypes')->findOrFail($id);
+
         return view('customers.show', compact('customer'));
     }
 

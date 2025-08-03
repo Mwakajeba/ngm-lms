@@ -40,15 +40,15 @@
                 @error('attachment')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
-                @if(isset($journal) && $journal->attachment)
-                    <div class="mt-2">
+            @if(isset($journal) && $journal->attachment)
+                <div class="mt-2">
                         <a href="{{ asset('storage/' . $journal->attachment) }}" 
                            target="_blank" 
                            class="btn btn-sm btn-outline-primary">
                             <i class="bx bx-download me-1"></i>View Current Attachment
                         </a>
-                    </div>
-                @endif
+                </div>
+            @endif
             </div>
         </div>
     </div>
@@ -85,15 +85,15 @@
             <div class="table-responsive">
                 <table class="table table-bordered table-hover" id="items-table">
                     <thead class="table-light">
-                        <tr>
+            <tr>
                             <th style="width: 35%;">Account</th>
                             <th style="width: 15%;">Nature</th>
                             <th style="width: 20%;">Amount</th>
                             <th style="width: 25%;">Description</th>
                             <th style="width: 5%;">Action</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+            </tr>
+        </thead>
+        <tbody>
                         @php 
                             $items = old('items', []);
                             if (isset($journal) && $journal->items->count() > 0) {
@@ -108,36 +108,36 @@
                             }
                         @endphp
                         @if(count($items) > 0)
-                            @foreach($items as $index => $item)
+            @foreach($items as $index => $item)
                                 <tr class="journal-item">
-                                    <td>
+                    <td>
                                         <select name="items[{{ $index }}][account_id]" 
                                                 class="form-select account-select @error('items.'.$index.'.account_id') is-invalid @enderror"
                                                 required>
-                                            <option value="">-- Select Account --</option>
-                                            @foreach($accounts as $account)
-                                                <option value="{{ $account->id }}"
+                            <option value="">-- Select Account --</option>
+                            @foreach($accounts as $account)
+                                <option value="{{ $account->id }}"
                                                     {{ isset($item['account_id']) && $item['account_id'] == $account->id ? 'selected' : '' }}>
                                                     {{ $account->account_code }} - {{ $account->account_name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
+                                </option>
+                            @endforeach
+                        </select>
                                         @error('items.'.$index.'.account_id')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                    </td>
-                                    <td>
+                    </td>
+                    <td>
                                         <select name="items[{{ $index }}][nature]" 
                                                 class="form-select nature-select @error('items.'.$index.'.nature') is-invalid @enderror"
                                                 required>
                                             <option value="debit" {{ isset($item['nature']) && $item['nature'] == 'debit' ? 'selected' : '' }}>Debit</option>
                                             <option value="credit" {{ isset($item['nature']) && $item['nature'] == 'credit' ? 'selected' : '' }}>Credit</option>
-                                        </select>
+                        </select>
                                         @error('items.'.$index.'.nature')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                    </td>
-                                    <td>
+                    </td>
+                    <td>
                                         <input type="number" 
                                                step="0.01" 
                                                name="items[{{ $index }}][amount]" 
@@ -148,8 +148,8 @@
                                         @error('items.'.$index.'.amount')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                    </td>
-                                    <td>
+                    </td>
+                    <td>
                                         <input type="text" 
                                                name="items[{{ $index }}][description]" 
                                                class="form-control @error('items.'.$index.'.description') is-invalid @enderror"
@@ -158,14 +158,14 @@
                                         @error('items.'.$index.'.description')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
-                                    </td>
+                    </td>
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeItem(this)">
                                             <i class="bx bx-trash"></i>
                                         </button>
-                                    </td>
-                                </tr>
-                            @endforeach
+                    </td>
+                </tr>
+            @endforeach
                         @else
                             <tr id="no-items-row">
                                 <td colspan="5" class="text-center py-4">
@@ -177,8 +177,8 @@
                                 </td>
                             </tr>
                         @endif
-                    </tbody>
-                </table>
+        </tbody>
+    </table>
             </div>
         </div>
     </div>
@@ -229,7 +229,7 @@
             </button>
             <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
                 <i class="bx bx-save me-1"></i>{{ isset($journal) ? 'Update' : 'Create' }} Journal Entry
-            </button>
+        </button>
         </div>
     </div>
 </form>
@@ -294,7 +294,7 @@ function initializeForm() {
     });
 }
 
-function addItem() {
+    function addItem() {
     const tbody = $('#items-table tbody');
     const newRow = `
         <tr class="journal-item">
@@ -326,7 +326,7 @@ function addItem() {
                 </button>
             </td>
         </tr>
-    `;
+        `;
     
     // Remove the "no items" row if it exists
     $('#no-items-row').remove();
@@ -354,7 +354,7 @@ function addItem() {
         calculateTotals();
     });
     
-    itemIndex++;
+        itemIndex++;
     console.log('Added new item, total items:', $('.journal-item').length);
 }
 
@@ -433,7 +433,7 @@ function calculateTotals() {
         $('#balance-status').hide();
         console.log('Entry is not balanced - hiding submit button');
     }
-}
+    }
 
 function validateAndSubmit() {
     const balance = parseFloat($('#balance').text().replace('TZS ', ''));
