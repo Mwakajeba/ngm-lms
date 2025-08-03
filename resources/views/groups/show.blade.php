@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Group Details')
@@ -7,12 +11,12 @@
         <div class="page-content">
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <x-breadcrumbs-with-icons :links="[
-        ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-        ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
-        ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
-    ]" />
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
+            ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
+        ]" />
                 <div>
-                    <a href="{{ route('groups.edit', $group) }}" class="btn btn-primary">
+                    <a href="{{ route('groups.edit', Hashids::encode($group->id)) }}" class="btn btn-primary">
                         <i class="bx bx-edit"></i> Edit Group
                     </a>
                 </div>

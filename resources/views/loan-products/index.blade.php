@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Loan Product Management')
@@ -104,18 +108,19 @@
                                                 </td>
                                                 <td class="text-center text-nowrap">
                                                     <div class="btn-group" role="group">
-                                                        <a href="{{ route('loan-products.show', $product) }}"
+                                                        <a href="{{ route('loan-products.show', Hashids::encode($product->id)) }}"
                                                             class="btn btn-sm btn-outline-info" title="View Details">
                                                             view
                                                         </a>
-                                                        <a href="{{ route('loan-products.edit', $product) }}"
+                                                        <a href="{{ route('loan-products.edit', Hashids::encode($product->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="Edit Product">
                                                             edit
                                                         </a>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                            title="Delete Product" data-product-id="{{ $product->id }}"
+                                                            title="Delete Product"
+                                                            data-product-id="{{ Hashids::encode($product->id) }}"
                                                             data-product-name="{{ $product->name }}">
-                                                           delete
+                                                            delete
                                                         </button>
                                                     </div>
                                                 </td>
@@ -132,7 +137,8 @@
 
             <!-- Hidden delete forms -->
             @foreach($loanProducts as $product)
-                <form id="delete-form-{{ $product->id }}" action="{{ route('loan-products.destroy', $product) }}" method="POST"
+                <form id="delete-form-{{ Hashids::encode($product->id) }}"
+                    action="{{ route('loan-products.destroy', Hashids::encode($product->id)) }}" method="POST"
                     style="display: none;">
                     @csrf
                     @method('DELETE')
@@ -258,7 +264,7 @@
                     document.getElementById('toast-error-message').textContent = '{{ session('error') }}';
                     toast.show();
                 @endif
-                                                                                                                                                                    });
+                                                                                                                                                                                                        });
 
         // Duplicate product function
         function duplicateProduct(productId) {

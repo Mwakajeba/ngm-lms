@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Loan Product Details')
@@ -12,7 +16,7 @@
                     ['label' => 'Product Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
                 ]" />
                 <div>
-                    <a href="{{ route('loan-products.edit', $loanProduct) }}" class="btn btn-primary">
+                    <a href="{{ route('loan-products.edit', Hashids::encode($loanProduct->id)) }}" class="btn btn-primary">
                         <i class="bx bx-edit"></i> Edit Product
                     </a>
                     <a href="{{ route('loan-products.index') }}" class="btn btn-secondary">

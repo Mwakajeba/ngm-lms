@@ -8,6 +8,7 @@ use App\Models\User;
 use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Vinkla\Hashids\Facades\Hashids;
 
 class GroupController extends Controller
 {
@@ -32,7 +33,7 @@ class GroupController extends Controller
             $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
 
-        
+
         $branchId = auth()->user()->branch_id;
         $branches = Branch::where('id', $branchId)->get();
         $groupLeaders = Customer::where('branch_id', $branchId)->get();
@@ -102,8 +103,16 @@ class GroupController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Group $group)
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer']);
         // TODO: Uncomment when Loan model is properly set up
         // $group->load(['loanOfficer', 'loans']);
@@ -113,8 +122,16 @@ class GroupController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Group $group)
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         $loanOfficers = User::whereHas('roles', function ($query) {
             $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
@@ -129,8 +146,16 @@ class GroupController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Group $group)
+    public function update(Request $request, $encodedId)
     {
+        // Decode group ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:groups,name,' . $group->id,
             'loan_officer' => 'required|exists:users,id',
@@ -193,8 +218,16 @@ class GroupController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Group $group)
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         try {
             // TODO: Uncomment when Loan model is properly set up
             // Check if group has any loans

@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 <!doctype html>
 <html lang="{{ app()->getLocale() }}" class="color-sidebar sidebarcolor3">
 

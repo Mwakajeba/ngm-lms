@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Add Member to Group')
@@ -8,7 +12,7 @@
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
-            ['label' => $group->name, 'url' => route('groups.show', $group), 'icon' => 'bx bx-info-circle'],
+            ['label' => $group->name, 'url' => route('groups.show', Hashids::encode($group->id)), 'icon' => 'bx bx-info-circle'],
             ['label' => 'Add Member', 'url' => '#', 'icon' => 'bx bx-plus-circle']
         ]" />
 
@@ -18,7 +22,8 @@
                         <div class="card-header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Add Members to: {{ $group->name }}</h5>
-                                <a href="{{ route('groups.show', $group) }}" class="btn btn-secondary btn-sm">
+                                <a href="{{ route('groups.show', Hashids::encode($group->id)) }}"
+                                    class="btn btn-secondary btn-sm">
                                     <i class="bx bx-arrow-back"></i> Back
                                 </a>
                             </div>
@@ -35,7 +40,8 @@
                             @endif
 
                             @if($availableCustomers->count() > 0)
-                                <form action="{{ route('group-members.store', $group) }}" method="POST" id="addMembersForm">
+                                <form action="{{ route('group-members.store', Hashids::encode($group->id)) }}" method="POST"
+                                    id="addMembersForm">
                                     @csrf
 
                                     <div class="row mb-4">
@@ -81,7 +87,7 @@
                                     <i class="bx bx-user-x text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-muted mt-3">No Available Customers</h5>
                                     <p class="text-muted">All customers are already members of this group.</p>
-                                    <a href="{{ route('groups.show', $group) }}" class="btn btn-primary">
+                                    <a href="{{ route('groups.show', Hashids::encode($group->id)) }}" class="btn btn-primary">
                                         <i class="bx bx-arrow-back"></i> Back to Group
                                     </a>
                                 </div>
@@ -288,34 +294,34 @@
 
             if (selectedCustomers.length === 0) {
                 container.innerHTML = `
-                                                <div class="empty-state">
-                                                    <i class="bx bx-user-plus"></i>
-                                                    <p>No customers selected</p>
-                                                </div>
-                                            `;
+                                                        <div class="empty-state">
+                                                            <i class="bx bx-user-plus"></i>
+                                                            <p>No customers selected</p>
+                                                        </div>
+                                                    `;
                 return;
             }
 
             let html = '';
             selectedCustomers.forEach(customer => {
                 html += `
-                                                <div class="customer-item">
-                                                    <div class="customer-info">
-                                                        <div class="customer-name">${customer.name}</div>
-                                                        <div class="customer-details">
-                                                            <div class="detail-item"><i class="bx bx-user"></i> ${customer.gender}</div>
-                                                            <div class="detail-item"><i class="bx bx-map"></i> ${customer.region}</div>
-                                                            <div class="detail-item"><i class="bx bx-map-pin"></i> ${customer.district}</div>
-                                                            <div class="detail-item"><i class="bx bx-phone"></i> ${customer.phone}</div>
+                                                        <div class="customer-item">
+                                                            <div class="customer-info">
+                                                                <div class="customer-name">${customer.name}</div>
+                                                                <div class="customer-details">
+                                                                    <div class="detail-item"><i class="bx bx-user"></i> ${customer.gender}</div>
+                                                                    <div class="detail-item"><i class="bx bx-map"></i> ${customer.region}</div>
+                                                                    <div class="detail-item"><i class="bx bx-map-pin"></i> ${customer.district}</div>
+                                                                    <div class="detail-item"><i class="bx bx-phone"></i> ${customer.phone}</div>
+                                                                </div>
+                                                            </div>
+                                                            <button type="button" class="btn-delete" 
+                                                                    onclick="removeCustomerFromList('${customer.id}')" 
+                                                                    title="Remove from list">
+                                                                <i class="bx bx-x"></i>
+                                                            </button>
                                                         </div>
-                                                    </div>
-                                                    <button type="button" class="btn-delete" 
-                                                            onclick="removeCustomerFromList('${customer.id}')" 
-                                                            title="Remove from list">
-                                                        <i class="bx bx-x"></i>
-                                                    </button>
-                                                </div>
-                                            `;
+                                                    `;
             });
 
             container.innerHTML = html;
