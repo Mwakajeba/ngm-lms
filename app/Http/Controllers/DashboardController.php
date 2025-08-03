@@ -10,7 +10,7 @@ use App\Models\GlTransaction;
 use App\Models\BankReconciliation;
 use App\Models\Journal;
 use App\Models\Payment;
-use App\Models\Bill;
+use App\Models\Receipt;
 
 class DashboardController extends Controller
 {
@@ -41,8 +41,10 @@ class DashboardController extends Controller
         ->take(5)
         ->get();
             
-        $recentBills = Bill::where('company_id', $company->id)
-        ->with(['user', 'branch', 'supplier'])
+        $recentReceipts = Receipt::whereHas('branch', function($query) use ($company) {
+            $query->where('company_id', $company->id);
+        })
+        ->with(['user', 'branch', 'customer'])
         ->latest()
         ->take(5)
         ->get();
@@ -64,7 +66,7 @@ class DashboardController extends Controller
             'financialReportData',
             'recentJournals',
             'recentPayments', 
-            'recentBills',
+            'recentReceipts',
             'bankReconciliationStats'
         ));
     }
@@ -89,7 +91,30 @@ class DashboardController extends Controller
             ->groupBy('account_class.id', 'account_class.name', 'account_class_groups.group_code')
             ->get()
             ->map(function ($item) {
-                $balance = $item->total_debit - $item->total_credit;
+                // Calculate balance based on account class
+                $balance = 0;
+                switch (strtolower($item->class_name)) {
+                    case 'assets':
+                        $balance = $item->total_debit - $item->total_credit; // Assets: debit increases
+                        break;
+                    case 'liabilities':
+                        $balance = $item->total_credit - $item->total_debit; // Liabilities: credit increases
+                        break;
+                    case 'equity':
+                        $balance = $item->total_credit - $item->total_debit; // Equity: credit increases
+                        break;
+                    case 'income':
+                    case 'revenue':
+                        $balance = $item->total_credit - $item->total_debit; // Revenue: credit increases
+                        break;
+                    case 'expenses':
+                    case 'expense':
+                        $balance = $item->total_debit - $item->total_credit; // Expenses: debit increases
+                        break;
+                    default:
+                        $balance = $item->total_debit - $item->total_credit;
+                }
+                
                 return [
                     'class_name' => $item->class_name,
                     'class_code' => $item->class_code,
@@ -135,31 +160,52 @@ class DashboardController extends Controller
         $chartAccountsExpense = [];
         
         foreach ($chartAccountsData as $account) {
-            $balance = $account->debit_total - $account->credit_total;
-            $accountData = [
-                'account_id' => $account->account_id,
-                'account' => $account->account,
-                'sum' => $balance
-            ];
+            // Calculate balance based on account class
+            $balance = 0;
             
             // Categorize based on account class
             switch (strtolower($account->class_name)) {
                 case 'assets':
-                    $chartAccountsAssets[$account->group_name][] = $accountData;
+                    $balance = $account->debit_total - $account->credit_total; // Assets: debit increases
+                    $chartAccountsAssets[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
                     break;
                 case 'liabilities':
-                    $chartAccountsLiabilities[$account->group_name][] = $accountData;
+                    $balance = $account->credit_total - $account->debit_total; // Liabilities: credit increases
+                    $chartAccountsLiabilities[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
                     break;
                 case 'equity':
-                    $chartAccountsEquitys[$account->group_name][] = $accountData;
+                    $balance = $account->credit_total - $account->debit_total; // Equity: credit increases
+                    $chartAccountsEquitys[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
                     break;
                 case 'income':
                 case 'revenue':
-                    $chartAccountsRevenues[$account->group_name][] = $accountData;
+                    $balance = $account->credit_total - $account->debit_total; // Revenue: credit increases
+                    $chartAccountsRevenues[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
                     break;
                 case 'expenses':
                 case 'expense':
-                    $chartAccountsExpense[$account->group_name][] = $accountData;
+                    $balance = $account->debit_total - $account->credit_total; // Expenses: debit increases
+                    $chartAccountsExpense[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
                     break;
             }
         }

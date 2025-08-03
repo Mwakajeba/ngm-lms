@@ -135,17 +135,6 @@
                                         </div>
                                     </div>
                                     <div class="card-body">
-                                        @if(isset($incomeStatementData))
-                                            <!-- Debug Information -->
-                                            <div class="alert alert-info">
-                                                <strong>Debug Info:</strong><br>
-                                                Revenue Groups: {{ count($incomeStatementData['data']['revenues'] ?? []) }}<br>
-                                                Expense Groups: {{ count($incomeStatementData['data']['expenses'] ?? []) }}<br>
-                                                Revenue Previous: {{ count($incomeStatementData['data']['revenues_previous'] ?? []) }}<br>
-                                                Expense Previous: {{ count($incomeStatementData['data']['expenses_previous'] ?? []) }}
-                                            </div>
-                                        @endif
-                                        
                                         @if(isset($incomeStatementData) && (count($incomeStatementData['data']['revenues'] ?? []) > 0 || count($incomeStatementData['data']['expenses'] ?? []) > 0))
                                             <div class="table-responsive">
                                                 <table class="table table-bordered table-striped">
