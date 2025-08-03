@@ -96,8 +96,8 @@
                             <tr>
                                 <td>
                                     <div class="d-flex align-items-center">
-                                        <div class="avatar avatar-sm bg-primary rounded-circle me-2">
-                                            <span class="avatar-title text-white">{{ substr($user->name, 0, 1) }}</span>
+                                        <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                            <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                                         </div>
                                         <div>
                                             <div class="fw-bold">
@@ -125,12 +125,12 @@
                                 </td>
                                 <td>{{ $user->created_at->format('M d, Y') }}</td>
                                 <td>
-                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-info">{{ __('app.profile') }}</a>
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-primary">{{ __('app.edit') }}</a>
-                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form">
+                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-outline-info" title="Profile"><i class="bx bx-show"></i></a>
+                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form" onsubmit="return confirmDelete(this, '{{ __('app.are_you_sure_delete_user') }}');">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $user->name }}" onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_delete_user') }}')">{{ __('app.delete') }}</button>
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                                     </form>
                                 </td>
                             </tr>
@@ -170,8 +170,34 @@
 @endsection
 
 @push('scripts')
-{!! confirm_delete() !!}
 <script>
+$(function() {
+    if ($.fn.DataTable.isDataTable('#example2')) {
+        $('#example2').DataTable().destroy();
+    }
+    $('#example2').DataTable({
+        responsive: true,
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true,
+        lengthChange: true,
+        pageLength: 10,
+        language: {
+            search: "",
+            searchPlaceholder: "Search users..."
+        }
+    });
+});
+</script>
+<script>
+function confirmDelete(form, message) {
+    if (confirm(message)) {
+        form.submit();
+    }
+    return false;
+}
+
 function deleteUser(userHashId) {
     if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
         const form = document.getElementById('deleteUserForm');

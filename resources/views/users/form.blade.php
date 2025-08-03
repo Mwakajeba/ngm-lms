@@ -141,35 +141,17 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Role Assignment -->
-                            <div class="row">
-                                <div class="col-12">
+                                <!-- Role Assignment -->
+                                <div class="col-6">
                                     <div class="mb-3">
-                                        <label class="form-label">Roles <span class="text-danger">*</span></label>
-                                        <div class="row">
+                                        <label for="role_id" class="form-label">Role <span class="text-danger">*</span></label>
+                                        <select class="form-select @error('role_id') is-invalid @enderror" id="role_id" name="role_id" required>
+                                            <option value="">Select Role</option>
                                             @foreach($roles as $role)
-                                            <div class="col-md-4 mb-2">
-                                                <div class="form-check">
-                                                    <input class="form-check-input @error('roles') is-invalid @enderror" 
-                                                           type="checkbox" name="roles[]" 
-                                                           value="{{ $role->id }}" 
-                                                           id="role_{{ $role->id }}"
-                                                           {{ in_array($role->id, old('roles', isset($user) ? $user->roles->pluck('id')->toArray() : [])) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="role_{{ $role->id }}">
-                                                        <strong>{{ ucfirst($role->name) }}</strong>
-                                                        @if($role->permissions->count() > 0)
-                                                            <br><small class="text-muted">
-                                                                Permissions: {{ $role->permissions->pluck('name')->implode(', ') }}
-                                                            </small>
-                                                        @endif
-                                                    </label>
-                                                </div>
-                                            </div>
+                                                <option value="{{ $role->id }}" {{ old('role_id', isset($user) ? ($user->roles->first()->id ?? '') : '') == $role->id ? 'selected' : '' }}>{{ ucfirst($role->name) }}</option>
                                             @endforeach
-                                        </div>
-                                        @error('roles')
+                                        </select>
+                                        @error('role_id')
                                             <div class="invalid-feedback d-block">{{ $message }}</div>
                                         @enderror
                                     </div>
@@ -349,7 +331,7 @@ document.getElementById('password').addEventListener('input', function() {
 document.getElementById('userForm').addEventListener('submit', function(e) {
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('password_confirmation').value;
-    const roles = document.querySelectorAll('input[name="roles[]"]:checked');
+    const role = document.getElementById('role_id').value;
     const isEdit = {{ isset($user) ? 'true' : 'false' }};
     
     // Password validation
@@ -366,9 +348,9 @@ document.getElementById('userForm').addEventListener('submit', function(e) {
     }
     
     // Role validation
-    if (roles.length === 0) {
+    if (!role) {
         e.preventDefault();
-        alert('Please select at least one role!');
+        alert('Please select a role!');
         return false;
     }
     
