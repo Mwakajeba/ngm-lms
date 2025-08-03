@@ -16,7 +16,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Total</p>
-                                    <h4 class="font-weight-bold">{{ $accountClassGroups->total() }}</h4>
+                                    <h4 class="font-weight-bold">{{ $accountClassGroups->count() }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-refresh'></i>
                                 </div>
@@ -33,12 +33,14 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Chart of Accounts - Account Class Groups</h5>
-                        <a href="{{ route('accounting.fsli-accounts.create') }}" class="btn btn-primary">
-                            <i class="bx bx-plus"></i> Add New Group
-                        </a>
+                        <div>
+                            <a href="{{ route('accounting.fsli-accounts.create') }}" class="btn btn-primary ms-2">
+                                <i class="bx bx-plus"></i> Add New Group
+                            </a>
+                        </div>
                     </div>
                     <div class="table-responsive">
-                        <table id="example" class="table table-striped table-bordered" style="width:100%">
+                        <table id="accountClassGroupsTable" class="table table-striped table-bordered" style="width:100%">
                             <thead>
                                 <tr>
                                     <th>#</th>
@@ -76,11 +78,6 @@
                             </tbody>
                         </table>
                     </div>
-
-                    <!-- Pagination -->
-                    <div class="d-flex justify-content-center mt-3">
-                        {{ $accountClassGroups->links() }}
-                    </div>
                 </div>
             </div>
         </div>
@@ -95,3 +92,23 @@
         <p class="mb-0">Copyright © 2021. All right reserved.</p>
     </footer>
 @endsection
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('#accountClassGroupsTable').DataTable({
+        responsive: true,
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true,
+        lengthChange: true,
+        pageLength: 10,
+        language: {
+            search: "",
+            searchPlaceholder: "Search account class groups..."
+        }
+    });
+});
+</script>
+@endpush

@@ -16,11 +16,9 @@ class AccountClassGroupController extends Controller
     public function index(): View
     {
         $user = auth()->user();
-
         $accountClassGroups = AccountClassGroup::with('accountClass')
             ->where('company_id', $user->company_id)
-            ->paginate(10);
-
+            ->get();
         return view('account-class-groups.index', compact('accountClassGroups'));
     }
 
