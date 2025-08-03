@@ -16,6 +16,7 @@ use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Vinkla\Hashids\Facades\Hashids;
 
 class ReceiptVoucherController extends Controller
 {
@@ -251,7 +252,7 @@ class ReceiptVoucherController extends Controller
 
                 \Log::info('GL transactions created successfully');
 
-                return redirect()->route('accounting.receipt-vouchers.show', $receipt)
+                return redirect()->route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id))
                     ->with('success', 'Receipt voucher created successfully.');
             });
         } catch (\Exception $e) {
@@ -268,8 +269,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Receipt $receiptVoucher)
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         $receiptVoucher->load([
             'bankAccount',
             'customer.company',
@@ -286,8 +295,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Receipt $receiptVoucher)
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         $user = Auth::user();
 
         // Get bank accounts for the current company
@@ -321,8 +338,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Receipt $receiptVoucher)
+    public function update(Request $request, $encodedId)
     {
+        // Decode receipt voucher ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
@@ -447,7 +472,7 @@ class ReceiptVoucherController extends Controller
                     ]);
                 }
 
-                return redirect()->route('accounting.receipt-vouchers.show', $receiptVoucher)
+                return redirect()->route('accounting.receipt-vouchers.show', Hashids::encode($receiptVoucher->id))
                     ->with('success', 'Receipt voucher updated successfully.');
             });
         } catch (\Exception $e) {
@@ -460,8 +485,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Receipt $receiptVoucher)
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         try {
             return $this->runTransaction(function () use ($receiptVoucher) {
                 // Delete attachment if exists
@@ -490,8 +523,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Download attachment.
      */
-    public function downloadAttachment(Receipt $receiptVoucher)
+    public function downloadAttachment($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         if (!$receiptVoucher->attachment) {
             return redirect()->back()->withErrors(['error' => 'No attachment found.']);
         }
@@ -506,8 +547,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Remove attachment.
      */
-    public function removeAttachment(Receipt $receiptVoucher)
+    public function removeAttachment($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         try {
             // Delete attachment file if exists
             if ($receiptVoucher->attachment && Storage::disk('public')->exists($receiptVoucher->attachment)) {

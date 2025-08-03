@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Receipt Voucher Details')
 
 @section('content')
@@ -17,7 +21,7 @@
                     <p class="text-muted mb-0">View receipt voucher information</p>
                 </div>
                 <div>
-                    <a href="{{ route('accounting.receipt-vouchers.edit', $receiptVoucher->id) }}"
+                    <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receiptVoucher->id)) }}"
                         class="btn btn-primary me-2">
                         <i class="bx bx-edit me-2"></i>Edit Receipt Voucher
                     </a>
@@ -104,7 +108,7 @@
                                     <label class="form-label fw-bold">Attachment</label>
                                     <p class="form-control-plaintext">
                                         @if($receiptVoucher->attachment)
-                                            <a href="{{ route('accounting.receipt-vouchers.download-attachment', $receiptVoucher) }}"
+                                            <a href="{{ route('accounting.receipt-vouchers.download-attachment', Hashids::encode($receiptVoucher->id)) }}"
                                                 class="btn btn-sm btn-outline-primary">
                                                 <i class="bx bx-download me-1"></i>Download Attachment
                                             </a>
@@ -268,7 +272,7 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('accounting.receipt-vouchers.edit', $receiptVoucher->id) }}"
+                                <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receiptVoucher->id)) }}"
                                     class="btn btn-primary">
                                     <i class="bx bx-edit me-1"></i>Edit
                                 </a>
@@ -304,7 +308,7 @@
                 if (result.isConfirmed) {
                     const form = $('<form>', {
                         'method': 'POST',
-                        'action': '{{ route("accounting.receipt-vouchers.destroy", $receiptVoucher->id) }}'
+                        'action': '{{ route("accounting.receipt-vouchers.destroy", Hashids::encode($receiptVoucher->id)) }}'
                     });
 
                     form.append($('<input>', {

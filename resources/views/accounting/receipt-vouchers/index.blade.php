@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Receipt Vouchers')
 
 @section('content')
@@ -134,16 +138,16 @@
                                                 <td>{{ $receipt->user->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-1">
-                                                        <a href="{{ route('accounting.receipt-vouchers.show', $receipt) }}"
+                                                        <a href="{{ route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="View">
                                                             <i class="bx bx-show"></i>
                                                         </a>
-                                                        <a href="{{ route('accounting.receipt-vouchers.edit', $receipt) }}"
+                                                        <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receipt->id)) }}"
                                                             class="btn btn-sm btn-outline-warning" title="Edit">
                                                             <i class="bx bx-edit"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                            data-id="{{ $receipt->id }}"
+                                                            data-id="{{ Hashids::encode($receipt->id) }}"
                                                             data-reference="{{ $receipt->reference }}" title="Delete">
                                                             <i class="bx bx-trash"></i>
                                                         </button>

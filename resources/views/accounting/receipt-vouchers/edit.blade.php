@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Edit Receipt Voucher')
 
 @section('content')
@@ -25,7 +29,7 @@
                             </div>
                         </div>
                         <div class="card-body">
-                            <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.update', $receiptVoucher) }}"
+                            <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.update', Hashids::encode($receiptVoucher->id)) }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
                                 @method('PUT')
@@ -189,7 +193,7 @@
                                                     <div class="d-flex align-items-center">
                                                         <i class="bx bx-file-pdf me-2 text-danger"></i>
                                                         <span class="me-3">{{ basename($receiptVoucher->attachment) }}</span>
-                                                        <a href="{{ route('accounting.receipt-vouchers.download-attachment', $receiptVoucher) }}" 
+                                                        <a href="{{ route('accounting.receipt-vouchers.download-attachment', Hashids::encode($receiptVoucher->id)) }}" 
                                                            class="btn btn-sm btn-outline-primary me-2">
                                                             <i class="bx bx-download"></i> Download
                                                         </a>
@@ -283,7 +287,7 @@
                                 <div class="row">
                                     <div class="col-lg-6">
                                         <div class="d-flex justify-content-start">
-                                            <a href="{{ route('accounting.receipt-vouchers.show', $receiptVoucher) }}"
+                                            <a href="{{ route('accounting.receipt-vouchers.show', Hashids::encode($receiptVoucher->id)) }}"
                                                 class="btn btn-secondary me-2">
                                                 <i class="bx bx-arrow-back me-2"></i>Cancel
                                             </a>

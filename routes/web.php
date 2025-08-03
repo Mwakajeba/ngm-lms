@@ -252,12 +252,12 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/receipt-vouchers', [ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
     Route::get('/receipt-vouchers/create', [ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
     Route::post('/receipt-vouchers', [ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
-    Route::get('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
-    Route::get('/receipt-vouchers/{receiptVoucher}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
-    Route::put('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
-    Route::delete('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
-    Route::get('/receipt-vouchers/{receiptVoucher}/download-attachment', [ReceiptVoucherController::class, 'downloadAttachment'])->name('receipt-vouchers.download-attachment');
-    Route::delete('/receipt-vouchers/{receiptVoucher}/remove-attachment', [ReceiptVoucherController::class, 'removeAttachment'])->name('receipt-vouchers.remove-attachment');
+    Route::get('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
+    Route::get('/receipt-vouchers/{encodedId}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
+    Route::put('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
+    Route::delete('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
+    Route::get('/receipt-vouchers/{encodedId}/download-attachment', [ReceiptVoucherController::class, 'downloadAttachment'])->name('receipt-vouchers.download-attachment');
+    Route::delete('/receipt-vouchers/{encodedId}/remove-attachment', [ReceiptVoucherController::class, 'removeAttachment'])->name('receipt-vouchers.remove-attachment');
     Route::get('/receipt-vouchers-debug', [ReceiptVoucherController::class, 'debug'])->name('receipt-vouchers.debug');
 
     // Bank Accounts
