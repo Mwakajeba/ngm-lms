@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Penalties Management')
 
 @section('content')
@@ -154,7 +158,7 @@
                                         @forelse($penalties as $penalty)
                                             <tr>
                                                 <td>
-                                                    <a href="{{ route('accounting.penalties.show', $penalty) }}"
+                                                    <a href="{{ route('accounting.penalties.show', Hashids::encode($penalty->id)) }}"
                                                         class="text-primary fw-bold">
                                                         {{ $penalty->name }}
                                                     </a>
@@ -169,17 +173,17 @@
                                                 <td>{{ $penalty->createdBy->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
-                                                        <a href="{{ route('accounting.penalties.show', $penalty) }}"
+                                                        <a href="{{ route('accounting.penalties.show', Hashids::encode($penalty->id)) }}"
                                                             class="btn btn-sm btn-outline-primary">
                                                             View
                                                         </a>
-                                                        <a href="{{ route('accounting.penalties.edit', $penalty) }}"
+                                                        <a href="{{ route('accounting.penalties.edit', Hashids::encode($penalty->id)) }}"
                                                             class="btn btn-sm btn-outline-warning">
                                                             Edit
                                                         </a>
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-danger delete-penalty-btn"
-                                                            title="Delete" data-penalty-id="{{ $penalty->id }}"
+                                                            title="Delete" data-penalty-id="{{ Hashids::encode($penalty->id) }}"
                                                             data-penalty-name="{{ $penalty->name }}">
                                                             Delete
                                                         </button>

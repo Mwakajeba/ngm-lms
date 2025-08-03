@@ -310,21 +310,21 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
     Route::get('/fees/create', [FeeController::class, 'create'])->name('fees.create');
     Route::post('/fees', [FeeController::class, 'store'])->name('fees.store');
-    Route::get('/fees/{fee}', [FeeController::class, 'show'])->name('fees.show');
-    Route::get('/fees/{fee}/edit', [FeeController::class, 'edit'])->name('fees.edit');
-    Route::put('/fees/{fee}', [FeeController::class, 'update'])->name('fees.update');
-    Route::patch('/fees/{fee}/status', [FeeController::class, 'changeStatus'])->name('fees.changeStatus');
-    Route::delete('/fees/{fee}', [FeeController::class, 'destroy'])->name('fees.destroy');
+    Route::get('/fees/{encodedId}', [FeeController::class, 'show'])->name('fees.show');
+    Route::get('/fees/{encodedId}/edit', [FeeController::class, 'edit'])->name('fees.edit');
+    Route::put('/fees/{encodedId}', [FeeController::class, 'update'])->name('fees.update');
+    Route::patch('/fees/{encodedId}/status', [FeeController::class, 'changeStatus'])->name('fees.changeStatus');
+    Route::delete('/fees/{encodedId}', [FeeController::class, 'destroy'])->name('fees.destroy');
 
     // Penalties
     Route::get('/penalties', [PenaltyController::class, 'index'])->name('penalties.index');
     Route::get('/penalties/create', [PenaltyController::class, 'create'])->name('penalties.create');
     Route::post('/penalties', [PenaltyController::class, 'store'])->name('penalties.store');
-    Route::get('/penalties/{penalty}', [PenaltyController::class, 'show'])->name('penalties.show');
-    Route::get('/penalties/{penalty}/edit', [PenaltyController::class, 'edit'])->name('penalties.edit');
-    Route::put('/penalties/{penalty}', [PenaltyController::class, 'update'])->name('penalties.update');
-    Route::patch('/penalties/{penalty}/status', [PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
-    Route::delete('/penalties/{penalty}', [PenaltyController::class, 'destroy'])->name('penalties.destroy');
+    Route::get('/penalties/{encodedId}', [PenaltyController::class, 'show'])->name('penalties.show');
+    Route::get('/penalties/{encodedId}/edit', [PenaltyController::class, 'edit'])->name('penalties.edit');
+    Route::put('/penalties/{encodedId}', [PenaltyController::class, 'update'])->name('penalties.update');
+    Route::patch('/penalties/{encodedId}/status', [PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
+    Route::delete('/penalties/{encodedId}', [PenaltyController::class, 'destroy'])->name('penalties.destroy');
 
     // Journal Entries CRUD
     Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
