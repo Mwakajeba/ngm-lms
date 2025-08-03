@@ -127,6 +127,10 @@
                                             <td>{{ $customer->customerNo }}</td>
                                         </tr>
                                         <tr>
+                                            <th scope="row">Category :</th>
+                                            <td>{{ $customer->category }}</td>
+                                        </tr>
+                                        <tr>
                                             <th scope="row">Phone :</th>
                                             <td>{{ $customer->phone1 }}</td>
                                         </tr>
@@ -324,12 +328,12 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="text-center mb-3">
-                                <h5 class="font-size-16 text-truncate">Customer File Types</h5>
+                                <h5 class="font-size-16 text-truncate">Customer Documents</h5>
                             </div>
 
                             @if ($customer->filetypes->count())
                             <div class="table-responsive">
-                                <table class="table table-bordered dt-responsive nowrap" id="fileTable">
+                                <table class="table table-bordered" id="fileTable">
                                     <thead class="thead-light">
                                         <tr>
                                             <th>#</th>
@@ -339,19 +343,18 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($customer->filetypes as $index => $file)
-                                        <tr>
-                                            <td>{{ $index + 1 }}</td>
-                                            <td>{{ $file->name }}</td>
-                                            <td>
-                                                <a href="{{ asset('storage/documents/' . $file->filename) }}" class="btn btn-sm btn-info" target="_blank">
-                                                    View
-                                                </a>
-                                                <a href="{{ asset('storage/documents/' . $file->filename) }}" class="btn btn-sm btn-success" download>
-                                                    Download
-                                                </a>
-                                            </td>
-
-                                        </tr>
+                                            <tr>
+                                                <td>{{ $index + 1 }}</td>
+                                                <td>{{ $file->name }}</td>
+                                                <td>
+                                                    @if($file->pivot->document_path)
+                                                        <a href="{{ asset('storage/' . $file->pivot->document_path) }}" class="btn btn-sm btn-info" target="_blank">View</a>
+                                                        <a href="{{ asset('storage/' . $file->pivot->document_path) }}" class="btn btn-sm btn-success" download>Download</a>
+                                                    @else
+                                                        <span class="text-danger">No file to view/download</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
                                         @endforeach
                                     </tbody>
                                 </table>

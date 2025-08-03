@@ -32,6 +32,7 @@ class Customer extends Model
         'photo',
         'document',
         'has_cash_collateral',
+        'category',
     ];
 
     protected $hidden = [
@@ -115,6 +116,7 @@ class Customer extends Model
     public function filetypes()
     {
         return $this->belongsToMany(Filetype::class, 'customer_file_types')
+                    ->withPivot('document_path')
                     ->withTimestamps();
     }
 

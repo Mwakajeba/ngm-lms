@@ -21,11 +21,7 @@
                                 <p class="text-muted mb-1">Total Groups</p>
                                 <h4 class="mb-0">{{ $groups->count() ?? 0 }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-group font-size-24"></i>
-                                </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i>
                             </div>
                         </div>
                     </div>
@@ -37,11 +33,7 @@
                                 <p class="text-muted mb-1">Active Groups</p>
                                 <h4 class="mb-0">{{ $groups->count() ?? 0 }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-check-circle font-size-24"></i>
-                                </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i>
                             </div>
                         </div>
                     </div>
