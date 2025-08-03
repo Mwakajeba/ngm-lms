@@ -5,6 +5,11 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
+            ['label' => 'User Settings', 'url' => '#', 'icon' => 'bx bx-user']
+        ]" />
         <h6 class="mb-0 text-uppercase">USER SETTINGS</h6>
         <hr/>
 
@@ -36,7 +41,19 @@
                         @endif
 
                         <div class="row">
-                            <div class="col-md-6">
+                            <div class="col-md-4">
+                                <div class="card border-info">
+                                    <div class="card-body">
+                                        <h5 class="card-title">Users</h5>
+                                        <p class="card-text">Manage Users records </p>
+                                        <a href="{{ route('users.index') }}" class="btn btn-primary">
+                                            <i class="bx bx-user me-1"></i> View Users
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-4">
                                 <div class="card border-info">
                                     <div class="card-body">
                                         <h5 class="card-title">Profile Settings</h5>
@@ -48,7 +65,7 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-4">
                                 <div class="card border-warning">
                                     <div class="card-body">
                                         <h5 class="card-title">Password Settings</h5>
@@ -59,12 +76,6 @@
                                     </div>
                                 </div>
                             </div>
-                        </div>
-
-                        <div class="mt-4">
-                            <a href="{{ route('settings.index') }}" class="btn btn-secondary">
-                                <i class="bx bx-arrow-back me-1"></i> Back to Settings
-                            </a>
                         </div>
                     </div>
                 </div>

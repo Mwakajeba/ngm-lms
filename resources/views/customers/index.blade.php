@@ -81,7 +81,20 @@
                                 @foreach($customers as $customer)
                                     <tr>
                                         <td>{{ $customer->customerNo }}</td>
-                                        <td>{{ $customer->name }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @php
+                                                    $isGuarantor = isset($customer->category) && strtolower($customer->category) === 'guarantor';
+                                                    $avatarClass = $isGuarantor ? 'bg-success' : 'bg-primary';
+                                                @endphp
+                                                <div class="avatar avatar-sm {{ $avatarClass }} rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                                    <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">{{ strtoupper(substr($customer->name, 0, 1)) }}</span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ $customer->name }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td>{{ $customer->phone1 }}</td>
                                         <td>{{ $customer->region->name ?? '' }}</td>
                                         <td>{{ $customer->district->name ?? '' }}</td>
