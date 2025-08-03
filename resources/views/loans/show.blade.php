@@ -116,6 +116,33 @@
                     </div>
                 </div>
             </div>
+
+            <div class="tab-pane fade" id="schedule" role="tabpanel">
+                @if($loan->schedule->count())
+                <table class="table table-sm table-bordered">
+                    <thead>
+                        <tr>
+                            <th>Due Date</th>
+                            <th>Principal</th>
+                            <th>Interest</th>
+                            <th>Total Installment</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach($loan->schedule as $item)
+                        <tr>
+                            <td>{{ \Carbon\Carbon::parse($item->due_date)->format('M d, Y') }}</td>
+                            <td>{{ number_format($item->principal, 2) }}</td>
+                            <td>{{ number_format($item->interest, 2) }}</td>
+                            <td>{{ number_format($item->principal + $item->interest, 2) }}</td>
+                        </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+                @else
+                <p>No schedule generated yet.</p>
+                @endif
+            </div>
         </div>
     </div>
 </div>

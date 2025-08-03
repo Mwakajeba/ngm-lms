@@ -395,9 +395,12 @@ class LoanController extends Controller
             'customer.user',
             'product',
             'bankAccount',
-            'group'
+            'group',
+            'loanFiles',
+            'schedule'
 
         ])->findOrFail($decoded[0]);
+
 
         return view('loans.show', compact('loan'));
     }
