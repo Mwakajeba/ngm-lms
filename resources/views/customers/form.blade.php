@@ -166,7 +166,7 @@ $isEdit = isset($customer);
         </div>
 
         <!-- Document Upload -->
-        <!-- <div class="col-md-6 mb-3">
+        <!-- <div class="col-md-6 mb-3>
             <label class="form-label">Upload Document</label>
             <input type="file" name="document" class="form-control @error('document') is-invalid @enderror"
                 accept=".pdf,.doc,.docx,image/*">
@@ -238,42 +238,51 @@ $isEdit = isset($customer);
             @endif
         </div>
 
+        <!-- Category -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Category <span class="text-danger">*</span></label>
+            <select name="category" class="form-select @error('category') is-invalid @enderror" required>
+                <option value="">Select Category</option>
+                <option value="Guarantor" {{ old('category', $customer->category ?? '') == 'Guarantor' ? 'selected' : '' }}>Guarantor</option>
+                <option value="Borrower" {{ old('category', $customer->category ?? '') == 'Borrower' ? 'selected' : '' }}>Borrower</option>
+            </select>
+            @error('category') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
         <!-- Multiple File Types and Documents Upload -->
         <hr class="my-4">
         <div class="col-md-12 mb-3">
             <label class="form-label">Upload Documents</label>
 
             <div id="file-type-upload-container">
-                {{-- Show existing uploaded documents --}}
-                @foreach ($filetypes as $index => $filetype)
-                <div class="row mb-2 file-type-upload-row">
-                    <!-- File Type Dropdown -->
-                    <div class="col-md-5">
-                        <select name="filetypes[]" class="form-select" required>
-                            <option value="">Select File Type</option>
-                            @foreach ($filetypes as $type)
-                            <option value="{{ $type->id }}" {{ $type->id == old("filetypes.$index") ? 'selected' : '' }}>
-                                {{ $type->name }}
-                            </option>
-                            @endforeach
-                        </select>
+                {{-- Show existing uploaded documents if editing --}}
+                @if($isEdit && isset($customer) && $customer->filetypes->count())
+                    @foreach ($customer->filetypes as $index => $filetype)
+                    <div class="row mb-2 file-type-upload-row">
+                        <div class="col-md-5">
+                            <select name="filetypes[]" class="form-select" required>
+                                <option value="">Select File Type</option>
+                                @foreach ($filetypes as $type)
+                                <option value="{{ $type->id }}" {{ $type->id == $filetype->id ? 'selected' : '' }}>{{ $type->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
+                            @if($filetype->pivot->document_path)
+                                <a href="{{ asset('storage/' . $filetype->pivot->document_path) }}" target="_blank">View Uploaded</a>
+                            @endif
+                        </div>
+                        <div class="col-md-2 d-flex align-items-center">
+                            <button type="button" class="btn btn-danger btn-sm remove-filetype-row" title="Remove row">
+                                <i class="bx bx-trash"></i>
+                            </button>
+                        </div>
                     </div>
+                    @endforeach
+                @endif
 
-                    <!-- File input -->
-                    <div class="col-md-5">
-                        <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
-                    </div>
-
-                    <!-- Remove button -->
-                    <div class="col-md-2 d-flex align-items-center">
-                        <button type="button" class="btn btn-danger btn-sm remove-filetype-row" title="Remove row">
-                            <i class="bx bx-trash"></i>
-                        </button>
-                    </div>
-                </div>
-                @endforeach
-
-                {{-- Empty row for adding new filetypes --}}
+                {{-- Always show one empty row for new uploads --}}
                 <div class="row mb-2 file-type-upload-row">
                     <div class="col-md-5">
                         <select name="filetypes[]" class="form-select" required>

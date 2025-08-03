@@ -161,25 +161,18 @@
                                         </div>
                                     </div>
                                 </div>
-                            </div>
-
-                            <!-- Role Assignment -->
-                            <div class="row">
-                                <div class="col-md-6">
+                                <!-- Role Assignment -->
+                                <div class="col-6">
                                     <div class="mb-3">
                                         <label for="role_id" class="form-label">Role <span class="text-danger">*</span></label>
-                                        <select class="form-select @error('role_id') is-invalid @enderror" 
-                                                id="role_id" name="role_id" required>
+                                        <select class="form-select @error('role_id') is-invalid @enderror" id="role_id" name="role_id" required>
                                             <option value="">Select Role</option>
                                             @foreach($roles as $role)
-                                                <option value="{{ $role->id }}" 
-                                                        {{ old('role_id', isset($user) ? $user->roles->first()->id ?? '' : '') == $role->id ? 'selected' : '' }}>
-                                                    {{ ucfirst($role->name) }}
-                                                </option>
+                                                <option value="{{ $role->id }}" {{ old('role_id', isset($user) ? ($user->roles->first()->id ?? '') : '') == $role->id ? 'selected' : '' }}>{{ ucfirst($role->name) }}</option>
                                             @endforeach
                                         </select>
                                         @error('role_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
+                                            <div class="invalid-feedback d-block">{{ $message }}</div>
                                         @enderror
                                     </div>
                                 </div>
@@ -360,7 +353,7 @@ document.getElementById('password').addEventListener('input', function() {
 document.getElementById('userForm').addEventListener('submit', function(e) {
     const password = document.getElementById('password').value;
     const confirmPassword = document.getElementById('password_confirmation').value;
-    const role = document.getElementById('role_id').value; // Get selected role
+    const role = document.getElementById('role_id').value;
     const isEdit = {{ isset($user) ? 'true' : 'false' }};
     
     // Password validation
@@ -377,7 +370,7 @@ document.getElementById('userForm').addEventListener('submit', function(e) {
     }
     
     // Role validation
-    if (!role) { // Check if a role is selected
+    if (!role) {
         e.preventDefault();
         alert('Please select a role!');
         return false;

@@ -83,73 +83,67 @@
                     </div>
 
 
-                    <div class="table-responsive">
-                        <table id="example2" class="table table-striped table-bordered" style="width:100%">
-                            <thead>
-                                <tr>
-                                    <th>{{ __('app.name') }}</th>
-                                    <th>{{ __('app.email') }}</th>
-                                    <th>{{ __('app.phone') }}</th>
-                                    <th>{{ __('app.branch') }}</th>
-                                    <th>{{ __('app.roles') }}</th>
-                                    <th>{{ __('app.status') }}</th>
-                                    <th>{{ __('app.created_at') }}</th>
-                                    <th>{{ __('app.actions') }}</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @foreach($users as $user)
-                                    <tr>
-                                        <td>
-                                            <div class="d-flex align-items-center">
-                                                <div class="avatar avatar-sm bg-primary rounded-circle me-2">
-                                                    <span class="avatar-title text-white">{{ substr($user->name, 0, 1) }}</span>
-                                                </div>
-                                                <div>
-                                                    <div class="fw-bold">
-                                                        <a href="{{ route('users.profile') }}"
-                                                            class="text-decoration-none">{{ $user->name }}</a>
-                                                    </div>
-                                                </div>
+                <div class="table-responsive">
+                    <table id="example2" class="table table-striped table-bordered" style="width:100%">
+                        <thead>
+                             <tr>
+                                <th>{{ __('app.name') }}</th>
+                                <th>{{ __('app.email') }}</th>
+                                <th>{{ __('app.phone') }}</th>
+                                <th>{{ __('app.branch') }}</th>
+                                <th>{{ __('app.roles') }}</th>
+                                <th>{{ __('app.status') }}</th>
+                                <th>{{ __('app.created_at') }}</th>
+                                <th>{{ __('app.actions') }}</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                          @foreach($users as $user)
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                            <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
+                                        </div>
+                                        <div>
+                                            <div class="fw-bold">
+                                                <a href="{{ route('users.profile') }}" class="text-decoration-none">{{ $user->name }}</a>
                                             </div>
-                                        </td>
-                                        <td>{{ $user->email }}</td>
-                                        <td>{{ $user->phone }}</td>
-                                        <td>{{ $user->branch->name ?? __('app.not_available') }}</td>
-                                        <td>
-                                            @foreach($user->roles as $role)
-                                                <span class="badge bg-primary me-1">{{ $role->name }}</span>
-                                            @endforeach
-                                        </td>
-                                        <td>
-                                            @if($user->status === 'active')
-                                                <span class="badge bg-success">{{ __('app.active') }}</span>
-                                            @elseif($user->status === 'inactive')
-                                                <span class="badge bg-warning">{{ __('app.inactive') }}</span>
-                                            @else
-                                                <span class="badge bg-danger">{{ __('app.suspended') }}</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $user->created_at->format('M d, Y') }}</td>
-                                        <td>
-                                            <a href="{{ route('users.profile') }}"
-                                                class="btn btn-sm btn-info">{{ __('app.profile') }}</a>
-                                            <a href="{{ route('users.edit', $user) }}"
-                                                class="btn btn-sm btn-primary">{{ __('app.edit') }}</a>
-                                            <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                                style="display:inline-block;" class="delete-form">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger"
-                                                    data-name="{{ $user->name }}"
-                                                    onclick="return confirmDelete(this.form, '{{ __('app.are_you_sure_delete_user') }}')">{{ __('app.delete') }}</button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                @endforeach
-                            </tbody>
-                        </table>
-                    </div>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ $user->email }}</td>
+                                <td>{{ $user->phone }}</td>
+                                <td>{{ $user->branch->name ?? __('app.not_available') }}</td>
+                                <td>
+                                    @foreach($user->roles as $role)
+                                        <span class="badge bg-primary me-1">{{ $role->name }}</span>
+                                    @endforeach
+                                </td>
+                                <td>
+                                    @if($user->status === 'active')
+                                        <span class="badge bg-success">{{ __('app.active') }}</span>
+                                    @elseif($user->status === 'inactive')
+                                        <span class="badge bg-warning">{{ __('app.inactive') }}</span>
+                                    @else
+                                        <span class="badge bg-danger">{{ __('app.suspended') }}</span>
+                                    @endif
+                                </td>
+                                <td>{{ $user->created_at->format('M d, Y') }}</td>
+                                <td>
+                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-outline-info" title="Profile"><i class="bx bx-show"></i></a>
+                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form" onsubmit="return confirmDelete(this, '{{ __('app.are_you_sure_delete_user') }}');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
+                                    </form>
+                                </td>
+                            </tr>
+                          @endforeach
+                        </tbody>
+                    </table>
+                </div>
 
                     <!-- Pagination -->
                     @if($users->hasPages())
@@ -183,15 +177,41 @@
 @endsection
 
 @push('scripts')
-    {!! confirm_delete() !!}
-    <script>
-        function deleteUser(userHashId) {
-            if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
-                const form = document.getElementById('deleteUserForm');
-                form.action = `/users/${userHashId}`;
-                form.submit();
-            }
+<script>
+$(function() {
+    if ($.fn.DataTable.isDataTable('#example2')) {
+        $('#example2').DataTable().destroy();
+    }
+    $('#example2').DataTable({
+        responsive: true,
+        paging: true,
+        searching: true,
+        ordering: true,
+        info: true,
+        lengthChange: true,
+        pageLength: 10,
+        language: {
+            search: "",
+            searchPlaceholder: "Search users..."
         }
+    });
+});
+</script>
+<script>
+function confirmDelete(form, message) {
+    if (confirm(message)) {
+        form.submit();
+    }
+    return false;
+}
+
+function deleteUser(userHashId) {
+    if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
+        const form = document.getElementById('deleteUserForm');
+        form.action = `/users/${userHashId}`;
+        form.submit();
+    }
+}
 
         // Search functionality
         document.getElementById('searchInput').addEventListener('keyup', function () {

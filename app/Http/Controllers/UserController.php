@@ -18,17 +18,26 @@ class UserController extends Controller
         // Middleware is applied in routes/web.php
     }
 
-    public function index()
+    public function index(Request $request)
     {
-        // Scope users to current company
-        $users = User::with(['branch', 'company', 'roles'])
-            ->forCompany()
-            ->latest()
-            ->paginate(15);
+        $query = \App\Models\User::with(['branch', 'roles']);
 
-        $totalUsers = User::forCompany()->count();
-        $activeUsers = User::forCompany()->where('status', 'active')->count();
-        $inactiveUsers = User::forCompany()->where('status', 'inactive')->count();
+        // Optionally filter by status
+        if ($request->has('status') && $request->status) {
+            $query->where('status', $request->status);
+        }
+
+        // Optionally filter by role
+        if ($request->has('role') && $request->role) {
+            $query->whereHas('roles', function($q) use ($request) {
+                $q->where('name', $request->role);
+            });
+        }
+
+        $users = $query->latest()->paginate(20);
+        $totalUsers = User::count();
+        $activeUsers = User::where('status', 'active')->count();
+        $inactiveUsers = User::where('status', 'inactive')->count();
 
         return view('users.index', compact('users', 'totalUsers', 'activeUsers', 'inactiveUsers'));
     }

@@ -22,8 +22,14 @@ class CustomerController extends Controller
     // Display all customers
     public function index()
     {
-        $customers = Customer::with(['branch', 'company', 'user', 'region', 'district'])->latest()->get();
-        return view('customers.index', compact('customers'));
+        $branchId = auth()->user()->branch_id;
+        $borrowerCount = Customer::where('category', 'Borrower')->where('branch_id', $branchId)->count();
+        $guarantorCount = Customer::where('category', 'Guarantor')->where('branch_id', $branchId)->count();
+        $customers = Customer::with(['branch', 'company', 'user', 'region', 'district'])
+            ->where('branch_id', $branchId)
+            ->latest()
+            ->get();
+        return view('customers.index', compact('customers', 'borrowerCount', 'guarantorCount'));
     }
 
     // Show form to create a new customer
@@ -62,6 +68,7 @@ class CustomerController extends Controller
             'idType' => 'nullable|string|max:100',
             'idNumber' => 'nullable|string|max:100',
             'relation' => 'nullable|string|max:255',
+            'category' => 'required|in:Guarantor,Borrower',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'loan_officer_ids' => 'nullable|array',
             'loan_officer_ids.*' => 'exists:users,id',
@@ -79,6 +86,7 @@ class CustomerController extends Controller
 
         // Prepare customer data
         $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents']);
+        $data['category'] = $request->category;
         $password = 12345;
         $date = now()->toDateString();
 
@@ -172,24 +180,22 @@ class CustomerController extends Controller
     }
 
     // Show form to edit a customer
-    public function edit(Customer $customer)
+    public function edit($encodedId)
     {
+        $id = \Vinkla\Hashids\Facades\Hashids::decode($encodedId)[0] ?? null;
+        if (!$id) {
+            abort(404);
+        }
+        $customer = Customer::findOrFail($id);
         $branchId = auth()->user()->branch_id;
-        $loanOfficers = collect(); // empty by default
-
-        $loanOfficers = User::all();
-
-        $collateralTypes = CashCollateralType::where('is_active', 1)->get();
-        $branches = Branch::all();
-        $companies = Company::all();
-        $registrars = User::all();
-        $regions = Region::all();
-
-        $filetypes = Filetype::orderBy('name')->get();
-
-        // Load loan officers for this customer
+        $loanOfficers = \App\Models\User::all();
+        $collateralTypes = \App\Models\CashCollateralType::where('is_active', 1)->get();
+        $branches = \App\Models\Branch::all();
+        $companies = \App\Models\Company::all();
+        $registrars = \App\Models\User::all();
+        $regions = \App\Models\Region::all();
+        $filetypes = \App\Models\Filetype::orderBy('name')->get();
         $customer->load('loanOfficers');
-
         return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes'));
     }
 
@@ -210,6 +216,7 @@ class CustomerController extends Controller
             'idType' => 'nullable|string|max:100',
             'idNumber' => 'nullable|string|max:100',
             'relation' => 'nullable|string|max:255',
+            'category' => 'required|in:Guarantor,Borrower',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'password' => 'nullable|min:6',
             'loan_officer_ids' => 'nullable|array',
@@ -224,6 +231,7 @@ class CustomerController extends Controller
         ]);
 
         $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id']);
+        $data['category'] = $request->category;
 
         // Set these from logged-in user
         $data['branch_id'] = auth()->user()->branch_id;

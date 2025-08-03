@@ -12,22 +12,42 @@
             <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
             <hr />
 
-            <!-- Dashboard Stats -->
-            <div class="row row-cols-1 row-cols-lg-4">
-                <div class="col mb-4">
-                    <div class="card radius-10">
-                        <div class="card-body d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="text-muted mb-1">Total Customers</p>
-                                <h4 class="mb-0">{{ $customers->count() ?? 0 }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i>
-                            </div>
+        <!-- Dashboard Stats -->
+        <div class="row row-cols-1 row-cols-lg-4">
+            <div class="col mb-4">
+                <div class="card radius-10">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-muted mb-1">Total Registered</p>
+                            <h4 class="mb-0">{{ $customers->count() ?? 0 }}</h4>
                         </div>
+                        <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i></div>
                     </div>
                 </div>
-                {{-- Additional cards if needed (e.g. by region, gender) --}}
             </div>
+            <div class="col mb-4">
+                <div class="card radius-10">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-muted mb-1">Total Borrowers</p>
+                            <h4 class="mb-0">{{ $borrowerCount ?? 0 }}</h4>
+                        </div>
+                        <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i></div>
+                    </div>
+                </div>
+            </div>
+            <div class="col mb-4">
+                <div class="card radius-10">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <p class="text-muted mb-1">Total Guarantors</p>
+                            <h4 class="mb-0">{{ $guarantorCount ?? 0 }}</h4>
+                        </div>
+                       <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-group'></i></div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
             <!-- Customers Table -->
             <div class="row">
@@ -47,7 +67,7 @@
                             </div>
 
                         <div class="table-responsive">
-                            <table class="table table-bordered dt-responsive nowrap" id="customersTable">
+                            <table class="table table-bordered nowrap" id="customersTable">
                                 <thead>
                                     <tr>
                                         <th>Customer No</th>
@@ -56,7 +76,7 @@
                                         <th>Region</th>
                                         <th>District</th>
                                         <th>Branch</th>
-                                        <th>Company</th>
+                                        <th>Category</th>
                                         <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
@@ -64,12 +84,25 @@
                                 @foreach($customers as $customer)
                                     <tr>
                                         <td>{{ $customer->customerNo }}</td>
-                                        <td>{{ $customer->name }}</td>
+                                        <td>
+                                            <div class="d-flex align-items-center">
+                                                @php
+                                                    $isGuarantor = isset($customer->category) && strtolower($customer->category) === 'guarantor';
+                                                    $avatarClass = $isGuarantor ? 'bg-success' : 'bg-primary';
+                                                @endphp
+                                                <div class="avatar avatar-sm {{ $avatarClass }} rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                                    <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">{{ strtoupper(substr($customer->name, 0, 1)) }}</span>
+                                                </div>
+                                                <div>
+                                                    <div class="fw-bold">{{ $customer->name }}</div>
+                                                </div>
+                                            </div>
+                                        </td>
                                         <td>{{ $customer->phone1 }}</td>
                                         <td>{{ $customer->region->name ?? '' }}</td>
                                         <td>{{ $customer->district->name ?? '' }}</td>
                                         <td>{{ optional($customer->branch)->name }}</td>
-                                        <td>{{ optional($customer->company)->name }}</td>
+                                        <td>{{ $customer->category }}</td>
                                         <td class="text-center">
                                             <a href="{{ route('customers.show', Hashids::encode($customer->id)) }}" class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
                                             <a href="{{ route('customers.edit',  Hashids::encode($customer->id)) }}" class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
@@ -94,21 +127,21 @@
 @endsection
 
 @push('scripts')
-    <script>
-        $(document).ready(function () {
-            $('#customersTable').DataTable({
-                responsive: true,
-                order: [[1, 'asc']],
-                pageLength: 10,
-                language: {
-                    search: "",
-                    searchPlaceholder: "Search customers..."
-                },
-                columnDefs: [
-                    { targets: -1, responsivePriority: 1, orderable: false, searchable: false },
-                    { targets: [0, 1, 2], responsivePriority: 2 }
-                ]
-            });
+<script>
+    $(document).ready(function() {
+        $('#customersTable').DataTable({
+            responsive: false,
+            order: [[1, 'asc']],
+            pageLength: 10,
+            language: {
+                search: "",
+                searchPlaceholder: "Search customers..."
+            },
+            columnDefs: [
+                { targets: -1, orderable: false, searchable: false },
+                { targets: [0,1,2], responsivePriority: 2 }
+            ]
         });
-    </script>
+    });
+</script>
 @endpush

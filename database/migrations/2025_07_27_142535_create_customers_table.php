@@ -19,6 +19,7 @@ return new class extends Migration {
             $table->string('workAddress')->nullable();
             $table->string('phone1');
             $table->string('phone2')->nullable();
+            $table->string('category')->nullable();
 
             // Foreign key to users table (registrar)
             $table->foreignId('registrar')->constrained('users')->onDelete('cascade');
