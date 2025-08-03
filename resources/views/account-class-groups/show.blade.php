@@ -1,12 +1,16 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Account Class Group Details')
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Account Class Groups', 'url' => route('accounting.fsli-accounts'), 'icon' => 'bx bx-category'],
+            ['label' => 'Account Class Groups', 'url' => route('accounting.account-class-groups.index'), 'icon' => 'bx bx-category'],
             ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
         ]" />
 
@@ -21,11 +25,12 @@
                             </h4>
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('accounting.fsli-accounts.edit', $accountClassGroup->id) }}"
+                            <a href="{{ route('accounting.account-class-groups.edit', Hashids::encode($accountClassGroup->id)) }}"
                                 class="btn btn-primary">
                                 <i class="bx bx-edit me-1"></i> Edit Group
                             </a>
-                            <a href="{{ route('accounting.fsli-accounts') }}" class="btn btn-outline-secondary">
+                            <a href="{{ route('accounting.account-class-groups.index') }}"
+                                class="btn btn-outline-secondary">
                                 <i class="bx bx-arrow-back me-1"></i> Back to List
                             </a>
                         </div>
@@ -111,11 +116,12 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="d-grid gap-2">
-                                <a href="{{ route('accounting.fsli-accounts.edit', $accountClassGroup->id) }}"
+                                <a href="{{ route('accounting.account-class-groups.edit', Hashids::encode($accountClassGroup->id)) }}"
                                     class="btn btn-outline-primary btn-sm">
                                     <i class="bx bx-edit me-1"></i> Edit Group
                                 </a>
-                                <form action="{{ route('accounting.fsli-accounts.destroy', $accountClassGroup->id) }}"
+                                <form
+                                    action="{{ route('accounting.account-class-groups.destroy', Hashids::encode($accountClassGroup->id)) }}"
                                     method="POST" class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')

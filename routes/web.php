@@ -210,23 +210,23 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:su
 ////////////////////////////////////////////// ACCOUNTING MANAGEMENT ///////////////////////////////////////////////
 
 Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(function () {
-    // Chart of Accounts - FSLI
-    Route::get('/fsli-accounts', [AccountClassGroupController::class, 'index'])->name('fsli-accounts');
-    Route::get('/fsli-accounts/create', [AccountClassGroupController::class, 'create'])->name('fsli-accounts.create');
-    Route::post('/fsli-accounts', [AccountClassGroupController::class, 'store'])->name('fsli-accounts.store');
-    Route::get('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'show'])->name('fsli-accounts.show');
-    Route::get('/fsli-accounts/{accountClassGroup}/edit', [AccountClassGroupController::class, 'edit'])->name('fsli-accounts.edit');
-    Route::put('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'update'])->name('fsli-accounts.update');
-    Route::delete('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'destroy'])->name('fsli-accounts.destroy');
+    // Account Class Groups
+    Route::get('/account-class-groups', [AccountClassGroupController::class, 'index'])->name('account-class-groups.index');
+    Route::get('/account-class-groups/create', [AccountClassGroupController::class, 'create'])->name('account-class-groups.create');
+    Route::post('/account-class-groups', [AccountClassGroupController::class, 'store'])->name('account-class-groups.store');
+    Route::get('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'show'])->name('account-class-groups.show');
+    Route::get('/account-class-groups/{encodedId}/edit', [AccountClassGroupController::class, 'edit'])->name('account-class-groups.edit');
+    Route::put('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'update'])->name('account-class-groups.update');
+    Route::delete('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'destroy'])->name('account-class-groups.destroy');
 
-    // Chart of Accounts
-    Route::get('/accounts', [ChartAccountController::class, 'index'])->name('accounts');
-    Route::get('/accounts/create', [ChartAccountController::class, 'create'])->name('accounts.create');
-    Route::post('/accounts', [ChartAccountController::class, 'store'])->name('accounts.store');
-    Route::get('/accounts/{chartAccount}', [ChartAccountController::class, 'show'])->name('accounts.show');
-    Route::get('/accounts/{chartAccount}/edit', [ChartAccountController::class, 'edit'])->name('accounts.edit');
-    Route::put('/accounts/{chartAccount}', [ChartAccountController::class, 'update'])->name('accounts.update');
-    Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
+    // Chart Accounts
+    Route::get('/chart-accounts', [ChartAccountController::class, 'index'])->name('chart-accounts.index');
+    Route::get('/chart-accounts/create', [ChartAccountController::class, 'create'])->name('chart-accounts.create');
+    Route::post('/chart-accounts', [ChartAccountController::class, 'store'])->name('chart-accounts.store');
+    Route::get('/chart-accounts/{encodedId}', [ChartAccountController::class, 'show'])->name('chart-accounts.show');
+    Route::get('/chart-accounts/{encodedId}/edit', [ChartAccountController::class, 'edit'])->name('chart-accounts.edit');
+    Route::put('/chart-accounts/{encodedId}', [ChartAccountController::class, 'update'])->name('chart-accounts.update');
+    Route::delete('/chart-accounts/{encodedId}', [ChartAccountController::class, 'destroy'])->name('chart-accounts.destroy');
 
     // Suppliers
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');

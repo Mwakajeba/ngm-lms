@@ -1,5 +1,9 @@
+@php
+use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 <form
-    action="{{ isset($chartAccount) ? route('accounting.accounts.update', $chartAccount->id) : route('accounting.accounts.store') }}"
+    action="{{ isset($chartAccount) ? route('accounting.chart-accounts.update', Hashids::encode($chartAccount->id)) : route('accounting.chart-accounts.store') }}"
     method="POST">
     @csrf
     @if(isset($chartAccount))
@@ -104,7 +108,7 @@
     </div>
 
     <div class="d-flex justify-content-end">
-        <a href="{{ route('accounting.accounts') }}" class="btn btn-secondary me-2">Cancel</a>
+        <a href="{{ route('accounting.chart-accounts.index') }}" class="btn btn-secondary me-2">Cancel</a>
         <button type="submit" class="btn btn-{{ isset($chartAccount) ? 'primary' : 'success' }}">
             {{ isset($chartAccount) ? 'Update Account' : 'Create Account' }}
         </button>

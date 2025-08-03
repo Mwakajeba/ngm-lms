@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Account Class Groups')
 @section('content')
     <div class="page-wrapper">
@@ -33,7 +37,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Chart of Accounts - Account Class Groups</h5>
-                        <a href="{{ route('accounting.fsli-accounts.create') }}" class="btn btn-primary">
+                        <a href="{{ route('accounting.account-class-groups.create') }}" class="btn btn-primary">
                             <i class="bx bx-plus"></i> Add New Group
                         </a>
                     </div>
@@ -58,12 +62,13 @@
                                         <td>{{ $group->name }}</td>
                                         <td>{{ $group->created_at->format('M d, Y') }}</td>
                                         <td>
-                                            <a href="{{ route('accounting.fsli-accounts.show', $group->id) }}"
+                                            <a href="{{ route('accounting.account-class-groups.show', Hashids::encode($group->id)) }}"
                                                 class="btn btn-sm btn-outline-primary">View</a>
-                                            <a href="{{ route('accounting.fsli-accounts.edit', $group->id) }}"
+                                            <a href="{{ route('accounting.account-class-groups.edit', Hashids::encode($group->id)) }}"
                                                 class="btn btn-sm btn-outline-warning">Edit</a>
 
-                                            <form action="{{ route('accounting.fsli-accounts.destroy', $group->id) }}"
+                                            <form
+                                                action="{{ route('accounting.account-class-groups.destroy', Hashids::encode($group->id)) }}"
                                                 method="POST" class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')

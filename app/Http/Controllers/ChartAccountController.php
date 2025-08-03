@@ -9,6 +9,7 @@ use App\Models\EquityCategory;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
+use Vinkla\Hashids\Facades\Hashids;
 
 class ChartAccountController extends Controller
 {
@@ -69,8 +70,15 @@ class ChartAccountController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(ChartAccount $chartAccount): View
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.chart-accounts.index')->withErrors(['Chart Account not found.']);
+        }
+
+        $chartAccount = ChartAccount::findOrFail($decoded[0]);
         $chartAccount->load(['accountClassGroup.accountClass', 'cashFlowCategory', 'equityCategory']);
         return view('chart-accounts.show', compact('chartAccount'));
     }
@@ -78,8 +86,15 @@ class ChartAccountController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(ChartAccount $chartAccount): View
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.chart-accounts.index')->withErrors(['Chart Account not found.']);
+        }
+
+        $chartAccount = ChartAccount::findOrFail($decoded[0]);
         $accountClassGroups = AccountClassGroup::with('accountClass')->get();
         $cashFlowCategories = CashFlowCategory::all();
         $equityCategories = EquityCategory::all();
@@ -89,8 +104,16 @@ class ChartAccountController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, ChartAccount $chartAccount): RedirectResponse
+    public function update(Request $request, $encodedId)
     {
+        // Decode chart account ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.chart-accounts.index')->withErrors(['Chart Account not found.']);
+        }
+
+        $chartAccount = ChartAccount::findOrFail($decoded[0]);
+
         $request->validate([
             'account_class_group_id' => 'required|exists:account_class_groups,id',
             'account_code' => 'required|string|max:255|unique:chart_accounts,account_code,' . $chartAccount->id,
@@ -116,18 +139,25 @@ class ChartAccountController extends Controller
 
         $chartAccount->update($data);
 
-        return redirect()->route('accounting.accounts')
+        return redirect()->route('accounting.chart-accounts.index')
             ->with('success', 'Chart Account updated successfully.');
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(ChartAccount $chartAccount): RedirectResponse
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.chart-accounts.index')->withErrors(['Chart Account not found.']);
+        }
+
+        $chartAccount = ChartAccount::findOrFail($decoded[0]);
         $chartAccount->delete();
 
-        return redirect()->route('accounting.accounts')
+        return redirect()->route('accounting.chart-accounts.index')
             ->with('success', 'Chart Account deleted successfully.');
     }
 }
