@@ -54,7 +54,7 @@
                                             <th>Customer</th>
                                             <th>Product</th>
                                             <th>Amount</th>
-                                            <th>Interest</th>
+                                            <th>Interest Rate</th>
                                             <th>Total Amount</th>
                                             <th>Period</th>
                                             <th>Status</th>
@@ -70,7 +70,7 @@
                                                 <td>{{ optional($loan->customer)->name }}</td>
                                                 <td>{{ optional($loan->product)->name ?? '-' }}</td>
                                                 <td>{{ number_format($loan->amount, 2) }}</td>
-                                                <td>{{ number_format($loan->interest_amount, 2) }}</td>
+                                                <td>{{ $loan->interest }}%</td>
                                                 <td>{{ number_format($loan->amount_total, 2) }}</td>
                                                 <td>{{ $loan->period }}</td>
                                                 <td>{{ $loan->status }}</td>
