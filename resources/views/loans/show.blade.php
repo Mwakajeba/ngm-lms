@@ -71,6 +71,7 @@
                                         ['label' => 'Customer Name', 'value' => $loan->customer->name],
                                         ['label' => 'Product', 'value' => $loan->product->name],
                                         ['label' => 'Amount', 'value' => number_format($loan->amount, 2)],
+                                        ['label' => 'Interest Rate', 'value' => $loan->interest . '%'],
                                         ['label' => 'Interest Amount', 'value' => number_format($loan->interest_amount, 2)],
                                         ['label' => 'Total Repayable', 'value' => number_format($loan->amount_total, 2)],
                                         ['label' => 'Period', 'value' => $loan->period . ' months'],

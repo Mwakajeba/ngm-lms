@@ -82,7 +82,7 @@
                                                     <span class="badge bg-secondary">{{ $application->period }} months</span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge bg-warning">{{ $application->product->interest ?? 'N/A' }}%</span>
+                                                    <span class="badge bg-warning">{{ $application->interest ?? 'N/A' }}%</span>
                                                 </td>
                                                 <td>
                                                     {{ \Carbon\Carbon::parse($application->date_applied)->format('M d, Y') }}
