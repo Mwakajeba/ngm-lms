@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Loan Application Details')
@@ -12,20 +16,23 @@
                 ['label' => 'Application Details', 'url' => '#', 'icon' => 'bx bx-show'],    
             ]" />
             
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="mb-0 text-uppercase">LOAN APPLICATION DETAILS</h6>
+            <!-- Header with Status and Actions -->
+            <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
+                    <h4 class="mb-1">Loan Application #{{ $loanApplication->id }}</h4>
+                    <p class="text-muted mb-0">{{ $loanApplication->customer->name ?? 'Unknown Customer' }}</p>
+                </div>
+                <div class="d-flex gap-2">
                     <a href="{{ route('loans.application.index') }}" class="btn btn-secondary">
-                        <i class="bx bx-arrow-back me-1"></i> Back to Applications
+                        <i class="bx bx-arrow-back me-1"></i> Back
                     </a>
                     @if($loanApplication->status === 'pending')
                         <a href="{{ route('loans.application.edit', Hashids::encode($loanApplication->id)) }}" class="btn btn-warning">
-                            <i class="bx bx-edit me-1"></i> Edit Application
+                            <i class="bx bx-edit me-1"></i> Edit
                         </a>
                     @endif
                 </div>
             </div>
-            <hr />
 
             @if(session('success'))
                 <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -35,185 +42,366 @@
                 </div>
             @endif
 
-            <div class="row">
-                <!-- Application Details -->
-                <div class="col-lg-8">
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0"><i class="bx bx-file-plus me-2"></i>Application Information</h6>
-                        </div>
+            <!-- Status Card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
                         <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Application ID:</label>
-                                    <p class="mb-0">
-                                        <span class="badge bg-primary">#{{ $loanApplication->id }}</span>
-                                    </p>
+                            <div class="row align-items-center">
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar avatar-lg me-3">
+                                            <i class="bx bx-user-circle fs-1 text-primary"></i>
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-1">{{ $loanApplication->customer->name ?? 'Unknown Customer' }}</h6>
+                                            <small class="text-muted">{{ $loanApplication->customer->phone ?? 'No phone' }}</small>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Status:</label>
-                                    <p class="mb-0">
+                                <div class="col-md-3 text-center">
+                                    <h5 class="mb-1 text-primary">TZS {{ number_format($loanApplication->amount, 2) }}</h5>
+                                    <small class="text-muted">Principal Amount</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <h5 class="mb-1 text-warning">{{ $loanApplication->interest ?? 'N/A' }}%</h5>
+                                    <small class="text-muted">Interest Rate</small>
+                                </div>
+                                <div class="col-md-3 text-center">
+                                    <div class="mb-1">
                                         @switch($loanApplication->status)
                                             @case('pending')
-                                                <span class="badge bg-warning">Pending</span>
+                                                <span class="badge bg-warning fs-6">PENDING</span>
                                                 @break
                                             @case('approved')
-                                                <span class="badge bg-success">Approved</span>
+                                                <span class="badge bg-success fs-6">APPROVED</span>
                                                 @break
                                             @case('rejected')
-                                                <span class="badge bg-danger">Rejected</span>
+                                                <span class="badge bg-danger fs-6">REJECTED</span>
                                                 @break
                                             @case('active')
-                                                <span class="badge bg-primary">Active</span>
+                                                <span class="badge bg-primary fs-6">ACTIVE</span>
                                                 @break
                                             @default
-                                                <span class="badge bg-secondary">{{ ucfirst($loanApplication->status) }}</span>
+                                                <span class="badge bg-secondary fs-6">{{ strtoupper($loanApplication->status) }}</span>
                                         @endswitch
-                                    </p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Date Applied:</label>
-                                    <p class="mb-0">{{ \Carbon\Carbon::parse($loanApplication->date_applied)->format('M d, Y') }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Business Sector:</label>
-                                    <p class="mb-0">{{ $loanApplication->sector }}</p>
-                                </div>
-                            </div>
-
-                            <hr>
-
-                            <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Loan Amount:</label>
-                                    <p class="mb-0 fs-5 text-primary fw-bold">TZS {{ number_format($loanApplication->amount, 2) }}</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Interest Rate:</label>
-                                    <p class="mb-0 fs-5 text-warning fw-bold">{{ $loanApplication->interest }}%</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Loan Period:</label>
-                                    <p class="mb-0">{{ $loanApplication->period }} months</p>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Loan Product:</label>
-                                    <p class="mb-0">
-                                        <span class="badge bg-info">{{ $loanApplication->product->name }}</span>
-                                    </p>
-                                </div>
-                            </div>
-
-                            <hr>
-
-                            <div class="row">
-                                <div class="col-12 mb-3">
-                                    <label class="form-label fw-bold">Loan Purpose:</label>
-                                    <p class="mb-0">{{ $loanApplication->purpose ?? 'Not specified' }}</p>
-                                </div>
-                                <div class="col-12 mb-3">
-                                    <label class="form-label fw-bold">Collateral/Security:</label>
-                                    <p class="mb-0">{{ $loanApplication->collateral ?? 'No collateral specified' }}</p>
-                                </div>
-                                <div class="col-12 mb-3">
-                                    <label class="form-label fw-bold">Additional Notes:</label>
-                                    <p class="mb-0">{{ $loanApplication->notes ?? 'No additional notes' }}</p>
+                                    </div>
+                                    <small class="text-muted">Application Status</small>
                                 </div>
                             </div>
                         </div>
                     </div>
                 </div>
+            </div>
 
-                <!-- Customer & Account Information -->
-                <div class="col-lg-4">
-                    <!-- Customer Information -->
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h6 class="mb-0"><i class="bx bx-user me-2"></i>Customer Information</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-flex align-items-center mb-3">
-                                <div class="avatar avatar-lg me-3">
-                                    <i class="bx bx-user-circle fs-1"></i>
+            <!-- Tabs Navigation -->
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0">
+                    <ul class="nav nav-tabs card-header-tabs" id="loanTabs" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link active" id="details-tab" data-bs-toggle="tab" data-bs-target="#details" type="button" role="tab">
+                                <i class="bx bx-info-circle me-1"></i> Loan Details
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="documents-tab" data-bs-toggle="tab" data-bs-target="#documents" type="button" role="tab">
+                                <i class="bx bx-file me-1"></i> Documents
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="guarantors-tab" data-bs-toggle="tab" data-bs-target="#guarantors" type="button" role="tab">
+                                <i class="bx bx-user-check me-1"></i> Guarantors
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="collaterals-tab" data-bs-toggle="tab" data-bs-target="#collaterals" type="button" role="tab">
+                                <i class="bx bx-shield me-1"></i> Collaterals
+                            </button>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <button class="nav-link" id="schedule-tab" data-bs-toggle="tab" data-bs-target="#schedule" type="button" role="tab">
+                                <i class="bx bx-calendar me-1"></i> Repayment Schedule
+                            </button>
+                        </li>
+                    </ul>
+                </div>
+                <div class="card-body">
+                    <div class="tab-content" id="loanTabsContent">
+                        <!-- Loan Details Tab -->
+                        <div class="tab-pane fade show active" id="details" role="tabpanel">
+                            <!-- LOAN DETAILS Table -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bx bx-info-circle me-2"></i>LOAN DETAILS</h6>
                                 </div>
-                                <div>
-                                    <h6 class="mb-1">{{ $loanApplication->customer->name }}</h6>
-                                    <small class="text-muted">{{ $loanApplication->customer->phone ?? 'No phone' }}</small>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered mb-0">
+                                            <tbody>
+                                                <tr>
+                                                    <td class="fw-bold bg-light" style="width: 30%;">Loan Status</td>
+                                                    <td>
+                                                        @switch($loanApplication->status)
+                                                            @case('pending')
+                                                                <span class="badge bg-warning">PENDING</span>
+                                                                @break
+                                                            @case('approved')
+                                                                <span class="badge bg-success">APPROVED</span>
+                                                                @break
+                                                            @case('rejected')
+                                                                <span class="badge bg-danger">REJECTED</span>
+                                                                @break
+                                                            @case('active')
+                                                                <span class="badge bg-primary">ACTIVE</span>
+                                                                @break
+                                                            @default
+                                                                <span class="badge bg-secondary">{{ strtoupper($loanApplication->status) }}</span>
+                                                        @endswitch
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Loan Type</td>
+                                                    <td>{{ $loanApplication->product->name ?? 'N/A' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Principal Amount</td>
+                                                    <td class="fw-bold text-primary">TZS {{ number_format($loanApplication->amount, 2) }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Interest Amount</td>
+                                                    <td>TZS {{ number_format($loanApplication->interest_amount ?? 0, 2) }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Interest Rate</td>
+                                                    <td class="fw-bold text-warning">{{ $loanApplication->interest ?? 'N/A' }}%</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Loan Fees & Bima & Kinga ya Posho</td>
+                                                    <td>
+                                                        @if($loanApplication->product && $loanApplication->product->fees)
+                                                            @foreach($loanApplication->product->fees as $fee)
+                                                                <div>{{ $fee->name }} - {{ $fee->fee_type }} - {{ number_format($fee->amount, 2) }}</div>
+                                                            @endforeach
+                                                        @else
+                                                            <span class="text-muted">No fees configured</span>
+                                                        @endif
+                                                    </td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Contract Requirement</td>
+                                                    <td><span class="badge bg-danger">CONTRACT REQUIRED</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Contract Status</td>
+                                                    <td><span class="badge bg-warning">CONTRACT NOT UPLOADED</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Guarantors Required</td>
+                                                    <td><span class="badge bg-info">2 REQUIRED</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Guarantors Uploaded</td>
+                                                    <td><span class="badge bg-warning">0 UPLOADED (MISSING 2)</span></td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Loan Term</td>
+                                                    <td>{{ $loanApplication->period }} Months</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Disbursement Date</td>
+                                                    <td>{{ $loanApplication->disbursed_on ? \Carbon\Carbon::parse($loanApplication->disbursed_on)->format('d-m-Y') : 'N/A' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">First Repayment Date</td>
+                                                    <td>{{ $loanApplication->first_repayment_date ? \Carbon\Carbon::parse($loanApplication->first_repayment_date)->format('d-m-Y') : 'N/A' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Last Repayment Date</td>
+                                                    <td>{{ $loanApplication->last_repayment_date ? \Carbon\Carbon::parse($loanApplication->last_repayment_date)->format('d-m-Y') : 'N/A' }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Principal & Interest</td>
+                                                    <td class="fw-bold">TZS {{ number_format($loanApplication->amount_total ?? 0, 2) }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Repayment Installment</td>
+                                                    <td class="fw-bold">TZS {{ number_format(($loanApplication->amount_total ?? 0) / ($loanApplication->period ?? 1), 2) }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Total Repayments</td>
+                                                    <td class="fw-bold text-success">TZS 0.00</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Outstanding Balance</td>
+                                                    <td class="fw-bold text-success">TZS 0.00</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Disbursement Amount</td>
+                                                    <td class="fw-bold text-danger">TZS {{ number_format($loanApplication->amount, 2) }}</td>
+                                                </tr>
+                                                <tr>
+                                                    <td class="fw-bold bg-light">Lipa sasa Amount</td>
+                                                    <td class="fw-bold text-success">TZS 0.00</td>
+                                                </tr>
+                                            </tbody>
+                                        </table>
+                                    </div>
                                 </div>
-                            </div>
-                            
-                            <div class="mb-2">
-                                <small class="text-muted">Email:</small>
-                                <p class="mb-1">{{ $loanApplication->customer->email ?? 'No email' }}</p>
-                            </div>
-                            
-                            <div class="mb-2">
-                                <small class="text-muted">Address:</small>
-                                <p class="mb-1">{{ $loanApplication->customer->address ?? 'No address' }}</p>
                             </div>
 
-                            @if($loanApplication->group)
-                            <div class="mb-2">
-                                <small class="text-muted">Group:</small>
-                                <p class="mb-1">
-                                    <span class="badge bg-secondary">{{ $loanApplication->group->name }}</span>
-                                </p>
+                        
+                            <!-- COLLATERAL BALANCE Table -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bx bx-shield me-2"></i>COLLATERAL BALANCE</h6>
+                                </div>
+                                <div class="card-body p-0">
+                                    <div class="table-responsive">
+                                        <table class="table table-bordered mb-0">
+                                            <thead class="table-light">
+                                                <tr>
+                                                    <th>#</th>
+                                                    <th>Collateral Type</th>
+                                                    <th>Balance</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody>
+                                                @if($loanApplication->customer && $loanApplication->customer->getCashCollateralBalanceAttribute())
+                                                    <tr>
+                                                        <td>1</td>
+                                                        <td>Cash</td>
+                                                        <td class="fw-bold">{{ number_format($loanApplication->customer->getCashCollateralBalanceAttribute(), 2) }}</td>
+                                                    </tr>
+                                                @else
+                                                    <tr>
+                                                        <td colspan="3" class="text-center text-muted py-4">
+                                                            <i class="bx bx-shield-x fs-1 mb-3"></i>
+                                                            <h6>No Collateral Balance</h6>
+                                                            <p>Customer has no collateral balance recorded.</p>
+                                                        </td>
+                                                    </tr>
+                                                @endif
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Loan Application Actions -->
+                            @if($loanApplication->status === 'pending')
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4 mb-3">
+                                            <button type="button" class="btn btn-success  w-50" onclick="approveApplication('{{ Hashids::encode($loanApplication->id) }}')">
+                                                <i class="bx bx-check-circle me-2"></i>APPROVE APPLICATION
+                                            </button>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <button type="button" class="btn btn-danger  w-50" onclick="rejectApplication('{{ Hashids::encode($loanApplication->id) }}')">
+                                                <i class="bx bx-x-circle me-2"></i> REJECT APPLICATION
+                                            </button>
+                                        </div>
+                                        <div class="col-md-4 mb-3">
+                                            <button type="button" class="btn btn-primary  w-50" onclick="disburseApplication('{{ Hashids::encode($loanApplication->id) }}')">
+                                                <i class="bx bx-x-circle me-2"></i> DISBURSE LOAN
+                                            </button>
+                                        </div>
+                                    </div>
+                                 
+                                </div>
                             </div>
                             @endif
                         </div>
-                    </div>
 
-                    <!-- Disbursement Account -->
-                    <div class="card mb-3">
-                        <div class="card-header">
-                            <h6 class="mb-0"><i class="bx bx-bank me-2"></i>Disbursement Account</h6>
+                        <!-- Documents Tab -->
+                        <div class="tab-pane fade" id="documents" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Loan Documents</h5>
+                                <button class="btn btn-primary" onclick="addDocument()">
+                                    <i class="bx bx-plus me-1"></i> Add Document
+                                </button>
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="text-center py-5">
+                                        <i class="bx bx-file-plus fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No documents uploaded yet</h6>
+                                        <p class="text-muted">Upload loan documents such as contracts, ID copies, and other required paperwork.</p>
+                                        <button class="btn btn-primary" onclick="addDocument()">
+                                            <i class="bx bx-upload me-1"></i> Upload First Document
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <h6 class="mb-2">{{ $loanApplication->bankAccount->name }}</h6>
-                            <p class="mb-1">
-                                <small class="text-muted">Account Number:</small><br>
-                                {{ $loanApplication->bankAccount->account_number ?? 'No account number' }}
-                            </p>
-                            <p class="mb-0">
-                                <small class="text-muted">Bank:</small><br>
-                                {{ $loanApplication->bankAccount->bank_name ?? 'No bank name' }}
-                            </p>
-                        </div>
-                    </div>
 
-                    <!-- Actions -->
-                    @if($loanApplication->status === 'pending')
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0"><i class="bx bx-cog me-2"></i>Actions</h6>
+                        <!-- Guarantors Tab -->
+                        <div class="tab-pane fade" id="guarantors" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Loan Guarantors</h5>
+                                <button class="btn btn-primary" onclick="addGuarantor()">
+                                    <i class="bx bx-plus me-1"></i> Add Guarantor
+                                </button>
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="text-center py-5">
+                                        <i class="bx bx-user-plus fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No guarantors added yet</h6>
+                                        <p class="text-muted">Add guarantors for this loan application to meet the loan requirements.</p>
+                                        <button class="btn btn-primary" onclick="addGuarantor()">
+                                            <i class="bx bx-user-plus me-1"></i> Add First Guarantor
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-success" onclick="approveApplication('{{ Hashids::encode($loanApplication->id) }}')">
-                                    <i class="bx bx-check me-1"></i> Approve Application
+
+                        <!-- Collaterals Tab -->
+                        <div class="tab-pane fade" id="collaterals" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Loan Collaterals</h5>
+                                <button class="btn btn-primary" onclick="addCollateral()">
+                                    <i class="bx bx-plus me-1"></i> Add Collateral
                                 </button>
-                                <button type="button" class="btn btn-danger" onclick="rejectApplication('{{ Hashids::encode($loanApplication->id) }}')">
-                                    <i class="bx bx-x me-1"></i> Reject Application
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="text-center py-5">
+                                        <i class="bx bx-shield-plus fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No collaterals added yet</h6>
+                                        <p class="text-muted">Add collaterals for this loan application to secure the loan.</p>
+                                        <button class="btn btn-primary" onclick="addCollateral()">
+                                            <i class="bx bx-shield-plus me-1"></i> Add First Collateral
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Repayment Schedule Tab -->
+                        <div class="tab-pane fade" id="schedule" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0">Repayment Schedule</h5>
+                                <button class="btn btn-outline-primary" onclick="generateSchedule()">
+                                    <i class="bx bx-refresh me-1"></i> Generate Schedule
                                 </button>
+                            </div>
+                            <div class="card border-0 shadow-sm">
+                                <div class="card-body">
+                                    <div class="text-center py-5">
+                                        <i class="bx bx-calendar-plus fs-1 text-muted mb-3"></i>
+                                        <h6 class="text-muted">No repayment schedule generated yet</h6>
+                                        <p class="text-muted">Generate the repayment schedule for this loan application.</p>
+                                        <button class="btn btn-primary" onclick="generateSchedule()">
+                                            <i class="bx bx-calendar-plus me-1"></i> Generate Schedule
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
-                    @endif
-                    
-                    @if(!in_array($loanApplication->status, ['active', 'authorized']))
-                    <div class="card">
-                        <div class="card-header">
-                            <h6 class="mb-0"><i class="bx bx-trash me-2"></i>Delete Action</h6>
-                        </div>
-                        <div class="card-body">
-                            <div class="d-grid gap-2">
-                                <button type="button" class="btn btn-dark" onclick="deleteApplication('{{ Hashids::encode($loanApplication->id) }}')">
-                                    <i class="bx bx-trash me-1"></i> Delete Application
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                    @endif
                 </div>
             </div>
         </div>
@@ -242,6 +430,66 @@
         </div>
     </div>
 @endsection
+
+@push('styles')
+<style>
+    .nav-tabs .nav-link {
+        border: none;
+        color: #6c757d;
+        font-weight: 500;
+        padding: 0.75rem 1.5rem;
+    }
+    
+    .nav-tabs .nav-link.active {
+        color: #007bff;
+        background: none;
+        border-bottom: 3px solid #007bff;
+    }
+    
+    .nav-tabs .nav-link:hover {
+        border: none;
+        color: #007bff;
+    }
+    
+    .card {
+        border-radius: 0.5rem;
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+    }
+    
+    .card-header {
+        border-radius: 0.5rem 0.5rem 0 0 !important;
+        font-weight: 600;
+    }
+    
+    .avatar {
+        width: 3rem;
+        height: 3rem;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background-color: #f8f9fa;
+    }
+    
+    .avatar-lg {
+        width: 4rem;
+        height: 4rem;
+    }
+    
+    .badge {
+        font-size: 0.75em;
+        font-weight: 500;
+    }
+    
+    .form-label {
+        font-weight: 500;
+    }
+    
+    .fw-bold {
+        font-weight: 600 !important;
+    }
+</style>
+@endpush
 
 @push('scripts')
 <script>
@@ -278,7 +526,6 @@
             confirmButtonText: 'Yes, delete it!'
         }).then((result) => {
             if (result.isConfirmed) {
-                // Create a form and submit it
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = `/loans/application/${applicationId}`;
@@ -298,6 +545,42 @@
                 document.body.appendChild(form);
                 form.submit();
             }
+        });
+    }
+
+    function addDocument() {
+        Swal.fire({
+            title: 'Add Document',
+            text: 'Document upload functionality will be implemented here.',
+            icon: 'info',
+            confirmButtonText: 'OK'
+        });
+    }
+
+    function addGuarantor() {
+        Swal.fire({
+            title: 'Add Guarantor',
+            text: 'Guarantor management functionality will be implemented here.',
+            icon: 'info',
+            confirmButtonText: 'OK'
+        });
+    }
+
+    function addCollateral() {
+        Swal.fire({
+            title: 'Add Collateral',
+            text: 'Collateral management functionality will be implemented here.',
+            icon: 'info',
+            confirmButtonText: 'OK'
+        });
+    }
+
+    function generateSchedule() {
+        Swal.fire({
+            title: 'Generate Schedule',
+            text: 'Repayment schedule generation functionality will be implemented here.',
+            icon: 'info',
+            confirmButtonText: 'OK'
         });
     }
 </script>
