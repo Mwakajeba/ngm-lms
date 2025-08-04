@@ -21,6 +21,7 @@ class DatabaseSeeder extends Seeder
       RolePermissionSeeder::class,
       MenuSeeder::class,
       AccountClassSeeder::class,
+      AccountGroupSeeder::class,
       CashFlowCategorySeeder::class,
       EquityCategorySeeder::class,
       RegionsTableSeeder::class,
