@@ -15,49 +15,74 @@
 
         <ul class="nav nav-tabs nav-tabs-style-2 mb-3" role="tablist">
             <li class="nav-item" role="presentation">
-                <a class="nav-link active" data-bs-toggle="tab" href="#loan_detail" role="tab">Details</a>
+                <a class="nav-link active d-flex align-items-center" data-bs-toggle="tab" href="#loan_detail" role="tab">
+                    <i class="bx bx-info-circle me-2 font-18"></i>Details
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" data-bs-toggle="tab" href="#schedule" role="tab">Schedule</a>
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#schedule" role="tab">
+                    <i class="bx bx-calendar me-2 font-18"></i>Schedule
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" data-bs-toggle="tab" href="#guarantors" role="tab">Guarantors</a>
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#guarantors" role="tab">
+                    <i class="bx bx-group me-2 font-18"></i>Guarantors
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" data-bs-toggle="tab" href="#documents" role="tab">Documents</a>
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#documents" role="tab">
+                    <i class="bx bx-file me-2 font-18"></i>Documents
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" data-bs-toggle="tab" href="#collateral" role="tab">Collaterals</a>
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#repayments" role="tab">
+                    <i class="bx bx-credit-card me-2 font-18"></i>Repayments
+                </a>
             </li>
             <li class="nav-item" role="presentation">
-                <a class="nav-link" data-bs-toggle="tab" href="#repayment" role="tab">Repayments</a>
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#collaterals" role="tab">
+                    <i class="bx bx-shield me-2 font-18"></i>Collaterals
+                </a>
             </li>
-        </ul>
+            </ul>
 
         <div class="tab-content py-3">
             <div class="tab-pane fade show active" id="loan_detail" role="tabpanel">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-dark">Loan Status</h6>
+                    </div>
+                    <div class="card-body">
+                        <p class="mb-2">Current Status: <span class="badge bg-primary">{{ ucfirst($loan->status) }}</span></p>
+                        <div class="progress" style="height: 25px;">
+                            <div class="progress-bar bg-success progress-bar-striped progress-bar-animated" role="progressbar" style="width: {{ $loan->repayment_progress }}%;" aria-valuenow="{{ $loan->repayment_progress }}" aria-valuemin="0" aria-valuemax="100">
+                                {{ $loan->repayment_progress }}% Complete
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="card shadow-sm">
                     <div class="card-body">
                         <div class="table-responsive">
                             <table class="table table-borderless table-striped align-middle">
                                 <tbody>
                                     @foreach([
-                                    ['label' => 'Customer Name', 'value' => $loan->customer->name],
-                                    ['label' => 'Product', 'value' => $loan->product->name],
-                                    ['label' => 'Amount', 'value' => number_format($loan->amount, 2)],
-                                    ['label' => 'Interest Amount', 'value' => number_format($loan->interest_amount, 2)],
-                                    ['label' => 'Total Repayable', 'value' => number_format($loan->amount_total, 2)],
-                                    ['label' => 'Period', 'value' => $loan->period . ' months'],
-                                    ['label' => 'Interest Method', 'value' => $loan->product->interest_method],
-                                    ['label' => 'Status', 'value' => ucfirst($loan->status)],
-                                    ['label' => 'Disbursed On', 'value' => \Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y')],
-                                    ['label' => 'First Repayment', 'value' => \Carbon\Carbon::parse($loan->first_repayment_date)->format('M d, Y')],
-                                    ['label' => 'Last Repayment', 'value' => \Carbon\Carbon::parse($loan->last_repayment_date)->format('M d, Y')],
-                                    ['label' => 'Applied On', 'value' => \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y')],
-                                    ['label' => 'Branch', 'value' => $loan->branch->name ?? 'N/A'],
-                                    ['label' => 'Group', 'value' => $loan->group->name ?? 'N/A'],
-                                    ['label' => 'Bank Account', 'value' => $loan->bankAccount->name ?? 'N/A'],
-                                    ['label' => 'Sector', 'value' => $loan->sector],
+                                        ['label' => 'Customer Name', 'value' => $loan->customer->name],
+                                        ['label' => 'Product', 'value' => $loan->product->name],
+                                        ['label' => 'Amount', 'value' => number_format($loan->amount, 2)],
+                                        ['label' => 'Interest Amount', 'value' => number_format($loan->interest_amount, 2)],
+                                        ['label' => 'Total Repayable', 'value' => number_format($loan->amount_total, 2)],
+                                        ['label' => 'Period', 'value' => $loan->period . ' months'],
+                                        ['label' => 'Interest Method', 'value' => $loan->product->interest_method],
+                                        ['label' => 'Disbursed On', 'value' => \Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y')],
+                                        ['label' => 'First Repayment', 'value' => \Carbon\Carbon::parse($loan->first_repayment_date)->format('M d, Y')],
+                                        ['label' => 'Last Repayment', 'value' => \Carbon\Carbon::parse($loan->last_repayment_date)->format('M d, Y')],
+                                        ['label' => 'Applied On', 'value' => \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y')],
+                                        ['label' => 'Branch', 'value' => $loan->branch->name ?? 'N/A'],
+                                        ['label' => 'Group', 'value' => $loan->group->name ?? 'N/A'],
+                                        ['label' => 'Bank Account', 'value' => $loan->bankAccount->name ?? 'N/A'],
+                                        ['label' => 'Sector', 'value' => $loan->sector],
                                     ] as $item)
                                     <tr>
                                         <th scope="row" class="col-sm-4 text-muted">{{ $item['label'] }}</th>
@@ -215,69 +240,68 @@
                 @endif
             </div>
 
-            {{-- You will need to add the other tabs (Collaterals, Repayments, etc.) here in the same consistent style --}}
-        </div>
+            {{-- Modals remain the same --}}
+            <div class="modal fade" id="addGuarantorModal" tabindex="-1" aria-labelledby="addGuarantorModalLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form action="{{ route('loans.addGuarantor', $loan->id) }}" method="POST">
+                        @csrf
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title">Add Guarantor</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <div class="modal-body">
+                                <input type="hidden" name="loan_id" value="{{ $loan->id }}">
+                                <div class="mb-3">
+                                    <label for="guarantor_id" class="form-label">Select Guarantor</label>
+                                    <select class="form-select" name="guarantor_id" id="guarantor_id" required>
+                                        <option value="">-- Choose Guarantor --</option>
+                                        @foreach($guarantorCustomers as $customer)
+                                        <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->phone1 }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="relation" class="form-label">Relation to Borrower</label>
+                                    <input type="text" class="form-control" name="relation" id="relation" required>
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Add Guarantor</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
 
-        <div class="modal fade" id="addGuarantorModal" tabindex="-1" aria-labelledby="addGuarantorModalLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <form action="{{ route('loans.addGuarantor', $loan->id) }}" method="POST">
-                    @csrf
-                    <div class="modal-content">
+            <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentLabel" aria-hidden="true">
+                <div class="modal-dialog">
+                    <form action="{{ route('loan-documents.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+                        @csrf
+                        <input type="hidden" name="loan_id" value="{{ $loan->id }}">
                         <div class="modal-header">
-                            <h5 class="modal-title">Add Guarantor</h5>
+                            <h5 class="modal-title" id="uploadDocumentLabel">Upload Document</h5>
                             <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                         </div>
                         <div class="modal-body">
-                            <input type="hidden" name="loan_id" value="{{ $loan->id }}">
                             <div class="mb-3">
-                                <label for="guarantor_id" class="form-label">Select Guarantor</label>
-                                <select class="form-select" name="guarantor_id" id="guarantor_id" required>
-                                    <option value="">-- Choose Guarantor --</option>
-                                    @foreach($guarantorCustomers as $customer)
-                                    <option value="{{ $customer->id }}">{{ $customer->name }} - {{ $customer->phone1 }}</option>
-                                    @endforeach
-                                </select>
+                                <label for="docName" class="form-label">Document Name</label>
+                                <input type="text" class="form-control" name="name" id="docName" required>
                             </div>
                             <div class="mb-3">
-                                <label for="relation" class="form-label">Relation to Borrower</label>
-                                <input type="text" class="form-control" name="relation" id="relation" required>
+                                <label for="docFile" class="form-label">Choose File</label>
+                                <input type="file" class="form-control" name="file" id="docFile" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
                             </div>
                         </div>
                         <div class="modal-footer">
-                            <button type="submit" class="btn btn-primary">Add Guarantor</button>
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-success">Upload</button>
                         </div>
-                    </div>
-                </form>
+                    </form>
+                </div>
             </div>
         </div>
-
-        <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentLabel" aria-hidden="true">
-            <div class="modal-dialog">
-                <form action="{{ route('loan-documents.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
-                    @csrf
-                    <input type="hidden" name="loan_id" value="{{ $loan->id }}">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="uploadDocumentLabel">Upload Document</h5>
-                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                    </div>
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="docName" class="form-label">Document Name</label>
-                            <input type="text" class="form-control" name="name" id="docName" required>
-                        </div>
-                        <div class="mb-3">
-                            <label for="docFile" class="form-label">Choose File</label>
-                            <input type="file" class="form-control" name="file" id="docFile" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Upload</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-
     </div>
 </div>
 @endsection
