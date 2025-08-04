@@ -94,31 +94,59 @@
                         <div class="col-12 mb-3">
                             <label class="form-label">Deduction Type <span class="text-danger">*</span></label>
                             <div class="row">
-                                <div class="col-md-6">
+                                <div class="col-md-6 mb-3">
                                     <div class="form-check">
                                         <input class="form-check-input @error('deduction_type') is-invalid @enderror" 
-                                            type="radio" name="deduction_type" id="outstanding_amount" 
-                                            value="outstanding_amount" 
-                                            {{ old('deduction_type', $penalty->deduction_type ?? 'outstanding_amount') == 'outstanding_amount' ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="outstanding_amount">
-                                            <i class="bx bx-money me-2 text-warning"></i>
-                                            <strong>Outstanding Amount</strong>
+                                            type="radio" name="deduction_type" id="over_due_principal_amount" 
+                                            value="over_due_principal_amount" 
+                                            {{ old('deduction_type', $penalty->deduction_type ?? 'over_due_principal_amount') == 'over_due_principal_amount' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="over_due_principal_amount">
+                                            <i class="bx bx-time me-2 text-danger"></i>
+                                            <strong>Over Due Principal Amount</strong>
                                             <br>
-                                            <small class="text-muted">Penalty will be calculated based on the outstanding loan amount</small>
+                                            <small class="text-muted">Penalty calculated on overdue principal amount</small>
                                         </label>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-6 mb-3">
                                     <div class="form-check">
                                         <input class="form-check-input @error('deduction_type') is-invalid @enderror" 
-                                            type="radio" name="deduction_type" id="principal" 
-                                            value="principal" 
-                                            {{ old('deduction_type', $penalty->deduction_type ?? 'outstanding_amount') == 'principal' ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="principal">
-                                            <i class="bx bx-home me-2 text-danger"></i>
-                                            <strong>Principal</strong>
+                                            type="radio" name="deduction_type" id="over_due_interest_amount" 
+                                            value="over_due_interest_amount" 
+                                            {{ old('deduction_type', $penalty->deduction_type ?? 'over_due_principal_amount') == 'over_due_interest_amount' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="over_due_interest_amount">
+                                            <i class="bx bx-percentage me-2 text-warning"></i>
+                                            <strong>Over Due Interest Amount</strong>
                                             <br>
-                                            <small class="text-muted">Penalty will be calculated based on the original principal amount</small>
+                                            <small class="text-muted">Penalty calculated on overdue interest amount</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input @error('deduction_type') is-invalid @enderror" 
+                                            type="radio" name="deduction_type" id="over_due_principal_and_interest" 
+                                            value="over_due_principal_and_interest" 
+                                            {{ old('deduction_type', $penalty->deduction_type ?? 'over_due_principal_amount') == 'over_due_principal_and_interest' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="over_due_principal_and_interest">
+                                            <i class="bx bx-calculator me-2 text-danger"></i>
+                                            <strong>Over Due Principal and Interest</strong>
+                                            <br>
+                                            <small class="text-muted">Penalty calculated on overdue principal + interest</small>
+                                        </label>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <div class="form-check">
+                                        <input class="form-check-input @error('deduction_type') is-invalid @enderror" 
+                                            type="radio" name="deduction_type" id="total_principal_amount_released" 
+                                            value="total_principal_amount_released" 
+                                            {{ old('deduction_type', $penalty->deduction_type ?? 'over_due_principal_amount') == 'total_principal_amount_released' ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="total_principal_amount_released">
+                                            <i class="bx bx-dollar-circle me-2 text-info"></i>
+                                            <strong>Total Principal Amount Released</strong>
+                                            <br>
+                                            <small class="text-muted">Penalty calculated on total principal amount released</small>
                                         </label>
                                     </div>
                                 </div>

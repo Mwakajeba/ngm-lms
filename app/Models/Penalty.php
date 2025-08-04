@@ -110,8 +110,10 @@ class Penalty extends Model
     public function getDeductionTypeBadgeAttribute()
     {
         return match ($this->deduction_type) {
-            'outstanding_amount' => '<span class="badge bg-warning">Outstanding Amount</span>',
-            'principal' => '<span class="badge bg-danger">Principal</span>',
+            'over_due_principal_amount' => '<span class="badge bg-danger">Over Due Principal</span>',
+            'over_due_interest_amount' => '<span class="badge bg-warning">Over Due Interest</span>',
+            'over_due_principal_and_interest' => '<span class="badge bg-danger">Over Due Principal & Interest</span>',
+            'total_principal_amount_released' => '<span class="badge bg-info">Total Principal Released</span>',
             default => '<span class="badge bg-secondary">Unknown</span>',
         };
     }
@@ -127,8 +129,10 @@ class Penalty extends Model
     public function getDeductionTypeLabelAttribute()
     {
         return match ($this->deduction_type) {
-            'outstanding_amount' => 'Outstanding Amount',
-            'principal' => 'Principal',
+            'over_due_principal_amount' => 'Over Due Principal Amount',
+            'over_due_interest_amount' => 'Over Due Interest Amount',
+            'over_due_principal_and_interest' => 'Over Due Principal and Interest',
+            'total_principal_amount_released' => 'Total Principal Amount Released',
             default => 'Unknown',
         };
     }
@@ -157,12 +161,12 @@ class Penalty extends Model
 
     public function isOutstandingAmountDeduction()
     {
-        return $this->deduction_type === 'outstanding_amount';
+        return $this->deduction_type === 'over_due_principal_amount';
     }
 
     public function isPrincipalDeduction()
     {
-        return $this->deduction_type === 'principal';
+        return $this->deduction_type === 'total_principal_amount_released';
     }
 
     public function activate()
@@ -195,8 +199,10 @@ class Penalty extends Model
     public static function getDeductionTypeOptions()
     {
         return [
-            'outstanding_amount' => 'Outstanding Amount',
-            'principal' => 'Principal',
+            'over_due_principal_amount' => 'Over Due Principal Amount',
+            'over_due_interest_amount' => 'Over Due Interest Amount',
+            'over_due_principal_and_interest' => 'Over Due Principal and Interest',
+            'total_principal_amount_released' => 'Total Principal Amount Released',
         ];
     }
 }

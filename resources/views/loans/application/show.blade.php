@@ -176,18 +176,6 @@
                                                     <td class="fw-bold text-warning">{{ $loanApplication->interest ?? 'N/A' }}%</td>
                                                 </tr>
                                                 <tr>
-                                                    <td class="fw-bold bg-light">Loan Fees & Bima & Kinga ya Posho</td>
-                                                    <td>
-                                                        @if($loanApplication->product && $loanApplication->product->fees)
-                                                            @foreach($loanApplication->product->fees as $fee)
-                                                                <div>{{ $fee->name }} - {{ $fee->fee_type }} - {{ number_format($fee->amount, 2) }}</div>
-                                                            @endforeach
-                                                        @else
-                                                            <span class="text-muted">No fees configured</span>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-                                                <tr>
                                                     <td class="fw-bold bg-light">Contract Requirement</td>
                                                     <td><span class="badge bg-danger">CONTRACT REQUIRED</span></td>
                                                 </tr>
@@ -238,10 +226,6 @@
                                                 <tr>
                                                     <td class="fw-bold bg-light">Disbursement Amount</td>
                                                     <td class="fw-bold text-danger">TZS {{ number_format($loanApplication->amount, 2) }}</td>
-                                                </tr>
-                                                <tr>
-                                                    <td class="fw-bold bg-light">Lipa sasa Amount</td>
-                                                    <td class="fw-bold text-success">TZS 0.00</td>
                                                 </tr>
                                             </tbody>
                                         </table>

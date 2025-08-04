@@ -16,6 +16,7 @@ class Loan extends Model
         'group_id',
         'product_id',
         'amount',
+        'interest',
         'interest_amount',
         'period',
         'amount_total',

@@ -18,6 +18,14 @@ return new class extends Migration {
             $table->decimal('amount', 15, 2)->default(0);
             $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
+            $table->enum('deduction_criteria', [
+                'do_not_include_in_loan_schedule',
+                'distribute_fee_evenly_to_all_repayments',
+                'charge_fee_on_release_date',
+                'charge_fee_on_first_repayment',
+                'charge_fee_on_last_repayment',
+                'charge_same_fee_to_all_repayments'
+            ])->default('do_not_include_in_loan_schedule');
             $table->foreignId('company_id')->constrained()->onDelete('cascade');
             $table->foreignId('branch_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
