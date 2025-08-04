@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Customer;
 use App\Models\Group;
+use App\Models\GroupMember;
 use App\Models\User;
 use App\Models\Branch;
 use Illuminate\Http\Request;
@@ -83,7 +84,7 @@ class GroupController extends Controller
         }
 
         try {
-            Group::create([
+            $group = Group::create([
                 'name' => $request->name,
                 'loan_officer' => $request->loan_officer,
                 'branch_id' => $request->branch_id,
@@ -93,6 +94,14 @@ class GroupController extends Controller
                 'meeting_day' => $request->meeting_day,
                 'meeting_time' => $request->meeting_time,
             ]);
+
+            // Add the group leader as the first member
+            if ($request->group_leader) {
+                GroupMember::create([
+                    'group_id' => $group->id,
+                    'customer_id' => $request->group_leader,
+                ]);
+            }
 
             return redirect()->route('groups.index')->with('success', 'Group created successfully!');
         } catch (\Exception $e) {
@@ -113,9 +122,8 @@ class GroupController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer']);
-        // TODO: Uncomment when Loan model is properly set up
-        // $group->load(['loanOfficer', 'loans']);
+        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer', 'loans']);
+
         return view('groups.show', compact('group'));
     }
 
@@ -229,11 +237,12 @@ class GroupController extends Controller
         $group = Group::findOrFail($decoded[0]);
 
         try {
-            // TODO: Uncomment when Loan model is properly set up
-            // Check if group has any loans
-            // if ($group->loans()->count() > 0) {
-            //     return redirect()->back()->with('error', 'Cannot delete group. It has associated loans.');
-            // }
+            if ($group->loans()->count() > 0) {
+                return redirect()->back()->with('error', 'Cannot delete group. It has associated loans.');
+            }
+            if ($group->members()->count() > 0) {
+                return redirect()->back()->with('error', 'Cannot delete group. It has associated members.');
+            }
 
             $group->delete();
             return redirect()->route('groups.index')->with('success', 'Group deleted successfully!');

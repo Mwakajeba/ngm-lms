@@ -63,7 +63,7 @@ class ChartAccountController extends Controller
 
         ChartAccount::create($data);
 
-        return redirect()->route('accounting.accounts')
+        return redirect()->route('accounting.chart-accounts.index')
             ->with('success', 'Chart Account created successfully.');
     }
 

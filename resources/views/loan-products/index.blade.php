@@ -116,6 +116,14 @@
                                                             class="btn btn-sm btn-outline-primary" title="Edit Product">
                                                             edit
                                                         </a>
+                                                        <button type="button"
+                                                            class="btn btn-sm {{ $product->is_active ?? true ? 'btn-outline-warning' : 'btn-outline-success' }} toggle-status-btn"
+                                                            title="{{ $product->is_active ?? true ? 'Deactivate' : 'Activate' }} Product"
+                                                            data-product-id="{{ Hashids::encode($product->id) }}"
+                                                            data-product-name="{{ $product->name }}"
+                                                            data-current-status="{{ $product->is_active ?? true ? 'active' : 'inactive' }}">
+                                                            {{ $product->is_active ?? true ? 'deactivate' : 'activate' }}
+                                                        </button>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                             title="Delete Product"
                                                             data-product-id="{{ Hashids::encode($product->id) }}"
@@ -249,6 +257,49 @@
                 });
             });
 
+            // Toggle status confirmation with SweetAlert2
+            $('#loanProductsTable').on('click', '.toggle-status-btn', function (e) {
+                e.preventDefault();
+                var productId = $(this).data('product-id');
+                var productName = $(this).data('product-name');
+                var currentStatus = $(this).data('current-status');
+                var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                var actionText = currentStatus === 'active' ? 'deactivate' : 'activate';
+
+                Swal.fire({
+                    title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Loan Product?`,
+                    text: `Are you sure you want to ${actionText} "${productName}"?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: currentStatus === 'active' ? '#ffc107' : '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: `Yes, ${actionText} it!`,
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Create and submit form for status toggle
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/loan-products/${productId}/toggle-status`;
+
+                        var csrfToken = document.createElement('input');
+                        csrfToken.type = 'hidden';
+                        csrfToken.name = '_token';
+                        csrfToken.value = '{{ csrf_token() }}';
+
+                        var methodField = document.createElement('input');
+                        methodField.type = 'hidden';
+                        methodField.name = '_method';
+                        methodField.value = 'PATCH';
+
+                        form.appendChild(csrfToken);
+                        form.appendChild(methodField);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
+
             // Success message handling with default toast
             @if(session('success'))
                 // Show default toast notification
@@ -264,7 +315,7 @@
                     document.getElementById('toast-error-message').textContent = '{{ session('error') }}';
                     toast.show();
                 @endif
-                                                                                                                                                                                                        });
+                                                                                                                                                                                                                        });
 
         // Duplicate product function
         function duplicateProduct(productId) {

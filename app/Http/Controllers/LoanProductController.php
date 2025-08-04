@@ -451,4 +451,30 @@ class LoanProductController extends Controller
                 ->with('error', 'Error deleting loan product: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Toggle the active status of a loan product
+     */
+    public function toggleStatus($encodedId)
+    {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
+        try {
+            $loanProduct->update([
+                'is_active' => !$loanProduct->is_active
+            ]);
+
+            $status = $loanProduct->is_active ? 'activated' : 'deactivated';
+            return redirect()->back()->with('success', "Loan product {$status} successfully!");
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error updating loan product status: ' . $e->getMessage());
+        }
+    }
 }

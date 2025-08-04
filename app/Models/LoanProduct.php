@@ -32,6 +32,7 @@ class LoanProduct extends Model
         'fees_ids',
         'penalty_ids',
         'repayment_order',
+        'is_active',
     ];
 
     protected $casts = [
@@ -47,18 +48,19 @@ class LoanProduct extends Model
         'maximum_period' => 'integer',
         'fees_ids' => 'array',
         'penalty_ids' => 'array',
+        'is_active' => 'boolean',
     ];
 
 
     public static function frequencies()
     {
         return [
-            'Daily'          => 365,
-            'Weekly'         => 52,
-            'Monthly'        => 12,
-            'Quarterly'      => 4,
-            'Semi Annually'  => 2,
-            'Annually'       => 1,
+            'Daily' => 365,
+            'Weekly' => 52,
+            'Monthly' => 12,
+            'Quarterly' => 4,
+            'Semi Annually' => 2,
+            'Annually' => 1,
         ];
     }
 

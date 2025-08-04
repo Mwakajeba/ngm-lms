@@ -57,7 +57,6 @@ Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('r
 
 // Language switching
 Route::get('/language/{locale}', [LanguageController::class, 'switchLanguage'])->name('language.switch');
-
 // Test language route
 Route::get('/test-language', function () {
     return view('test-language');
@@ -74,7 +73,7 @@ Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'lo
 Route::get('/reports/customers', [App\Http\Controllers\ReportsController::class, 'customers'])->middleware('auth')->name('reports.customers');
 Route::get('/reports/transactions', [App\Http\Controllers\ReportsController::class, 'transactions'])->middleware('auth')->name('reports.transactions');
 
-////////////////////////////////////////////// ROLES & PERMISSIONS MANAGEMENT /////////////////////////////////////////////
+////////////////////////////////////////ROLES & PERMISSIONSMANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
     // Roles management
     Route::get('roles', [RolePermissionController::class, 'index'])->name('roles.index');
@@ -264,10 +263,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
     Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
     Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
-    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    Route::get('/bank-accounts/{encodedId}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{encodedId}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{encodedId}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{encodedId}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Reconciliation
     Route::resource('bank-reconciliation', BankReconciliationController::class);
@@ -399,6 +398,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loan-products/{encodedId}/edit', [LoanProductController::class, 'edit'])->name('loan-products.edit');
     Route::put('loan-products/{encodedId}', [LoanProductController::class, 'update'])->name('loan-products.update');
     Route::delete('loan-products/{encodedId}', [LoanProductController::class, 'destroy'])->name('loan-products.destroy');
+    Route::patch('loan-products/{encodedId}/toggle-status', [LoanProductController::class, 'toggleStatus'])->name('loan-products.toggle-status');
 });
 
 ////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
@@ -414,6 +414,13 @@ Route::middleware(['auth'])->group(function () {
     Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');
     Route::delete('groups/{encodedId}', [GroupController::class, 'destroy'])->name('groups.destroy');
 });
+////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('groups/{encodedId}/members/create', [GroupMemberController::class, 'create'])->name('group-members.create');
+    Route::post('groups/{encodedId}/members', [GroupMemberController::class, 'store'])->name('group-members.store');
+    Route::delete('groups/{encodedId}/members/{member}', [GroupMemberController::class, 'destroy'])->name('group-members.destroy');
+});
 
 ////////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
 
@@ -422,6 +429,19 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
+
+    // New Loan Application Routes (must come BEFORE general loan routes)
+    Route::get('loans/application', [LoanController::class, 'applicationIndex'])->name('loans.application.index');
+    Route::get('loans/application/create', [LoanController::class, 'applicationCreate'])->name('loans.application.create');
+    Route::post('loans/application', [LoanController::class, 'applicationStore'])->name('loans.application.store');
+    Route::get('loans/application/{encodedId}', [LoanController::class, 'applicationShow'])->name('loans.application.show');
+    Route::get('loans/application/{encodedId}/edit', [LoanController::class, 'applicationEdit'])->name('loans.application.edit');
+    Route::put('loans/application/{encodedId}', [LoanController::class, 'applicationUpdate'])->name('loans.application.update');
+    Route::patch('loans/application/{encodedId}/approve', [LoanController::class, 'applicationApprove'])->name('loans.application.approve');
+    Route::patch('loans/application/{encodedId}/reject', [LoanController::class, 'applicationReject'])->name('loans.application.reject');
+    Route::delete('loans/application/{encodedId}', [LoanController::class, 'applicationDelete'])->name('loans.application.delete');
+
+    // General loan routes (must come AFTER specific routes)
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
     Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
@@ -440,15 +460,7 @@ Route::middleware(['auth'])->group(function () {
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
 
 
-////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('groups/{encodedId}/members/create', [GroupMemberController::class, 'create'])->name('group-members.create');
-    Route::post('groups/{encodedId}/members', [GroupMemberController::class, 'store'])->name('group-members.store');
-    Route::delete('groups/{encodedId}/members/{member}', [GroupMemberController::class, 'destroy'])->name('group-members.destroy');
-});
-
-////////////////////////////////////////////// END GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 

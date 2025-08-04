@@ -113,12 +113,12 @@
                                             </td>
                                             <td>{{ $bankAccount->created_at->format('M d, Y') }}</td>
                                             <td>
-                                                <a href="{{ route('accounting.bank-accounts.show', $bankAccount->id) }}"
+                                                <a href="{{ route('accounting.bank-accounts.show', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
                                                     class="btn btn-sm btn-info">View</a>
-                                                <a href="{{ route('accounting.bank-accounts.edit', $bankAccount->id) }}"
+                                                <a href="{{ route('accounting.bank-accounts.edit', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
                                                     class="btn btn-sm btn-primary">Edit</a>
 
-                                                <form action="{{ route('accounting.bank-accounts.destroy', $bankAccount->id) }}"
+                                                <form action="{{ route('accounting.bank-accounts.destroy', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
                                                     method="POST" class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')

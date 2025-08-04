@@ -252,7 +252,8 @@
                             </h5>
                             <div>
                                 @if($group->canAcceptMoreMembers())
-                                    <a href="{{ route('group-members.create', $group) }}" class="btn btn-light btn-sm">
+                                    <a href="{{ route('group-members.create', Hashids::encode($group->id)) }}"
+                                        class="btn btn-light btn-sm">
                                         <i class="bx bx-plus"></i> Add Member
                                     </a>
                                 @else
@@ -296,7 +297,7 @@
                                                     <td class="text-center">
                                                         <div class="btn-group" role="group">
                                                             <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                onclick="removeMember({{ $group->id }}, {{ $member->id }}, '{{ $member->customer->name }}')"
+                                                                onclick="removeMember('{{ Hashids::encode($group->id) }}', {{ $member->id }}, '{{ $member->customer->name }}')"
                                                                 title="Remove Member">
                                                                 <i class="bx bx-trash"></i>
                                                             </button>
@@ -313,7 +314,8 @@
                                     <h5 class="text-muted mt-3">No Members Yet</h5>
                                     <p class="text-muted">This group doesn't have any members yet.</p>
                                     @if($group->canAcceptMoreMembers())
-                                        <a href="{{ route('group-members.create', $group) }}" class="btn btn-primary">
+                                        <a href="{{ route('group-members.create', Hashids::encode($group->id)) }}"
+                                            class="btn btn-primary">
                                             <i class="bx bx-plus"></i> Add First Member
                                         </a>
                                     @endif

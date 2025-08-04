@@ -54,7 +54,7 @@ class AccountClassGroupController extends Controller
             'company_id' => $user->company_id,
         ]);
 
-        return redirect()->route('accounting.fsli-accounts')
+        return redirect()->route('accounting.account-class-groups.index')
             ->with('success', 'Account Class Group created successfully.');
     }
 

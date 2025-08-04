@@ -26,9 +26,19 @@ class GroupMemberController extends Controller
 
         // Get customers who are not already members of this group
         $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
-        $availableCustomers = Customer::whereNotIn('id', $existingMemberIds)->get();
+        $availableCustomers = Customer::with(['region', 'district'])
+            ->whereNotIn('id', $existingMemberIds)
+            ->orderBy('name')
+            ->get();
 
-        return view('group-members.create', compact('group', 'availableCustomers'));
+        // Check if this is the first member and if there's a group leader
+        $isFirstMember = $group->members()->count() === 0;
+        $groupLeader = null;
+        if ($isFirstMember && $group->group_leader) {
+            $groupLeader = Customer::find($group->group_leader);
+        }
+
+        return view('group-members.create', compact('group', 'availableCustomers', 'isFirstMember', 'groupLeader'));
     }
 
     /**
@@ -62,6 +72,15 @@ class GroupMemberController extends Controller
         $customerIds = $request->customer_ids;
         $addedCount = 0;
         $errors = [];
+
+        // Check if this is the first member and ensure group leader is included
+        if ($group->members()->count() === 0 && $group->group_leader) {
+            // If no members yet and there's a group leader, ensure group leader is the first member
+            if (!in_array($group->group_leader, $customerIds)) {
+                $groupLeader = Customer::find($group->group_leader);
+                $errors[] = "Group leader '{$groupLeader->name}' must be the first member of the group.";
+            }
+        }
 
         foreach ($customerIds as $customerId) {
             // Check if customer is already a member

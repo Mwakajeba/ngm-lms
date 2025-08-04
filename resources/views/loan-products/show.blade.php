@@ -16,6 +16,14 @@
                     ['label' => 'Product Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
                 ]" />
                 <div>
+                    <button type="button" class="btn {{ $loanProduct->is_active ?? true ? 'btn-warning' : 'btn-success' }} toggle-status-btn"
+                        title="{{ $loanProduct->is_active ?? true ? 'Deactivate' : 'Activate' }} Product"
+                        data-product-id="{{ Hashids::encode($loanProduct->id) }}"
+                        data-product-name="{{ $loanProduct->name }}"
+                        data-current-status="{{ $loanProduct->is_active ?? true ? 'active' : 'inactive' }}">
+                        <i class="bx {{ $loanProduct->is_active ?? true ? 'bx-pause-circle' : 'bx-play-circle' }}"></i>
+                        {{ $loanProduct->is_active ?? true ? 'Deactivate' : 'Activate' }}
+                    </button>
                     <a href="{{ route('loan-products.edit', Hashids::encode($loanProduct->id)) }}" class="btn btn-primary">
                         <i class="bx bx-edit"></i> Edit Product
                     </a>
@@ -505,4 +513,51 @@
             font-weight: 600 !important;
         }
     </style>
+@endpush
+
+@push('scripts')
+<script>
+    // Toggle status confirmation with SweetAlert2
+    $('.toggle-status-btn').on('click', function (e) {
+        e.preventDefault();
+        var productId = $(this).data('product-id');
+        var productName = $(this).data('product-name');
+        var currentStatus = $(this).data('current-status');
+        var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+        var actionText = currentStatus === 'active' ? 'deactivate' : 'activate';
+
+        Swal.fire({
+            title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Loan Product?`,
+            text: `Are you sure you want to ${actionText} "${productName}"?`,
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: currentStatus === 'active' ? '#ffc107' : '#28a745',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: `Yes, ${actionText} it!`,
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Create and submit form for status toggle
+                var form = document.createElement('form');
+                form.method = 'POST';
+                form.action = `/loan-products/${productId}/toggle-status`;
+                
+                var csrfToken = document.createElement('input');
+                csrfToken.type = 'hidden';
+                csrfToken.name = '_token';
+                csrfToken.value = '{{ csrf_token() }}';
+                
+                var methodField = document.createElement('input');
+                methodField.type = 'hidden';
+                methodField.name = '_method';
+                methodField.value = 'PATCH';
+                
+                form.appendChild(csrfToken);
+                form.appendChild(methodField);
+                document.body.appendChild(form);
+                form.submit();
+            }
+        });
+    });
+</script>
 @endpush

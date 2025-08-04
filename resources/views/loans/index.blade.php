@@ -6,9 +6,9 @@
     <div class="page-wrapper">
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
-                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-                ['label' => 'Loans', 'url' => '#', 'icon' => 'bx bx-credit-card'],    
-            ]" />
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Loans', 'url' => '#', 'icon' => 'bx bx-credit-card'],
+        ]" />
             <h6 class="mb-0 text-uppercase">LOAN MANAGEMENT</h6>
             <hr />
 
@@ -42,8 +42,8 @@
                                             </div>
                                             <h5 class="card-title">Loan Applications</h5>
                                             <p class="card-text">Manage and initiate loan applications.</p>
-                                            <a href="{{ route('settings.branches') }}" class="btn btn-success">
-                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            <a href="{{ route('loans.application.index') }}" class="btn btn-success">
+                                                <i class="bx bx-file-plus me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
@@ -58,8 +58,8 @@
                                             </div>
                                             <h5 class="card-title">Checked Applications</h5>
                                             <p class="card-text">Manage and check applied loans.</p>
-                                            <a href="{{ route('settings.user') }}" class="btn btn-secondary">
-                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            <a href="{{ route('loans.application.index') }}" class="btn btn-secondary">
+                                                <i class="bx bx-check me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
@@ -74,8 +74,8 @@
                                             </div>
                                             <h5 class="card-title">Verified Applications</h5>
                                             <p class="card-text">Manage and verify applied loans.</p>
-                                            <a href="{{ route('settings.user') }}" class="btn btn-info">
-                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            <a href="{{ route('loans.application.index') }}" class="btn btn-info">
+                                                <i class="bx bx-verify me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
@@ -90,8 +90,8 @@
                                             </div>
                                             <h5 class="card-title">Approved Applications</h5>
                                             <p class="card-text">Manage and approve applied loans.</p>
-                                            <a href="{{ route('settings.user') }}" class="btn btn-warning">
-                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            <a href="{{ route('loans.application.index') }}" class="btn btn-warning">
+                                                <i class="bx bx-badge-check me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
@@ -106,8 +106,8 @@
                                             </div>
                                             <h5 class="card-title">Defaulted Loans</h5>
                                             <p class="card-text">Manage all defaulted loans.</p>
-                                            <a href="{{ route('settings.user') }}" class="btn btn-danger">
-                                                <i class="bx bx-cog me-1"></i> View Applications
+                                            <a href="{{ route('loans.list') }}" class="btn btn-danger">
+                                                <i class="bx bx-error me-1"></i> View Loans
                                             </a>
                                         </div>
                                     </div>
