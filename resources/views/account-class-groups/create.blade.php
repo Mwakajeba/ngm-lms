@@ -6,7 +6,7 @@
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Account Class Groups', 'url' => route('accounting.fsli-accounts'), 'icon' => 'bx bx-category'],
+            ['label' => 'Account Class Groups', 'url' => route('accounting.account-class-groups.index'), 'icon' => 'bx bx-category'],
             ['label' => 'Create Group', 'url' => '#', 'icon' => 'bx bx-plus-circle']
         ]" />
 

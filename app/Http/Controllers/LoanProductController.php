@@ -11,6 +11,7 @@ use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use Vinkla\Hashids\Facades\Hashids;
 
 class LoanProductController extends Controller
 {
@@ -138,7 +139,7 @@ class LoanProductController extends Controller
                 ->withInput();
         }
 
-       
+
         if ($request->has('has_approval_levels') && $request->approval_levels) {
             $approvalRoles = explode(',', $request->approval_levels);
             $validRoles = Role::pluck('id')->toArray();
@@ -204,8 +205,16 @@ class LoanProductController extends Controller
     /**
      * Display the specified loan product
      */
-    public function show(LoanProduct $loanProduct)
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
         $loanProduct->load([
             'principalReceivableAccount',
             'interestReceivableAccount',
@@ -221,8 +230,16 @@ class LoanProductController extends Controller
     /**
      * Show the form for editing the specified loan product
      */
-    public function edit(LoanProduct $loanProduct)
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
         // Get chart accounts for dropdowns
         $chartAccounts = ChartAccount::all();
 
@@ -290,8 +307,16 @@ class LoanProductController extends Controller
     /**
      * Update the specified loan product
      */
-    public function update(Request $request, LoanProduct $loanProduct)
+    public function update(Request $request, $encodedId)
     {
+        // Decode loan product ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products,name,' . $loanProduct->id,
             'product_type' => 'required|string|max:100',
@@ -394,8 +419,16 @@ class LoanProductController extends Controller
     /**
      * Remove the specified loan product
      */
-    public function destroy(LoanProduct $loanProduct)
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
         // TODO: Add loan_product_id to loans table and uncomment this check
         // Check if there are any loans using this product
         // if ($loanProduct->loans()->count() > 0) {
@@ -416,6 +449,32 @@ class LoanProductController extends Controller
             DB::rollback();
             return redirect()->route('loan-products.index')
                 ->with('error', 'Error deleting loan product: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Toggle the active status of a loan product
+     */
+    public function toggleStatus($encodedId)
+    {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
+        try {
+            $loanProduct->update([
+                'is_active' => !$loanProduct->is_active
+            ]);
+
+            $status = $loanProduct->is_active ? 'activated' : 'deactivated';
+            return redirect()->back()->with('success', "Loan product {$status} successfully!");
+
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Error updating loan product status: ' . $e->getMessage());
         }
     }
 }

@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Penalty Details')
 
 @section('content')
@@ -17,7 +21,8 @@
                     <p class="text-muted mb-0">View penalty information</p>
                 </div>
                 <div>
-                    <a href="{{ route('accounting.penalties.edit', $penalty) }}" class="btn btn-primary me-2">
+                    <a href="{{ route('accounting.penalties.edit', Hashids::encode($penalty->id)) }}"
+                        class="btn btn-primary me-2">
                         Edit Penalty
                     </a>
                     <a href="{{ route('accounting.penalties.index') }}" class="btn btn-secondary">

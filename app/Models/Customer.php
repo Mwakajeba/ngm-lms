@@ -126,4 +126,11 @@ class Customer extends Model
             ->withPivot('document_path')
             ->withTimestamps();
     }
+
+    public function getCashCollateralBalanceAttribute()
+    {
+        return 20000000;
+    }
+
+
 }

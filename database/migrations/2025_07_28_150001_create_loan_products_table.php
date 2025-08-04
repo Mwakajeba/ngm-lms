@@ -36,6 +36,7 @@ return new class extends Migration {
             $table->foreignId('fees_id')->nullable()->constrained('fees')->onDelete('set null');
             $table->foreignId('penalty_id')->nullable()->constrained('penalties')->onDelete('set null');
             $table->string('repayment_order')->nullable(); // Stores comma-separated repayment order
+            $table->boolean('is_active')->default(true);
             $table->timestamps();
         });
     }

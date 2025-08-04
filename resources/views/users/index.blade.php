@@ -3,79 +3,85 @@
 @section('title', __('app.user_management'))
 
 @section('content')
-<div class="page-wrapper">
-    <div class="page-content">
-        <div class="row row-cols-1 row-cols-lg-4">
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.total_users') }}</p>
-                                <h4 class="font-weight-bold">{{ $totalUsers }}</h4>
+    <div class="page-wrapper">
+        <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'User Management', 'url' => '#', 'icon' => 'bx bx-user']
+        ]" />
+
+            <div class="row row-cols-1 row-cols-lg-4">
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.total_users') }}</p>
+                                    <h4 class="font-weight-bold">{{ $totalUsers }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-user'></i>
+                                </div>
                             </div>
-                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-user'></i>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.active_users') }}</p>
+                                    <h4 class="font-weight-bold">{{ $activeUsers }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-check-circle'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.inactive_users') }}</p>
+                                    <h4 class="font-weight-bold">{{ $inactiveUsers }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-time'></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0">{{ __('app.this_month') }}</p>
+                                    <h4 class="font-weight-bold">
+                                        {{ $users->where('created_at', '>=', now()->startOfMonth())->count() }}</h4>
+                                </div>
+                                <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-calendar'></i>
+                                </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.active_users') }}</p>
-                                <h4 class="font-weight-bold">{{ $activeUsers }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-check-circle'></i>
-                            </div>
-                        </div>
+            <!--end row-->
+
+            <h6 class="mb-0 text-uppercase">{{ __('app.users') }}</h6>
+            <hr />
+            <div class="card">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <h5 class="mb-0">{{ __('app.user_list') }}</h5>
+                        <a href="{{ route('users.create') }}" class="btn btn-primary">
+                            <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
+                        </a>
                     </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.inactive_users') }}</p>
-                                <h4 class="font-weight-bold">{{ $inactiveUsers }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-time'></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">{{ __('app.this_month') }}</p>
-                                <h4 class="font-weight-bold">{{ $users->where('created_at', '>=', now()->startOfMonth())->count() }}</h4>
-                            </div>
-                            <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-calendar'></i>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <!--end row-->
-        
-        <h6 class="mb-0 text-uppercase">{{ __('app.users') }}</h6>
-        <hr/>
-        <div class="card">
-            <div class="card-body">
-                <div class="d-flex justify-content-between align-items-center mb-3">
-                    <h5 class="mb-0">{{ __('app.user_list') }}</h5>
-                    <a href="{{ route('users.create') }}" class="btn btn-primary">
-                        <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
-                    </a>
-                </div>
-                
+
 
                 <div class="table-responsive">
                     <table id="example2" class="table table-striped table-bordered" style="width:100%">
@@ -139,33 +145,34 @@
                     </table>
                 </div>
 
-                <!-- Pagination -->
-                @if($users->hasPages())
-                <div class="row mt-4">
-                    <div class="col-12">
-                        {{ $users->links() }}
-                    </div>
+                    <!-- Pagination -->
+                    @if($users->hasPages())
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                {{ $users->links() }}
+                            </div>
+                        </div>
+                    @endif
                 </div>
-                @endif
             </div>
-        </div>       
+        </div>
     </div>
-</div>
-<!--end page wrapper -->
-<!--start overlay-->
-<div class="overlay toggle-icon"></div>
-<!--end overlay-->
-<!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
-<!--End Back To Top Button-->
-<footer class="page-footer">
-    <p class="mb-0">{{ __('app.copyright') }} © {{ date('Y') }}. {{ __('app.all_rights_reserved') }} -- {{ __('app.by_safco_fintech') }}</p>
-</footer>
+    <!--end page wrapper -->
+    <!--start overlay-->
+    <div class="overlay toggle-icon"></div>
+    <!--end overlay-->
+    <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+    <!--End Back To Top Button-->
+    <footer class="page-footer">
+        <p class="mb-0">{{ __('app.copyright') }} © {{ date('Y') }}. {{ __('app.all_rights_reserved') }} --
+            {{ __('app.by_safco_fintech') }}</p>
+    </footer>
 
-<!-- Delete User Form -->
-<form id="deleteUserForm" method="POST" style="display: none;">
-    @csrf
-    @method('DELETE')
-</form>
+    <!-- Delete User Form -->
+    <form id="deleteUserForm" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+    </form>
 
 @endsection
 
@@ -206,43 +213,43 @@ function deleteUser(userHashId) {
     }
 }
 
-// Search functionality
-document.getElementById('searchInput').addEventListener('keyup', function() {
-    const searchTerm = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const text = row.textContent.toLowerCase();
-        row.style.display = text.includes(searchTerm) ? '' : 'none';
-    });
-});
+        // Search functionality
+        document.getElementById('searchInput').addEventListener('keyup', function () {
+            const searchTerm = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
 
-// Status filter
-document.getElementById('statusFilter').addEventListener('change', function() {
-    const status = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const statusCell = row.querySelector('td:nth-child(6)');
-        if (statusCell) {
-            const userStatus = statusCell.textContent.toLowerCase();
-            row.style.display = !status || userStatus.includes(status) ? '' : 'none';
-        }
-    });
-});
+            rows.forEach(row => {
+                const text = row.textContent.toLowerCase();
+                row.style.display = text.includes(searchTerm) ? '' : 'none';
+            });
+        });
 
-// Role filter
-document.getElementById('roleFilter').addEventListener('change', function() {
-    const role = this.value.toLowerCase();
-    const rows = document.querySelectorAll('tbody tr');
-    
-    rows.forEach(row => {
-        const roleCell = row.querySelector('td:nth-child(5)');
-        if (roleCell) {
-            const userRoles = roleCell.textContent.toLowerCase();
-            row.style.display = !role || userRoles.includes(role) ? '' : 'none';
-        }
-    });
-});
-</script>
+        // Status filter
+        document.getElementById('statusFilter').addEventListener('change', function () {
+            const status = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const statusCell = row.querySelector('td:nth-child(6)');
+                if (statusCell) {
+                    const userStatus = statusCell.textContent.toLowerCase();
+                    row.style.display = !status || userStatus.includes(status) ? '' : 'none';
+                }
+            });
+        });
+
+        // Role filter
+        document.getElementById('roleFilter').addEventListener('change', function () {
+            const role = this.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+
+            rows.forEach(row => {
+                const roleCell = row.querySelector('td:nth-child(5)');
+                if (roleCell) {
+                    const userRoles = roleCell.textContent.toLowerCase();
+                    row.style.display = !role || userRoles.includes(role) ? '' : 'none';
+                }
+            });
+        });
+    </script>
 @endpush

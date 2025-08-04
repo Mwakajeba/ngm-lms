@@ -7,26 +7,53 @@ use App\Models\GroupMember;
 use App\Models\Customer;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
+use Vinkla\Hashids\Facades\Hashids;
 
 class GroupMemberController extends Controller
 {
     /**
      * Show the form to add members to a group.
      */
-    public function create(Group $group)
+    public function create($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         // Get customers who are not already members of this group
         $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
-        $availableCustomers = Customer::whereNotIn('id', $existingMemberIds)->get();
+        $availableCustomers = Customer::with(['region', 'district'])
+            ->whereNotIn('id', $existingMemberIds)
+            ->orderBy('name')
+            ->get();
 
-        return view('group-members.create', compact('group', 'availableCustomers'));
+        // Check if this is the first member and if there's a group leader
+        $isFirstMember = $group->members()->count() === 0;
+        $groupLeader = null;
+        if ($isFirstMember && $group->group_leader) {
+            $groupLeader = Customer::find($group->group_leader);
+        }
+
+        return view('group-members.create', compact('group', 'availableCustomers', 'isFirstMember', 'groupLeader'));
     }
 
     /**
      * Add members to the group.
      */
-    public function store(Request $request, Group $group)
+    public function store(Request $request, $encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'customer_ids' => 'required|array|min:1',
             'customer_ids.*' => 'exists:customers,id',
@@ -45,6 +72,15 @@ class GroupMemberController extends Controller
         $customerIds = $request->customer_ids;
         $addedCount = 0;
         $errors = [];
+
+        // Check if this is the first member and ensure group leader is included
+        if ($group->members()->count() === 0 && $group->group_leader) {
+            // If no members yet and there's a group leader, ensure group leader is the first member
+            if (!in_array($group->group_leader, $customerIds)) {
+                $groupLeader = Customer::find($group->group_leader);
+                $errors[] = "Group leader '{$groupLeader->name}' must be the first member of the group.";
+            }
+        }
 
         foreach ($customerIds as $customerId) {
             // Check if customer is already a member
@@ -80,7 +116,7 @@ class GroupMemberController extends Controller
             if (!empty($errors)) {
                 $message .= ' Some customers could not be added: ' . implode(', ', $errors);
             }
-            return redirect()->route('groups.show', $group)->with('success', $message);
+            return redirect()->route('groups.show', Hashids::encode($group->id))->with('success', $message);
         } else {
             return redirect()->back()->with('error', implode(' ', $errors))->withInput();
         }
@@ -89,8 +125,16 @@ class GroupMemberController extends Controller
     /**
      * Remove a member from the group.
      */
-    public function destroy(Group $group, GroupMember $member)
+    public function destroy($encodedId, GroupMember $member)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+
         // Ensure the member belongs to this group
         if ($member->group_id !== $group->id) {
             return redirect()->back()->with('error', 'Invalid member.');
@@ -98,8 +142,7 @@ class GroupMemberController extends Controller
 
         try {
             $member->delete(); // Actually delete the record instead of making inactive
-
-            return redirect()->route('groups.show', $group)->with('success', 'Member removed successfully!');
+            return redirect()->route('groups.show', Hashids::encode($group->id))->with('success', 'Member removed successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to remove member. Please try again.');
         }

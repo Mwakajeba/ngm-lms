@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Edit Group')
@@ -34,7 +38,7 @@
                                 </div>
                             @endif
 
-                            <form action="{{ route('groups.update', $group) }}" method="POST">
+                            <form action="{{ route('groups.update', Hashids::encode($group->id)) }}" method="POST">
                                 @csrf
                                 @method('PUT')
 

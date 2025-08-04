@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Add Member to Group')
@@ -8,7 +12,7 @@
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
-            ['label' => $group->name, 'url' => route('groups.show', $group), 'icon' => 'bx bx-info-circle'],
+            ['label' => $group->name, 'url' => route('groups.show', Hashids::encode($group->id)), 'icon' => 'bx bx-info-circle'],
             ['label' => 'Add Member', 'url' => '#', 'icon' => 'bx bx-plus-circle']
         ]" />
 
@@ -18,7 +22,8 @@
                         <div class="card-header">
                             <div class="d-flex justify-content-between align-items-center">
                                 <h5 class="mb-0">Add Members to: {{ $group->name }}</h5>
-                                <a href="{{ route('groups.show', $group) }}" class="btn btn-secondary btn-sm">
+                                <a href="{{ route('groups.show', Hashids::encode($group->id)) }}"
+                                    class="btn btn-secondary btn-sm">
                                     <i class="bx bx-arrow-back"></i> Back
                                 </a>
                             </div>
@@ -34,8 +39,18 @@
                                 </div>
                             @endif
 
+                            @if($isFirstMember && $groupLeader)
+                                <div class="alert alert-info">
+                                    <i class="bx bx-info-circle me-2"></i>
+                                    <strong>Important:</strong> This is the first member of the group.
+                                    The group leader <strong>{{ $groupLeader->name }}</strong> should be included as the first
+                                    member.
+                                </div>
+                            @endif
+
                             @if($availableCustomers->count() > 0)
-                                <form action="{{ route('group-members.store', $group) }}" method="POST" id="addMembersForm">
+                                <form action="{{ route('group-members.store', Hashids::encode($group->id)) }}" method="POST"
+                                    id="addMembersForm">
                                     @csrf
 
                                     <div class="row mb-4">
@@ -43,12 +58,13 @@
                                             <select id="customerSelect" class="form-select">
                                                 <option value="">Select Customer</option>
                                                 @foreach($availableCustomers as $customer)
-                                                    <option value="{{ $customer->id }}" data-name="{{ $customer->name }}"
-                                                        data-gender="{{ $customer->gender ?? 'N/A' }}"
-                                                        data-region="{{ $customer->region->name ?? 'N/A' }}"
-                                                        data-district="{{ $customer->district->name ?? 'N/A' }}"
-                                                        data-phone="{{ $customer->phone ?? 'N/A' }}">
-                                                        {{ $customer->name }} - {{ $customer->phone ?? 'No phone' }}
+                                                    <option value="{{ $customer->id }}"
+                                                        data-name="{{ $customer->name ?? 'Unknown' }}"
+                                                        data-gender="{{ $customer->sex ?? 'N/A' }}"
+                                                        data-region="{{ $customer->region && $customer->region->name ? $customer->region->name : 'N/A' }}"
+                                                        data-district="{{ $customer->district && $customer->district->name ? $customer->district->name : 'N/A' }}"
+                                                        data-phone="{{ $customer->phone1 ?? 'N/A' }}">
+                                                        {{ $customer->name ?? 'Unknown' }} - {{ $customer->phone1 ?? 'No phone' }}
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -81,7 +97,7 @@
                                     <i class="bx bx-user-x text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-muted mt-3">No Available Customers</h5>
                                     <p class="text-muted">All customers are already members of this group.</p>
-                                    <a href="{{ route('groups.show', $group) }}" class="btn btn-primary">
+                                    <a href="{{ route('groups.show', Hashids::encode($group->id)) }}" class="btn btn-primary">
                                         <i class="bx bx-arrow-back"></i> Back to Group
                                     </a>
                                 </div>
@@ -161,68 +177,31 @@
             font-size: 0.875rem;
         }
 
-        .customer-item {
-            background: white;
-            border: 1px solid #dee2e6;
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.75rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            transition: all 0.2s ease;
-        }
-
-        .customer-item:hover {
-            border-color: #0d6efd;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-        }
-
-        .customer-info {
-            flex: 1;
-        }
-
-        .customer-name {
+        .table th {
+            background-color: #f8f9fa;
+            border-bottom: 2px solid #dee2e6;
             font-weight: 600;
-            color: #212529;
-            font-size: 1rem;
-            margin-bottom: 0.25rem;
-        }
-
-        .customer-details {
-            display: flex;
-            gap: 1.5rem;
             font-size: 0.875rem;
-            color: #6c757d;
         }
 
-        .detail-item {
-            display: flex;
-            align-items: center;
-            gap: 0.25rem;
+        .table td {
+            vertical-align: middle;
+            font-size: 0.875rem;
         }
 
-        .detail-item i {
-            font-size: 0.75rem;
+        .avatar-sm {
+            width: 2.5rem;
+            height: 2.5rem;
         }
 
-        .btn-delete {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            border: none;
-            background: #dc3545;
-            color: white;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: all 0.2s ease;
-            cursor: pointer;
+        .bg-light-primary {
+            background-color: rgba(13, 110, 253, 0.1) !important;
+            color: #0d6efd !important;
         }
 
-        .btn-delete:hover {
-            background: #c82333;
-            transform: scale(1.1);
+        .badge {
+            font-size: 0.75em;
+            font-weight: 500;
         }
 
         .alert {
@@ -296,27 +275,59 @@
                 return;
             }
 
-            let html = '';
+            let html = `
+                                            <div class="table-responsive">
+                                                <table class="table table-hover">
+                                                    <thead>
+                                                        <tr>
+                                                            <th>Customer</th>
+                                                            <th>Gender</th>
+                                                            <th>Region</th>
+                                                            <th>District</th>
+                                                            <th>Phone</th>
+                                                            <th class="text-center">Actions</th>
+                                                        </tr>
+                                                    </thead>
+                                                    <tbody>
+                                        `;
+
             selectedCustomers.forEach(customer => {
                 html += `
-                                                <div class="customer-item">
-                                                    <div class="customer-info">
-                                                        <div class="customer-name">${customer.name}</div>
-                                                        <div class="customer-details">
-                                                            <div class="detail-item"><i class="bx bx-user"></i> ${customer.gender}</div>
-                                                            <div class="detail-item"><i class="bx bx-map"></i> ${customer.region}</div>
-                                                            <div class="detail-item"><i class="bx bx-map-pin"></i> ${customer.district}</div>
-                                                            <div class="detail-item"><i class="bx bx-phone"></i> ${customer.phone}</div>
+                                                <tr>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <div class="avatar-sm bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                                <i class="bx bx-user font-size-16"></i>
+                                                            </div>
+                                                            <div>
+                                                                <strong>${customer.name}</strong>
+                                                            </div>
                                                         </div>
-                                                    </div>
-                                                    <button type="button" class="btn-delete" 
-                                                            onclick="removeCustomerFromList('${customer.id}')" 
-                                                            title="Remove from list">
-                                                        <i class="bx bx-x"></i>
-                                                    </button>
-                                                </div>
+                                                    </td>
+                                                    <td>
+                                                        <span class="badge bg-info">${customer.gender}</span>
+                                                    </td>
+                                                    <td>${customer.region}</td>
+                                                    <td>${customer.district}</td>
+                                                    <td>${customer.phone}</td>
+                                                    <td class="text-center">
+                                                        <div class="btn-group" role="group">
+                                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                onclick="removeCustomerFromList('${customer.id}')"
+                                                                title="Remove from list">
+                                                                <i class="bx bx-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             `;
             });
+
+            html += `
+                                                    </tbody>
+                                                </table>
+                                            </div>
+                                        `;
 
             container.innerHTML = html;
         }
