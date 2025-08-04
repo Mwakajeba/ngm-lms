@@ -1,5 +1,9 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 <form
-    action="{{ isset($accountClassGroup) ? route('accounting.fsli-accounts.update', $accountClassGroup->id) : route('accounting.fsli-accounts.store') }}"
+    action="{{ isset($accountClassGroup) ? route('accounting.account-class-groups.update', Hashids::encode($accountClassGroup->id)) : route('accounting.account-class-groups.store') }}"
     method="POST">
     @csrf
     @if(isset($accountClassGroup))
@@ -42,7 +46,7 @@
     </div>
 
     <div class="d-flex justify-content-end">
-        <a href="{{ route('accounting.fsli-accounts') }}" class="btn btn-secondary me-2">Cancel</a>
+        <a href="{{ route('accounting.account-class-groups.index') }}" class="btn btn-secondary me-2">Cancel</a>
         <button type="submit" class="btn btn-{{ isset($accountClassGroup) ? 'primary' : 'success' }}">
             {{ isset($accountClassGroup) ? 'Update Group' : 'Create Group' }}
         </button>

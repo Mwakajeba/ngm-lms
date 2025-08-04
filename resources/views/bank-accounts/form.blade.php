@@ -1,4 +1,4 @@
-<form action="{{ isset($bankAccount) ? route('accounting.bank-accounts.update', $bankAccount->id) : route('accounting.bank-accounts.store') }}" method="POST">
+<form action="{{ isset($bankAccount) ? route('accounting.bank-accounts.update', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) : route('accounting.bank-accounts.store') }}" method="POST">
     @csrf
     @if(isset($bankAccount)) @method('PUT') @endif
 

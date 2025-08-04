@@ -47,43 +47,134 @@ class UserController extends Controller
         // Get branches for current company
         $branches = Branch::forCompany()->active()->get();
         $roles = Role::where('guard_name', 'web')->orderBy('name')->get();
-        
+
         return view('users.form', compact('branches', 'roles'));
     }
 
     public function store(Request $request)
     {
-        $request->validate([
-            'name'         => 'required|string|max:255',
-            'phone'        => 'required|string|max:20|unique:users,phone,NULL,id,company_id,' . current_company_id(),
-            'email'        => 'nullable|email|unique:users,email,NULL,id,company_id,' . current_company_id(),
-            'password'     => 'required|string|min:8|confirmed',
-            'branch_id'    => 'required|exists:branches,id',
-            'roles'        => 'required|array|min:1',
-            'roles.*'      => 'exists:roles,id',
-            'status'       => 'required|in:active,inactive,suspended',
+        // Log the incoming request for debugging
+        \Log::info('User creation request started', [
+            'request_data' => $request->except(['password', 'password_confirmation']),
+            'user_id' => auth()->id(),
+            'company_id' => current_company_id()
         ]);
 
-        // Get company_id from the selected branch
-        $branch = Branch::find($request->branch_id);
-        $companyId = $branch->company_id;
+        try {
+            // Validate the request
+            $validator = \Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'phone' => 'required|string|max:20|unique:users,phone,NULL,id,company_id,' . current_company_id(),
+                'email' => 'nullable|email|unique:users,email,NULL,id,company_id,' . current_company_id(),
+                'password' => 'required|string|min:8|confirmed',
+                'branch_id' => 'required|exists:branches,id',
+                'role_id' => 'required|exists:roles,id',
+                'status' => 'required|in:active,inactive,suspended',
+            ]);
 
-        $user = User::create([
-            'name'         => $request->name,
-            'phone'        => $this->formatPhoneNumber($request->phone),
-            'email'        => $request->email,
-            'password'     => Hash::make($request->password),
-            'company_id'   => current_company_id(),
-            'branch_id'    => $request->branch_id,
-            'status'       => $request->status ?? 'active',
-            'is_active'    => $request->status === 'active' ? 'yes' : 'no',
-        ]);
+            if ($validator->fails()) {
+                \Log::warning('User creation validation failed', [
+                    'errors' => $validator->errors()->toArray(),
+                    'request_data' => $request->except(['password', 'password_confirmation'])
+                ]);
 
-        // Assign roles
-        $roles = Role::whereIn('id', $request->roles)->get();
-        $user->assignRole($roles);
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
 
-        return redirect()->route('users.index')->with('success', 'User created successfully!');
+            \Log::info('User creation validation passed');
+
+            // Get company_id from the selected branch
+            $branch = Branch::find($request->branch_id);
+            if (!$branch) {
+                \Log::error('Branch not found during user creation', [
+                    'branch_id' => $request->branch_id,
+                    'company_id' => current_company_id()
+                ]);
+
+                return redirect()->back()
+                    ->withErrors(['branch_id' => 'Selected branch not found.'])
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            $companyId = $branch->company_id;
+
+            // Verify the role exists
+            $role = Role::find($request->role_id);
+            if (!$role) {
+                \Log::error('Role not found during user creation', [
+                    'role_id' => $request->role_id
+                ]);
+
+                return redirect()->back()
+                    ->withErrors(['role_id' => 'Selected role not found.'])
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            \Log::info('Creating user with validated data', [
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'branch_id' => $request->branch_id,
+                'role_id' => $request->role_id,
+                'status' => $request->status
+            ]);
+
+            // Create the user
+            $user = User::create([
+                'name' => $request->name,
+                'phone' => $this->formatPhoneNumber($request->phone),
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'company_id' => current_company_id(),
+                'branch_id' => $request->branch_id,
+                'status' => $request->status ?? 'active',
+                'is_active' => $request->status === 'active' ? 'yes' : 'no',
+            ]);
+
+            \Log::info('User created successfully', [
+                'user_id' => $user->id,
+                'user_name' => $user->name
+            ]);
+
+            // Assign the role
+            $user->assignRole($role);
+
+            \Log::info('Role assigned successfully', [
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'role_name' => $role->name
+            ]);
+
+            return redirect()->route('users.index')
+                ->with('success', 'User created successfully!');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error during user creation', [
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'request_data' => $request->except(['password', 'password_confirmation'])
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Database error occurred. Please try again.'])
+                ->withInput($request->except(['password', 'password_confirmation']));
+
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error during user creation', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->except(['password', 'password_confirmation'])
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'An unexpected error occurred. Please try again.'])
+                ->withInput($request->except(['password', 'password_confirmation']));
+        }
     }
 
     public function show(User $user)
@@ -107,7 +198,7 @@ class UserController extends Controller
         $branches = Branch::forCompany()->active()->get();
         $roles = Role::where('guard_name', 'web')->orderBy('name')->get();
         $user->load('roles');
-        
+
         return view('users.form', compact('user', 'branches', 'roles'));
     }
 
@@ -118,48 +209,146 @@ class UserController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Custom validation for email to handle existing email
-        $emailRules = 'nullable|email';
-        if ($request->email !== $user->email) {
-            $emailRules .= '|unique:users,email,' . $user->id . ',id,company_id,' . current_company_id();
-        }
-
-        $request->validate([
-            'name'         => 'required|string|max:255',
-            'phone'        => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
-            'email'        => $emailRules,
-            'password'     => 'nullable|string|min:8|confirmed',
-            'branch_id'    => 'required|exists:branches,id',
-            'roles'        => 'required|array|min:1',
-            'roles.*'      => 'exists:roles,id',
-            'status'       => 'required|in:active,inactive,suspended',
+        // Log the incoming request for debugging
+        \Log::info('User update request started', [
+            'user_id' => $user->id,
+            'request_data' => $request->except(['password', 'password_confirmation']),
+            'updated_by' => auth()->id(),
+            'company_id' => current_company_id()
         ]);
 
-        // Get company_id from the selected branch
-        $branch = Branch::find($request->branch_id);
-        $companyId = $branch->company_id;
+        try {
+            // Custom validation for email to handle existing email
+            $emailRules = 'nullable|email';
+            if ($request->email !== $user->email) {
+                $emailRules .= '|unique:users,email,' . $user->id . ',id,company_id,' . current_company_id();
+            }
 
-        $userData = [
-            'name'         => $request->name,
-            'phone'        => $this->formatPhoneNumber($request->phone),
-            'email'        => $request->email,
-            'branch_id'    => $request->branch_id,
-            'company_id'   => $companyId,
-            'status'       => $request->status,
-            'is_active'    => $request->status === 'active' ? 'yes' : 'no',
-        ];
+            // Validate the request
+            $validator = \Validator::make($request->all(), [
+                'name' => 'required|string|max:255',
+                'phone' => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
+                'email' => $emailRules,
+                'password' => 'nullable|string|min:8|confirmed',
+                'branch_id' => 'required|exists:branches,id',
+                'role_id' => 'required|exists:roles,id',
+                'status' => 'required|in:active,inactive,suspended',
+            ]);
 
-        if ($request->filled('password')) {
-            $userData['password'] = Hash::make($request->password);
+            if ($validator->fails()) {
+                \Log::warning('User update validation failed', [
+                    'user_id' => $user->id,
+                    'errors' => $validator->errors()->toArray(),
+                    'request_data' => $request->except(['password', 'password_confirmation'])
+                ]);
+
+                return redirect()->back()
+                    ->withErrors($validator)
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            \Log::info('User update validation passed', ['user_id' => $user->id]);
+
+            // Get company_id from the selected branch
+            $branch = Branch::find($request->branch_id);
+            if (!$branch) {
+                \Log::error('Branch not found during user update', [
+                    'user_id' => $user->id,
+                    'branch_id' => $request->branch_id,
+                    'company_id' => current_company_id()
+                ]);
+
+                return redirect()->back()
+                    ->withErrors(['branch_id' => 'Selected branch not found.'])
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            $companyId = $branch->company_id;
+
+            // Verify the role exists
+            $role = Role::find($request->role_id);
+            if (!$role) {
+                \Log::error('Role not found during user update', [
+                    'user_id' => $user->id,
+                    'role_id' => $request->role_id
+                ]);
+
+                return redirect()->back()
+                    ->withErrors(['role_id' => 'Selected role not found.'])
+                    ->withInput($request->except(['password', 'password_confirmation']));
+            }
+
+            \Log::info('Updating user with validated data', [
+                'user_id' => $user->id,
+                'name' => $request->name,
+                'phone' => $request->phone,
+                'email' => $request->email,
+                'branch_id' => $request->branch_id,
+                'role_id' => $request->role_id,
+                'status' => $request->status
+            ]);
+
+            $userData = [
+                'name' => $request->name,
+                'phone' => $this->formatPhoneNumber($request->phone),
+                'email' => $request->email,
+                'branch_id' => $request->branch_id,
+                'company_id' => $companyId,
+                'status' => $request->status,
+                'is_active' => $request->status === 'active' ? 'yes' : 'no',
+            ];
+
+            if ($request->filled('password')) {
+                $userData['password'] = Hash::make($request->password);
+                \Log::info('Password will be updated for user', ['user_id' => $user->id]);
+            }
+
+            $user->update($userData);
+
+            \Log::info('User updated successfully', [
+                'user_id' => $user->id,
+                'user_name' => $user->name
+            ]);
+
+            // Sync roles (remove all existing and assign the new one)
+            $user->syncRoles([$role]);
+
+            \Log::info('Role synced successfully', [
+                'user_id' => $user->id,
+                'role_id' => $role->id,
+                'role_name' => $role->name
+            ]);
+
+            return redirect()->route('users.index')
+                ->with('success', 'User updated successfully!');
+
+        } catch (\Illuminate\Database\QueryException $e) {
+            \Log::error('Database error during user update', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'sql' => $e->getSql(),
+                'bindings' => $e->getBindings(),
+                'request_data' => $request->except(['password', 'password_confirmation'])
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Database error occurred. Please try again.'])
+                ->withInput($request->except(['password', 'password_confirmation']));
+
+        } catch (\Exception $e) {
+            \Log::error('Unexpected error during user update', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+                'request_data' => $request->except(['password', 'password_confirmation'])
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'An unexpected error occurred. Please try again.'])
+                ->withInput($request->except(['password', 'password_confirmation']));
         }
-
-        $user->update($userData);
-
-        // Sync roles
-        $roles = Role::whereIn('id', $request->roles)->get();
-        $user->syncRoles($roles);
-
-        return redirect()->route('users.index')->with('success', 'User updated successfully!');
     }
 
     public function destroy(User $user)
@@ -182,29 +371,29 @@ class UserController extends Controller
     {
         $user = auth()->user();
         $user->load(['branch', 'company', 'roles']);
-        
+
         return view('users.profile', compact('user'));
     }
 
     public function updateProfile(Request $request)
     {
         $user = auth()->user();
-        
+
         // Custom validation for email to handle existing email
         $emailRules = 'nullable|email';
         if ($request->email !== $user->email) {
             $emailRules .= '|unique:users,email,' . $user->id . ',id,company_id,' . current_company_id();
         }
-        
+
         $request->validate([
-            'name'     => 'required|string|max:255',
-            'phone'    => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
-            'email'    => $emailRules,
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
+            'email' => $emailRules,
             'password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $userData = [
-            'name'  => $request->name,
+            'name' => $request->name,
             'phone' => $this->formatPhoneNumber($request->phone),
             'email' => $request->email,
         ];
@@ -262,27 +451,27 @@ class UserController extends Controller
     {
         // Remove any spaces, dashes, or other characters
         $phone = preg_replace('/[^0-9+]/', '', $phone);
-        
+
         // If starts with +255, remove the +
         if (str_starts_with($phone, '+255')) {
             return substr($phone, 1);
         }
-        
+
         // If starts with 0, remove 0 and add 255
         if (str_starts_with($phone, '0')) {
             return '255' . substr($phone, 1);
         }
-        
+
         // If already starts with 255, return as is
         if (str_starts_with($phone, '255')) {
             return $phone;
         }
-        
+
         // If it's a 9-digit number (Tanzania mobile), add 255
         if (strlen($phone) === 9) {
             return '255' . $phone;
         }
-        
+
         // Return as is if no pattern matches
         return $phone;
     }

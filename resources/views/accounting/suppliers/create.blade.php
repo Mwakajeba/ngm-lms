@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Add New Supplier')

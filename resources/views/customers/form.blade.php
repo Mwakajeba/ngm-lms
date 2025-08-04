@@ -16,7 +16,7 @@ $isEdit = isset($customer);
 @endif
 
 <form action="{{ $isEdit ? route('customers.update', $customer) : route('customers.store') }}"
-    method="POST" enctype="multipart/form-data">
+      method="POST" enctype="multipart/form-data">
     @csrf
     @if($isEdit) @method('PUT') @endif
 
@@ -46,7 +46,7 @@ $isEdit = isset($customer);
         <div class="col-md-12 mb-3">
             <label class="form-label">Description</label>
             <textarea name="description" class="form-control @error('description') is-invalid @enderror"
-                rows="3" placeholder="Enter customer description">{{ old('description', $customer->description ?? '') }}</textarea>
+                      rows="3" placeholder="Enter customer description">{{ old('description', $customer->description ?? '') }}</textarea>
             @error('description') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -83,7 +83,8 @@ $isEdit = isset($customer);
         <!-- District -->
         <div class="col-md-6 mb-3">
             <label class="form-label">District <span class="text-danger">*</span></label>
-            <select name="district_id" id="district" class="form-select @error('district_id') is-invalid @enderror" required>
+            <select name="district_id" id="district" class="form-select @error('district_id') is-invalid @enderror"
+                required>
                 <option value="">Select District</option>
                 @if($isEdit && $customer->district_id)
                 <option value="{{ $customer->district_id }}" selected>
@@ -171,7 +172,7 @@ $isEdit = isset($customer);
                 accept=".pdf,.doc,.docx,image/*">
             @error('document') <div class="invalid-feedback">{{ $message }}</div> @enderror
 
-            @if($isEdit && $customer->document)
+            @if($isEdit && isset($customer) && $customer->document)
                 <div class="mt-2">
                     <a href="{{ asset('storage/' . $customer->document) }}" target="_blank">
                         View Uploaded Document
@@ -193,8 +194,8 @@ $isEdit = isset($customer);
         <!-- Cash Collateral -->
         <div class="col-md-6 mb-3">
             <div class="form-check">
-                <input type="checkbox" class="form-check-input" value="1" name="has_cash_collateral" id="has_cash_collateral"
-                    {{ old('has_cash_collateral', $customer->has_cash_collateral ?? false) ? 'checked' : '' }}>
+                <input type="checkbox" class="form-check-input" value="1" name="has_cash_collateral"
+                    id="has_cash_collateral" {{ old('has_cash_collateral', $customer->has_cash_collateral ?? false) ? 'checked' : '' }}>
                 <label class="form-check-label" for="has_cash_collateral">Has Cash Collateral</label>
             </div>
         </div>
@@ -205,10 +206,10 @@ $isEdit = isset($customer);
             <select name="collateral_type_id" class="form-select">
                 <option value="">Select Collateral Type</option>
                 @foreach($collateralTypes as $type)
-                <option value="{{ $type->id }}"
-                    {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
-                    {{ $type->name }}
-                </option>
+                    <option value="{{ $type->id }}"
+                        {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
+                        {{ $type->name }}
+                    </option>
                 @endforeach
             </select>
         </div>
@@ -370,7 +371,7 @@ $isEdit = isset($customer);
 
         if (file) {
             const reader = new FileReader();
-            reader.onload = function(e) {
+            reader.onload = function (e) {
                 preview.innerHTML = `<img src="${e.target.result}" width="100" class="mt-2">`;
             }
             reader.readAsDataURL(file);

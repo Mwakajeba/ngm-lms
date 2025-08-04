@@ -82,7 +82,8 @@ class Loan extends Model
     public function calculateInterestAmount(float $rate = null, bool $returnSchedule = false): float|array
     {
         $product = $this->product;
-        if (!$product) return $returnSchedule ? [] : 0;
+        if (!$product)
+            return $returnSchedule ? [] : 0;
 
         $principal = $this->amount;
         $rate = $rate ?? $this->interest ?? $product->interest ?? 0;
@@ -183,50 +184,51 @@ class Loan extends Model
         switch ($cycle) {
             case 'Daily':
                 $first = $disbursedOn->copy()->addDay();
-                $last  = $first->copy()->addDays($period - 1);
+                $last = $first->copy()->addDays($period - 1);
                 break;
 
             case 'Weekly':
                 $first = $disbursedOn->copy()->addWeek();
-                $last  = $first->copy()->addWeeks($period - 1);
+                $last = $first->copy()->addWeeks($period - 1);
                 break;
 
             case 'Monthly':
                 $first = $disbursedOn->copy()->addMonth();
-                $last  = $first->copy()->addMonths($period - 1);
+                $last = $first->copy()->addMonths($period - 1);
                 break;
 
             case 'Quarterly':
                 $first = $disbursedOn->copy()->addMonths(3);
-                $last  = $first->copy()->addMonths(3 * ($period - 1));
+                $last = $first->copy()->addMonths(3 * ($period - 1));
                 break;
 
             case 'Semi Annually':
                 $first = $disbursedOn->copy()->addMonths(6);
-                $last  = $first->copy()->addMonths(6 * ($period - 1));
+                $last = $first->copy()->addMonths(6 * ($period - 1));
                 break;
 
             case 'Annually':
                 $first = $disbursedOn->copy()->addYear();
-                $last  = $first->copy()->addYears($period - 1);
+                $last = $first->copy()->addYears($period - 1);
                 break;
 
             default:
                 // fallback: monthly
                 $first = $disbursedOn->copy()->addMonth();
-                $last  = $first->copy()->addMonths($period - 1);
+                $last = $first->copy()->addMonths($period - 1);
         }
 
         return [
             'first_repayment_date' => $first->toDateString(),
-            'last_repayment_date'  => $last->toDateString(),
+            'last_repayment_date' => $last->toDateString(),
         ];
     }
 
     public function generateRepaymentSchedule(float $rate)
     {
         $product = $this->product;
-        if (!$product) return;
+        if (!$product)
+            return;
 
         $principal = $this->amount;
         $interestAmount = $this->interest_amount;
@@ -238,18 +240,18 @@ class Loan extends Model
         switch ($method) {
             case 'flat_rate':
                 $principalInstallment = round($principal / $period, 2);
-                $interestInstallment  = round($interestAmount / $period, 2);
+                $interestInstallment = round($interestAmount / $period, 2);
 
                 for ($i = 0; $i < $period; $i++) {
                     $dueDate = $startDate->copy()->addMonths($i);
                     LoanSchedule::create([
-                        'loan_id'         => $this->id,
-                        'customer_id'     => $this->customer_id,
-                        'due_date'        => $dueDate,
-                        'end_date'        => $dueDate->copy()->addDays(5),
-                        'end_grace_date'  => $dueDate->copy()->addDays($gracePeriod),
-                        'principal'       => $principalInstallment,
-                        'interest'        => $interestInstallment,
+                        'loan_id' => $this->id,
+                        'customer_id' => $this->customer_id,
+                        'due_date' => $dueDate,
+                        'end_date' => $dueDate->copy()->addDays(5),
+                        'end_grace_date' => $dueDate->copy()->addDays($gracePeriod),
+                        'principal' => $principalInstallment,
+                        'interest' => $interestInstallment,
                     ]);
                 }
                 break;
@@ -262,13 +264,13 @@ class Loan extends Model
                 foreach ($schedule as $i => $row) {
                     $dueDate = $startDate->copy()->addMonths($i);
                     LoanSchedule::create([
-                        'loan_id'         => $this->id,
-                        'customer_id'     => $this->customer_id,
-                        'due_date'        => $dueDate,
-                        'end_date'        => $dueDate->copy()->addDays(5),
-                        'end_grace_date'  => $dueDate->copy()->addDays($gracePeriod),
-                        'principal'       => $row['principal'],
-                        'interest'        => $row['interest'],
+                        'loan_id' => $this->id,
+                        'customer_id' => $this->customer_id,
+                        'due_date' => $dueDate,
+                        'end_date' => $dueDate->copy()->addDays(5),
+                        'end_grace_date' => $dueDate->copy()->addDays($gracePeriod),
+                        'principal' => $row['principal'],
+                        'interest' => $row['interest'],
                     ]);
                 }
                 break;

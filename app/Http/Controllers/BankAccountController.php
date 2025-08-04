@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
 use App\Models\ChartAccount;
+use App\Models\GlTransaction;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\View\View;
+use Vinkla\Hashids\Facades\Hashids;
 
 class BankAccountController extends Controller
 {
@@ -20,11 +22,11 @@ class BankAccountController extends Controller
             ->paginate(10);
 
         // Calculate balance for each bank account in the paginated result
-        $bankAccounts->getCollection()->transform(function($bankAccount) {
-            $debits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+        $bankAccounts->getCollection()->transform(function ($bankAccount) {
+            $debits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
                 ->where('nature', 'debit')
                 ->sum('amount');
-            $credits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+            $credits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
                 ->where('nature', 'credit')
                 ->sum('amount');
             $bankAccount->balance = $debits - $credits;
@@ -33,19 +35,19 @@ class BankAccountController extends Controller
 
         // Calculate statistics
         $totalAccounts = BankAccount::count();
-        
+
         // Calculate balances from GL transactions for statistics
-        $allBankAccounts = BankAccount::with('chartAccount')->get()->map(function($bankAccount) {
-            $debits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+        $allBankAccounts = BankAccount::with('chartAccount')->get()->map(function ($bankAccount) {
+            $debits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
                 ->where('nature', 'debit')
                 ->sum('amount');
-            $credits = \App\Models\GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
+            $credits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
                 ->where('nature', 'credit')
                 ->sum('amount');
             $bankAccount->balance = $debits - $credits;
             return $bankAccount;
         });
-        
+
         $totalBalance = $allBankAccounts->sum('balance');
         $positiveBalanceAccounts = $allBankAccounts->where('balance', '>', 0)->count();
         $negativeBalanceAccounts = $allBankAccounts->where('balance', '<', 0)->count();
@@ -85,8 +87,15 @@ class BankAccountController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(BankAccount $bankAccount): View
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.bank-accounts')->withErrors(['Bank account not found.']);
+        }
+
+        $bankAccount = BankAccount::findOrFail($decoded[0]);
         $bankAccount->load('chartAccount.accountClassGroup.accountClass');
 
         return view('bank-accounts.show', compact('bankAccount'));
@@ -95,8 +104,15 @@ class BankAccountController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(BankAccount $bankAccount): View
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.bank-accounts')->withErrors(['Bank account not found.']);
+        }
+
+        $bankAccount = BankAccount::findOrFail($decoded[0]);
         $chartAccounts = ChartAccount::with('accountClassGroup.accountClass')
             ->orderBy('account_name')
             ->get();
@@ -107,8 +123,16 @@ class BankAccountController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, BankAccount $bankAccount): RedirectResponse
+    public function update(Request $request, $encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.bank-accounts')->withErrors(['Bank account not found.']);
+        }
+
+        $bankAccount = BankAccount::findOrFail($decoded[0]);
+
         $request->validate([
             'chart_account_id' => 'required|exists:chart_accounts,id',
             'name' => 'required|string|max:255',
@@ -124,11 +148,21 @@ class BankAccountController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(BankAccount $bankAccount): RedirectResponse
+    public function destroy($encodedId)
     {
-        $bankAccount->delete();
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.bank-accounts')->withErrors(['Bank account not found.']);
+        }
 
-        return redirect()->route('accounting.bank-accounts')
-            ->with('success', 'Bank account deleted successfully!');
+        $bankAccount = BankAccount::findOrFail($decoded[0]);
+
+        try {
+            $bankAccount->delete();
+            return redirect()->route('accounting.bank-accounts')->with('success', 'Bank account deleted successfully!');
+        } catch (\Exception $e) {
+            return redirect()->back()->with('error', 'Failed to delete bank account. Please try again.');
+        }
     }
 }

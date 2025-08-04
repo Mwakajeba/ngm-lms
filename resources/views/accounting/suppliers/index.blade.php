@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Supplier Management')
@@ -169,17 +173,18 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <div class="d-flex gap-2">
-                                                        <a href="{{ route('accounting.suppliers.show', $supplier) }}"
+                                                        <a href="{{ route('accounting.suppliers.show', Hashids::encode($supplier->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="View Details">
                                                             View
                                                         </a>
-                                                        <a href="{{ route('accounting.suppliers.edit', $supplier) }}"
+                                                        <a href="{{ route('accounting.suppliers.edit', Hashids::encode($supplier->id)) }}"
                                                             class="btn btn-sm btn-outline-warning" title="Edit">
                                                             Edit
                                                         </a>
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-danger delete-supplier-btn"
-                                                            title="Delete" data-supplier-id="{{ $supplier->id }}"
+                                                            title="Delete"
+                                                            data-supplier-id="{{ Hashids::encode($supplier->id) }}"
                                                             data-supplier-name="{{ $supplier->name }}">
                                                             Delete
                                                         </button>

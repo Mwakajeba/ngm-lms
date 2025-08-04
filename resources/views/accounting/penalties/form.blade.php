@@ -1,4 +1,5 @@
 @php
+    use Vinkla\Hashids\Facades\Hashids;
     $isEdit = isset($penalty);
 @endphp
 
@@ -15,7 +16,7 @@
     </div>
 @endif
 
-<form action="{{ $isEdit ? route('accounting.penalties.update', $penalty) : route('accounting.penalties.store') }}" method="POST">
+<form action="{{ $isEdit ? route('accounting.penalties.update', Hashids::encode($penalty->id)) : route('accounting.penalties.store') }}" method="POST">
     @csrf
     @if($isEdit) @method('PUT') @endif
 

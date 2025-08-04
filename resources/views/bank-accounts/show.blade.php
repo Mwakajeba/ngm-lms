@@ -15,7 +15,7 @@
                             </h4>
                         </div>
                         <div class="d-flex gap-2">
-                            <a href="{{ route('accounting.bank-accounts.edit', $bankAccount->id) }}"
+                            <a href="{{ route('accounting.bank-accounts.edit', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
                                 class="btn btn-primary">
                                 <i class="bx bx-edit me-1"></i> Edit Account
                             </a>
@@ -130,11 +130,12 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="d-grid gap-2">
-                                <a href="{{ route('accounting.bank-accounts.edit', $bankAccount->id) }}"
+                                <a href="{{ route('accounting.bank-accounts.edit', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
                                     class="btn btn-outline-primary btn-sm">
                                     <i class="bx bx-edit me-1"></i> Edit Account
                                 </a>
-                                <form action="{{ route('accounting.bank-accounts.destroy', $bankAccount->id) }}"
+                                <form
+                                    action="{{ route('accounting.bank-accounts.destroy', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
                                     method="POST" class="d-inline delete-form">
                                     @csrf
                                     @method('DELETE')

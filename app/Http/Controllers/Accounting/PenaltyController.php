@@ -9,6 +9,7 @@ use App\Models\Company;
 use App\Models\Branch;
 use App\Models\ChartAccount;
 use Illuminate\Support\Facades\Validator;
+use Vinkla\Hashids\Facades\Hashids;
 
 class PenaltyController extends Controller
 {
@@ -100,15 +101,30 @@ class PenaltyController extends Controller
         return redirect()->route('accounting.penalties.index')->with('success', 'Penalty created successfully!');
     }
 
-    public function show(Penalty $penalty)
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.penalties.index')->withErrors(['Penalty not found.']);
+        }
+
+        $penalty = Penalty::findOrFail($decoded[0]);
         $penalty->load(['company', 'branch', 'chartAccount', 'createdBy', 'updatedBy']);
 
         return view('accounting.penalties.show', compact('penalty'));
     }
 
-    public function edit(Penalty $penalty)
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.penalties.index')->withErrors(['Penalty not found.']);
+        }
+
+        $penalty = Penalty::findOrFail($decoded[0]);
+
         $user = auth()->user();
         $companyId = $user->company_id ?? null;
 
@@ -128,8 +144,16 @@ class PenaltyController extends Controller
         return view('accounting.penalties.edit', compact('penalty', 'companies', 'branches', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
-    public function update(Request $request, Penalty $penalty)
+    public function update(Request $request, $encodedId)
     {
+        // Decode penalty ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.penalties.index')->withErrors(['Penalty not found.']);
+        }
+
+        $penalty = Penalty::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'chart_account_id' => 'required|exists:chart_accounts,id',
@@ -147,6 +171,7 @@ class PenaltyController extends Controller
         }
 
         $user = auth()->user();
+        $companyId = $user->company_id ?? $request->company_id ?? Company::first()->id ?? 1;
 
         $penalty->update([
             'name' => $request->name,
@@ -156,7 +181,7 @@ class PenaltyController extends Controller
             'deduction_type' => $request->deduction_type,
             'description' => $request->description,
             'status' => $request->status,
-            'company_id' => $request->company_id ?? $penalty->company_id,
+            'company_id' => $companyId,
             'branch_id' => $request->branch_id,
             'updated_by' => $user->id,
         ]);
@@ -164,25 +189,38 @@ class PenaltyController extends Controller
         return redirect()->route('accounting.penalties.index')->with('success', 'Penalty updated successfully!');
     }
 
-    public function destroy(Penalty $penalty)
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.penalties.index')->withErrors(['Penalty not found.']);
+        }
+
+        $penalty = Penalty::findOrFail($decoded[0]);
+
         try {
             $penalty->delete();
             return redirect()->route('accounting.penalties.index')->with('success', 'Penalty deleted successfully!');
         } catch (\Exception $e) {
-            return redirect()->route('accounting.penalties.index')->with('error', 'Failed to delete penalty: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to delete penalty. Please try again.');
         }
     }
 
-    public function changeStatus(Request $request, Penalty $penalty)
+    public function changeStatus(Request $request, $encodedId)
     {
-        $request->validate([
-            'status' => 'required|in:active,inactive',
-        ]);
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.penalties.index')->withErrors(['Penalty not found.']);
+        }
 
-        $penalty->update(['status' => $request->status]);
+        $penalty = Penalty::findOrFail($decoded[0]);
 
-        $statusText = $request->status === 'active' ? 'activated' : 'deactivated';
-        return redirect()->route('accounting.penalties.show', $penalty)->with('success', "Penalty {$statusText} successfully!");
+        $newStatus = $penalty->status === 'active' ? 'inactive' : 'active';
+        $penalty->update(['status' => $newStatus]);
+
+        $statusText = $newStatus === 'active' ? 'activated' : 'deactivated';
+        return redirect()->route('accounting.penalties.index')->with('success', "Penalty {$statusText} successfully!");
     }
 }

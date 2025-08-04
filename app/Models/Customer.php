@@ -120,5 +120,10 @@ class Customer extends Model
                     ->withTimestamps();
     }
 
+    public function getCashCollateralBalanceAttribute()
+    {
+        return 20000000;
+    }
+
 
 }

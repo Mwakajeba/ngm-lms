@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Fees Management')
 
 @section('content')
@@ -114,7 +118,7 @@
                                         @foreach($fees as $fee)
                                             <tr>
                                                 <td>
-                                                    <a href="{{ route('accounting.fees.show', $fee) }}"
+                                                    <a href="{{ route('accounting.fees.show', Hashids::encode($fee->id)) }}"
                                                         class="text-primary fw-bold">
                                                         {{ $fee->name }}
                                                     </a>
@@ -128,17 +132,18 @@
                                                 <td>{{ $fee->createdBy->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
-                                                        <a href="{{ route('accounting.fees.show', $fee) }}"
+                                                        <a href="{{ route('accounting.fees.show', Hashids::encode($fee->id)) }}"
                                                             class="btn btn-sm btn-outline-primary">
                                                             View
                                                         </a>
-                                                        <a href="{{ route('accounting.fees.edit', $fee) }}"
+                                                        <a href="{{ route('accounting.fees.edit', Hashids::encode($fee->id)) }}"
                                                             class="btn btn-sm btn-outline-warning">
                                                             Edit
                                                         </a>
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-danger delete-fee-btn" title="Delete"
-                                                            data-fee-id="{{ $fee->id }}" data-fee-name="{{ $fee->name }}">
+                                                            data-fee-id="{{ Hashids::encode($fee->id) }}"
+                                                            data-fee-name="{{ $fee->name }}">
                                                             Delete
                                                         </button>
                                                     </div>

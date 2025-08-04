@@ -19,7 +19,9 @@ class Receipt extends Model
         'user_id',
         'attachment',
         'bank_account_id',
-        'customer_id',
+        'payee_type',
+        'payee_id',
+        'payee_name',
         'branch_id',
         'approved',
         'approved_by',
@@ -53,7 +55,7 @@ class Receipt extends Model
 
     public function customer()
     {
-        return $this->belongsTo(Customer::class);
+        return $this->belongsTo(Customer::class, 'payee_id');
     }
 
     public function branch()
@@ -90,7 +92,7 @@ class Receipt extends Model
 
     public function scopeByCustomer($query, $customerId)
     {
-        return $query->where('customer_id', $customerId);
+        return $query->where('payee_type', 'customer')->where('payee_id', $customerId);
     }
 
     public function scopeByBankAccount($query, $bankAccountId)
@@ -120,5 +122,13 @@ class Receipt extends Model
     public function getTotalAmountAttribute()
     {
         return $this->receiptItems->sum('amount');
+    }
+
+    public function getPayeeNameAttribute($value)
+    {
+        if ($this->payee_type === 'customer' && $this->customer) {
+            return $this->customer->name;
+        }
+        return $value;
     }
 }
