@@ -26,6 +26,7 @@ return new class extends Migration {
         $table->decimal('amount', 15, 2)->default(0);
         $table->decimal('interest_amount', 15, 2)->default(0);
         $table->decimal('amount_total', 15, 2)->default(0);
+        $table->decimal('interest',3,2);
 
         $table->integer('period')->default(0); // e.g., number of months
 

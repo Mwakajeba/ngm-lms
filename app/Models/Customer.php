@@ -92,7 +92,11 @@ class Customer extends Model
             ->withTimestamps();
     }
 
-
+    public function groups()
+    {
+        return $this->belongsToMany(Group::class, 'group_members', 'customer_id', 'group_id');
+    }
+    
     public function loanOfficers()
     {
         return $this->belongsToMany(User::class, 'customer_officer', 'customer_id', 'officer_id');
@@ -131,6 +135,7 @@ class Customer extends Model
     {
         return 20000000;
     }
+    
 
 
 }

@@ -158,4 +158,18 @@ class LoanProduct extends Model
     {
         $this->attributes['repayment_order'] = is_array($value) ? implode(',', $value) : $value;
     }
+
+    public function requiresCollateral(): bool
+    {
+        return $this->has_cash_collateral;
+    }
+
+    public function calculateRequiredCollateral(float $loanAmount): float
+    {
+        if (!$this->has_cash_collateral) return 0;
+
+        return $this->cash_collateral_value_type === 'percent'
+            ? ($loanAmount * $this->cash_collateral_value / 100)
+            : $this->cash_collateral_value;
+    }
 }
