@@ -16,7 +16,12 @@ return new class extends Migration {
             $table->foreignId('chart_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->enum('penalty_type', ['fixed', 'percentage'])->default('fixed');
             $table->decimal('amount', 15, 2)->default(0);
-            $table->enum('deduction_type', ['outstanding_amount', 'principal'])->default('outstanding_amount');
+            $table->enum('deduction_type', [
+                'over_due_principal_amount',
+                'over_due_interest_amount',
+                'over_due_principal_and_interest',
+                'total_principal_amount_released'
+            ])->default('over_due_principal_amount');
             $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
             $table->foreignId('company_id')->constrained()->onDelete('cascade');

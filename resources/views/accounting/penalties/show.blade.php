@@ -117,13 +117,13 @@
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Deduction Base</label>
                                     <p class="form-control-plaintext">
-                                        @if($penalty->isOutstandingAmountDeduction())
-                                            <i class="bx bx-money me-2 text-warning"></i>
-                                            Outstanding loan amount
-                                        @else
-                                            <i class="bx bx-home me-2 text-danger"></i>
-                                            Original principal amount
-                                        @endif
+                                        @php
+                                            $deductionTypeOptions = App\Models\Penalty::getDeductionTypeOptions();
+                                            $deductionLabel = $deductionTypeOptions[$penalty->deduction_type] ?? 'Unknown';
+                                        @endphp
+                                        {!! $penalty->deduction_type_badge !!}
+                                        <br>
+                                        <small class="text-muted">{{ $deductionLabel }}</small>
                                     </p>
                                 </div>
                                 <div class="col-12 mb-3">
