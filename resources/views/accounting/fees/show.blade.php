@@ -101,6 +101,18 @@
                                 </div>
 
                                 <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold text-muted">Deduction Criteria</label>
+                                    <p class="mb-0">
+                                        @php
+                                            $deductionCriteriaOptions = App\Models\Fee::getDeductionCriteriaOptions();
+                                            $criteriaLabel = $deductionCriteriaOptions[$fee->deduction_criteria] ?? 'N/A';
+                                        @endphp
+                                        <i class="bx bx-calendar-check me-1"></i>
+                                        {{ $criteriaLabel }}
+                                    </p>
+                                </div>
+
+                                <div class="col-12 mb-3">
                                     <label class="form-label fw-bold text-muted">Status</label>
                                     <p class="mb-0">
                                         {!! $fee->status_badge !!}

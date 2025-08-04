@@ -17,6 +17,7 @@ class Fee extends Model
         'amount',
         'description',
         'status',
+        'deduction_criteria',
         'company_id',
         'branch_id',
         'created_by',
@@ -101,6 +102,22 @@ class Fee extends Model
         };
     }
 
+    public function getDeductionCriteriaBadgeAttribute()
+    {
+        $options = self::getDeductionCriteriaOptions();
+        $label = $options[$this->deduction_criteria] ?? 'Unknown';
+
+        return match ($this->deduction_criteria) {
+            'do_not_include_in_loan_schedule' => '<span class="badge bg-secondary" title="' . $label . '">Not in Schedule</span>',
+            'distribute_fee_evenly_to_all_repayments' => '<span class="badge bg-info" title="' . $label . '">Distribute Evenly</span>',
+            'charge_fee_on_release_date' => '<span class="badge bg-success" title="' . $label . '">On Release</span>',
+            'charge_fee_on_first_repayment' => '<span class="badge bg-warning" title="' . $label . '">First Repayment</span>',
+            'charge_fee_on_last_repayment' => '<span class="badge bg-danger" title="' . $label . '">Last Repayment</span>',
+            'charge_same_fee_to_all_repayments' => '<span class="badge bg-primary" title="' . $label . '">All Repayments</span>',
+            default => '<span class="badge bg-secondary" title="' . $label . '">Unknown</span>',
+        };
+    }
+
     public function getFormattedAmountAttribute()
     {
         if ($this->fee_type === 'percentage') {
@@ -155,6 +172,18 @@ class Fee extends Model
         return [
             'fixed' => 'Fixed Amount',
             'percentage' => 'Percentage',
+        ];
+    }
+
+    public static function getDeductionCriteriaOptions()
+    {
+        return [
+            'do_not_include_in_loan_schedule' => 'Do not include in loan schedule',
+            'distribute_fee_evenly_to_all_repayments' => 'Distribute fee evenly to all repayments',
+            'charge_fee_on_release_date' => 'Charge fee on release date',
+            'charge_fee_on_first_repayment' => 'Charge fee on the first repayment',
+            'charge_fee_on_last_repayment' => 'Charge fee on the last repayment',
+            'charge_same_fee_to_all_repayments' => 'Charge same fee to all repayments',
         ];
     }
 }

@@ -56,8 +56,9 @@ class FeeController extends Controller
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
         $statusOptions = Fee::getStatusOptions();
         $feeTypeOptions = Fee::getFeeTypeOptions();
+        $deductionCriteriaOptions = Fee::getDeductionCriteriaOptions();
 
-        return view('accounting.fees.create', compact('companies', 'branches', 'chartAccounts', 'statusOptions', 'feeTypeOptions'));
+        return view('accounting.fees.create', compact('companies', 'branches', 'chartAccounts', 'statusOptions', 'feeTypeOptions', 'deductionCriteriaOptions'));
     }
 
     public function store(Request $request)
@@ -69,6 +70,7 @@ class FeeController extends Controller
             'amount' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
+            'deduction_criteria' => 'required|in:do_not_include_in_loan_schedule,distribute_fee_evenly_to_all_repayments,charge_fee_on_release_date,charge_fee_on_first_repayment,charge_fee_on_last_repayment,charge_same_fee_to_all_repayments',
             'company_id' => 'nullable|exists:companies,id',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
@@ -87,6 +89,7 @@ class FeeController extends Controller
             'amount' => $request->amount,
             'description' => $request->description,
             'status' => $request->status,
+            'deduction_criteria' => $request->deduction_criteria,
             'company_id' => $companyId,
             'branch_id' => $request->branch_id,
             'created_by' => $user->id,
@@ -134,8 +137,9 @@ class FeeController extends Controller
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
         $statusOptions = Fee::getStatusOptions();
         $feeTypeOptions = Fee::getFeeTypeOptions();
+        $deductionCriteriaOptions = Fee::getDeductionCriteriaOptions();
 
-        return view('accounting.fees.edit', compact('fee', 'companies', 'branches', 'chartAccounts', 'statusOptions', 'feeTypeOptions'));
+        return view('accounting.fees.edit', compact('fee', 'companies', 'branches', 'chartAccounts', 'statusOptions', 'feeTypeOptions', 'deductionCriteriaOptions'));
     }
 
     public function update(Request $request, $encodedId)
@@ -155,6 +159,7 @@ class FeeController extends Controller
             'amount' => 'required|numeric|min:0',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
+            'deduction_criteria' => 'required|in:do_not_include_in_loan_schedule,distribute_fee_evenly_to_all_repayments,charge_fee_on_release_date,charge_fee_on_first_repayment,charge_fee_on_last_repayment,charge_same_fee_to_all_repayments',
             'company_id' => 'nullable|exists:companies,id',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
@@ -173,6 +178,7 @@ class FeeController extends Controller
             'amount' => $request->amount,
             'description' => $request->description,
             'status' => $request->status,
+            'deduction_criteria' => $request->deduction_criteria,
             'company_id' => $companyId,
             'branch_id' => $request->branch_id,
             'updated_by' => $user->id,

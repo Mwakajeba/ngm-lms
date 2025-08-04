@@ -116,6 +116,20 @@
                             <div class="form-text" id="amount-help">Enter the fee amount</div>
                             @error('amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Deduction Criteria <span class="text-danger">*</span></label>
+                            <select name="deduction_criteria"
+                                class="form-select @error('deduction_criteria') is-invalid @enderror" required>
+                                <option value="">-- Select Deduction Criteria --</option>
+                                @foreach($deductionCriteriaOptions as $value => $label)
+                                    <option value="{{ $value }}" {{ old('deduction_criteria', $fee->deduction_criteria ?? '') == $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('deduction_criteria') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
                     </div>
                 </div>
             </div>
