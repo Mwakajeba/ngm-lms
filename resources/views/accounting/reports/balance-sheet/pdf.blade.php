@@ -9,14 +9,12 @@
             font-size: 12px;
             line-height: 1.4;
             color: #333;
-            margin: 0;
-            padding: 20px;
         }
         .header {
             text-align: center;
             margin-bottom: 30px;
             border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+            padding-bottom: 20px;
         }
         .company-name {
             font-size: 18px;
@@ -28,26 +26,13 @@
             font-weight: bold;
             margin-bottom: 5px;
         }
-        .report-subtitle {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 10px;
+        .report-date {
+            font-size: 14px;
+            margin-bottom: 5px;
         }
-        .filters {
-            margin-bottom: 20px;
+        .report-details {
             font-size: 10px;
-        }
-        .filters table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        .filters td {
-            padding: 2px 10px;
-            border: none;
-        }
-        .filters .label {
-            font-weight: bold;
-            width: 120px;
+            color: #666;
         }
         table {
             width: 100%;
@@ -60,64 +45,67 @@
             text-align: left;
         }
         th {
-            background-color: #f5f5f5;
-            font-weight: bold;
-            text-align: center;
-        }
-        .section-header {
-            background-color: #333;
-            color: white;
-            font-weight: bold;
-            padding: 10px;
-            margin-top: 20px;
-            margin-bottom: 10px;
-        }
-        .total-row {
-            background-color: #f0f0f0;
+            background-color: #f8f9fa;
             font-weight: bold;
         }
-        .text-right {
+        .text-end {
             text-align: right;
         }
         .text-center {
             text-align: center;
         }
+        .assets-header {
+            background-color: #d4edda;
+            color: #155724;
+            font-weight: bold;
+        }
+        .liabilities-header {
+            background-color: #fff3cd;
+            color: #856404;
+            font-weight: bold;
+        }
+        .equity-header {
+            background-color: #d1ecf1;
+            color: #0c5460;
+            font-weight: bold;
+        }
+        .total-row {
+            background-color: #e9ecef;
+            font-weight: bold;
+        }
         .balance-check {
             margin-top: 20px;
-            padding: 10px;
+            padding: 15px;
             border: 1px solid #ddd;
-            background-color: #f9f9f9;
+            background-color: #f8f9fa;
         }
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
+        .success {
+            border-color: #28a745;
+            background-color: #d4edda;
+        }
+        .danger {
+            border-color: #dc3545;
+            background-color: #f8d7da;
+        }
+        .page-break {
+            page-break-before: always;
         }
     </style>
 </head>
 <body>
+    <!-- Report Header -->
     <div class="header">
-        <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
+        <div class="company-name">{{ $company->name ?? 'Company Name' }}</div>
         <div class="report-title">BALANCE SHEET</div>
-        <div class="report-subtitle">As of {{ \Carbon\Carbon::parse($balanceSheetData['as_of_date'])->format('F d, Y') }}</div>
-    </div>
-
-    <div class="filters">
-        <table>
-            <tr>
-                <td class="label">Reporting Type:</td>
-                <td>{{ ucfirst($balanceSheetData['reporting_type']) }} Basis</td>
-                <td class="label">Level of Detail:</td>
-                <td>{{ ucfirst($balanceSheetData['level_of_detail']) }}</td>
-            </tr>
-            <tr>
-                <td class="label">Comparative Years:</td>
-                <td>{{ $balanceSheetData['comparative_years'] }} Year(s)</td>
-                <td class="label">Generated:</td>
-                <td>{{ now()->format('F d, Y \a\t g:i A') }}</td>
-            </tr>
-        </table>
+        <div class="report-date">As of {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}</div>
+        @if(isset($balanceSheetData['filters']['branch_id']) && $balanceSheetData['filters']['branch_id'] != 'all')
+            <div class="report-details">Branch: {{ $branches->where('id', $balanceSheetData['filters']['branch_id'])->first()->name ?? 'N/A' }}</div>
+        @endif
+        <div class="report-details">
+            {{ ucfirst($reportingType) }} Basis | 
+            {{ ucfirst($balanceSheetData['filters']['level_of_detail']) }} Level |
+            Generated on {{ now()->format('F d, Y \a\t g:i A') }}
+        </div>
     </div>
 
     <!-- Assets Section -->

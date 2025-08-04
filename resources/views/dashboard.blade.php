@@ -135,8 +135,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Total Bills</p>
-                                <h4 class="font-weight-bold">{{ $recentBills->count() > 0 ? $recentBills->count() : 0 }}</h4>
+                                <p class="mb-0">Total Receipts</p>
+                                <h4 class="font-weight-bold">{{ $recentReceipts->count() > 0 ? $recentReceipts->count() : 0 }}</h4>
                                 <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
                             <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-receipt'></i></div>
@@ -303,22 +303,22 @@ use Vinkla\Hashids\Facades\Hashids;
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-header bg-transparent">
-                        <h6 class="mb-0"><i class="bx bx-receipt me-2"></i>Recent Bills</h6>
+                        <h6 class="mb-0"><i class="bx bx-receipt me-2"></i>Recent Receipts</h6>
                     </div>
                     <div class="card-body">
-                        @forelse($recentBills as $bill)
+                        @forelse($recentReceipts as $receipt)
                         <div class="d-flex align-items-center mb-3">
-                            <div class="widgets-icons bg-light-warning text-warning me-3">
+                            <div class="widgets-icons bg-light-success text-success me-3">
                                 <i class="bx bx-receipt"></i>
                             </div>
                             <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ $bill->reference }}</h6>
-                                <p class="mb-0 text-muted">{{ $bill->supplier->name ?? 'N/A' }}</p>
-                                <small class="text-muted">{{ $bill->date ? $bill->date->format('M d, Y') : 'N/A' }}</small>
+                                <h6 class="mb-1">{{ $receipt->reference }}</h6>
+                                <p class="mb-0 text-muted">{{ $receipt->description ?? 'N/A' }}</p>
+                                <small class="text-muted">{{ $receipt->date ? $receipt->date->format('M d, Y') : 'N/A' }}</small>
                             </div>
                         </div>
                         @empty
-                        <p class="text-muted text-center">No recent bills</p>
+                        <p class="text-muted text-center">No recent receipts</p>
                         @endforelse
                     </div>
                 </div>
