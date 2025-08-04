@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Supplier Details')
@@ -17,7 +21,8 @@
                     <p class="text-muted mb-0">View supplier information</p>
                 </div>
                 <div>
-                    <a href="{{ route('accounting.suppliers.edit', $supplier) }}" class="btn btn-primary me-2">
+                    <a href="{{ route('accounting.suppliers.edit', Hashids::encode($supplier->id)) }}"
+                        class="btn btn-primary me-2">
                         Edit Supplier
                     </a>
                     <a href="{{ route('accounting.suppliers.index') }}" class="btn btn-secondary">

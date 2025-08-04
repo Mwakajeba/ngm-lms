@@ -57,7 +57,6 @@ Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('r
 
 // Language switching
 Route::get('/language/{locale}', [LanguageController::class, 'switchLanguage'])->name('language.switch');
-
 // Test language route
 Route::get('/test-language', function () {
     return view('test-language');
@@ -74,7 +73,7 @@ Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'lo
 Route::get('/reports/customers', [App\Http\Controllers\ReportsController::class, 'customers'])->middleware('auth')->name('reports.customers');
 Route::get('/reports/transactions', [App\Http\Controllers\ReportsController::class, 'transactions'])->middleware('auth')->name('reports.transactions');
 
-////////////////////////////////////////////// ROLES & PERMISSIONS MANAGEMENT /////////////////////////////////////////////
+////////////////////////////////////////ROLES & PERMISSIONSMANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
     // Roles management
     Route::get('roles', [RolePermissionController::class, 'index'])->name('roles.index');
@@ -210,40 +209,40 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:su
 ////////////////////////////////////////////// ACCOUNTING MANAGEMENT ///////////////////////////////////////////////
 
 Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(function () {
-    // Chart of Accounts - FSLI
-    Route::get('/fsli-accounts', [AccountClassGroupController::class, 'index'])->name('fsli-accounts');
-    Route::get('/fsli-accounts/create', [AccountClassGroupController::class, 'create'])->name('fsli-accounts.create');
-    Route::post('/fsli-accounts', [AccountClassGroupController::class, 'store'])->name('fsli-accounts.store');
-    Route::get('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'show'])->name('fsli-accounts.show');
-    Route::get('/fsli-accounts/{accountClassGroup}/edit', [AccountClassGroupController::class, 'edit'])->name('fsli-accounts.edit');
-    Route::put('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'update'])->name('fsli-accounts.update');
-    Route::delete('/fsli-accounts/{accountClassGroup}', [AccountClassGroupController::class, 'destroy'])->name('fsli-accounts.destroy');
+    // Account Class Groups
+    Route::get('/account-class-groups', [AccountClassGroupController::class, 'index'])->name('account-class-groups.index');
+    Route::get('/account-class-groups/create', [AccountClassGroupController::class, 'create'])->name('account-class-groups.create');
+    Route::post('/account-class-groups', [AccountClassGroupController::class, 'store'])->name('account-class-groups.store');
+    Route::get('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'show'])->name('account-class-groups.show');
+    Route::get('/account-class-groups/{encodedId}/edit', [AccountClassGroupController::class, 'edit'])->name('account-class-groups.edit');
+    Route::put('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'update'])->name('account-class-groups.update');
+    Route::delete('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'destroy'])->name('account-class-groups.destroy');
 
-    // Chart of Accounts
-    Route::get('/accounts', [ChartAccountController::class, 'index'])->name('accounts');
-    Route::get('/accounts/create', [ChartAccountController::class, 'create'])->name('accounts.create');
-    Route::post('/accounts', [ChartAccountController::class, 'store'])->name('accounts.store');
-    Route::get('/accounts/{chartAccount}', [ChartAccountController::class, 'show'])->name('accounts.show');
-    Route::get('/accounts/{chartAccount}/edit', [ChartAccountController::class, 'edit'])->name('accounts.edit');
-    Route::put('/accounts/{chartAccount}', [ChartAccountController::class, 'update'])->name('accounts.update');
-    Route::delete('/accounts/{chartAccount}', [ChartAccountController::class, 'destroy'])->name('accounts.destroy');
+    // Chart Accounts
+    Route::get('/chart-accounts', [ChartAccountController::class, 'index'])->name('chart-accounts.index');
+    Route::get('/chart-accounts/create', [ChartAccountController::class, 'create'])->name('chart-accounts.create');
+    Route::post('/chart-accounts', [ChartAccountController::class, 'store'])->name('chart-accounts.store');
+    Route::get('/chart-accounts/{encodedId}', [ChartAccountController::class, 'show'])->name('chart-accounts.show');
+    Route::get('/chart-accounts/{encodedId}/edit', [ChartAccountController::class, 'edit'])->name('chart-accounts.edit');
+    Route::put('/chart-accounts/{encodedId}', [ChartAccountController::class, 'update'])->name('chart-accounts.update');
+    Route::delete('/chart-accounts/{encodedId}', [ChartAccountController::class, 'destroy'])->name('chart-accounts.destroy');
 
     // Suppliers
     Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
     Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
-    Route::get('/suppliers/{supplier}', [SupplierController::class, 'show'])->name('suppliers.show');
-    Route::get('/suppliers/{supplier}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
-    Route::put('/suppliers/{supplier}', [SupplierController::class, 'update'])->name('suppliers.update');
-    Route::patch('/suppliers/{supplier}/status', [SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
-    Route::delete('/suppliers/{supplier}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
+    Route::get('/suppliers/{encodedId}', [SupplierController::class, 'show'])->name('suppliers.show');
+    Route::get('/suppliers/{encodedId}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
+    Route::put('/suppliers/{encodedId}', [SupplierController::class, 'update'])->name('suppliers.update');
+    Route::patch('/suppliers/{encodedId}/status', [SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
+    Route::delete('/suppliers/{encodedId}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Payment Vouchers
     Route::resource('payment-vouchers', PaymentVoucherController::class);
     Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
     Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
     Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
-    
+
     // Bill and Payment PDF Export Routes
     Route::get('/bill-purchases/{billPurchase}/export-pdf', [BillPurchaseController::class, 'exportPdf'])->name('bill-purchases.export-pdf');
     Route::get('/payments/{payment}/export-pdf', [BillPurchaseController::class, 'exportPaymentPdf'])->name('bill-payments.export-pdf');
@@ -252,19 +251,22 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/receipt-vouchers', [ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
     Route::get('/receipt-vouchers/create', [ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
     Route::post('/receipt-vouchers', [ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
-    Route::get('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
-    Route::get('/receipt-vouchers/{receiptVoucher}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
-    Route::put('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
-    Route::delete('/receipt-vouchers/{receiptVoucher}', [ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
+    Route::get('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
+    Route::get('/receipt-vouchers/{encodedId}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
+    Route::put('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
+    Route::delete('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'destroy'])->name('receipt-vouchers.destroy');
+    Route::get('/receipt-vouchers/{encodedId}/download-attachment', [ReceiptVoucherController::class, 'downloadAttachment'])->name('receipt-vouchers.download-attachment');
+    Route::delete('/receipt-vouchers/{encodedId}/remove-attachment', [ReceiptVoucherController::class, 'removeAttachment'])->name('receipt-vouchers.remove-attachment');
+    Route::get('/receipt-vouchers-debug', [ReceiptVoucherController::class, 'debug'])->name('receipt-vouchers.debug');
 
     // Bank Accounts
     Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
     Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
     Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
-    Route::get('/bank-accounts/{bankAccount}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
-    Route::get('/bank-accounts/{bankAccount}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
-    Route::put('/bank-accounts/{bankAccount}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
-    Route::delete('/bank-accounts/{bankAccount}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
+    Route::get('/bank-accounts/{encodedId}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
+    Route::get('/bank-accounts/{encodedId}/edit', [BankAccountController::class, 'edit'])->name('bank-accounts.edit');
+    Route::put('/bank-accounts/{encodedId}', [BankAccountController::class, 'update'])->name('bank-accounts.update');
+    Route::delete('/bank-accounts/{encodedId}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Reconciliation
     Route::resource('bank-reconciliation', BankReconciliationController::class);
@@ -280,13 +282,13 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/bill-purchases', [BillPurchaseController::class, 'index'])->name('bill-purchases');
     Route::get('/bill-purchases/create', [BillPurchaseController::class, 'create'])->name('bill-purchases.create');
     Route::post('/bill-purchases', [BillPurchaseController::class, 'store'])->name('bill-purchases.store');
-    
+
     // Bill Payment Management (must come before bill-purchases/{billPurchase} routes)
     Route::get('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'showPayment'])->name('bill-purchases.payment.show');
     Route::get('/bill-purchases/payment/{payment}/edit', [BillPurchaseController::class, 'editPayment'])->name('bill-purchases.payment.edit');
     Route::put('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'updatePayment'])->name('bill-purchases.payment.update');
     Route::delete('/bill-purchases/payment/{payment}', [BillPurchaseController::class, 'deletePayment'])->name('bill-purchases.payment.delete');
-    
+
     Route::get('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'show'])->name('bill-purchases.show');
     Route::get('/bill-purchases/{billPurchase}/edit', [BillPurchaseController::class, 'edit'])->name('bill-purchases.edit');
     Route::put('/bill-purchases/{billPurchase}', [BillPurchaseController::class, 'update'])->name('bill-purchases.update');
@@ -307,21 +309,21 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
     Route::get('/fees/create', [FeeController::class, 'create'])->name('fees.create');
     Route::post('/fees', [FeeController::class, 'store'])->name('fees.store');
-    Route::get('/fees/{fee}', [FeeController::class, 'show'])->name('fees.show');
-    Route::get('/fees/{fee}/edit', [FeeController::class, 'edit'])->name('fees.edit');
-    Route::put('/fees/{fee}', [FeeController::class, 'update'])->name('fees.update');
-    Route::patch('/fees/{fee}/status', [FeeController::class, 'changeStatus'])->name('fees.changeStatus');
-    Route::delete('/fees/{fee}', [FeeController::class, 'destroy'])->name('fees.destroy');
+    Route::get('/fees/{encodedId}', [FeeController::class, 'show'])->name('fees.show');
+    Route::get('/fees/{encodedId}/edit', [FeeController::class, 'edit'])->name('fees.edit');
+    Route::put('/fees/{encodedId}', [FeeController::class, 'update'])->name('fees.update');
+    Route::patch('/fees/{encodedId}/status', [FeeController::class, 'changeStatus'])->name('fees.changeStatus');
+    Route::delete('/fees/{encodedId}', [FeeController::class, 'destroy'])->name('fees.destroy');
 
     // Penalties
     Route::get('/penalties', [PenaltyController::class, 'index'])->name('penalties.index');
     Route::get('/penalties/create', [PenaltyController::class, 'create'])->name('penalties.create');
     Route::post('/penalties', [PenaltyController::class, 'store'])->name('penalties.store');
-    Route::get('/penalties/{penalty}', [PenaltyController::class, 'show'])->name('penalties.show');
-    Route::get('/penalties/{penalty}/edit', [PenaltyController::class, 'edit'])->name('penalties.edit');
-    Route::put('/penalties/{penalty}', [PenaltyController::class, 'update'])->name('penalties.update');
-    Route::patch('/penalties/{penalty}/status', [PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
-    Route::delete('/penalties/{penalty}', [PenaltyController::class, 'destroy'])->name('penalties.destroy');
+    Route::get('/penalties/{encodedId}', [PenaltyController::class, 'show'])->name('penalties.show');
+    Route::get('/penalties/{encodedId}/edit', [PenaltyController::class, 'edit'])->name('penalties.edit');
+    Route::put('/penalties/{encodedId}', [PenaltyController::class, 'update'])->name('penalties.update');
+    Route::patch('/penalties/{encodedId}/status', [PenaltyController::class, 'changeStatus'])->name('penalties.changeStatus');
+    Route::delete('/penalties/{encodedId}', [PenaltyController::class, 'destroy'])->name('penalties.destroy');
 
     // Journal Entries CRUD
     Route::get('/journals', [JournalController::class, 'index'])->name('journals.index');
@@ -346,7 +348,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/accounting-notes', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'index'])->name('accounting-notes');
         Route::get('/accounting-notes/export', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'export'])->name('accounting-notes.export');
         Route::get('/balance-sheet', [App\Http\Controllers\Accounting\Reports\BalanceSheetReportController::class, 'index'])->name('balance-sheet');
-Route::get('/balance-sheet/export', [App\Http\Controllers\Accounting\Reports\BalanceSheetReportController::class, 'export'])->name('balance-sheet.export');
+        Route::get('/balance-sheet/export', [App\Http\Controllers\Accounting\Reports\BalanceSheetReportController::class, 'export'])->name('balance-sheet.export');
         Route::get('/cash-flow', [App\Http\Controllers\Accounting\Reports\CashFlowReportController::class, 'index'])->name('cash-flow');
         Route::get('/general-ledger', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'index'])->name('general-ledger');
         Route::get('/general-ledger/export', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'export'])->name('general-ledger.export');
@@ -358,7 +360,7 @@ Route::get('/balance-sheet/export', [App\Http\Controllers\Accounting\Reports\Bal
         Route::get('/bank-reconciliation/{bankReconciliation}/show', [BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
         Route::get('/bank-reconciliation/{bankReconciliation}/export', [BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
     });
-    
+
     // Transaction Routes
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
@@ -372,6 +374,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
     Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+
+    // Bulk upload routes (must come before parameterized routes)
+    Route::get('customers/bulk-upload', [CustomerController::class, 'bulkUpload'])->name('customers.bulk-upload');
+    Route::post('customers/bulk-upload', [CustomerController::class, 'bulkUploadStore'])->name('customers.bulk-upload.store');
+    Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
+
+    // Parameterized routes (must come after specific routes)
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
@@ -386,10 +395,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loan-products', [LoanProductController::class, 'index'])->name('loan-products.index');
     Route::get('loan-products/create', [LoanProductController::class, 'create'])->name('loan-products.create');
     Route::post('loan-products', [LoanProductController::class, 'store'])->name('loan-products.store');
-    Route::get('loan-products/{loanProduct}', [LoanProductController::class, 'show'])->name('loan-products.show');
-    Route::get('loan-products/{loanProduct}/edit', [LoanProductController::class, 'edit'])->name('loan-products.edit');
-    Route::put('loan-products/{loanProduct}', [LoanProductController::class, 'update'])->name('loan-products.update');
-    Route::delete('loan-products/{loanProduct}', [LoanProductController::class, 'destroy'])->name('loan-products.destroy');
+    Route::get('loan-products/{encodedId}', [LoanProductController::class, 'show'])->name('loan-products.show');
+    Route::get('loan-products/{encodedId}/edit', [LoanProductController::class, 'edit'])->name('loan-products.edit');
+    Route::put('loan-products/{encodedId}', [LoanProductController::class, 'update'])->name('loan-products.update');
+    Route::delete('loan-products/{encodedId}', [LoanProductController::class, 'destroy'])->name('loan-products.destroy');
+    Route::patch('loan-products/{encodedId}/toggle-status', [LoanProductController::class, 'toggleStatus'])->name('loan-products.toggle-status');
 });
 
 ////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
@@ -400,10 +410,17 @@ Route::middleware(['auth'])->group(function () {
     Route::get('groups', [GroupController::class, 'index'])->name('groups.index');
     Route::get('groups/create', [GroupController::class, 'create'])->name('groups.create');
     Route::post('groups', [GroupController::class, 'store'])->name('groups.store');
-    Route::get('groups/{group}', [GroupController::class, 'show'])->name('groups.show');
-    Route::get('groups/{group}/edit', [GroupController::class, 'edit'])->name('groups.edit');
-    Route::put('groups/{group}', [GroupController::class, 'update'])->name('groups.update');
-    Route::delete('groups/{group}', [GroupController::class, 'destroy'])->name('groups.destroy');
+    Route::get('groups/{encodedId}', [GroupController::class, 'show'])->name('groups.show');
+    Route::get('groups/{encodedId}/edit', [GroupController::class, 'edit'])->name('groups.edit');
+    Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');
+    Route::delete('groups/{encodedId}', [GroupController::class, 'destroy'])->name('groups.destroy');
+});
+////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('groups/{encodedId}/members/create', [GroupMemberController::class, 'create'])->name('group-members.create');
+    Route::post('groups/{encodedId}/members', [GroupMemberController::class, 'store'])->name('group-members.store');
+    Route::delete('groups/{encodedId}/members/{member}', [GroupMemberController::class, 'destroy'])->name('group-members.destroy');
 });
 
 ////////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
@@ -413,6 +430,19 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
+
+    // New Loan Application Routes (must come BEFORE general loan routes)
+    Route::get('loans/application', [LoanController::class, 'applicationIndex'])->name('loans.application.index');
+    Route::get('loans/application/create', [LoanController::class, 'applicationCreate'])->name('loans.application.create');
+    Route::post('loans/application', [LoanController::class, 'applicationStore'])->name('loans.application.store');
+    Route::get('loans/application/{encodedId}', [LoanController::class, 'applicationShow'])->name('loans.application.show');
+    Route::get('loans/application/{encodedId}/edit', [LoanController::class, 'applicationEdit'])->name('loans.application.edit');
+    Route::put('loans/application/{encodedId}', [LoanController::class, 'applicationUpdate'])->name('loans.application.update');
+    Route::patch('loans/application/{encodedId}/approve', [LoanController::class, 'applicationApprove'])->name('loans.application.approve');
+    Route::patch('loans/application/{encodedId}/reject', [LoanController::class, 'applicationReject'])->name('loans.application.reject');
+    Route::delete('loans/application/{encodedId}', [LoanController::class, 'applicationDelete'])->name('loans.application.delete');
+
+    // General loan routes (must come AFTER specific routes)
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
     Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
@@ -431,25 +461,7 @@ Route::middleware(['auth'])->group(function () {
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
 
 
-////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
-Route::middleware(['auth'])->group(function () {
-    Route::get('groups/{group}/members/create', [GroupMemberController::class, 'create'])->name('group-members.create');
-    Route::post('groups/{group}/members', [GroupMemberController::class, 'store'])->name('group-members.store');
-    Route::delete('groups/{group}/members/{member}', [GroupMemberController::class, 'destroy'])->name('group-members.destroy');
-});
-
-////////////////////////////////////////////// END GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
-
-Route::middleware(['auth'])->group(function () {
-    Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
-    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
-    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
-    Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
-    Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
-    Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
-    Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
-});
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 
@@ -467,11 +479,11 @@ Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
     Route::get('/receipts/{receipt}/edit', [CashCollateralController::class, 'editReceipt'])->name('receipts.edit');
     Route::put('/receipts/{receipt}', [CashCollateralController::class, 'updateReceipt'])->name('receipts.update');
     Route::delete('/receipts/{receipt}', [CashCollateralController::class, 'deleteReceipt'])->name('receipts.destroy');
-    
+
     Route::get('/payments/{payment}/edit', [CashCollateralController::class, 'editPayment'])->name('payments.edit');
     Route::put('/payments/{payment}', [CashCollateralController::class, 'updatePayment'])->name('payments.update');
     Route::delete('/payments/{payment}', [CashCollateralController::class, 'deletePayment'])->name('payments.destroy');
-    
+
     // Deposit and Withdrawal routes
     Route::get('/{cashcollateral}/deposit', [CashCollateralController::class, 'deposit'])->name('cash_collaterals.deposit');
     Route::post('/deposit-store', [CashCollateralController::class, 'depositStore'])->name('cash_collaterals.depositStore');

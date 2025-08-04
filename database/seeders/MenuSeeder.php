@@ -69,8 +69,8 @@ class MenuSeeder extends Seeder
             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
-                    ['name' => 'Charts of account - FSLI', 'route' => 'accounting.fsli-accounts'],
-                    ['name' => 'Charts of account', 'route' => 'accounting.accounts'],
+                    ['name' => 'Charts of account - FSLI', 'route' => 'accounting.account-class-groups.index'],
+                    ['name' => 'Charts of account', 'route' => 'accounting.chart-accounts.index'],
                     ['name' => 'Suppliers', 'route' => 'accounting.suppliers.index'],
                     ['name' => 'Manual journals', 'route' => 'accounting.journals.index'],
                     ['name' => 'Payment voucher', 'route' => 'accounting.payment-vouchers.index'],
@@ -83,9 +83,9 @@ class MenuSeeder extends Seeder
                     ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
                 ],
                 'hiddenRoutes' => [
-                    'accounting.accounts.create',
-                    'accounting.accounts.edit',
-                    'accounting.accounts.destroy',
+                    'accounting.chart-accounts.create',
+                    'accounting.chart-accounts.edit',
+                    'accounting.chart-accounts.destroy',
                     'accounting.journals.edit',
                     'accounting.journals.destroy',
                     'accounting.journals.create',
@@ -106,7 +106,7 @@ class MenuSeeder extends Seeder
 
         foreach ($entities as $parentName => $data) {
             $parent = Menu::firstOrCreate([
-                'name' => $parentName,              
+                'name' => $parentName,
                 'route' => null,
                 'parent_id' => null,
                 'icon' => $data['icon'],

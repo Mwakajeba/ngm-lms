@@ -3,14 +3,14 @@
 @section('title', 'Customer Management')
 
 @section('content')
-<div class="page-wrapper">
-    <div class="page-content">
-         <x-breadcrumbs-with-icons :links="[
+    <div class="page-wrapper">
+        <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Customers', 'url' => '#', 'icon' => 'bx bx-group']
         ]" />
-        <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
-        <hr/>
+            <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
+            <hr />
 
         <!-- Dashboard Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
@@ -49,19 +49,22 @@
             </div>
         </div>
 
-        <!-- Customers Table -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h6 class="card-title mb-0">Customers List</h6>
-                            <div>
-                                <a href="{{ route('customers.create') }}" class="btn btn-primary">
-                                    <i class="bx bx-plus"></i> Add Customer
-                                </a>
+            <!-- Customers Table -->
+            <div class="row">
+                <div class="col-12">
+                    <div class="card radius-10">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h6 class="card-title mb-0">Customers List</h6>
+                                <div>
+                                    <a href="{{ route('customers.bulk-upload') }}" class="btn btn-success me-2">
+                                        <i class="bx bx-upload"></i> Bulk Upload
+                                    </a>
+                                    <a href="{{ route('customers.create') }}" class="btn btn-primary">
+                                        <i class="bx bx-plus"></i> Add Customer
+                                    </a>
+                                </div>
                             </div>
-                        </div>
 
                         <div class="table-responsive">
                             <table class="table table-bordered nowrap" id="customersTable">
@@ -114,13 +117,13 @@
                             </table>
                         </div>
 
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
 
+        </div>
     </div>
-</div>
 @endsection
 
 @push('scripts')

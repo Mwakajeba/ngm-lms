@@ -14,10 +14,25 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
+use Vinkla\Hashids\Facades\Hashids;
 
 class ReceiptVoucherController extends Controller
 {
     use TransactionHelper;
+
+    /**
+     * Debug method to test controller accessibility
+     */
+    public function debug()
+    {
+        return response()->json([
+            'message' => 'ReceiptVoucherController is accessible',
+            'user' => Auth::user()->name ?? 'No user',
+            'timestamp' => now()
+        ]);
+    }
 
     /**
      * Display a listing of the resource.
@@ -27,7 +42,7 @@ class ReceiptVoucherController extends Controller
         $user = Auth::user();
 
         // Get receipts for the current company/branch
-        $receipts = Receipt::with(['bankAccount', 'customer', 'user', 'receiptItems'])
+        $receipts = Receipt::with(['bankAccount', 'user', 'receiptItems'])
             ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
@@ -36,6 +51,16 @@ class ReceiptVoucherController extends Controller
             })
             ->orderBy('date', 'desc')
             ->get();
+
+        // Load customer relationships for receipts with payee_type = 'customer'
+        $customerReceiptIds = $receipts->where('payee_type', 'customer')->pluck('payee_id')->filter();
+        if ($customerReceiptIds->isNotEmpty()) {
+            $receipts->load([
+                'customer' => function ($query) use ($customerReceiptIds) {
+                    $query->whereIn('id', $customerReceiptIds);
+                }
+            ]);
+        }
 
         // Calculate stats
         $stats = [
@@ -86,12 +111,27 @@ class ReceiptVoucherController extends Controller
      */
     public function store(Request $request)
     {
+        // Debug: Log the incoming request data
+        \Log::info('Receipt voucher store request started');
+        \Log::info('Request method:', ['method' => $request->method()]);
+        \Log::info('Request URL:', ['url' => $request->url()]);
+        \Log::info('Request headers:', $request->headers->all());
+        \Log::info('Request all data:', $request->all());
+        \Log::info('Request input:', $request->input());
+        \Log::info('Request has file attachment:', ['has_file' => $request->hasFile('attachment')]);
+
+        // Check if line_items are present
+        \Log::info('Line items data:', ['line_items' => $request->input('line_items')]);
+
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'customer_id' => 'required|exists:customers,id',
+            'payee_type' => 'required|in:customer,other',
+            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
             'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf|max:2048',
             'line_items' => 'required|array|min:1',
             'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
             'line_items.*.amount' => 'required|numeric|min:0.01',
@@ -99,15 +139,45 @@ class ReceiptVoucherController extends Controller
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Receipt voucher validation failed:', $validator->errors()->toArray());
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
+        \Log::info('Validation passed, proceeding with creation');
+
         try {
             return $this->runTransaction(function () use ($request) {
                 $user = Auth::user();
                 $totalAmount = collect($request->line_items)->sum('amount');
+
+                \Log::info('Creating receipt voucher with total amount:', ['total' => $totalAmount]);
+
+                // Handle file upload
+                $attachmentPath = null;
+                if ($request->hasFile('attachment')) {
+                    $file = $request->file('attachment');
+                    $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                    $attachmentPath = $file->storeAs('receipt-attachments', $fileName, 'public');
+                }
+
+                // Set payee information
+                if ($request->payee_type === 'customer') {
+                    $payeeType = 'customer';
+                    $payeeId = $request->customer_id;
+                    $payeeName = null;
+                } else {
+                    $payeeType = 'other';
+                    $payeeId = null;
+                    $payeeName = $request->payee_name;
+                }
+
+                \Log::info('Payee information:', [
+                    'type' => $payeeType,
+                    'id' => $payeeId,
+                    'name' => $payeeName
+                ]);
 
                 // Create receipt
                 $receipt = Receipt::create([
@@ -117,14 +187,19 @@ class ReceiptVoucherController extends Controller
                     'amount' => $totalAmount,
                     'date' => $request->date,
                     'description' => $request->description,
+                    'attachment' => $attachmentPath,
                     'user_id' => $user->id,
                     'bank_account_id' => $request->bank_account_id,
-                    'customer_id' => $request->customer_id,
+                    'payee_type' => $payeeType,
+                    'payee_id' => $payeeId,
+                    'payee_name' => $payeeName,
                     'branch_id' => $user->branch_id,
                     'approved' => true, // Auto-approve for now
                     'approved_by' => $user->id,
                     'approved_at' => now(),
                 ]);
+
+                \Log::info('Receipt created successfully:', ['receipt_id' => $receipt->id]);
 
                 // Create receipt items
                 $receiptItems = [];
@@ -140,6 +215,7 @@ class ReceiptVoucherController extends Controller
                 }
 
                 ReceiptItem::insert($receiptItems);
+                \Log::info('Receipt items created:', ['count' => count($receiptItems)]);
 
                 // Create GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
@@ -147,7 +223,7 @@ class ReceiptVoucherController extends Controller
                 // Debit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
-                    'customer_id' => $request->customer_id,
+                    'customer_id' => $payeeType === 'customer' ? $payeeId : null,
                     'amount' => $totalAmount,
                     'nature' => 'debit',
                     'transaction_id' => $receipt->id,
@@ -162,7 +238,7 @@ class ReceiptVoucherController extends Controller
                 foreach ($request->line_items as $lineItem) {
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
-                        'customer_id' => $request->customer_id,
+                        'customer_id' => $payeeType === 'customer' ? $payeeId : null,
                         'amount' => $lineItem['amount'],
                         'nature' => 'credit',
                         'transaction_id' => $receipt->id,
@@ -174,10 +250,16 @@ class ReceiptVoucherController extends Controller
                     ]);
                 }
 
-                return redirect()->route('accounting.receipt-vouchers.show', $receipt)
+                \Log::info('GL transactions created successfully');
+
+                return redirect()->route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id))
                     ->with('success', 'Receipt voucher created successfully.');
             });
         } catch (\Exception $e) {
+            \Log::error('Receipt voucher creation failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->back()
                 ->withErrors(['error' => 'Failed to create receipt voucher: ' . $e->getMessage()])
                 ->withInput();
@@ -187,8 +269,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(Receipt $receiptVoucher)
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         $receiptVoucher->load([
             'bankAccount',
             'customer.company',
@@ -205,8 +295,16 @@ class ReceiptVoucherController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(Receipt $receiptVoucher)
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         $user = Auth::user();
 
         // Get bank accounts for the current company
@@ -240,14 +338,25 @@ class ReceiptVoucherController extends Controller
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, Receipt $receiptVoucher)
+    public function update(Request $request, $encodedId)
     {
+        // Decode receipt voucher ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'customer_id' => 'required|exists:customers,id',
+            'payee_type' => 'required|in:customer,other',
+            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
             'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf|max:2048',
             'line_items' => 'required|array|min:1',
             'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
             'line_items.*.amount' => 'required|numeric|min:0.01',
@@ -265,6 +374,38 @@ class ReceiptVoucherController extends Controller
                 $user = Auth::user();
                 $totalAmount = collect($request->line_items)->sum('amount');
 
+                // Handle file upload and attachment removal
+                $attachmentPath = $receiptVoucher->attachment;
+
+                // Check if user wants to remove attachment
+                if ($request->has('remove_attachment') && $request->remove_attachment == '1') {
+                    // Delete old attachment if exists
+                    if ($receiptVoucher->attachment && Storage::disk('public')->exists($receiptVoucher->attachment)) {
+                        Storage::disk('public')->delete($receiptVoucher->attachment);
+                    }
+                    $attachmentPath = null;
+                } elseif ($request->hasFile('attachment')) {
+                    // Delete old attachment if exists
+                    if ($receiptVoucher->attachment && Storage::disk('public')->exists($receiptVoucher->attachment)) {
+                        Storage::disk('public')->delete($receiptVoucher->attachment);
+                    }
+
+                    $file = $request->file('attachment');
+                    $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                    $attachmentPath = $file->storeAs('receipt-attachments', $fileName, 'public');
+                }
+
+                // Set payee information
+                if ($request->payee_type === 'customer') {
+                    $payeeType = 'customer';
+                    $payeeId = $request->customer_id;
+                    $payeeName = null;
+                } else {
+                    $payeeType = 'other';
+                    $payeeId = null;
+                    $payeeName = $request->payee_name;
+                }
+
                 // Update receipt
                 $receiptVoucher->update([
                     'reference' => $request->reference ?: $receiptVoucher->reference,
@@ -272,8 +413,11 @@ class ReceiptVoucherController extends Controller
                     'amount' => $totalAmount,
                     'date' => $request->date,
                     'description' => $request->description,
+                    'attachment' => $attachmentPath,
                     'bank_account_id' => $request->bank_account_id,
-                    'customer_id' => $request->customer_id,
+                    'payee_type' => $payeeType,
+                    'payee_id' => $payeeId,
+                    'payee_name' => $payeeName,
                 ]);
 
                 // Delete existing receipt items and GL transactions
@@ -301,7 +445,7 @@ class ReceiptVoucherController extends Controller
                 // Debit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
-                    'customer_id' => $request->customer_id,
+                    'customer_id' => $payeeType === 'customer' ? $payeeId : null,
                     'amount' => $totalAmount,
                     'nature' => 'debit',
                     'transaction_id' => $receiptVoucher->id,
@@ -316,7 +460,7 @@ class ReceiptVoucherController extends Controller
                 foreach ($request->line_items as $lineItem) {
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
-                        'customer_id' => $request->customer_id,
+                        'customer_id' => $payeeType === 'customer' ? $payeeId : null,
                         'amount' => $lineItem['amount'],
                         'nature' => 'credit',
                         'transaction_id' => $receiptVoucher->id,
@@ -328,7 +472,7 @@ class ReceiptVoucherController extends Controller
                     ]);
                 }
 
-                return redirect()->route('accounting.receipt-vouchers.show', $receiptVoucher)
+                return redirect()->route('accounting.receipt-vouchers.show', Hashids::encode($receiptVoucher->id))
                     ->with('success', 'Receipt voucher updated successfully.');
             });
         } catch (\Exception $e) {
@@ -341,10 +485,23 @@ class ReceiptVoucherController extends Controller
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(Receipt $receiptVoucher)
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
         try {
             return $this->runTransaction(function () use ($receiptVoucher) {
+                // Delete attachment if exists
+                if ($receiptVoucher->attachment && Storage::disk('public')->exists($receiptVoucher->attachment)) {
+                    Storage::disk('public')->delete($receiptVoucher->attachment);
+                }
+
                 // Delete GL transactions first
                 $receiptVoucher->glTransactions()->delete();
 
@@ -360,6 +517,58 @@ class ReceiptVoucherController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()
                 ->withErrors(['error' => 'Failed to delete receipt voucher: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Download attachment.
+     */
+    public function downloadAttachment($encodedId)
+    {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
+        if (!$receiptVoucher->attachment) {
+            return redirect()->back()->withErrors(['error' => 'No attachment found.']);
+        }
+
+        if (!Storage::disk('public')->exists($receiptVoucher->attachment)) {
+            return redirect()->back()->withErrors(['error' => 'Attachment file not found.']);
+        }
+
+        return Storage::disk('public')->download($receiptVoucher->attachment);
+    }
+
+    /**
+     * Remove attachment.
+     */
+    public function removeAttachment($encodedId)
+    {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+        }
+
+        $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
+        try {
+            // Delete attachment file if exists
+            if ($receiptVoucher->attachment && Storage::disk('public')->exists($receiptVoucher->attachment)) {
+                Storage::disk('public')->delete($receiptVoucher->attachment);
+            }
+
+            // Update receipt to remove attachment reference
+            $receiptVoucher->update(['attachment' => null]);
+
+            return redirect()->back()->with('success', 'Attachment removed successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to remove attachment: ' . $e->getMessage()]);
         }
     }
 }

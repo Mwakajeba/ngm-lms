@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Group Management')
@@ -110,16 +114,17 @@
                                                 </td>
                                                 <td class="text-center text-nowrap">
                                                     <div class="btn-group" role="group">
-                                                        <a href="{{ route('groups.show', $group) }}"
+                                                        <a href="{{ route('groups.show', Hashids::encode($group->id)) }}"
                                                             class="btn btn-sm btn-outline-info" title="View Details">
                                                             View
                                                         </a>
-                                                        <a href="{{ route('groups.edit', $group) }}"
+                                                        <a href="{{ route('groups.edit', Hashids::encode($group->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="Edit Group">
                                                             Edit
                                                         </a>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                            title="Delete Group" data-group-id="{{ $group->id }}"
+                                                            title="Delete Group"
+                                                            data-group-id="{{ Hashids::encode($group->id) }}"
                                                             data-group-name="{{ $group->name }}">
                                                             Delete
                                                         </button>
@@ -138,8 +143,8 @@
 
             <!-- Hidden delete forms -->
             @foreach($groups as $group)
-                <form id="delete-form-{{ $group->id }}" action="{{ route('groups.destroy', $group) }}" method="POST"
-                    style="display: none;">
+                <form id="delete-form-{{ Hashids::encode($group->id) }}"
+                    action="{{ route('groups.destroy', Hashids::encode($group->id)) }}" method="POST" style="display: none;">
                     @csrf
                     @method('DELETE')
                 </form>
@@ -264,7 +269,7 @@
                     document.getElementById('toast-error-message').textContent = '{{ session('error') }}';
                     toast.show();
                 @endif
-                        });
+                                        });
     </script>
 @endpush
 

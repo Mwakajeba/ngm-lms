@@ -10,6 +10,7 @@ use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Vinkla\Hashids\Facades\Hashids;
 
 class SupplierController extends Controller
 {
@@ -115,15 +116,30 @@ class SupplierController extends Controller
             ->with('success', 'Supplier created successfully!');
     }
 
-    public function show(Supplier $supplier)
+    public function show($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.suppliers.index')->withErrors(['Supplier not found.']);
+        }
+
+        $supplier = Supplier::findOrFail($decoded[0]);
         $supplier->load(['company', 'branch', 'createdBy', 'updatedBy']);
 
         return view('accounting.suppliers.show', compact('supplier'));
     }
 
-    public function edit(Supplier $supplier)
+    public function edit($encodedId)
     {
+        // Decode the ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.suppliers.index')->withErrors(['Supplier not found.']);
+        }
+
+        $supplier = Supplier::findOrFail($decoded[0]);
+
         $user = auth()->user();
         $companyId = $user->company_id ?? null;
 
@@ -141,8 +157,16 @@ class SupplierController extends Controller
         return view('accounting.suppliers.edit', compact('supplier', 'companies', 'branches', 'regions', 'statusOptions'));
     }
 
-    public function update(Request $request, Supplier $supplier)
+    public function update(Request $request, $encodedId)
     {
+        // Decode supplier ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.suppliers.index')->withErrors(['Supplier not found.']);
+        }
+
+        $supplier = Supplier::findOrFail($decoded[0]);
+
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
             'email' => 'nullable|email|max:255',
@@ -193,16 +217,31 @@ class SupplierController extends Controller
             ->with('success', 'Supplier updated successfully!');
     }
 
-    public function destroy(Supplier $supplier)
+    public function destroy($encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.suppliers.index')->withErrors(['Supplier not found.']);
+        }
+
+        $supplier = Supplier::findOrFail($decoded[0]);
         $supplier->delete();
 
         return redirect()->route('accounting.suppliers.index')
             ->with('success', 'Supplier deleted successfully!');
     }
 
-    public function changeStatus(Request $request, Supplier $supplier)
+    public function changeStatus(Request $request, $encodedId)
     {
+        // Decode the encoded ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('accounting.suppliers.index')->withErrors(['Supplier not found.']);
+        }
+
+        $supplier = Supplier::findOrFail($decoded[0]);
+
         $request->validate([
             'status' => 'required|in:active,inactive,blacklisted'
         ]);

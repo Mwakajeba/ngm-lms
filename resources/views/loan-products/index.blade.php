@@ -1,3 +1,7 @@
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @extends('layouts.main')
 
 @section('title', 'Loan Product Management')
@@ -104,18 +108,27 @@
                                                 </td>
                                                 <td class="text-center text-nowrap">
                                                     <div class="btn-group" role="group">
-                                                        <a href="{{ route('loan-products.show', $product) }}"
+                                                        <a href="{{ route('loan-products.show', Hashids::encode($product->id)) }}"
                                                             class="btn btn-sm btn-outline-info" title="View Details">
                                                             view
                                                         </a>
-                                                        <a href="{{ route('loan-products.edit', $product) }}"
+                                                        <a href="{{ route('loan-products.edit', Hashids::encode($product->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="Edit Product">
                                                             edit
                                                         </a>
+                                                        <button type="button"
+                                                            class="btn btn-sm {{ $product->is_active ?? true ? 'btn-outline-warning' : 'btn-outline-success' }} toggle-status-btn"
+                                                            title="{{ $product->is_active ?? true ? 'Deactivate' : 'Activate' }} Product"
+                                                            data-product-id="{{ Hashids::encode($product->id) }}"
+                                                            data-product-name="{{ $product->name }}"
+                                                            data-current-status="{{ $product->is_active ?? true ? 'active' : 'inactive' }}">
+                                                            {{ $product->is_active ?? true ? 'deactivate' : 'activate' }}
+                                                        </button>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                            title="Delete Product" data-product-id="{{ $product->id }}"
+                                                            title="Delete Product"
+                                                            data-product-id="{{ Hashids::encode($product->id) }}"
                                                             data-product-name="{{ $product->name }}">
-                                                           delete
+                                                            delete
                                                         </button>
                                                     </div>
                                                 </td>
@@ -132,7 +145,8 @@
 
             <!-- Hidden delete forms -->
             @foreach($loanProducts as $product)
-                <form id="delete-form-{{ $product->id }}" action="{{ route('loan-products.destroy', $product) }}" method="POST"
+                <form id="delete-form-{{ Hashids::encode($product->id) }}"
+                    action="{{ route('loan-products.destroy', Hashids::encode($product->id)) }}" method="POST"
                     style="display: none;">
                     @csrf
                     @method('DELETE')
@@ -243,6 +257,49 @@
                 });
             });
 
+            // Toggle status confirmation with SweetAlert2
+            $('#loanProductsTable').on('click', '.toggle-status-btn', function (e) {
+                e.preventDefault();
+                var productId = $(this).data('product-id');
+                var productName = $(this).data('product-name');
+                var currentStatus = $(this).data('current-status');
+                var newStatus = currentStatus === 'active' ? 'inactive' : 'active';
+                var actionText = currentStatus === 'active' ? 'deactivate' : 'activate';
+
+                Swal.fire({
+                    title: `${actionText.charAt(0).toUpperCase() + actionText.slice(1)} Loan Product?`,
+                    text: `Are you sure you want to ${actionText} "${productName}"?`,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonColor: currentStatus === 'active' ? '#ffc107' : '#28a745',
+                    cancelButtonColor: '#6c757d',
+                    confirmButtonText: `Yes, ${actionText} it!`,
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Create and submit form for status toggle
+                        var form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = `/loan-products/${productId}/toggle-status`;
+
+                        var csrfToken = document.createElement('input');
+                        csrfToken.type = 'hidden';
+                        csrfToken.name = '_token';
+                        csrfToken.value = '{{ csrf_token() }}';
+
+                        var methodField = document.createElement('input');
+                        methodField.type = 'hidden';
+                        methodField.name = '_method';
+                        methodField.value = 'PATCH';
+
+                        form.appendChild(csrfToken);
+                        form.appendChild(methodField);
+                        document.body.appendChild(form);
+                        form.submit();
+                    }
+                });
+            });
+
             // Success message handling with default toast
             @if(session('success'))
                 // Show default toast notification
@@ -258,7 +315,7 @@
                     document.getElementById('toast-error-message').textContent = '{{ session('error') }}';
                     toast.show();
                 @endif
-                                                                                                                                                                    });
+                                                                                                                                                                                                                        });
 
         // Duplicate product function
         function duplicateProduct(productId) {

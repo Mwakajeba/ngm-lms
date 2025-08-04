@@ -1,5 +1,9 @@
 @extends('layouts.main')
 
+@php
+    use Vinkla\Hashids\Facades\Hashids;
+@endphp
+
 @section('title', 'Receipt Vouchers')
 
 @section('content')
@@ -105,7 +109,7 @@
                                             <th width="10%">Date</th>
                                             <th width="15%">Reference</th>
                                             <th width="15%">Bank Account</th>
-                                            <th width="15%">Customer</th>
+                                            <th width="15%">Payee</th>
                                             <th width="15%">Description</th>
                                             <th width="10%">Amount</th>
                                             <th width="10%">Created By</th>
@@ -118,22 +122,32 @@
                                                 <td>{{ $receipt->formatted_date }}</td>
                                                 <td>{{ $receipt->reference }}</td>
                                                 <td>{{ $receipt->bankAccount->name ?? 'N/A' }}</td>
-                                                <td>{{ $receipt->customer->name ?? 'N/A' }}</td>
+                                                <td>
+                                                    @if($receipt->payee_type === 'customer' && $receipt->customer)
+                                                        <span class="badge bg-primary me-1">Customer</span>
+                                                        {{ $receipt->customer->name }}
+                                                    @elseif($receipt->payee_type === 'other')
+                                                        <span class="badge bg-secondary me-1">Other</span>
+                                                        {{ $receipt->payee_name }}
+                                                    @else
+                                                        N/A
+                                                    @endif
+                                                </td>
                                                 <td>{{ Str::limit($receipt->description, 50) ?: 'No description' }}</td>
                                                 <td class="text-end fw-bold">{{ $receipt->formatted_amount }}</td>
                                                 <td>{{ $receipt->user->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-1">
-                                                        <a href="{{ route('accounting.receipt-vouchers.show', $receipt) }}"
+                                                        <a href="{{ route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="View">
                                                             <i class="bx bx-show"></i>
                                                         </a>
-                                                        <a href="{{ route('accounting.receipt-vouchers.edit', $receipt) }}"
+                                                        <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receipt->id)) }}"
                                                             class="btn btn-sm btn-outline-warning" title="Edit">
                                                             <i class="bx bx-edit"></i>
                                                         </a>
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                            data-id="{{ $receipt->id }}"
+                                                            data-id="{{ Hashids::encode($receipt->id) }}"
                                                             data-reference="{{ $receipt->reference }}" title="Delete">
                                                             <i class="bx bx-trash"></i>
                                                         </button>

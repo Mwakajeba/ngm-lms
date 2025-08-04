@@ -5,6 +5,12 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'User Management', 'url' => route('users.index'), 'icon' => 'bx bx-user'],
+            ['label' => isset($user) ? 'Edit User' : 'Create User', 'url' => '#', 'icon' => isset($user) ? 'bx bx-edit' : 'bx bx-plus-circle']
+        ]" />
+
         <h6 class="mb-0 text-uppercase">{{ isset($user) ? 'EDIT USER' : 'CREATE NEW USER' }}</h6>
         <hr/>
         <div class="card">
@@ -18,6 +24,20 @@
                             @csrf
                             @if(isset($user))
                                 @method('PUT')
+                            @endif
+
+                            <!-- General Error Display -->
+                            @if($errors->any())
+                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                    <i class="bx bx-error-circle me-2"></i>
+                                    <strong>Please fix the following errors:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @foreach($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                                </div>
                             @endif
                             
                             <div class="row">
@@ -172,10 +192,12 @@
                                             </div>
                                             <div class="col-md-6">
                                                 <p class="mb-1"><strong>Current Branch:</strong> {{ $user->branch->name ?? 'N/A' }}</p>
-                                                <p class="mb-1"><strong>Current Roles:</strong> 
-                                                    @foreach($user->roles as $role)
-                                                        <span class="badge bg-primary me-1">{{ $role->name }}</span>
-                                                    @endforeach
+                                                <p class="mb-1"><strong>Current Role:</strong> 
+                                                    @if($user->roles->first())
+                                                        <span class="badge bg-primary me-1">{{ $user->roles->first()->name }}</span>
+                                                    @else
+                                                        <span class="text-muted">No role assigned</span>
+                                                    @endif
                                                 </p>
                                                 <p class="mb-1"><strong>Status:</strong> 
                                                     @if($user->status === 'active')
