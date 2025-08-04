@@ -72,7 +72,7 @@
                                             <div class="mb-3">
                                                 <i class="bx bx-check-circle fs-1 text-info"></i>
                                             </div>
-                                            <h5 class="card-title">Verified Applications</h5>
+                                            <h5 class="card-title">Approved Applications</h5>
                                             <p class="card-text">Manage and verify applied loans.</p>
                                             <a href="{{ route('loans.application.index') }}" class="btn btn-info">
                                                 <i class="bx bx-verify me-1"></i> View Applications
@@ -88,7 +88,7 @@
                                             <div class="mb-3">
                                                 <i class="bx bx-badge-check fs-1 text-warning"></i>
                                             </div>
-                                            <h5 class="card-title">Approved Applications</h5>
+                                            <h5 class="card-title">Authorized Applications</h5>
                                             <p class="card-text">Manage and approve applied loans.</p>
                                             <a href="{{ route('loans.application.index') }}" class="btn btn-warning">
                                                 <i class="bx bx-badge-check me-1"></i> View Applications

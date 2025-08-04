@@ -122,7 +122,7 @@ class Customer extends Model
 
     public function getCashCollateralBalanceAttribute()
     {
-        return 0;
+        return 20000000;
     }
 
 
