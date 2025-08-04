@@ -81,10 +81,17 @@ class Customer extends Model
         return $this->hasMany(Loan::class);
     }
 
-    public function loanShedule()
+    public function shedule()
     {
-        return $this->hasMany(LoanShedule::class, 'customer_id');
+        return $this->hasMany(LoanSchedule::class, 'customer_id');
     }
+    public function guaranteedLoans()
+    {
+        return $this->belongsToMany(Loan::class, 'loan_guarantor')
+            ->withPivot('relation')
+            ->withTimestamps();
+    }
+
 
     public function loanOfficers()
     {
@@ -116,9 +123,7 @@ class Customer extends Model
     public function filetypes()
     {
         return $this->belongsToMany(Filetype::class, 'customer_file_types')
-                    ->withPivot('document_path')
-                    ->withTimestamps();
+            ->withPivot('document_path')
+            ->withTimestamps();
     }
-
-
 }

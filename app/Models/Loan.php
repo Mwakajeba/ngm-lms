@@ -78,6 +78,14 @@ class Loan extends Model
         return $this->belongsTo(Branch::class, 'branch_id');
     }
 
+    public function guarantors()
+    {
+        return $this->belongsToMany(Customer::class, 'loan_guarantor')
+            ->withPivot('relation')
+            ->withTimestamps();
+    }
+
+
 
     public function calculateInterestAmount(float $rate = null, bool $returnSchedule = false): float|array
     {
