@@ -42,5 +42,10 @@ class CashCollateral extends Model
     {
         return $this->belongsTo(CashCollateralType::class, 'type_id');
     }
+    
+    public static function getCashCollateralBalance(int $customerId): float
+    {
+        $record = self::where('customer_id', $customerId)->first();
+        return round($record?->amount ?? 0, 2);
+    }
 }
-

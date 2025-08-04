@@ -27,6 +27,7 @@ class GroupMemberController extends Controller
         // Get customers who are not already members of this group
         $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
         $availableCustomers = Customer::with(['region', 'district'])
+            ->where('category', 'borrower')
             ->whereNotIn('id', $existingMemberIds)
             ->orderBy('name')
             ->get();

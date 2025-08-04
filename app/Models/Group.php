@@ -11,7 +11,7 @@ class Group extends Model
 
     protected $fillable = [
         'name',
-        'loan_officer', 
+        'loan_officer',
         'branch_id',
         'minimum_members',
         'maximum_members',
@@ -44,6 +44,11 @@ class Group extends Model
     {
         return $this->belongsTo(Branch::class);
     }
+    public function customers()
+    {
+        return $this->belongsToMany(Customer::class, 'group_members', 'group_id', 'customer_id');
+    }
+
 
     /**
      * Get the group leader (user) for this group.
