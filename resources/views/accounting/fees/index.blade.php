@@ -107,6 +107,7 @@
                                             <th width="15%">Chart Account</th>
                                             <th width="10%">Type</th>
                                             <th width="10%">Amount</th>
+                                            <th width="15%">Deduction Criteria</th>
                                             <th width="10%">Status</th>
                                             <th width="10%">Company</th>
                                             <th width="10%">Branch</th>
@@ -126,6 +127,9 @@
                                                 <td>{{ $fee->chartAccount->account_name ?? 'N/A' }}</td>
                                                 <td>{!! $fee->fee_type_badge !!}</td>
                                                 <td>{{ $fee->formatted_amount }}</td>
+                                                <td>
+                                                    {!! $fee->deduction_criteria_badge !!}
+                                                </td>
                                                 <td>{!! $fee->status_badge !!}</td>
                                                 <td>{{ $fee->company->name ?? 'N/A' }}</td>
                                                 <td>{{ $fee->branch->name ?? 'N/A' }}</td>
