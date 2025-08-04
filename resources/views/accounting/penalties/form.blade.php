@@ -162,71 +162,42 @@
         <div class="col-12">
             <div class="card radius-10 mb-4">
                 <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bx bx-book-open me-2"></i>Chart Account</h5>
+                    <h5 class="mb-0"><i class="bx bx-book-open me-2"></i>Chart Accounts</h5>
                 </div>
                 <div class="card-body">
                     <div class="row">
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Chart Account <span class="text-danger">*</span></label>
-                            <select name="chart_account_id" class="form-select @error('chart_account_id') is-invalid @enderror" required>
-                                <option value="">-- Select Chart Account --</option>
+                            <label class="form-label">Penalty Income Account <span class="text-danger">*</span></label>
+                            <select name="penalty_income_account_id" class="form-select @error('penalty_income_account_id') is-invalid @enderror" required>
+                                <option value="">-- Select Penalty Income Account --</option>
                                 @foreach($chartAccounts as $account)
                                     <option value="{{ $account->id }}" 
-                                        {{ old('chart_account_id', $penalty->chart_account_id ?? '') == $account->id ? 'selected' : '' }}>
+                                        {{ old('penalty_income_account_id', $penalty->penalty_income_account_id ?? '') == $account->id ? 'selected' : '' }}>
                                         {{ $account->account_name }} ({{ $account->account_code }})
                                     </option>
                                 @endforeach
                             </select>
-                            <div class="form-text">Select the chart account where penalty income will be recorded</div>
-                            @error('chart_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="form-text">Select the chart account for penalty income</div>
+                            @error('penalty_income_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Organization Section -->
-        <div class="col-12">
-            <div class="card radius-10 mb-4">
-                <div class="card-header bg-warning text-dark">
-                    <h5 class="mb-0"><i class="bx bx-building me-2"></i>Organization</h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        @if(!auth()->user()->company_id)
-                            <div class="col-md-6 mb-3">
-                                <label class="form-label">Company</label>
-                                <select name="company_id" class="form-select @error('company_id') is-invalid @enderror">
-                                    <option value="">-- Select Company --</option>
-                                    @foreach($companies as $company)
-                                        <option value="{{ $company->id }}" 
-                                            {{ old('company_id', $penalty->company_id ?? '') == $company->id ? 'selected' : '' }}>
-                                            {{ $company->name }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                @error('company_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            </div>
-                        @endif
-
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Branch</label>
-                            <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
-                                <option value="">-- Select Branch --</option>
-                                @foreach($branches as $branch)
-                                    <option value="{{ $branch->id }}" 
-                                        {{ old('branch_id', $penalty->branch_id ?? '') == $branch->id ? 'selected' : '' }}>
-                                        {{ $branch->name }}
+                            <label class="form-label">Penalty Receivable Account <span class="text-danger">*</span></label>
+                            <select name="penalty_receivables_account_id" class="form-select @error('penalty_receivables_account_id') is-invalid @enderror" required>
+                                <option value="">-- Select Penalty Receivable Account --</option>
+                                @foreach($chartAccounts as $account)
+                                    <option value="{{ $account->id }}" 
+                                        {{ old('penalty_receivables_account_id', $penalty->penalty_receivables_account_id ?? '') == $account->id ? 'selected' : '' }}>
+                                        {{ $account->account_name }} ({{ $account->account_code }})
                                     </option>
                                 @endforeach
                             </select>
-                            @error('branch_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            <div class="form-text">Select the chart account for penalty receivables</div>
+                            @error('penalty_receivables_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
     <!-- Form Actions -->
     <div class="row">
@@ -268,4 +239,4 @@
         $('select[name="penalty_type"]').trigger('change');
     });
 </script>
-@endpush 
+@endpush

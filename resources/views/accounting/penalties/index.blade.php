@@ -143,13 +143,12 @@
                                     <thead>
                                         <tr>
                                             <th width="15%">Name</th>
-                                            <th width="15%">Chart Account</th>
+                                            <th width="15%">Penalty Income Account</th>
+                                            <th width="15%">Penalty Receivable Account</th>
                                             <th width="10%">Type</th>
                                             <th width="10%">Amount</th>
                                             <th width="15%">Deduction Type</th>
                                             <th width="10%">Status</th>
-                                            <th width="10%">Company</th>
-                                            <th width="10%">Branch</th>
                                             <th width="10%">Created By</th>
                                             <th width="10%">Actions</th>
                                         </tr>
@@ -163,13 +162,12 @@
                                                         {{ $penalty->name }}
                                                     </a>
                                                 </td>
-                                                <td>{{ $penalty->chartAccount->account_name ?? 'N/A' }}</td>
+                                                <td>{{ $penalty->penaltyIncomeAccount->account_name ?? 'N/A' }}</td>
+                                                <td>{{ $penalty->penaltyReceivablesAccount->account_name ?? 'N/A' }}</td>
                                                 <td>{!! $penalty->penalty_type_badge !!}</td>
                                                 <td>{{ $penalty->formatted_amount }}</td>
                                                 <td>{!! $penalty->deduction_type_badge !!}</td>
                                                 <td>{!! $penalty->status_badge !!}</td>
-                                                <td>{{ $penalty->company->name ?? 'N/A' }}</td>
-                                                <td>{{ $penalty->branch->name ?? 'N/A' }}</td>
                                                 <td>{{ $penalty->createdBy->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-2">
@@ -192,7 +190,7 @@
                                             </tr>
                                         @empty
                                             <tr>
-                                                <td colspan="10" class="text-center py-4">
+                                                <td colspan="9" class="text-center py-4">
                                                     <div class="text-muted">
                                                         <i class="bx bx-error-circle font-size-48 mb-3"></i>
                                                         <h5>No Penalties Found</h5>
