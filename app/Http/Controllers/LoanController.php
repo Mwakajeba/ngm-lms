@@ -4,9 +4,11 @@ namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
 use App\Models\Customer;
+use App\Models\Filetype;
 use App\Models\GlTransaction;
 use App\Models\Group;
 use App\Models\Loan;
+use App\Models\LoanFile;
 use App\Models\LoanProduct;
 use App\Models\Payment;
 use App\Models\PaymentItem;
@@ -379,7 +381,7 @@ class LoanController extends Controller
             return redirect()->route('loans.list')->withErrors(['error' => 'Failed to delete loan: ' . $e->getMessage()]);
         }
     }
-
+ //////////////////SHOW LOAN DETAIL/////////////////////
     public function show($encodedId)
     {
         $decoded = Hashids::decode($encodedId);
@@ -395,11 +397,60 @@ class LoanController extends Controller
             'customer.user',
             'product',
             'bankAccount',
-            'group'
+            'group',
+            'loanFiles',
+            'schedule'
 
         ])->findOrFail($decoded[0]);
+        $guarantorCustomers = Customer::where('category', 'guarantor')->get();
 
-        return view('loans.show', compact('loan'));
+
+        return view('loans.show', compact('loan', 'guarantorCustomers'));
+    }
+
+    ////////////////////UPLOAD LOAN DOCUMENT/////////////////////
+
+    public function loanDocument(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required|exists:loans,id',
+            'name' => 'required|string|max:255',
+            'file' => 'required|file|max:2048',
+        ]);
+
+        // Step 1: Create or find file type
+        $fileType = Filetype::firstOrCreate(['name' => $request->name]);
+
+        // Step 2: Store file in public storage
+        $filePath = $request->file('file')->store('loan_documents', 'public');
+
+        // Step 3: Save record in loan_files
+        LoanFile::create([
+            'loan_id' => $request->loan_id,
+            'file_type_id' => $fileType->id,
+            'file_path' => $filePath,
+        ]);
+
+        return back()->with('success', 'Document uploaded successfully.');
+    }
+    ///////////////////ADD GUARANTOR/////////////////
+    public function addGuarantor(Request $request, Loan $loan)
+    {
+        $validated = $request->validate([
+            'guarantor_id' => 'required|exists:customers,id',
+            'relation' => 'nullable|string|max:100',
+        ]);
+
+        $loan->guarantors()->attach($validated['guarantor_id'], ['relation' => $validated['relation']]);
+
+        return redirect()->back()->with('success', 'Guarantor added successfully.');
+    }
+    ///////REMOVE GUARANTOR/////
+    public function removeGuarantor(Loan $loan, $guarantorId)
+    {
+        $loan->guarantors()->detach($guarantorId);
+
+        return redirect()->back()->with('success', 'Guarantor removed successfully.');
     }
 
     // Loan Application Methods

@@ -18,6 +18,6 @@ class LoanFile extends Model
 
     public function fileType()
     {
-        return $this->belongsTo(FileType::class);
+        return $this->belongsTo(Filetype::class);
     }
 }

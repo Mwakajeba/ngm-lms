@@ -456,6 +456,12 @@ Route::middleware(['auth'])->group(function () {
     Route::put('loans/{loan}/appupdate', [LoanController::class, 'appUpdate'])->name('loans.appupdate');
     Route::delete('loans/{loan}/appdestroy', [LoanController::class, 'appDestroy'])->name('loans.appdestroy');
     Route::get('loans/{loan}/appshow', [LoanController::class, 'appShow'])->name('loans.appshow');
+    Route::post('/loan-files', [LoanController::class, 'loanDocument'])->name('loan-documents.store');
+    Route::post('/loans/{loan}/guarantors', [LoanController::class, 'addGuarantor'])->name('loans.addGuarantor');
+    Route::delete('/loans/{loan}/guarantors/{guarantor}', [LoanController::class, 'removeGuarantor'])->name('loans.removeGuarantor');
+
+
+
 });
 
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
