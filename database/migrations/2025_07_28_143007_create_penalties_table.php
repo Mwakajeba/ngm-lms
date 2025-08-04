@@ -13,7 +13,8 @@ return new class extends Migration {
         Schema::create('penalties', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->foreignId('chart_account_id')->constrained('chart_accounts')->onDelete('cascade');
+            $table->foreignId('penalty_income_account_id')->constrained('chart_accounts')->onDelete('cascade');
+            $table->foreignId('penalty_receivables_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->enum('penalty_type', ['fixed', 'percentage'])->default('fixed');
             $table->decimal('amount', 15, 2)->default(0);
             $table->enum('deduction_type', [
@@ -24,7 +25,6 @@ return new class extends Migration {
             ])->default('over_due_principal_amount');
             $table->text('description')->nullable();
             $table->enum('status', ['active', 'inactive'])->default('active');
-            $table->foreignId('company_id')->constrained()->onDelete('cascade');
             $table->foreignId('branch_id')->nullable()->constrained()->onDelete('set null');
             $table->foreignId('created_by')->nullable()->constrained('users')->onDelete('set null');
             $table->foreignId('updated_by')->nullable()->constrained('users')->onDelete('set null');
