@@ -788,22 +788,54 @@ class LoanController extends Controller
      */
     public function approveLoan($encodedId, Request $request)
     {
+        \Log::info('approveLoan method called', [
+            'encodedId' => $encodedId,
+            'request_method' => $request->method(),
+            'request_url' => $request->url(),
+            'request_data' => $request->all()
+        ]);
+
         try {
             $decoded = Hashids::decode($encodedId);
             if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+                \Log::error('Failed to decode ID', ['encodedId' => $encodedId]);
+                return redirect()->back()->withErrors(['Loan application not found.']);
             }
 
             $loan = Loan::findOrFail($decoded[0]);
             $user = auth()->user();
 
+            // Debug information
+            \Log::info('Approval attempt', [
+                'loan_id' => $loan->id,
+                'loan_status' => $loan->status,
+                'user_id' => $user->id,
+                'user_roles' => $user->roles->pluck('id')->toArray(),
+                'product_approval_levels' => $loan->product->approval_levels ?? 'none',
+                'approval_roles' => $loan->getApprovalRoles(),
+                'next_level' => $loan->getNextApprovalLevel(),
+                'next_role' => $loan->getNextApprovalRole(),
+                'next_action' => $loan->getNextApprovalAction(),
+                'can_approve' => $loan->canBeApprovedByUser($user),
+                'has_approved' => $loan->hasUserApproved($user)
+            ]);
+
             // Validate user has permission to approve
             if (!$loan->canBeApprovedByUser($user)) {
-                return redirect()->back()->withErrors(['You do not have permission to approve this loan.']);
+                \Log::warning('User does not have permission to approve', [
+                    'user_id' => $user->id,
+                    'required_role' => $loan->getNextApprovalRole(),
+                    'user_roles' => $user->roles->pluck('id')->toArray()
+                ]);
+                return redirect()->back()->withErrors(['You do not have permission to approve this loan. Required role: ' . $loan->getApprovalLevelName($loan->getNextApprovalLevel())]);
             }
 
             // Check if user has already approved this loan
             if ($loan->hasUserApproved($user)) {
+                \Log::warning('User has already approved this loan', [
+                    'user_id' => $user->id,
+                    'loan_id' => $loan->id
+                ]);
                 return redirect()->back()->withErrors(['You have already approved this loan.']);
             }
 
@@ -815,28 +847,43 @@ class LoanController extends Controller
             $nextLevel = $loan->getNextApprovalLevel();
             $roleName = $loan->getApprovalLevelName($nextLevel);
 
+            if (!$nextAction || !$nextLevel) {
+                \Log::error('Unable to determine next approval action', [
+                    'nextAction' => $nextAction,
+                    'nextLevel' => $nextLevel
+                ]);
+                return redirect()->back()->withErrors(['Unable to determine next approval action.']);
+            }
+
+            \Log::info('About to start database transaction', [
+                'nextAction' => $nextAction,
+                'nextLevel' => $nextLevel,
+                'roleName' => $roleName
+            ]);
+
             DB::transaction(function () use ($loan, $user, $validated, $nextAction, $nextLevel, $roleName) {
-                // Create approval record
-                LoanApproval::create([
+                \Log::info('Creating approval record', [
                     'loan_id' => $loan->id,
                     'user_id' => $user->id,
                     'role_name' => $roleName,
                     'approval_level' => $nextLevel,
-                    'action' => $nextAction,
-                    'comments' => $validated['comments'] ?? null,
-                    'approved_at' => now(),
+                    'action' => $nextAction
                 ]);
 
                 // Update loan status based on action
+                $oldStatus = $loan->status;
                 switch ($nextAction) {
                     case 'check':
                         $loan->update(['status' => Loan::STATUS_CHECKED]);
+                        $actionForRecord = 'checked';
                         break;
                     case 'approve':
                         $loan->update(['status' => Loan::STATUS_APPROVED]);
+                        $actionForRecord = 'approved';
                         break;
                     case 'authorize':
                         $loan->update(['status' => Loan::STATUS_AUTHORIZED]);
+                        $actionForRecord = 'authorized';
                         break;
                     case 'disburse':
                         // Process disbursement
@@ -862,8 +909,28 @@ class LoanController extends Controller
 
                         // Process disbursement
                         $this->processLoanDisbursement($loan);
+                        $actionForRecord = 'active';
                         break;
                 }
+
+                // Create approval record with the correct action value
+                $approval = LoanApproval::create([
+                    'loan_id' => $loan->id,
+                    'user_id' => $user->id,
+                    'role_name' => $roleName,
+                    'approval_level' => $nextLevel,
+                    'action' => $actionForRecord,
+                    'comments' => $validated['comments'] ?? null,
+                    'approved_at' => now(),
+                ]);
+
+                \Log::info('Approval record created', ['approval_id' => $approval->id]);
+
+                \Log::info('Loan status updated', [
+                    'old_status' => $oldStatus,
+                    'new_status' => $loan->fresh()->status,
+                    'action' => $nextAction
+                ]);
             });
 
             $actionMessages = [
@@ -877,6 +944,11 @@ class LoanController extends Controller
 
             // Redirect based on the new status
             $newStatus = $loan->fresh()->status;
+            \Log::info('Approval completed successfully', [
+                'new_status' => $newStatus,
+                'message' => $message
+            ]);
+
             switch ($newStatus) {
                 case 'checked':
                     return redirect()->route('loans.by-status', 'checked')->with('success', "Loan application {$message} successfully.");
@@ -890,6 +962,10 @@ class LoanController extends Controller
                     return redirect()->route('loans.application.index')->with('success', "Loan application {$message} successfully.");
             }
         } catch (\Throwable $th) {
+            \Log::error('Approval failed', [
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
             return redirect()->back()->withErrors(['Failed to process loan: ' . $th->getMessage()]);
         }
     }
@@ -1085,6 +1161,7 @@ class LoanController extends Controller
             }
 
             $loan = Loan::findOrFail($decoded[0]);
+            $user = auth()->user();
 
             // Validate loan can be defaulted
             if ($loan->status !== Loan::STATUS_ACTIVE) {
@@ -1095,9 +1172,22 @@ class LoanController extends Controller
                 'comments' => 'required|string|max:1000',
             ]);
 
-            $loan->update([
-                'status' => Loan::STATUS_DEFAULTED,
-            ]);
+            DB::transaction(function () use ($loan, $user, $validated) {
+                // Create default record
+                LoanApproval::create([
+                    'loan_id' => $loan->id,
+                    'user_id' => $user->id,
+                    'role_name' => 'System',
+                    'approval_level' => 0,
+                    'action' => 'defaulted',
+                    'comments' => $validated['comments'],
+                    'approved_at' => now(),
+                ]);
+
+                $loan->update([
+                    'status' => Loan::STATUS_DEFAULTED,
+                ]);
+            });
 
             return redirect()->route('loans.list')->with('success', 'Loan marked as defaulted successfully.');
         } catch (\Throwable $th) {

@@ -17,14 +17,6 @@
             </div>
         </div>
 
-        @if(session('success'))
-            <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bx bx-check-circle me-2"></i>
-                {{ session('success') }}
-                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-            </div>
-        @endif
-
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
@@ -170,7 +162,7 @@
                             <div class="row g-3">
                                 @if(auth()->user() && $loan->canBeApprovedByUser(auth()->user()) && !$loan->hasUserApproved(auth()->user()))
                                     <div class="col-md-6 col-lg-4">
-                                        <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="approveLoan({{ $loan->id }})">
+                                        <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="approveLoan('{{ Hashids::encode($loan->id) }}')">
                                             <i class="bx bx-check-circle me-2"></i>
                                             <div class="text-start">
                                                 <div class="fw-bold">{{ ucfirst($nextAction) }} Loan</div>
@@ -182,7 +174,7 @@
 
                                 @if($loan->canBeRejected() && auth()->user() && $loan->canBeApprovedByUser(auth()->user()) && !$loan->hasUserApproved(auth()->user()))
                                     <div class="col-md-6 col-lg-4">
-                                        <button type="button" class="btn btn-danger w-100 d-flex align-items-center justify-content-center" onclick="rejectLoan({{ $loan->id }})">
+                                        <button type="button" class="btn btn-danger w-100 d-flex align-items-center justify-content-center" onclick="rejectLoan('{{ Hashids::encode($loan->id) }}')">
                                             <i class="bx bx-x-circle me-2"></i>
                                             <div class="text-start">
                                                 <div class="fw-bold">Reject Loan</div>
@@ -227,7 +219,7 @@
                         @elseif($loan->status === 'active')
                             <div class="row g-3">
                                 <div class="col-md-6 col-lg-4">
-                                    <button type="button" class="btn btn-dark w-100 d-flex align-items-center justify-content-center" onclick="defaultLoan({{ $loan->id }})">
+                                    <button type="button" class="btn btn-dark w-100 d-flex align-items-center justify-content-center" onclick="defaultLoan('{{ Hashids::encode($loan->id) }}')">
                                         <i class="bx bx-error-circle me-2"></i>
                                         <div class="text-start">
                                             <div class="fw-bold">Mark as Defaulted</div>
@@ -759,17 +751,6 @@
         modal.show();
     }
 
-    function rejectLoan(loanId) {
-        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
-        const message = document.getElementById('approvalMessage');
-        const form = document.getElementById('approvalForm');
-        
-        message.textContent = 'Are you sure you want to reject this loan? This action cannot be undone.';
-        form.action = `/loans/${loanId}/reject`;
-        
-        modal.show();
-    }
-
     function approveLoan(loanId) {
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
@@ -799,6 +780,17 @@
         
         message.textContent = 'Are you sure you want to authorize this loan? This will mark the loan as authorized for final approval.';
         form.action = `/loans/${loanId}/authorize`;
+        
+        modal.show();
+    }
+
+    function rejectLoan(loanId) {
+        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+        const message = document.getElementById('approvalMessage');
+        const form = document.getElementById('approvalForm');
+        
+        message.textContent = 'Are you sure you want to reject this loan? This action cannot be undone.';
+        form.action = `/loans/${loanId}/reject`;
         
         modal.show();
     }

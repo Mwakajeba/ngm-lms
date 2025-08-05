@@ -112,7 +112,10 @@ class Loan extends Model
         }
 
         $roles = explode(',', $this->product->approval_levels);
-        return array_filter($roles); // Remove empty values
+        $filteredRoles = array_filter($roles); // Remove empty values
+
+        // Convert to integers for proper comparison
+        return array_map('intval', $filteredRoles);
     }
 
     public function getCurrentApprovalLevel()

@@ -19,22 +19,6 @@
             </div>
             <hr />
 
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bx bx-check-circle me-2"></i>
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="bx bx-error-circle me-2"></i>
-                    {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
             <div class="row">
                 <div class="col-12">
                     <div class="card">
@@ -135,9 +119,6 @@
                                                             </button>
                                                         @endif
                                                     </div>
-                                                    
-                                                    <!-- Approval Actions -->
-                                                    <x-loan-approval-actions :loan="$application" />
                                                 </td>
                                             </tr>
                                         @empty
@@ -170,54 +151,10 @@
         </div>
     </div>
 
-    <!-- Approval Modal -->
-    <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="approvalModalLabel">Confirm Action</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="approvalMessage"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form id="approvalForm" method="POST" style="display: inline;">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="btn btn-primary">Confirm</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @push('scripts')
 <script>
-    function approveApplication(encodedId) {
-        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
-        const message = document.getElementById('approvalMessage');
-        const form = document.getElementById('approvalForm');
-        
-        message.textContent = 'Are you sure you want to approve this loan application?';
-        form.action = `/loans/application/${encodedId}/approve`;
-        
-        modal.show();
-    }
-
-    function rejectApplication(encodedId) {
-        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
-        const message = document.getElementById('approvalMessage');
-        const form = document.getElementById('approvalForm');
-        
-        message.textContent = 'Are you sure you want to reject this loan application?';
-        form.action = `/loans/application/${encodedId}/reject`;
-        
-        modal.show();
-    }
-
     function deleteApplication(encodedId) {
         Swal.fire({
             title: 'Are you sure?',

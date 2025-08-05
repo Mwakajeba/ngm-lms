@@ -13,7 +13,7 @@ return new class extends Migration {
             $table->foreignId('user_id')->constrained('users')->onDelete('cascade');
             $table->string('role_name'); // The role that approved this level
             $table->integer('approval_level'); // 1, 2, 3, etc.
-            $table->enum('action', ['approved', 'rejected', 'checked'])->default('checked');
+            $table->enum('action', ['checked', 'approved', 'authorized', 'rejected', 'defaulted', 'active'])->default('checked');
             $table->text('comments')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->timestamps();

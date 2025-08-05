@@ -122,11 +122,10 @@
                                                     @endif
                                                     @if(!in_array($loan->status, ['active', 'authorized']))
                                                         <form action="{{ route('loans.destroy', Hashids::encode($loan->id)) }}"
-                                                            method="POST" class="d-inline-block delete-form"
-                                                            onsubmit="return confirm('Delete this loan?');">
+                                                            method="POST" class="d-inline-block delete-form">
                                                             @csrf @method('DELETE')
-                                                            <button class="btn btn-sm btn-outline-danger">
-                                                               Delete
+                                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteLoan({{ $loan->id }})">
+                                                                <i class="bx bx-trash me-1"></i>Delete
                                                             </button>
                                                         </form>
                                                     @endif
@@ -163,5 +162,38 @@
                 ]
             });
         });
+
+        function deleteLoan(loanId) {
+            Swal.fire({
+                title: 'Are you sure?',
+                text: "You won't be able to revert this!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = `/loans/${loanId}`;
+                    
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+                    
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'DELETE';
+                    
+                    form.appendChild(csrfToken);
+                    form.appendChild(methodField);
+                    document.body.appendChild(form);
+                    form.submit();
+                }
+            });
+        }
     </script>
 @endpush

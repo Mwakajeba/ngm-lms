@@ -34,14 +34,6 @@
                 </div>
             </div>
 
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bx bx-check-circle me-2"></i>
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
             <!-- Status Card -->
             <div class="row mb-4">
                 <div class="col-12">
@@ -409,7 +401,6 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
                     <form id="approvalForm" method="POST" style="display: inline;">
                         @csrf
-                        @method('PATCH')
                         <button type="submit" class="btn btn-primary">Confirm</button>
                     </form>
                 </div>
@@ -486,7 +477,7 @@
         const form = document.getElementById('approvalForm');
         
         message.textContent = 'Are you sure you want to approve this loan application? This will create an active loan.';
-        form.action = `/loans/application/${applicationId}/approve`;
+        form.action = `/loans/${applicationId}/approve`;
         
         modal.show();
     }
@@ -497,7 +488,7 @@
         const form = document.getElementById('approvalForm');
         
         message.textContent = 'Are you sure you want to reject this loan application?';
-        form.action = `/loans/application/${applicationId}/reject`;
+        form.action = `/loans/${applicationId}/reject`;
         
         modal.show();
     }
