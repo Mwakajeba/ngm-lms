@@ -245,7 +245,7 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        // $fee = $product->fee;
+        $fee = $product->fee;
         $penalty = $product->penalty;
 
         $isReducing = in_array($method, [
@@ -268,32 +268,32 @@ class Loan extends Model
             // === Handle Fees ===
 
             $loanFee = 0;
-            // if ($fee) {
-            //     $feeAmount = $fee->amount;
-            //     $feeType = $fee->fee_type;
-            //     $criteria = $fee->deduction_criteria;
+            if ($fee) {
+                $feeAmount = $fee->amount;
+                $feeType = $fee->fee_type;
+                $criteria = $fee->deduction_criteria;
 
-            //     $applyFee = match ($criteria) {
-            //         'charge_same_fee_to_all_repayments' => true,
-            //         'distribute_fee_evenly_to_all_repayments' => true,
-            //         'charge_fee_on_first_repayment', 'charge_fee_on_release_date' => $i === 0,
-            //         'charge_fee_on_last_repayment' => $i === ($period - 1),
-            //         default => false
-            //     };
+                $applyFee = match ($criteria) {
+                    'charge_same_fee_to_all_repayments' => true,
+                    'distribute_fee_evenly_to_all_repayments' => true,
+                    'charge_fee_on_first_repayment', 'charge_fee_on_release_date' => $i === 0,
+                    'charge_fee_on_last_repayment' => $i === ($period - 1),
+                    default => false
+                };
 
-            //     if ($applyFee) {
-            //         $divideAcross = in_array($criteria, [
-            //             'charge_same_fee_to_all_repayments',
-            //             'distribute_fee_evenly_to_all_repayments'
-            //         ]);
+                if ($applyFee) {
+                    $divideAcross = in_array($criteria, [
+                        'charge_same_fee_to_all_repayments',
+                        'distribute_fee_evenly_to_all_repayments'
+                    ]);
 
-            //         $calculated = $feeType === 'percentage'
-            //             ? ($principal * $feeAmount / 100)
-            //             : $feeAmount;
+                    $calculated = $feeType === 'percentage'
+                        ? ($principal * $feeAmount / 100)
+                        : $feeAmount;
 
-            //         $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
-            //     }
-            // }
+                    $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
+                }
+            }
 
             // === Penalty — only apply if overdue ===
             $penaltyAmount = 0;
@@ -339,32 +339,32 @@ class Loan extends Model
 
                 // === Handle Fees ===
                 $loanFee = 0;
-                // if ($fee) {
-                //     $feeAmount = $fee->amount;
-                //     $feeType = $fee->fee_type;
-                //     $criteria = $fee->deduction_criteria;
+                if ($fee) {
+                    $feeAmount = $fee->amount;
+                    $feeType = $fee->fee_type;
+                    $criteria = $fee->deduction_criteria;
 
-                //     $applyFee = match ($criteria) {
-                //         'charge_same_fee_to_all_repayments' => true,
-                //         'distribute_fee_evenly_to_all_repayments' => true,
-                //         'charge_fee_on_first_repayment', 'charge_fee_on_release_date' => $i === 0,
-                //         'charge_fee_on_last_repayment' => $i === ($period - 1),
-                //         default => false
-                //     };
+                    $applyFee = match ($criteria) {
+                        'charge_same_fee_to_all_repayments' => true,
+                        'distribute_fee_evenly_to_all_repayments' => true,
+                        'charge_fee_on_first_repayment', 'charge_fee_on_release_date' => $i === 0,
+                        'charge_fee_on_last_repayment' => $i === ($period - 1),
+                        default => false
+                    };
 
-                //     if ($applyFee) {
-                //         $divideAcross = in_array($criteria, [
-                //             'charge_same_fee_to_all_repayments',
-                //             'distribute_fee_evenly_to_all_repayments'
-                //         ]);
+                    if ($applyFee) {
+                        $divideAcross = in_array($criteria, [
+                            'charge_same_fee_to_all_repayments',
+                            'distribute_fee_evenly_to_all_repayments'
+                        ]);
 
-                //         $calculated = $feeType === 'percentage'
-                //             ? ($principal * $feeAmount / 100)
-                //             : $feeAmount;
+                        $calculated = $feeType === 'percentage'
+                            ? ($principal * $feeAmount / 100)
+                            : $feeAmount;
 
-                //         $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
-                //     }
-                // }
+                        $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
+                    }
+                }
                 // === Penalty (only if overdue) ===
                 $penaltyAmount = 0;
                 if ($penalty && Carbon::now()->gt($dueDate)) {

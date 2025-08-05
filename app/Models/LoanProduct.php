@@ -98,7 +98,7 @@ class LoanProduct extends Model
 
     public function fee()
     {
-        return $this->belongsTo(Fee::class, 'fee_ids')->where('include_on_schedule', true);
+        return $this->belongsTo(Fee::class, 'fee_ids')->where('include_in_schedule', true);
     }
 
 
