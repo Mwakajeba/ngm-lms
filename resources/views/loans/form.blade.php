@@ -22,32 +22,31 @@ $isEdit = isset($loan);
 
     <div class="row">
         <!-- Customer -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Customer <span class="text-danger">*</span></label>
-            <select name="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
-                <option value="">Select Customer</option>
-                @foreach($customers as $customer)
-                <option value="{{ $customer->id }}" {{ old('customer_id', $loan->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
-                    {{ $customer->name }}
-                </option>
-                @endforeach
-            </select>
-            @error('customer_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <div class="row">
+            <!-- Customer -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Customer <span class="text-danger">*</span></label>
+                <select name="customer_id" id="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
+                    <option value="">Select Customer</option>
+                    @foreach($customers as $customer)
+                    <option value="{{ $customer->id }}" {{ old('customer_id', $loan->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
+                        {{ $customer->name }} - {{ $customer->phone1 }}
+                    </option>
+                    @endforeach
+                </select>
+                @error('customer_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            </div>
+
+            <!-- Displayed Group (disabled text input) -->
+            <div class="col-md-6 mb-3">
+                <label class="form-label">Group</label>
+                <input type="text" id="group_name" class="form-control" value="" readonly>
+            </div>
+
+            <!-- Hidden Group ID for form submission -->
+            <input type="hidden" name="group_id" id="group_id" value="{{ old('group_id', $loan->group_id ?? '') }}">
         </div>
 
-        <!-- Group -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Group</label>
-            <select name="group_id" class="form-select @error('group_id') is-invalid @enderror">
-                <option value="">Select Group</option>
-                @foreach($groups as $group)
-                <option value="{{ $group->id }}" {{ old('group_id', $loan->group_id ?? '') == $group->id ? 'selected' : '' }}>
-                    {{ $group->name }}
-                </option>
-                @endforeach
-            </select>
-            @error('group_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
 
         <!-- Product Select -->
         <div class="col-md-6 mb-3">
@@ -189,5 +188,36 @@ $isEdit = isset($loan);
                 interestRangeLabel.innerText = '';
             }
         });
+    });
+</script>
+<script>
+    const customers = @json($customers);
+
+    const customerSelect = document.getElementById('customer_id');
+    const groupIdInput = document.getElementById('group_id');
+    const groupNameDisplay = document.getElementById('group_name');
+
+    function updateGroupForCustomer(customerId) {
+        const selectedCustomer = customers.find(c => c.id == customerId);
+
+        groupIdInput.value = '';
+        groupNameDisplay.value = '';
+
+        if (selectedCustomer && selectedCustomer.groups.length > 0) {
+            const group = selectedCustomer.groups[0]; // Only first group
+            groupIdInput.value = group.id;
+            groupNameDisplay.value = group.name;
+        }
+    }
+
+    customerSelect.addEventListener('change', function () {
+        updateGroupForCustomer(this.value);
+    });
+
+    // Trigger on page load (for edit form or old values)
+    window.addEventListener('DOMContentLoaded', () => {
+        if (customerSelect.value) {
+            updateGroupForCustomer(customerSelect.value);
+        }
     });
 </script>

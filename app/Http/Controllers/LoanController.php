@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Models\CashCollateral;
 use App\Models\Customer;
 use App\Models\Filetype;
 use App\Models\GlTransaction;
@@ -38,12 +39,12 @@ class LoanController extends Controller
 
     public function create()
     {
-        $customers = Customer::all();
-        $groups = Group::all();
+        $customers = Customer::with('groups')->where('category', 'Borrower')->get();
+        info($customers);
         $products = LoanProduct::all();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // Example sectors
-        return view('loans.create', compact('customers', 'groups', 'products', 'sectors', 'bankAccounts'));
+        return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts'));
     }
 
     public function store(Request $request)
@@ -62,6 +63,19 @@ class LoanController extends Controller
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
+        // 🔐 Check collateral OUTSIDE transaction
+        if ($product->requiresCollateral()) {
+            $requiredCollateral = $product->calculateRequiredCollateral($validated['amount']);
+            $availableCollateral = CashCollateral::getCashCollateralBalance($validated['customer_id']);
+
+            if ($availableCollateral < $requiredCollateral) {
+                return redirect()->back()->withErrors([
+                    'collateral' => 'The customer does not have enough cash collateral to qualify for this loan. 
+                Required: TZS ' . number_format($requiredCollateral, 2) .
+                        ', Available: TZS ' . number_format($availableCollateral, 2) . '.',
+                ])->withInput();
+            }
+        }
 
         $userId = auth()->id();
         $branchId = auth()->user()->branch_id;
@@ -69,12 +83,17 @@ class LoanController extends Controller
         try {
             DB::transaction(function () use ($validated, $product, $userId, $branchId) {
                 // Step 1: Create Loan with initial status
+
+
+
+                // Step 1: Create Loan
                 $loan = Loan::create([
                     'product_id' => $validated['product_id'],
                     'period' => $validated['period'],
                     'interest' => $validated['interest'],
                     'amount' => $validated['amount'],
                     'customer_id' => $validated['customer_id'],
+                    'interest' => $validated['interest'],
                     'group_id' => $validated['group_id'],
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
@@ -218,6 +237,19 @@ class LoanController extends Controller
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
+          // 🔐 Check collateral OUTSIDE transaction
+          if ($product->requiresCollateral()) {
+            $requiredCollateral = $product->calculateRequiredCollateral($validated['amount']);
+            $availableCollateral = CashCollateral::getCashCollateralBalance($validated['customer_id']);
+
+            if ($availableCollateral < $requiredCollateral) {
+                return redirect()->back()->withErrors([
+                    'collateral' => 'The customer does not have enough cash collateral to qualify for this loan. 
+                Required: TZS ' . number_format($requiredCollateral, 2) .
+                        ', Available: TZS ' . number_format($availableCollateral, 2) . '.',
+                ])->withInput();
+            }
+        }
 
         $userId = auth()->id();
         $branchId = auth()->user()->branch_id;
@@ -232,6 +264,7 @@ class LoanController extends Controller
                     'interest' => $validated['interest'],
                     'amount' => $validated['amount'],
                     'customer_id' => $validated['customer_id'],
+                    'interest' => $validated['interest'],
                     'group_id' => $validated['group_id'],
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
@@ -388,7 +421,7 @@ class LoanController extends Controller
         if (empty($decoded)) {
             return redirect()->route('loans.index')->withErrors(['Loan not found.']);
         }
-
+    
         $loan = Loan::with([
             'customer.region',
             'customer.district',
@@ -403,13 +436,23 @@ class LoanController extends Controller
             'approvals.user',
             'approvals' => function($query) {
                 $query->orderBy('approval_level', 'asc');
-            }
+            },
+            'guarantors' // add this if not eager loaded already
         ])->findOrFail($decoded[0]);
-        
-        $guarantorCustomers = Customer::where('category', 'guarantor')->get();
-
-        return view('loans.show', compact('loan', 'guarantorCustomers'));
+    
+        // Get IDs of guarantors already attached to this loan
+        $guarantorIdsAlreadyAdded = $loan->guarantors->pluck('id')->toArray();
+    
+        // Fetch guarantors excluding already assigned ones
+        $guarantorCustomers = Customer::where('category', 'guarantor')
+            ->whereNotIn('id', $guarantorIdsAlreadyAdded)
+            ->get();
+    
+        $filetypes = Filetype::all();
+    
+        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes'));
     }
+    
 
     ////////////////////UPLOAD LOAN DOCUMENT/////////////////////
 
@@ -417,12 +460,9 @@ class LoanController extends Controller
     {
         $request->validate([
             'loan_id' => 'required|exists:loans,id',
-            'name' => 'required|string|max:255',
+            'file_type_id' => 'required|exists:filetypes,id',
             'file' => 'required|file|max:2048',
         ]);
-
-        // Step 1: Create or find file type
-        $fileType = Filetype::firstOrCreate(['name' => $request->name]);
 
         // Step 2: Store file in public storage
         $filePath = $request->file('file')->store('loan_documents', 'public');
@@ -430,7 +470,7 @@ class LoanController extends Controller
         // Step 3: Save record in loan_files
         LoanFile::create([
             'loan_id' => $request->loan_id,
-            'file_type_id' => $fileType->id,
+            'file_type_id' => $request->file_type_id,
             'file_path' => $filePath,
         ]);
 

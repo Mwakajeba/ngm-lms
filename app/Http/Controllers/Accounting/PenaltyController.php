@@ -5,8 +5,6 @@ namespace App\Http\Controllers\Accounting;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\Penalty;
-use App\Models\Company;
-use App\Models\Branch;
 use App\Models\ChartAccount;
 use Illuminate\Support\Facades\Validator;
 use Vinkla\Hashids\Facades\Hashids;
@@ -15,19 +13,9 @@ class PenaltyController extends Controller
 {
     public function index()
     {
-        $user = auth()->user();
-        $companyId = $user->company_id ?? null;
-
-        if ($companyId) {
-            $penalties = Penalty::with(['company', 'branch', 'chartAccount', 'createdBy'])
-                ->byCompany($companyId)
-                ->orderBy('name')
-                ->get();
-        } else {
-            $penalties = Penalty::with(['company', 'branch', 'chartAccount', 'createdBy'])
-                ->orderBy('name')
-                ->get();
-        }
+        $penalties = Penalty::with(['penaltyIncomeAccount', 'penaltyReceivablesAccount', 'createdBy'])
+            ->orderBy('name')
+            ->get();
 
         $stats = [
             'total' => $penalties->count(),
@@ -44,37 +32,25 @@ class PenaltyController extends Controller
 
     public function create()
     {
-        $user = auth()->user();
-        $companyId = $user->company_id ?? null;
-
-        $companies = Company::orderBy('name')->get();
-
-        if ($companyId) {
-            $branches = Branch::where('company_id', $companyId)->orderBy('name')->get();
-        } else {
-            $branches = Branch::orderBy('name')->get();
-        }
-
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
         $statusOptions = Penalty::getStatusOptions();
         $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
         $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.penalties.create', compact('companies', 'branches', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
+        return view('accounting.penalties.create', compact('chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
     public function store(Request $request)
     {
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'chart_account_id' => 'required|exists:chart_accounts,id',
+            'penalty_income_account_id' => 'required|exists:chart_accounts,id',
+            'penalty_receivables_account_id' => 'required|exists:chart_accounts,id',
             'penalty_type' => 'required|in:fixed,percentage',
             'amount' => 'required|numeric|min:0',
             'deduction_type' => 'required|in:over_due_principal_amount,over_due_interest_amount,over_due_principal_and_interest,total_principal_amount_released',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
-            'company_id' => 'nullable|exists:companies,id',
-            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         if ($validator->fails()) {
@@ -82,18 +58,17 @@ class PenaltyController extends Controller
         }
 
         $user = auth()->user();
-        $companyId = $user->company_id ?? $request->company_id ?? Company::first()->id ?? 1;
 
         $penalty = Penalty::create([
             'name' => $request->name,
-            'chart_account_id' => $request->chart_account_id,
+            'penalty_income_account_id' => $request->penalty_income_account_id,
+            'penalty_receivables_account_id' => $request->penalty_receivables_account_id,
             'penalty_type' => $request->penalty_type,
             'amount' => $request->amount,
             'deduction_type' => $request->deduction_type,
             'description' => $request->description,
             'status' => $request->status,
-            'company_id' => $companyId,
-            'branch_id' => $request->branch_id,
+            'branch_id' => $user->branch_id,
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
@@ -110,7 +85,7 @@ class PenaltyController extends Controller
         }
 
         $penalty = Penalty::findOrFail($decoded[0]);
-        $penalty->load(['company', 'branch', 'chartAccount', 'createdBy', 'updatedBy']);
+        $penalty->load(['penaltyIncomeAccount', 'penaltyReceivablesAccount', 'createdBy', 'updatedBy']);
 
         return view('accounting.penalties.show', compact('penalty'));
     }
@@ -125,23 +100,12 @@ class PenaltyController extends Controller
 
         $penalty = Penalty::findOrFail($decoded[0]);
 
-        $user = auth()->user();
-        $companyId = $user->company_id ?? null;
-
-        $companies = Company::orderBy('name')->get();
-
-        if ($companyId) {
-            $branches = Branch::where('company_id', $companyId)->orderBy('name')->get();
-        } else {
-            $branches = Branch::orderBy('name')->get();
-        }
-
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
         $statusOptions = Penalty::getStatusOptions();
         $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
         $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.penalties.edit', compact('penalty', 'companies', 'branches', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
+        return view('accounting.penalties.edit', compact('penalty', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
     public function update(Request $request, $encodedId)
@@ -156,14 +120,13 @@ class PenaltyController extends Controller
 
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255',
-            'chart_account_id' => 'required|exists:chart_accounts,id',
+            'penalty_income_account_id' => 'required|exists:chart_accounts,id',
+            'penalty_receivables_account_id' => 'required|exists:chart_accounts,id',
             'penalty_type' => 'required|in:fixed,percentage',
             'amount' => 'required|numeric|min:0',
-            'deduction_type' => 'required|in:over_due_interest_amount,over_due_principal_and_interest,total_principal_amount_released',
+            'deduction_type' => 'required|in:over_due_principal_amount,over_due_interest_amount,over_due_principal_and_interest,total_principal_amount_released',
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
-            'company_id' => 'nullable|exists:companies,id',
-            'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         if ($validator->fails()) {
@@ -171,18 +134,17 @@ class PenaltyController extends Controller
         }
 
         $user = auth()->user();
-        $companyId = $user->company_id ?? $request->company_id ?? Company::first()->id ?? 1;
 
         $penalty->update([
             'name' => $request->name,
-            'chart_account_id' => $request->chart_account_id,
+            'penalty_income_account_id' => $request->penalty_income_account_id,
+            'penalty_receivables_account_id' => $request->penalty_receivables_account_id,
             'penalty_type' => $request->penalty_type,
             'amount' => $request->amount,
             'deduction_type' => $request->deduction_type,
             'description' => $request->description,
             'status' => $request->status,
-            'company_id' => $companyId,
-            'branch_id' => $request->branch_id,
+            'branch_id' => $user->branch_id,
             'updated_by' => $user->id,
         ]);
 

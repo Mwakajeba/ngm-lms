@@ -12,13 +12,13 @@ class Penalty extends Model
 
     protected $fillable = [
         'name',
-        'chart_account_id',
+        'penalty_income_account_id',
+        'penalty_receivables_account_id',
         'penalty_type',
         'amount',
         'deduction_type',
         'description',
         'status',
-        'company_id',
         'branch_id',
         'created_by',
         'updated_by',
@@ -32,19 +32,19 @@ class Penalty extends Model
     ];
 
     // Relationships
-    public function company()
-    {
-        return $this->belongsTo(Company::class);
-    }
-
     public function branch()
     {
         return $this->belongsTo(Branch::class);
     }
 
-    public function chartAccount()
+    public function penaltyIncomeAccount()
     {
-        return $this->belongsTo(ChartAccount::class);
+        return $this->belongsTo(ChartAccount::class, 'penalty_income_account_id');
+    }
+
+    public function penaltyReceivablesAccount()
+    {
+        return $this->belongsTo(ChartAccount::class, 'penalty_receivables_account_id');
     }
 
     public function createdBy()
