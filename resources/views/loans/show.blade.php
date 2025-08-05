@@ -80,7 +80,7 @@
                             ['label' => 'Total Repayable', 'value' => number_format($loan->amount_total, 2), 'icon' => 'bx bx-calculator'],
                             ['label' => 'Period', 'value' => $loan->period . ' months', 'icon' => 'bx bx-time'],
                             ['label' => 'Interest Method', 'value' => $loan->product->interest_method, 'icon' => 'bx bx-bar-chart-alt-2'],
-                            ['label' => 'Interest Rate', 'value' => $loan->interest ?? 'N/A', 'icon' => 'bx bx-bar-chart-alt-2'],
+                            ['label' => 'Interest Rate',   'value' => ($loan->interest ?? 'N/A') . ($loan->interest !== null ? '%' : ''), 'icon' => 'bx bx-bar-chart-alt-2'],
                             ['label' => 'Disbursed On', 'value' => \Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y'), 'icon' => 'bx bx-calendar-check'],
                             ['label' => 'First Repayment', 'value' => \Carbon\Carbon::parse($loan->first_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-event'],
                             ['label' => 'Last Repayment', 'value' => \Carbon\Carbon::parse($loan->last_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-minus'],
