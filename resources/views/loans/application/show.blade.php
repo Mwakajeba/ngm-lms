@@ -142,17 +142,26 @@
                                                     <td class="fw-bold bg-light" style="width: 30%;">Loan Status</td>
                                                     <td>
                                                         @switch($loanApplication->status)
-                                                            @case('pending')
-                                                                <span class="badge bg-warning">PENDING</span>
+                                                            @case('applied')
+                                                                <span class="badge bg-warning">APPLIED</span>
+                                                                @break
+                                                            @case('checked')
+                                                                <span class="badge bg-info">CHECKED</span>
                                                                 @break
                                                             @case('approved')
-                                                                <span class="badge bg-success">APPROVED</span>
+                                                                <span class="badge bg-primary">APPROVED</span>
+                                                                @break
+                                                            @case('authorized')
+                                                                <span class="badge bg-success">AUTHORIZED</span>
+                                                                @break
+                                                            @case('active')
+                                                                <span class="badge bg-success">ACTIVE</span>
                                                                 @break
                                                             @case('rejected')
                                                                 <span class="badge bg-danger">REJECTED</span>
                                                                 @break
-                                                            @case('active')
-                                                                <span class="badge bg-primary">ACTIVE</span>
+                                                            @case('defaulted')
+                                                                <span class="badge bg-dark">DEFAULTED</span>
                                                                 @break
                                                             @default
                                                                 <span class="badge bg-secondary">{{ strtoupper($loanApplication->status) }}</span>
@@ -272,30 +281,24 @@
                             </div>
 
                             <!-- Loan Application Actions -->
-                            @if($loanApplication->status === 'pending')
-                            <div class="card border-0 shadow-sm">
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-primary text-white">
+                                    <h6 class="mb-0"><i class="bx bx-cog me-2"></i>LOAN APPROVAL ACTIONS</h6>
+                                </div>
                                 <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-4 mb-3">
-                                            <button type="button" class="btn btn-success  w-50" onclick="approveApplication('{{ Hashids::encode($loanApplication->id) }}')">
-                                                <i class="bx bx-check-circle me-2"></i>APPROVE APPLICATION
-                                            </button>
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <button type="button" class="btn btn-danger  w-50" onclick="rejectApplication('{{ Hashids::encode($loanApplication->id) }}')">
-                                                <i class="bx bx-x-circle me-2"></i> REJECT APPLICATION
-                                            </button>
-                                        </div>
-                                        <div class="col-md-4 mb-3">
-                                            <button type="button" class="btn btn-primary  w-50" onclick="disburseApplication('{{ Hashids::encode($loanApplication->id) }}')">
-                                                <i class="bx bx-x-circle me-2"></i> DISBURSE LOAN
-                                            </button>
-                                        </div>
-                                    </div>
-                                 
+                                    <x-loan-approval-actions :loan="$loanApplication" />
                                 </div>
                             </div>
-                            @endif
+
+                            <!-- Approval History -->
+                            <div class="card border-0 shadow-sm mb-4">
+                                <div class="card-header bg-info text-white">
+                                    <h6 class="mb-0"><i class="bx bx-history me-2"></i>APPROVAL HISTORY</h6>
+                                </div>
+                                <div class="card-body">
+                                    <x-loan-approval-history :loan="$loanApplication" />
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Documents Tab -->

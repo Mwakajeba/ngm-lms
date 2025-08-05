@@ -31,6 +31,15 @@ class Loan extends Model
         'branch_id',
     ];
 
+    // Loan status constants
+    const STATUS_APPLIED = 'applied';
+    const STATUS_CHECKED = 'checked';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_AUTHORIZED = 'authorized';
+    const STATUS_ACTIVE = 'active';
+    const STATUS_REJECTED = 'rejected';
+    const STATUS_DEFAULTED = 'defaulted';
+
     // Relationships
     public function customer()
     {
@@ -41,7 +50,6 @@ class Loan extends Model
     {
         return $this->belongsTo(Group::class);
     }
-
 
     public function product()
     {
@@ -68,7 +76,6 @@ class Loan extends Model
         return $this->hasMany(LoanSchedule::class, 'loan_id');
     }
 
-
     public function loanFiles()
     {
         return $this->hasMany(LoanFile::class, 'loan_id');
@@ -86,6 +93,112 @@ class Loan extends Model
             ->withTimestamps();
     }
 
+    // New approval relationships
+    public function approvals()
+    {
+        return $this->hasMany(LoanApproval::class);
+    }
+
+    public function currentApproval()
+    {
+        return $this->approvals()->latest()->first();
+    }
+
+    // Approval status methods
+    public function getCurrentApprovalLevel()
+    {
+        $lastApproval = $this->currentApproval();
+        return $lastApproval ? $lastApproval->approval_level : 0;
+    }
+
+    public function getNextApprovalLevel()
+    {
+        if (!$this->product || !$this->product->has_approval_levels) {
+            return null;
+        }
+
+        $approvalLevels = explode(',', $this->product->approval_levels);
+        $currentLevel = $this->getCurrentApprovalLevel();
+
+        return $currentLevel < count($approvalLevels) ? $currentLevel + 1 : null;
+    }
+
+    public function getRequiredApprovalLevels()
+    {
+        if (!$this->product || !$this->product->has_approval_levels) {
+            return [];
+        }
+
+        return explode(',', $this->product->approval_levels);
+    }
+
+    public function canBeApprovedByUser($user)
+    {
+        if (!$this->product || !$this->product->has_approval_levels) {
+            return false;
+        }
+
+        $nextLevel = $this->getNextApprovalLevel();
+        if (!$nextLevel) {
+            return false;
+        }
+
+        $approvalLevels = $this->getRequiredApprovalLevels();
+        if (!isset($approvalLevels[$nextLevel - 1])) {
+            return false;
+        }
+
+        $requiredRoleId = $approvalLevels[$nextLevel - 1];
+        $userRoles = $user->roles->pluck('id')->toArray();
+
+        return in_array($requiredRoleId, $userRoles);
+    }
+
+    public function canBeRejected()
+    {
+        $rejectableStatuses = [self::STATUS_APPLIED, self::STATUS_CHECKED, self::STATUS_APPROVED];
+        return in_array($this->status, $rejectableStatuses);
+    }
+
+    public function isFullyApproved()
+    {
+        if (!$this->product || !$this->product->has_approval_levels) {
+            return false;
+        }
+
+        $requiredLevels = count($this->getRequiredApprovalLevels());
+        $approvedLevels = $this->approvals()->approved()->count();
+
+        return $approvedLevels >= $requiredLevels;
+    }
+
+    public function getApprovalStatus()
+    {
+        if ($this->status === self::STATUS_REJECTED) {
+            return 'rejected';
+        }
+
+        if ($this->status === self::STATUS_ACTIVE) {
+            return 'disbursed';
+        }
+
+        if (!$this->product || !$this->product->has_approval_levels) {
+            return $this->status;
+        }
+
+        $currentLevel = $this->getCurrentApprovalLevel();
+        $totalLevels = count($this->getRequiredApprovalLevels());
+
+        if ($currentLevel === 0) {
+            return 'pending_first_approval';
+        }
+
+        if ($currentLevel < $totalLevels) {
+            return "pending_level_{$currentLevel}_approval";
+        }
+
+        return 'fully_approved';
+    }
 
 
     public function calculateInterestAmount(float $rate = null, bool $returnSchedule = false): float|array

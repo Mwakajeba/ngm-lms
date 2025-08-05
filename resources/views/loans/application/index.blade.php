@@ -89,17 +89,26 @@
                                                 </td>
                                                 <td>
                                                     @switch($application->status)
-                                                        @case('pending')
-                                                            <span class="badge bg-warning">Pending</span>
+                                                        @case('applied')
+                                                            <span class="badge bg-warning">Applied</span>
+                                                            @break
+                                                        @case('checked')
+                                                            <span class="badge bg-info">Checked</span>
                                                             @break
                                                         @case('approved')
-                                                            <span class="badge bg-success">Approved</span>
+                                                            <span class="badge bg-primary">Approved</span>
+                                                            @break
+                                                        @case('authorized')
+                                                            <span class="badge bg-success">Authorized</span>
+                                                            @break
+                                                        @case('active')
+                                                            <span class="badge bg-success">Active</span>
                                                             @break
                                                         @case('rejected')
                                                             <span class="badge bg-danger">Rejected</span>
                                                             @break
-                                                        @case('active')
-                                                            <span class="badge bg-primary">Active</span>
+                                                        @case('defaulted')
+                                                            <span class="badge bg-dark">Defaulted</span>
                                                             @break
                                                         @default
                                                             <span class="badge bg-secondary">{{ ucfirst($application->status) }}</span>
@@ -111,23 +120,11 @@
                                                            class="btn btn-sm btn-outline-primary" 
                                                            title="View Details">view
                                                         </a>
-                                                        @if($application->status === 'pending')
+                                                        @if($application->status === 'applied')
                                                             <a href="{{ route('loans.application.edit', Hashids::encode($application->id)) }}" 
                                                                class="btn btn-sm btn-outline-warning" 
                                                                     title="Edit Application">Edit
                                                             </a>
-                                                            <button type="button" 
-                                                                    class="btn btn-sm btn-outline-success" 
-                                                                    title="Approve Application"
-                                                                    onclick="approveApplication('{{ Hashids::encode($application->id) }}')">
-                                                                Approve
-                                                            </button>
-                                                            <button type="button" 
-                                                                    class="btn btn-sm btn-outline-danger" 
-                                                                    title="Reject Application"
-                                                                    onclick="rejectApplication('{{ Hashids::encode($application->id) }}')">
-                                                                Reject
-                                                            </button>
                                                         @endif
                                                         @if(!in_array($application->status, ['active', 'authorized']))
                                                             <button type="button" 
@@ -138,6 +135,9 @@
                                                             </button>
                                                         @endif
                                                     </div>
+                                                    
+                                                    <!-- Approval Actions -->
+                                                    <x-loan-approval-actions :loan="$application" />
                                                 </td>
                                             </tr>
                                         @empty
