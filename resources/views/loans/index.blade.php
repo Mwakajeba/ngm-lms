@@ -33,16 +33,16 @@
                                     </div>
                                 </div>
 
-                                <!-- Loan Applications -->
+                                <!-- Applied Loans -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
                                                 <i class="bx bx-plus-circle fs-1 text-success"></i>
                                             </div>
-                                            <h5 class="card-title">Loan Applications</h5>
+                                            <h5 class="card-title">Applied Loans</h5>
                                             <p class="card-text">Manage and initiate loan applications.</p>
-                                            <a href="{{ route('loans.application.index') }}" class="btn btn-success">
+                                            <a href="{{ route('loans.by-status', 'applied') }}" class="btn btn-success">
                                                 <i class="bx bx-file-plus me-1"></i> View Applications
                                             </a>
                                         </div>
@@ -58,14 +58,14 @@
                                             </div>
                                             <h5 class="card-title">Checked Applications</h5>
                                             <p class="card-text">Manage and check applied loans.</p>
-                                            <a href="{{ route('loans.application.index') }}" class="btn btn-secondary">
+                                            <a href="{{ route('loans.by-status', 'checked') }}" class="btn btn-secondary">
                                                 <i class="bx bx-check me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Verified Applications -->
+                                <!-- Approved Applications -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-purple">
                                         <div class="card-body text-center">
@@ -74,14 +74,14 @@
                                             </div>
                                             <h5 class="card-title">Approved Applications</h5>
                                             <p class="card-text">Manage and verify applied loans.</p>
-                                            <a href="{{ route('loans.application.index') }}" class="btn btn-info">
+                                            <a href="{{ route('loans.by-status', 'approved') }}" class="btn btn-info">
                                                 <i class="bx bx-verify me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Approved Applications -->
+                                <!-- Authorized Applications -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-orange">
                                         <div class="card-body text-center">
@@ -90,7 +90,7 @@
                                             </div>
                                             <h5 class="card-title">Authorized Applications</h5>
                                             <p class="card-text">Manage and approve applied loans.</p>
-                                            <a href="{{ route('loans.application.index') }}" class="btn btn-warning">
+                                            <a href="{{ route('loans.by-status', 'authorized') }}" class="btn btn-warning">
                                                 <i class="bx bx-badge-check me-1"></i> View Applications
                                             </a>
                                         </div>
@@ -106,8 +106,24 @@
                                             </div>
                                             <h5 class="card-title">Defaulted Loans</h5>
                                             <p class="card-text">Manage all defaulted loans.</p>
-                                            <a href="{{ route('loans.list') }}" class="btn btn-danger">
+                                            <a href="{{ route('loans.by-status', 'defaulted') }}" class="btn btn-danger">
                                                 <i class="bx bx-error me-1"></i> View Loans
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Rejected Applications -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-danger">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-x-circle fs-1 text-danger"></i>
+                                            </div>
+                                            <h5 class="card-title">Rejected Applications</h5>
+                                            <p class="card-text">Manage all rejected loan applications.</p>
+                                            <a href="{{ route('loans.by-status', 'rejected') }}" class="btn btn-danger">
+                                                <i class="bx bx-x-circle me-1"></i> View Applications
                                             </a>
                                         </div>
                                     </div>

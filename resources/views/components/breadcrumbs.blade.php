@@ -58,7 +58,7 @@
         position: relative;
         overflow: hidden;
     }
-
+ 
     .breadcrumb-link::before {
         content: '';
         position: absolute;

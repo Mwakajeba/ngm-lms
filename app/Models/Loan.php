@@ -104,7 +104,17 @@ class Loan extends Model
         return $this->approvals()->latest()->first();
     }
 
-    // Approval status methods
+    // Dynamic approval methods based on roles
+    public function getApprovalRoles()
+    {
+        if (!$this->product || !$this->product->has_approval_levels) {
+            return [];
+        }
+
+        $roles = explode(',', $this->product->approval_levels);
+        return array_filter($roles); // Remove empty values
+    }
+
     public function getCurrentApprovalLevel()
     {
         $lastApproval = $this->currentApproval();
@@ -113,45 +123,48 @@ class Loan extends Model
 
     public function getNextApprovalLevel()
     {
-        if (!$this->product || !$this->product->has_approval_levels) {
+        $approvalRoles = $this->getApprovalRoles();
+        if (empty($approvalRoles)) {
             return null;
         }
 
-        $approvalLevels = explode(',', $this->product->approval_levels);
         $currentLevel = $this->getCurrentApprovalLevel();
-
-        return $currentLevel < count($approvalLevels) ? $currentLevel + 1 : null;
+        return $currentLevel < count($approvalRoles) ? $currentLevel + 1 : null;
     }
 
     public function getRequiredApprovalLevels()
     {
-        if (!$this->product || !$this->product->has_approval_levels) {
-            return [];
+        return $this->getApprovalRoles();
+    }
+
+    public function getNextApprovalRole()
+    {
+        $approvalRoles = $this->getApprovalRoles();
+        $nextLevel = $this->getNextApprovalLevel();
+
+        if (!$nextLevel || $nextLevel > count($approvalRoles)) {
+            return null;
         }
 
-        return explode(',', $this->product->approval_levels);
+        return $approvalRoles[$nextLevel - 1];
     }
 
     public function canBeApprovedByUser($user)
     {
-        if (!$this->product || !$this->product->has_approval_levels) {
+        $nextRoleId = $this->getNextApprovalRole();
+        if (!$nextRoleId) {
             return false;
         }
 
-        $nextLevel = $this->getNextApprovalLevel();
-        if (!$nextLevel) {
-            return false;
-        }
-
-        $approvalLevels = $this->getRequiredApprovalLevels();
-        if (!isset($approvalLevels[$nextLevel - 1])) {
-            return false;
-        }
-
-        $requiredRoleId = $approvalLevels[$nextLevel - 1];
         $userRoles = $user->roles->pluck('id')->toArray();
+        return in_array($nextRoleId, $userRoles);
+    }
 
-        return in_array($requiredRoleId, $userRoles);
+    public function hasUserApproved($user)
+    {
+        return $this->approvals()
+            ->where('user_id', $user->id)
+            ->exists();
     }
 
     public function canBeRejected()
@@ -162,14 +175,29 @@ class Loan extends Model
 
     public function isFullyApproved()
     {
-        if (!$this->product || !$this->product->has_approval_levels) {
+        $approvalRoles = $this->getApprovalRoles();
+        if (empty($approvalRoles)) {
             return false;
         }
 
-        $requiredLevels = count($this->getRequiredApprovalLevels());
-        $approvedLevels = $this->approvals()->approved()->count();
+        $requiredLevels = count($approvalRoles);
+        $approvedLevels = $this->approvals()->where('action', '!=', 'rejected')->count();
 
         return $approvedLevels >= $requiredLevels;
+    }
+
+    public function isReadyForDisbursement()
+    {
+        $approvalRoles = $this->getApprovalRoles();
+        if (empty($approvalRoles)) {
+            return $this->status === self::STATUS_ACTIVE;
+        }
+
+        // Check if all levels except the last (accountant) are approved
+        $requiredLevels = count($approvalRoles);
+        $approvedLevels = $this->approvals()->where('action', '!=', 'rejected')->count();
+
+        return $approvedLevels >= ($requiredLevels - 1); // All except accountant
     }
 
     public function getApprovalStatus()
@@ -182,22 +210,77 @@ class Loan extends Model
             return 'disbursed';
         }
 
-        if (!$this->product || !$this->product->has_approval_levels) {
+        $approvalRoles = $this->getApprovalRoles();
+        if (empty($approvalRoles)) {
             return $this->status;
         }
 
         $currentLevel = $this->getCurrentApprovalLevel();
-        $totalLevels = count($this->getRequiredApprovalLevels());
+        $totalLevels = count($approvalRoles);
 
         if ($currentLevel === 0) {
             return 'pending_first_approval';
         }
 
         if ($currentLevel < $totalLevels) {
-            return "pending_level_{$currentLevel}_approval";
+            $roleName = $this->getRoleNameById($approvalRoles[$currentLevel]);
+            return "pending_{$roleName}_approval";
         }
 
         return 'fully_approved';
+    }
+
+    public function getRoleNameById($roleId)
+    {
+        $role = \App\Models\Role::find($roleId);
+        return $role ? strtolower(str_replace(' ', '_', $role->name)) : 'unknown';
+    }
+
+    public function getNextApprovalAction()
+    {
+        $approvalRoles = $this->getApprovalRoles();
+        $nextLevel = $this->getNextApprovalLevel();
+
+        if (!$nextLevel) {
+            return null;
+        }
+
+        $roleId = $approvalRoles[$nextLevel - 1];
+        $role = \App\Models\Role::find($roleId);
+
+        if (!$role) {
+            return null;
+        }
+
+        // Check if this is the accountant (last role)
+        if ($nextLevel === count($approvalRoles)) {
+            return 'disburse';
+        }
+
+        // For other roles, determine action based on level
+        switch ($nextLevel) {
+            case 1:
+                return 'check';
+            case 2:
+                return 'approve';
+            case 3:
+                return 'authorize';
+            default:
+                return 'approve';
+        }
+    }
+
+    public function getApprovalLevelName($level)
+    {
+        $approvalRoles = $this->getApprovalRoles();
+        if (!isset($approvalRoles[$level - 1])) {
+            return 'Unknown';
+        }
+
+        $roleId = $approvalRoles[$level - 1];
+        $role = \App\Models\Role::find($roleId);
+
+        return $role ? $role->name : 'Unknown';
     }
 
 

@@ -37,6 +37,37 @@ class LoanController extends Controller
         return view('loans.list', compact('loans'));
     }
 
+    public function loansByStatus($status)
+    {
+        $branchId = auth()->user()->branch_id;
+
+        // Validate status
+        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected'];
+        if (!in_array($status, $validStatuses)) {
+            return redirect()->route('loans.index')->withErrors(['Invalid loan status.']);
+        }
+
+        $loans = Loan::with('customer', 'product', 'branch')
+            ->where('branch_id', $branchId)
+            ->where('status', $status)
+            ->latest()->get();
+
+        // Get status display name
+        $statusNames = [
+            'applied' => 'Applied Loans',
+            'checked' => 'Checked Applications',
+            'approved' => 'Approved Applications',
+            'authorized' => 'Authorized Applications',
+            'active' => 'Active Loans',
+            'defaulted' => 'Defaulted Loans',
+            'rejected' => 'Rejected Applications'
+        ];
+
+        $pageTitle = $statusNames[$status] ?? ucfirst($status) . ' Loans';
+
+        return view('loans.list', compact('loans', 'pageTitle', 'status'));
+    }
+
     public function create()
     {
         $customers = Customer::with('groups')->where('category', 'Borrower')->get();
@@ -237,8 +268,8 @@ class LoanController extends Controller
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
-          // 🔐 Check collateral OUTSIDE transaction
-          if ($product->requiresCollateral()) {
+        // 🔐 Check collateral OUTSIDE transaction
+        if ($product->requiresCollateral()) {
             $requiredCollateral = $product->calculateRequiredCollateral($validated['amount']);
             $availableCollateral = CashCollateral::getCashCollateralBalance($validated['customer_id']);
 
@@ -421,7 +452,7 @@ class LoanController extends Controller
         if (empty($decoded)) {
             return redirect()->route('loans.index')->withErrors(['Loan not found.']);
         }
-    
+
         $loan = Loan::with([
             'customer.region',
             'customer.district',
@@ -434,25 +465,25 @@ class LoanController extends Controller
             'loanFiles',
             'schedule',
             'approvals.user',
-            'approvals' => function($query) {
+            'approvals' => function ($query) {
                 $query->orderBy('approval_level', 'asc');
             },
             'guarantors' // add this if not eager loaded already
         ])->findOrFail($decoded[0]);
-    
+
         // Get IDs of guarantors already attached to this loan
         $guarantorIdsAlreadyAdded = $loan->guarantors->pluck('id')->toArray();
-    
+
         // Fetch guarantors excluding already assigned ones
         $guarantorCustomers = Customer::where('category', 'guarantor')
             ->whereNotIn('id', $guarantorIdsAlreadyAdded)
             ->get();
-    
+
         $filetypes = Filetype::all();
-    
+
         return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes'));
     }
-    
+
 
     ////////////////////UPLOAD LOAN DOCUMENT/////////////////////
 
@@ -502,6 +533,7 @@ class LoanController extends Controller
         $branchId = auth()->user()->branch_id;
         $loanApplications = Loan::with('customer', 'product', 'branch', 'approvals')
             ->where('branch_id', $branchId)
+            ->where('status', 'applied')
             ->latest()
             ->paginate(10);
 
@@ -589,10 +621,10 @@ class LoanController extends Controller
 
         try {
             DB::beginTransaction();
-            
+
             // Determine initial status based on approval levels
             $initialStatus = $product->has_approval_levels ? Loan::STATUS_APPLIED : Loan::STATUS_ACTIVE;
-            
+
             $loan = Loan::create([
                 'product_id' => $validated['product_id'],
                 'period' => $validated['period'],
@@ -627,7 +659,7 @@ class LoanController extends Controller
 
             DB::commit();
 
-            $message = $product->has_approval_levels 
+            $message = $product->has_approval_levels
                 ? 'Loan application submitted successfully and awaiting approval.'
                 : 'Loan application created and disbursed successfully.';
 
@@ -644,10 +676,10 @@ class LoanController extends Controller
     {
         $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
-            return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+            return redirect()->route('loans.index')->withErrors(['Loan not found.']);
         }
 
-        $loanApplication = Loan::with([
+        $loan = Loan::with([
             'customer.region',
             'customer.district',
             'customer.branch',
@@ -656,13 +688,26 @@ class LoanController extends Controller
             'product',
             'bankAccount',
             'group',
+            'loanFiles',
+            'schedule',
             'approvals.user',
-            'approvals' => function($query) {
+            'approvals' => function ($query) {
                 $query->orderBy('approval_level', 'asc');
-            }
+            },
+            'guarantors' // add this if not eager loaded already
         ])->findOrFail($decoded[0]);
 
-        return view('loans.application.show', compact('loanApplication'));
+        // Get IDs of guarantors already attached to this loan
+        $guarantorIdsAlreadyAdded = $loan->guarantors->pluck('id')->toArray();
+
+        // Fetch guarantors excluding already assigned ones
+        $guarantorCustomers = Customer::where('category', 'guarantor')
+            ->whereNotIn('id', $guarantorIdsAlreadyAdded)
+            ->get();
+
+        $filetypes = Filetype::all();
+
+        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes'));
     }
 
     public function applicationEdit($encodedId)
@@ -738,7 +783,10 @@ class LoanController extends Controller
         }
     }
 
-    public function applicationApprove($encodedId)
+    /**
+     * Dynamic approval method - handles all approval levels
+     */
+    public function approveLoan($encodedId, Request $request)
     {
         try {
             $decoded = Hashids::decode($encodedId);
@@ -746,63 +794,215 @@ class LoanController extends Controller
                 return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
             }
 
-            $loanApplication = Loan::findOrFail($decoded[0]);
+            $loan = Loan::findOrFail($decoded[0]);
+            $user = auth()->user();
 
-            if ($loanApplication->status !== 'pending') {
-                return redirect()->route('loans.application.index')->withErrors(['Only pending applications can be approved.']);
+            // Validate user has permission to approve
+            if (!$loan->canBeApprovedByUser($user)) {
+                return redirect()->back()->withErrors(['You do not have permission to approve this loan.']);
             }
 
-            // Convert application to active loan
-            $loanApplication->update([
-                'status' => 'active',
-                'disbursed_on' => $loanApplication->date_applied,
+            // Check if user has already approved this loan
+            if ($loan->hasUserApproved($user)) {
+                return redirect()->back()->withErrors(['You have already approved this loan.']);
+            }
+
+            $validated = $request->validate([
+                'comments' => 'nullable|string|max:1000',
             ]);
 
-            // Calculate interest and repayment dates
-            $interestAmount = $loanApplication->calculateInterestAmount($loanApplication->interest);
-            $repaymentDates = $loanApplication->getRepaymentDates();
+            $nextAction = $loan->getNextApprovalAction();
+            $nextLevel = $loan->getNextApprovalLevel();
+            $roleName = $loan->getApprovalLevelName($nextLevel);
 
-            // Update loan with totals and schedule
-            $loanApplication->update([
-                'interest_amount' => $interestAmount,
-                'amount_total' => $loanApplication->amount + $interestAmount,
-                'first_repayment_date' => $repaymentDates['first_repayment_date'],
-                'last_repayment_date' => $repaymentDates['last_repayment_date'],
-            ]);
+            DB::transaction(function () use ($loan, $user, $validated, $nextAction, $nextLevel, $roleName) {
+                // Create approval record
+                LoanApproval::create([
+                    'loan_id' => $loan->id,
+                    'user_id' => $user->id,
+                    'role_name' => $roleName,
+                    'approval_level' => $nextLevel,
+                    'action' => $nextAction,
+                    'comments' => $validated['comments'] ?? null,
+                    'approved_at' => now(),
+                ]);
 
-            // Generate repayment schedule
-            $loanApplication->generateRepaymentSchedule($loanApplication->interest);
+                // Update loan status based on action
+                switch ($nextAction) {
+                    case 'check':
+                        $loan->update(['status' => Loan::STATUS_CHECKED]);
+                        break;
+                    case 'approve':
+                        $loan->update(['status' => Loan::STATUS_APPROVED]);
+                        break;
+                    case 'authorize':
+                        $loan->update(['status' => Loan::STATUS_AUTHORIZED]);
+                        break;
+                    case 'disburse':
+                        // Process disbursement
+                        $loan->update([
+                            'status' => Loan::STATUS_ACTIVE,
+                            'disbursed_on' => now(),
+                        ]);
 
-            // Record Payment and GL Transactions (similar to store method)
-            $this->processLoanDisbursement($loanApplication);
+                        // Calculate interest and repayment dates
+                        $interestAmount = $loan->calculateInterestAmount($loan->interest);
+                        $repaymentDates = $loan->getRepaymentDates();
 
-            return redirect()->route('loans.application.index')->with('success', 'Loan application approved and disbursed successfully.');
+                        // Update loan with totals and schedule
+                        $loan->update([
+                            'interest_amount' => $interestAmount,
+                            'amount_total' => $loan->amount + $interestAmount,
+                            'first_repayment_date' => $repaymentDates['first_repayment_date'],
+                            'last_repayment_date' => $repaymentDates['last_repayment_date'],
+                        ]);
+
+                        // Generate repayment schedule
+                        $loan->generateRepaymentSchedule($loan->interest);
+
+                        // Process disbursement
+                        $this->processLoanDisbursement($loan);
+                        break;
+                }
+            });
+
+            $actionMessages = [
+                'check' => 'checked',
+                'approve' => 'approved',
+                'authorize' => 'authorized',
+                'disburse' => 'disbursed'
+            ];
+
+            $message = $actionMessages[$nextAction] ?? 'processed';
+
+            // Redirect based on the new status
+            $newStatus = $loan->fresh()->status;
+            switch ($newStatus) {
+                case 'checked':
+                    return redirect()->route('loans.by-status', 'checked')->with('success', "Loan application {$message} successfully.");
+                case 'approved':
+                    return redirect()->route('loans.by-status', 'approved')->with('success', "Loan application {$message} successfully.");
+                case 'authorized':
+                    return redirect()->route('loans.by-status', 'authorized')->with('success', "Loan application {$message} successfully.");
+                case 'active':
+                    return redirect()->route('loans.by-status', 'active')->with('success', "Loan application {$message} successfully.");
+                default:
+                    return redirect()->route('loans.application.index')->with('success', "Loan application {$message} successfully.");
+            }
         } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to approve application: ' . $th->getMessage()]);
+            return redirect()->back()->withErrors(['Failed to process loan: ' . $th->getMessage()]);
         }
+    }
+
+    /**
+     * Reject loan application
+     */
+    public function rejectLoan($encodedId, Request $request)
+    {
+        try {
+            $decoded = Hashids::decode($encodedId);
+            if (empty($decoded)) {
+                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+            }
+
+            $loan = Loan::findOrFail($decoded[0]);
+            $user = auth()->user();
+
+            // Validate loan can be rejected
+            if (!$loan->canBeRejected()) {
+                return redirect()->back()->withErrors(['This loan cannot be rejected at its current status.']);
+            }
+
+            // Validate user has permission to reject
+            if (!$loan->canBeApprovedByUser($user)) {
+                return redirect()->back()->withErrors(['You do not have permission to reject this loan.']);
+            }
+
+            // Check if user has already approved this loan
+            if ($loan->hasUserApproved($user)) {
+                return redirect()->back()->withErrors(['You have already approved this loan.']);
+            }
+
+            $validated = $request->validate([
+                'comments' => 'required|string|max:1000',
+            ]);
+
+            $nextLevel = $loan->getNextApprovalLevel();
+            $roleName = $loan->getApprovalLevelName($nextLevel);
+
+            DB::transaction(function () use ($loan, $user, $validated, $nextLevel, $roleName) {
+                // Create rejection record
+                LoanApproval::create([
+                    'loan_id' => $loan->id,
+                    'user_id' => $user->id,
+                    'role_name' => $roleName,
+                    'approval_level' => $nextLevel,
+                    'action' => 'rejected',
+                    'comments' => $validated['comments'],
+                    'approved_at' => now(),
+                ]);
+
+                // Update loan status
+                $loan->update(['status' => Loan::STATUS_REJECTED]);
+            });
+
+            return redirect()->route('loans.by-status', 'rejected')->with('success', 'Loan application rejected successfully.');
+        } catch (\Throwable $th) {
+            return redirect()->back()->withErrors(['Failed to reject loan: ' . $th->getMessage()]);
+        }
+    }
+
+    /**
+     * Legacy methods for backward compatibility
+     */
+    public function checkLoan($encodedId, Request $request)
+    {
+        return $this->approveLoan($encodedId, $request);
+    }
+
+    public function authorizeLoan($encodedId, Request $request)
+    {
+        return $this->approveLoan($encodedId, $request);
+    }
+
+    public function disburseLoan($encodedId, Request $request)
+    {
+        return $this->approveLoan($encodedId, $request);
+    }
+
+    public function applicationApprove($encodedId)
+    {
+        return $this->approveLoan($encodedId, request());
     }
 
     public function applicationReject($encodedId)
     {
-        try {
-            $decoded = Hashids::decode($encodedId);
-            if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-            }
+        return $this->rejectLoan($encodedId, request());
+    }
 
+    public function applicationDelete($encodedId)
+    {
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+        }
+
+        try {
+            DB::beginTransaction();
             $loanApplication = Loan::findOrFail($decoded[0]);
 
-            if ($loanApplication->status !== 'pending') {
-                return redirect()->route('loans.application.index')->withErrors(['Only pending applications can be rejected.']);
+            // Check if loan application can be deleted - prevent deletion of active or authorized loans
+            if (in_array($loanApplication->status, ['active', 'authorized'])) {
+                DB::rollBack();
+                return redirect()->route('loans.application.index')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
             }
 
-            $loanApplication->update([
-                'status' => 'rejected',
-            ]);
-
-            return redirect()->route('loans.application.index')->with('success', 'Loan application rejected successfully.');
+            $loanApplication->delete();
+            DB::commit();
+            return redirect()->route('loans.application.index')->with('success', 'Loan application deleted successfully.');
         } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to reject application: ' . $th->getMessage()]);
+            DB::rollBack();
+            return redirect()->route('loans.application.index')->withErrors(['Failed to delete loan application: ' . $th->getMessage()]);
         }
     }
 
@@ -871,295 +1071,6 @@ class LoanController extends Controller
                 'user_id' => $userId,
             ]
         ]);
-    }
-
-    //function to delete loan application
-    public function applicationDelete($encodedId)
-    {
-        $decoded = Hashids::decode($encodedId);
-        if (empty($decoded)) {
-            return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-        }
-
-        try {
-            DB::beginTransaction();
-            $loanApplication = Loan::findOrFail($decoded[0]);
-
-            // Check if loan application can be deleted - prevent deletion of active or authorized loans
-            if (in_array($loanApplication->status, ['active', 'authorized'])) {
-                DB::rollBack();
-                return redirect()->route('loans.application.index')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
-            }
-
-            $loanApplication->delete();
-            DB::commit();
-            return redirect()->route('loans.application.index')->with('success', 'Loan application deleted successfully.');
-        } catch (\Throwable $th) {
-            DB::rollBack();
-            return redirect()->route('loans.application.index')->withErrors(['Failed to delete loan application: ' . $th->getMessage()]);
-        }
-    }
-
-    // NEW MULTI-LEVEL APPROVAL METHODS
-
-    /**
-     * Check loan application (First level approval)
-     */
-    public function checkLoan($encodedId, Request $request)
-    {
-        try {
-            $decoded = Hashids::decode($encodedId);
-            if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-            }
-
-            $loan = Loan::findOrFail($decoded[0]);
-            $user = auth()->user();
-
-            // Validate loan can be checked
-            if ($loan->status !== Loan::STATUS_APPLIED) {
-                return redirect()->route('loans.application.index')->withErrors(['Only applied loans can be checked.']);
-            }
-
-            // Validate user has permission to check
-            if (!$loan->canBeApprovedByUser($user)) {
-                return redirect()->route('loans.application.index')->withErrors(['You do not have permission to check this loan.']);
-            }
-
-            $validated = $request->validate([
-                'comments' => 'nullable|string|max:1000',
-            ]);
-
-            DB::transaction(function () use ($loan, $user, $validated) {
-                // Create approval record
-                LoanApproval::create([
-                    'loan_id' => $loan->id,
-                    'user_id' => $user->id,
-                    'role_name' => $user->roles->first()->name ?? 'unknown',
-                    'approval_level' => 1,
-                    'action' => 'checked',
-                    'comments' => $validated['comments'] ?? null,
-                    'approved_at' => now(),
-                ]);
-
-                // Update loan status
-                $loan->update(['status' => Loan::STATUS_CHECKED]);
-            });
-
-            return redirect()->route('loans.application.index')->with('success', 'Loan application checked successfully.');
-        } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to check loan: ' . $th->getMessage()]);
-        }
-    }
-
-    /**
-     * Approve loan application (Second level approval)
-     */
-    public function approveLoan($encodedId, Request $request)
-    {
-        try {
-            $decoded = Hashids::decode($encodedId);
-            if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-            }
-
-            $loan = Loan::findOrFail($decoded[0]);
-            $user = auth()->user();
-
-            // Validate loan can be approved
-            if ($loan->status !== Loan::STATUS_CHECKED) {
-                return redirect()->route('loans.application.index')->withErrors(['Only checked loans can be approved.']);
-            }
-
-            // Validate user has permission to approve
-            if (!$loan->canBeApprovedByUser($user)) {
-                return redirect()->route('loans.application.index')->withErrors(['You do not have permission to approve this loan.']);
-            }
-
-            $validated = $request->validate([
-                'comments' => 'nullable|string|max:1000',
-            ]);
-
-            DB::transaction(function () use ($loan, $user, $validated) {
-                // Create approval record
-                LoanApproval::create([
-                    'loan_id' => $loan->id,
-                    'user_id' => $user->id,
-                    'role_name' => $user->roles->first()->name ?? 'unknown',
-                    'approval_level' => 2,
-                    'action' => 'approved',
-                    'comments' => $validated['comments'] ?? null,
-                    'approved_at' => now(),
-                ]);
-
-                // Update loan status
-                $loan->update(['status' => Loan::STATUS_APPROVED]);
-            });
-
-            return redirect()->route('loans.application.index')->with('success', 'Loan application approved successfully.');
-        } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to approve loan: ' . $th->getMessage()]);
-        }
-    }
-
-    /**
-     * Authorize loan application (Final level approval)
-     */
-    public function authorizeLoan($encodedId, Request $request)
-    {
-        try {
-            $decoded = Hashids::decode($encodedId);
-            if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-            }
-
-            $loan = Loan::findOrFail($decoded[0]);
-            $user = auth()->user();
-
-            // Validate loan can be authorized
-            if ($loan->status !== Loan::STATUS_APPROVED) {
-                return redirect()->route('loans.application.index')->withErrors(['Only approved loans can be authorized.']);
-            }
-
-            // Validate user has permission to authorize
-            if (!$loan->canBeApprovedByUser($user)) {
-                return redirect()->route('loans.application.index')->withErrors(['You do not have permission to authorize this loan.']);
-            }
-
-            $validated = $request->validate([
-                'comments' => 'nullable|string|max:1000',
-            ]);
-
-            DB::transaction(function () use ($loan, $user, $validated) {
-                // Create approval record
-                LoanApproval::create([
-                    'loan_id' => $loan->id,
-                    'user_id' => $user->id,
-                    'role_name' => $user->roles->first()->name ?? 'unknown',
-                    'approval_level' => 3,
-                    'action' => 'approved',
-                    'comments' => $validated['comments'] ?? null,
-                    'approved_at' => now(),
-                ]);
-
-                // Update loan status
-                $loan->update(['status' => Loan::STATUS_AUTHORIZED]);
-            });
-
-            return redirect()->route('loans.application.index')->with('success', 'Loan application authorized successfully.');
-        } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to authorize loan: ' . $th->getMessage()]);
-        }
-    }
-
-    /**
-     * Disburse authorized loan (Accountant action)
-     */
-    public function disburseLoan($encodedId, Request $request)
-    {
-        try {
-            $decoded = Hashids::decode($encodedId);
-            if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-            }
-
-            $loan = Loan::findOrFail($decoded[0]);
-            $user = auth()->user();
-
-            // Validate loan can be disbursed
-            if ($loan->status !== Loan::STATUS_AUTHORIZED) {
-                return redirect()->route('loans.application.index')->withErrors(['Only authorized loans can be disbursed.']);
-            }
-
-            // Validate user has accountant role
-            if (!$user->hasRole('accountant')) {
-                return redirect()->route('loans.application.index')->withErrors(['Only accountants can disburse loans.']);
-            }
-
-            $validated = $request->validate([
-                'comments' => 'nullable|string|max:1000',
-            ]);
-
-            DB::transaction(function () use ($loan, $user, $validated) {
-                // Update loan status to active
-                $loan->update([
-                    'status' => Loan::STATUS_ACTIVE,
-                    'disbursed_on' => now(),
-                ]);
-
-                // Calculate interest and repayment dates
-                $interestAmount = $loan->calculateInterestAmount($loan->interest);
-                $repaymentDates = $loan->getRepaymentDates();
-
-                // Update loan with totals and schedule
-                $loan->update([
-                    'interest_amount' => $interestAmount,
-                    'amount_total' => $loan->amount + $interestAmount,
-                    'first_repayment_date' => $repaymentDates['first_repayment_date'],
-                    'last_repayment_date' => $repaymentDates['last_repayment_date'],
-                ]);
-
-                // Generate repayment schedule
-                $loan->generateRepaymentSchedule($loan->interest);
-
-                // Process disbursement
-                $this->processLoanDisbursement($loan);
-            });
-
-            return redirect()->route('loans.application.index')->with('success', 'Loan disbursed successfully.');
-        } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to disburse loan: ' . $th->getMessage()]);
-        }
-    }
-
-    /**
-     * Reject loan application
-     */
-    public function rejectLoan($encodedId, Request $request)
-    {
-        try {
-            $decoded = Hashids::decode($encodedId);
-            if (empty($decoded)) {
-                return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
-            }
-
-            $loan = Loan::findOrFail($decoded[0]);
-            $user = auth()->user();
-
-            // Validate loan can be rejected
-            if (!$loan->canBeRejected()) {
-                return redirect()->route('loans.application.index')->withErrors(['This loan cannot be rejected at its current status.']);
-            }
-
-            // Validate user has permission to reject
-            if (!$loan->canBeApprovedByUser($user)) {
-                return redirect()->route('loans.application.index')->withErrors(['You do not have permission to reject this loan.']);
-            }
-
-            $validated = $request->validate([
-                'comments' => 'required|string|max:1000',
-            ]);
-
-            DB::transaction(function () use ($loan, $user, $validated) {
-                // Create rejection record
-                LoanApproval::create([
-                    'loan_id' => $loan->id,
-                    'user_id' => $user->id,
-                    'role_name' => $user->roles->first()->name ?? 'unknown',
-                    'approval_level' => $loan->getNextApprovalLevel() ?? 1,
-                    'action' => 'rejected',
-                    'comments' => $validated['comments'],
-                    'approved_at' => now(),
-                ]);
-
-                // Update loan status
-                $loan->update(['status' => Loan::STATUS_REJECTED]);
-            });
-
-            return redirect()->route('loans.application.index')->with('success', 'Loan application rejected successfully.');
-        } catch (\Throwable $th) {
-            return redirect()->route('loans.application.index')->withErrors(['Failed to reject loan: ' . $th->getMessage()]);
-        }
     }
 
     /**

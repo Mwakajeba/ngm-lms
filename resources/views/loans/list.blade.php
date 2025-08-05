@@ -4,16 +4,17 @@
 
 @extends('layouts.main')
 
-@section('title', 'Loan Management')
+@section('title', $pageTitle ?? 'Loan Management')
 
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Loans', 'url' => '#', 'icon' => 'bx bx-credit-card']
+            ['label' => 'Loans', 'url' => route('loans.index'), 'icon' => 'bx bx-credit-card'],
+            ['label' => $pageTitle ?? 'Loan List', 'url' => '#', 'icon' => 'bx bx-list']
         ]" />
-            <h6 class="mb-0 text-uppercase">LOAN LIST</h6>
+            <h6 class="mb-0 text-uppercase">{{ $pageTitle ?? 'LOAN LIST' }}</h6>
             <hr />
 
             <!-- Dashboard Stats -->
@@ -22,7 +23,7 @@
                     <div class="card radius-10">
                         <div class="card-body d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="text-muted mb-1">Total Loans</p>
+                                <p class="text-muted mb-1">{{ $pageTitle ?? 'Total Loans' }}</p>
                                 <h4 class="mb-0">{{ $loans->count() ?? 0 }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i>
@@ -38,11 +39,17 @@
                     <div class="card radius-10">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h6 class="card-title mb-0">Loans List</h6>
+                                <h6 class="card-title mb-0">{{ $pageTitle ?? 'Loans List' }}</h6>
                                 <div>
-                                    <a href="{{ route('loans.create') }}" class="btn btn-primary">
-                                        <i class="bx bx-plus"></i> Create Direct Loan
-                                    </a>
+                                    @if(isset($status) && $status === 'applied')
+                                        <a href="{{ route('loans.application.create') }}" class="btn btn-primary">
+                                            <i class="bx bx-plus"></i> Create Loan Application
+                                        </a>
+                                    @else
+                                        <a href="{{ route('loans.create') }}" class="btn btn-primary">
+                                            <i class="bx bx-plus"></i> Create Direct Loan
+                                        </a>
+                                    @endif
                                 </div>
                             </div>
 
@@ -73,21 +80,54 @@
                                                 <td>{{ $loan->interest }}%</td>
                                                 <td>{{ number_format($loan->amount_total, 2) }}</td>
                                                 <td>{{ $loan->period }}</td>
-                                                <td>{{ $loan->status }}</td>
+                                                <td>
+                                                    @switch($loan->status)
+                                                        @case('applied')
+                                                            <span class="badge bg-warning">Applied</span>
+                                                            @break
+                                                        @case('checked')
+                                                            <span class="badge bg-info">Checked</span>
+                                                            @break
+                                                        @case('approved')
+                                                            <span class="badge bg-primary">Approved</span>
+                                                            @break
+                                                        @case('authorized')
+                                                            <span class="badge bg-success">Authorized</span>
+                                                            @break
+                                                        @case('active')
+                                                            <span class="badge bg-success">Active</span>
+                                                            @break
+                                                        @case('defaulted')
+                                                            <span class="badge bg-danger">Defaulted</span>
+                                                            @break
+                                                        @case('rejected')
+                                                            <span class="badge bg-danger">Rejected</span>
+                                                            @break
+                                                        @default
+                                                            <span class="badge bg-secondary">{{ ucfirst($loan->status) }}</span>
+                                                    @endswitch
+                                                </td>
                                                 <td>{{ optional($loan->branch)->name }}</td>
                                                 <td>{{ $loan->date_applied }}</td>
                                                 <td class="text-center">
                                                     <a href="{{ route('loans.show', Hashids::encode($loan->id)) }}"
-                                                        class="btn btn-sm btn-outline-info"><i class="bx bx-show"></i></a>
-                                                    <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}"
-                                                        class="btn btn-sm btn-outline-primary"><i class="bx bx-edit"></i></a>
+                                                        class="btn btn-sm btn-outline-info">
+                                                       View
+                                                    </a>
+                                                    @if(!in_array($loan->status, ['active', 'authorized', 'defaulted']))
+                                                        <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}"
+                                                            class="btn btn-sm btn-outline-primary">
+                                                          Edit
+                                                        </a>
+                                                    @endif
                                                     @if(!in_array($loan->status, ['active', 'authorized']))
                                                         <form action="{{ route('loans.destroy', Hashids::encode($loan->id)) }}"
                                                             method="POST" class="d-inline-block delete-form"
                                                             onsubmit="return confirm('Delete this loan?');">
                                                             @csrf @method('DELETE')
-                                                            <button class="btn btn-sm btn-outline-danger"><i
-                                                                    class="bx bx-trash"></i></button>
+                                                            <button class="btn btn-sm btn-outline-danger">
+                                                               Delete
+                                                            </button>
                                                         </form>
                                                     @endif
                                                 </td>

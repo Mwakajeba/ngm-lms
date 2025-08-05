@@ -430,6 +430,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
+    Route::get('loans/status/{status}', [LoanController::class, 'loansByStatus'])->name('loans.by-status');
 
     // New Loan Application Routes (must come BEFORE general loan routes)
     Route::get('loans/application', [LoanController::class, 'applicationIndex'])->name('loans.application.index');
@@ -468,12 +469,12 @@ Route::middleware(['auth'])->group(function () {
 
 // Loan Approval Routes
 Route::middleware(['auth'])->group(function () {
-    Route::post('/loans/{encodedId}/check', [App\Http\Controllers\LoanApprovalController::class, 'checkLoan'])->name('loans.check');
-    Route::post('/loans/{encodedId}/approve', [App\Http\Controllers\LoanApprovalController::class, 'approveLoan'])->name('loans.approve');
-    Route::post('/loans/{encodedId}/authorize', [App\Http\Controllers\LoanApprovalController::class, 'authorizeLoan'])->name('loans.authorize');
-    Route::post('/loans/{encodedId}/disburse', [App\Http\Controllers\LoanApprovalController::class, 'disburseLoan'])->name('loans.disburse');
-    Route::post('/loans/{encodedId}/reject', [App\Http\Controllers\LoanApprovalController::class, 'rejectLoan'])->name('loans.reject');
-    Route::post('/loans/{encodedId}/default', [App\Http\Controllers\LoanApprovalController::class, 'defaultLoan'])->name('loans.default');
+    Route::post('/loans/{encodedId}/check', [LoanController::class, 'checkLoan'])->name('loans.check');
+    Route::post('/loans/{encodedId}/approve', [LoanController::class, 'approveLoan'])->name('loans.approve');
+    Route::post('/loans/{encodedId}/authorize', [LoanController::class, 'authorizeLoan'])->name('loans.authorize');
+    Route::post('/loans/{encodedId}/disburse', [LoanController::class, 'disburseLoan'])->name('loans.disburse');
+    Route::post('/loans/{encodedId}/reject', [LoanController::class, 'rejectLoan'])->name('loans.reject');
+    Route::post('/loans/{encodedId}/default', [LoanController::class, 'defaultLoan'])->name('loans.default');
 });
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
