@@ -129,9 +129,13 @@ class GroupController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer', 'loans']);
+        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer']);
 
-        return view('groups.show', compact('group'));
+        // Get all loans for this group (assuming each member has loans)
+        $memberIds = $group->members->pluck('customer_id');
+        $loans = \App\Models\Loan::whereIn('customer_id', $memberIds)->get();
+
+        return view('groups.show', compact('group', 'loans'));
     }
 
     /**
