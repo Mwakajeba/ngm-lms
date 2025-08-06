@@ -256,6 +256,8 @@
                                         <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">Due Date</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Principal</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Interest</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Penalty amount</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Fee Amount</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Total Installment</th>
                                     </tr>
                                 </thead>
@@ -330,6 +332,7 @@
                     <p class="text-secondary">Click the button above to add a guarantor.</p>
                 </div>
                 @endif
+                
             </div>
 
             <div class="tab-pane fade" id="documents" role="tabpanel">
