@@ -11,6 +11,7 @@ use App\Models\District;
 use App\Models\User;
 use App\Models\CashCollateralType;
 use App\Models\Filetype;
+use App\Services\LoanPenaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
@@ -32,6 +33,16 @@ class CustomerController extends Controller
         return view('customers.index', compact('customers', 'borrowerCount', 'guarantorCount'));
     }
 
+
+
+    /////////DISPLAY ALL CUSTOMER WITH PENALTY AMOUNT  FOR THEIR LAON ///////
+    public function penaltList()
+    {
+        $customerPenalties = LoanPenaltyService::getCustomerPenaltyBalances();
+        $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
+        return view('customers.penalty', compact('customerPenalties','penaltyBalance'));
+    }
+
     // Show form to create a new customer
     public function create()
     {
@@ -47,7 +58,7 @@ class CustomerController extends Controller
         $registrars = User::all();
         $regions = Region::all();
 
-        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes','filetypes'));
+        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes'));
     }
 
     // Store a new customer
@@ -174,7 +185,7 @@ class CustomerController extends Controller
             abort(404);
         }
 
-        $customer = Customer::with('collaterals.type', 'loans', 'loanOfficers','filetypes')->findOrFail($id);
+        $customer = Customer::with('collaterals.type', 'loans', 'loanOfficers', 'filetypes')->findOrFail($id);
 
         return view('customers.show', compact('customer'));
     }
@@ -447,7 +458,6 @@ class CustomerController extends Controller
                     }
 
                     $successCount++;
-
                 } catch (\Exception $e) {
                     $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
                     $errorCount++;
@@ -467,7 +477,6 @@ class CustomerController extends Controller
             }
 
             return redirect()->route('customers.index')->with('success', $message);
-
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->withErrors(['csv_file' => 'Failed to process CSV file: ' . $e->getMessage()]);

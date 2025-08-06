@@ -12,6 +12,7 @@ use App\Models\Journal;
 use App\Models\Payment;
 use App\Models\Penalty;
 use App\Models\Receipt;
+use App\Services\LoanPenaltyService;
 
 class DashboardController extends Controller
 {
@@ -62,7 +63,8 @@ class DashboardController extends Controller
         ')
         ->first();
 
-        $penaltyBalance = Penalty::getTotalPenaltyBalance();
+        $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
+        info('penaltyBalance'.$penaltyBalance);
             
         return view('dashboard', compact(
             'balanceSheetData',

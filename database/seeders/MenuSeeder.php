@@ -44,6 +44,7 @@ class MenuSeeder extends Seeder
                 'icon' => 'bx bx-group',
                 'visibleRoutes' => [
                     ['name' => 'Customer List', 'route' => 'customers.index'],
+                    ['name' => 'Customer Penalty List', 'route' => 'customers.penalty'],
                     ['name' => 'Add New Customer', 'route' => 'customers.create'],
                 ],
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
