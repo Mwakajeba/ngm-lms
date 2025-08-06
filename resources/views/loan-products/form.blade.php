@@ -128,6 +128,15 @@
             @error('maximum_period') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+        <!-- Grace Period (Optional) -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Grace Period (days)</label>
+            <input type="number" name="grace_period" min="0"
+                class="form-control @error('grace_period') is-invalid @enderror"
+                value="{{ old('grace_period', $loanProduct->grace_period ?? '') }}" placeholder="0">
+            @error('grace_period') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
         <!-- Top Up Configuration -->
         <div class="col-12">
             <h5 class="mb-3 text-primary mt-4">Top Up Configuration</h5>

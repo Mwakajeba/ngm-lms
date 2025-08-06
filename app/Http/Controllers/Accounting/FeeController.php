@@ -71,12 +71,22 @@ class FeeController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
             'deduction_criteria' => 'required|in:do_not_include_in_loan_schedule,distribute_fee_evenly_to_all_repayments,charge_fee_on_release_date,charge_fee_on_first_repayment,charge_fee_on_last_repayment,charge_same_fee_to_all_repayments',
+            'include_in_schedule' => 'nullable|boolean', // Add validation
             'company_id' => 'nullable|exists:companies,id',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        if ($request->has('include_in_schedule')) {
+            $existing = Fee::where('include_in_schedule', true)->first();
+            if ($existing) {
+                return redirect()->back()
+                    ->withErrors(['include_in_schedule' => 'Only one fee can be included in the schedule.'])
+                    ->withInput();
+            }
         }
 
         $user = auth()->user();
@@ -90,6 +100,7 @@ class FeeController extends Controller
             'description' => $request->description,
             'status' => $request->status,
             'deduction_criteria' => $request->deduction_criteria,
+            'include_in_schedule' => $request->has('include_in_schedule'),
             'company_id' => $companyId,
             'branch_id' => $request->branch_id,
             'created_by' => $user->id,
@@ -160,12 +171,24 @@ class FeeController extends Controller
             'description' => 'nullable|string',
             'status' => 'required|in:active,inactive',
             'deduction_criteria' => 'required|in:do_not_include_in_loan_schedule,distribute_fee_evenly_to_all_repayments,charge_fee_on_release_date,charge_fee_on_first_repayment,charge_fee_on_last_repayment,charge_same_fee_to_all_repayments',
+            'include_in_schedule' => 'nullable|boolean', // Add validation
             'company_id' => 'nullable|exists:companies,id',
             'branch_id' => 'nullable|exists:branches,id',
         ]);
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
+        }
+
+        if ($request->has('include_in_schedule')) {
+            $existing = Fee::where('include_in_schedule', true)
+                ->where('id', '!=', $fee->id)
+                ->first();
+            if ($existing) {
+                return redirect()->back()
+                    ->withErrors(['include_in_schedule' => 'Only one fee can be included in the schedule.'])
+                    ->withInput();
+            }
         }
 
         $user = auth()->user();
@@ -179,6 +202,7 @@ class FeeController extends Controller
             'description' => $request->description,
             'status' => $request->status,
             'deduction_criteria' => $request->deduction_criteria,
+            'include_in_schedule' => $request->has('include_in_schedule'),
             'company_id' => $companyId,
             'branch_id' => $request->branch_id,
             'updated_by' => $user->id,
