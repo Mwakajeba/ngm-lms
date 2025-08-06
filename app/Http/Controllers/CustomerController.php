@@ -431,6 +431,7 @@ class CustomerController extends Controller
                         'registrar' => auth()->id(),
                         'dateRegistered' => now()->toDateString(),
                         'has_cash_collateral' => $request->has('has_cash_collateral'),
+                        'category' => 'Borrower', // Always assign Borrower in bulk upload
                     ];
 
                     $customer = Customer::create($customerData);
