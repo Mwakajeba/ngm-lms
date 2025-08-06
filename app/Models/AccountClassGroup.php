@@ -25,6 +25,8 @@ class AccountClassGroup extends Model
         'group_code',
         'name',
         'company_id',
+        'range_from',
+        'range_to',
     ];
 
     /**
@@ -35,6 +37,8 @@ class AccountClassGroup extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'range_from' => 'integer',
+        'range_to' => 'integer',
     ];
 
     /**

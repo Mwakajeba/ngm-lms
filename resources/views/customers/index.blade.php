@@ -8,7 +8,7 @@
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Customers', 'url' => '#', 'icon' => 'bx bx-group']
-        ]" />
+             ]" />
             <h6 class="mb-0 text-uppercase">CUSTOMER LIST</h6>
             <hr />
 
@@ -67,7 +67,7 @@
                             </div>
 
                         <div class="table-responsive">
-                            <table class="table table-bordered nowrap" id="customersTable">
+                            <table class="table table-bordered table-striped nowrap" id="customersTable">
                                 <thead>
                                     <tr>
                                         <th>Customer No</th>

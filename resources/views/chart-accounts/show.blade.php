@@ -8,6 +8,13 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <!-- Breadcrumbs -->
+            <x-breadcrumbs-with-icons :links="[ 
+                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Chart of Accounts', 'url' => route('accounting.chart-accounts.index'), 'icon' => 'bx bx-spreadsheet'],
+                ['label' => 'Account Details', 'url' => '#', 'icon' => 'bx bx-book-open']
+            ]" />
+            <!-- End Breadcrumbs -->
             <!-- Header Section -->
             <div class="row mb-4">
                 <div class="col-12">
