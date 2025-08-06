@@ -30,6 +30,7 @@ class AccountClassGroupController extends Controller
     {
         $accountClasses = AccountClass::all(); // Account classes are global
         return view('account-class-groups.create', compact('accountClasses'));
+        
     }
 
     /**

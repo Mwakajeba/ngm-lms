@@ -19,22 +19,6 @@
             </div>
             <hr />
 
-            @if(session('success'))
-                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                    <i class="bx bx-check-circle me-2"></i>
-                    {{ session('success') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
-            @if(session('error'))
-                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                    <i class="bx bx-error-circle me-2"></i>
-                    {{ session('error') }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
-            @endif
-
             <div class="row">
                 <div class="col-12">
                     <div class="card">
@@ -89,17 +73,26 @@
                                                 </td>
                                                 <td>
                                                     @switch($application->status)
-                                                        @case('pending')
-                                                            <span class="badge bg-warning">Pending</span>
+                                                        @case('applied')
+                                                            <span class="badge bg-warning">Applied</span>
+                                                            @break
+                                                        @case('checked')
+                                                            <span class="badge bg-info">Checked</span>
                                                             @break
                                                         @case('approved')
-                                                            <span class="badge bg-success">Approved</span>
+                                                            <span class="badge bg-primary">Approved</span>
+                                                            @break
+                                                        @case('authorized')
+                                                            <span class="badge bg-success">Authorized</span>
+                                                            @break
+                                                        @case('active')
+                                                            <span class="badge bg-success">Active</span>
                                                             @break
                                                         @case('rejected')
                                                             <span class="badge bg-danger">Rejected</span>
                                                             @break
-                                                        @case('active')
-                                                            <span class="badge bg-primary">Active</span>
+                                                        @case('defaulted')
+                                                            <span class="badge bg-dark">Defaulted</span>
                                                             @break
                                                         @default
                                                             <span class="badge bg-secondary">{{ ucfirst($application->status) }}</span>
@@ -111,23 +104,11 @@
                                                            class="btn btn-sm btn-outline-primary" 
                                                            title="View Details">view
                                                         </a>
-                                                        @if($application->status === 'pending')
+                                                        @if($application->status === 'applied')
                                                             <a href="{{ route('loans.application.edit', Hashids::encode($application->id)) }}" 
                                                                class="btn btn-sm btn-outline-warning" 
                                                                     title="Edit Application">Edit
                                                             </a>
-                                                            <button type="button" 
-                                                                    class="btn btn-sm btn-outline-success" 
-                                                                    title="Approve Application"
-                                                                    onclick="approveApplication('{{ Hashids::encode($application->id) }}')">
-                                                                Approve
-                                                            </button>
-                                                            <button type="button" 
-                                                                    class="btn btn-sm btn-outline-danger" 
-                                                                    title="Reject Application"
-                                                                    onclick="rejectApplication('{{ Hashids::encode($application->id) }}')">
-                                                                Reject
-                                                            </button>
                                                         @endif
                                                         @if(!in_array($application->status, ['active', 'authorized']))
                                                             <button type="button" 
@@ -170,54 +151,10 @@
         </div>
     </div>
 
-    <!-- Approval Modal -->
-    <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="approvalModalLabel">Confirm Action</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p id="approvalMessage"></p>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form id="approvalForm" method="POST" style="display: inline;">
-                        @csrf
-                        @method('PATCH')
-                        <button type="submit" class="btn btn-primary">Confirm</button>
-                    </form>
-                </div>
-            </div>
-        </div>
-    </div>
 @endsection
 
 @push('scripts')
 <script>
-    function approveApplication(encodedId) {
-        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
-        const message = document.getElementById('approvalMessage');
-        const form = document.getElementById('approvalForm');
-        
-        message.textContent = 'Are you sure you want to approve this loan application?';
-        form.action = `/loans/application/${encodedId}/approve`;
-        
-        modal.show();
-    }
-
-    function rejectApplication(encodedId) {
-        const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
-        const message = document.getElementById('approvalMessage');
-        const form = document.getElementById('approvalForm');
-        
-        message.textContent = 'Are you sure you want to reject this loan application?';
-        form.action = `/loans/application/${encodedId}/reject`;
-        
-        modal.show();
-    }
-
     function deleteApplication(encodedId) {
         Swal.fire({
             title: 'Are you sure?',
