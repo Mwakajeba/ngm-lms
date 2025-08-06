@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\AccountClass;
 use App\Models\AccountClassGroup;
 use App\Models\ChartAccount;
 use App\Models\CashFlowCategory;
@@ -28,9 +29,10 @@ class ChartAccountController extends Controller
     public function create(): View
     {
         $accountClassGroups = AccountClassGroup::with('accountClass')->get();
+        $accountClasses = AccountClass::all();
         $cashFlowCategories = CashFlowCategory::all();
         $equityCategories = EquityCategory::all();
-        return view('chart-accounts.create', compact('accountClassGroups', 'cashFlowCategories', 'equityCategories'));
+        return view('chart-accounts.create', compact('accountClassGroups', 'accountClasses', 'cashFlowCategories', 'equityCategories'));
     }
 
     /**
@@ -47,6 +49,16 @@ class ChartAccountController extends Controller
             'cash_flow_category_id' => 'nullable|exists:cash_flow_categories,id',
             'equity_category_id' => 'nullable|exists:equity_categories,id',
         ]);
+
+        // Range validation
+        $group = AccountClassGroup::with('accountClass')->find($request->account_class_group_id);
+        $class = $group ? $group->accountClass : null;
+        $rangeFrom = $class ? $class->range_from : null;
+        $rangeTo = $class ? $class->range_to : null;
+        $accountCode = (int) $request->account_code;
+        if ($rangeFrom !== null && $rangeTo !== null && ($accountCode < $rangeFrom || $accountCode > $rangeTo)) {
+            return back()->withErrors(['account_code' => "Account code must be between $rangeFrom and $rangeTo for the selected class."])->withInput();
+        }
 
         // Handle boolean fields properly for unchecked checkboxes
         $data = $request->all();
@@ -96,9 +108,10 @@ class ChartAccountController extends Controller
 
         $chartAccount = ChartAccount::findOrFail($decoded[0]);
         $accountClassGroups = AccountClassGroup::with('accountClass')->get();
+        $accountClasses = AccountClass::all();
         $cashFlowCategories = CashFlowCategory::all();
         $equityCategories = EquityCategory::all();
-        return view('chart-accounts.edit', compact('chartAccount', 'accountClassGroups', 'cashFlowCategories', 'equityCategories'));
+        return view('chart-accounts.edit', compact('chartAccount', 'accountClassGroups', 'accountClasses', 'cashFlowCategories', 'equityCategories'));
     }
 
     /**
@@ -123,6 +136,16 @@ class ChartAccountController extends Controller
             'cash_flow_category_id' => 'nullable|exists:cash_flow_categories,id',
             'equity_category_id' => 'nullable|exists:equity_categories,id',
         ]);
+
+        // Range validation
+        $group = AccountClassGroup::with('accountClass')->find($request->account_class_group_id);
+        $class = $group ? $group->accountClass : null;
+        $rangeFrom = $class ? $class->range_from : null;
+        $rangeTo = $class ? $class->range_to : null;
+        $accountCode = (int) $request->account_code;
+        if ($rangeFrom !== null && $rangeTo !== null && ($accountCode < $rangeFrom || $accountCode > $rangeTo)) {
+            return back()->withErrors(['account_code' => "Account code must be between $rangeFrom and $rangeTo for the selected class."])->withInput();
+        }
 
         // Handle boolean fields properly for unchecked checkboxes
         $data = $request->all();

@@ -4,6 +4,10 @@ namespace App\Http\Controllers\Accounting;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
+use App\Models\AccountClassGroup;
+use App\Models\AccountClass;
+use App\Models\CashFlowCategory;
+use App\Models\EquityCategory;
 
 class ChartAccountController extends Controller
 {
@@ -20,7 +24,11 @@ class ChartAccountController extends Controller
      */
     public function create()
     {
-        //
+        $accountClassGroups = AccountClassGroup::with('accountClass')->get();
+        $accountClasses = AccountClass::all();
+        $cashFlowCategories = CashFlowCategory::all();
+        $equityCategories = EquityCategory::all();
+        return view('chart-accounts.create', compact('accountClassGroups', 'accountClasses', 'cashFlowCategories', 'equityCategories'));
     }
 
     /**
@@ -44,7 +52,15 @@ class ChartAccountController extends Controller
      */
     public function edit(string $id)
     {
-        //
+        $chartAccount = null;
+        if ($id) {
+            $chartAccount = \App\Models\ChartAccount::findOrFail($id);
+        }
+        $accountClassGroups = AccountClassGroup::with('accountClass')->get();
+        $accountClasses = AccountClass::all();
+        $cashFlowCategories = CashFlowCategory::all();
+        $equityCategories = EquityCategory::all();
+        return view('chart-accounts.edit', compact('chartAccount', 'accountClassGroups', 'accountClasses', 'cashFlowCategories', 'equityCategories'));
     }
 
     /**
