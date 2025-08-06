@@ -1,5 +1,13 @@
 @php
 use Vinkla\Hashids\Facades\Hashids;
+// Build a JS object of class_id => {from, to} for all account classes
+$classRanges = [];
+foreach ($accountClasses as $class) {
+    $classRanges[$class->id] = [
+        'from' => $class->range_from,
+        'to' => $class->range_to,
+    ];
+}
 @endphp
 
 <form
@@ -27,10 +35,14 @@ use Vinkla\Hashids\Facades\Hashids;
         </div>
 
         <div class="col-md-6">
-            <label class="form-label">Account Code</label>
-            <input type="text" class="form-control" name="account_code"
-                value="{{ $chartAccount->account_code ?? old('account_code') }}" required
-                placeholder="e.g., 1001, 2001, etc.">
+            <label class="form-label">Account Code (<span style ="color:red" id="range_hint"></span>)</label>
+            <div class="input-group">
+                <input type="text" class="form-control" name="account_code"
+                    id="account_code_input"
+                    value="{{ $chartAccount->account_code ?? old('account_code') }}" required
+                    placeholder="Choose from above range ...">
+                <!-- <span class="input-group-text" id="range_hint"></span> -->
+            </div>
             @error('account_code')
                 <div class="text-danger">{{ $message }}</div>
             @enderror
@@ -124,12 +136,26 @@ document.addEventListener('DOMContentLoaded', function() {
     const equityCheckbox = document.getElementById('has_equity');
     const cashFlowDiv = document.getElementById('cash_flow_category_div');
     const equityDiv = document.getElementById('equity_category_div');
+    const groupSelect = document.querySelector('select[name="account_class_group_id"]');
+    const rangeHint = document.getElementById('range_hint');
+    const accountCodeInput = document.getElementById('account_code_input');
     
+    // Build mapping of group_id => class_id
+    const groupToClass = {};
+    @foreach($accountClassGroups as $group)
+        groupToClass[{{ $group->id }}] = {{ $group->class_id }};
+    @endforeach
+    // Build mapping of class_id => {from, to}
+    const classRanges = @json($classRanges);
+
     console.log('Elements found:', {
         cashFlowCheckbox: cashFlowCheckbox,
         equityCheckbox: equityCheckbox,
         cashFlowDiv: cashFlowDiv,
-        equityDiv: equityDiv
+        equityDiv: equityDiv,
+        groupSelect: groupSelect,
+        rangeHint: rangeHint,
+        accountCodeInput: accountCodeInput
     });
 
     // Function to toggle cash flow category dropdown
@@ -166,6 +192,18 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
+    // Function to update account code range hint
+    function updateRangeHint() {
+        const selectedGroupId = groupSelect.value;
+        const classId = groupToClass[selectedGroupId];
+        if (classRanges[classId] && classRanges[classId].from !== null && classRanges[classId].from !== undefined &&
+            classRanges[classId].to !== null && classRanges[classId].to !== undefined) {
+            rangeHint.textContent = `Range: ${classRanges[classId].from} - ${classRanges[classId].to}`;
+        } else {
+            rangeHint.textContent = '';
+        }
+    }
+
     // Add event listeners
     if (cashFlowCheckbox) {
         cashFlowCheckbox.addEventListener('change', toggleCashFlowCategory);
@@ -177,9 +215,15 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('Equity event listener added');
     }
 
+    if (groupSelect) {
+        groupSelect.addEventListener('change', updateRangeHint);
+        console.log('Group select event listener added');
+    }
+
     // Initialize on page load
     toggleCashFlowCategory();
     toggleEquityCategory();
+    updateRangeHint();
     console.log('Initial toggle functions called');
 });
 </script>
