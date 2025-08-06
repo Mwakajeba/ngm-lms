@@ -114,6 +114,7 @@ class LoanProductController extends Controller
             'maximum_principal' => 'required|numeric|min:0|gte:minimum_principal',
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
+            'grace_period' => 'nullable|integer|min:0', // Add grace period validation
             'has_top_up' => 'boolean',
             'top_up_type' => 'required_if:has_top_up,1|string|max:50',
             'top_up_type_value' => 'required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
@@ -328,6 +329,7 @@ class LoanProductController extends Controller
             'maximum_principal' => 'required|numeric|min:0|gte:minimum_principal',
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
+            'grace_period' => 'nullable|integer|min:0', // Add grace period validation
             'has_top_up' => 'boolean',
             'top_up_type' => 'required_if:has_top_up,1|string|max:50',
             'top_up_type_value' => 'required_if:top_up_type,percentage,fixed_amount|numeric|min:0',

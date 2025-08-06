@@ -18,6 +18,7 @@ class Fee extends Model
         'description',
         'status',
         'deduction_criteria',
+        'include_in_schedule', // Added field
         'company_id',
         'branch_id',
         'created_by',
