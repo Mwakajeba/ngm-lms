@@ -141,7 +141,7 @@ $isEdit = isset($customer);
         <div class="col-md-6 mb-3">
             <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
             <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror"
-                value="{{ old('dob', $customer->dob ?? '') }}">
+                value="{{ old('dob', isset($customer) && $customer->dob ? \Carbon\Carbon::parse($customer->dob)->format('Y-m-d') : '') }}">
             @error('dob') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -207,7 +207,7 @@ $isEdit = isset($customer);
                 <option value="">Select Collateral Type</option>
                 @foreach($collateralTypes as $type)
                     <option value="{{ $type->id }}"
-                        {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
+                        {{ old('collateral_type_id', isset($customer) ? ($customer->collaterals->first()->type_id ?? $customer->collateral_type_id ?? '') : '') == $type->id ? 'selected' : '' }}>
                         {{ $type->name }}
                     </option>
                 @endforeach
