@@ -248,47 +248,6 @@ class LoanController extends Controller
                         ]
                     ]);
                 }
-
-
-                // Step 7: Post fee Amount to GL (if exists)
-                // $fee = $product->fee;
-                // $feeAmount = LoanSchedule::where('loan_id', $loan->id)->sum('fee_amount');
-
-                // if ($feeAmount > 0) {
-                //     $receivableId = $fee->receivable_account_id;
-                //     $incomeId = $fee->income_account_id;
-
-                //     if (!$receivableId || !$incomeId) {
-                //         throw new \Exception('Penalty chart accounts not configured.');
-                //     }
-
-                //     GlTransaction::insert([
-                //         [
-                //             'chart_account_id' => $receivableId,
-                //             'customer_id' => $loan->customer_id,
-                //             'amount' => $feeAmount,
-                //             'nature' => 'debit',
-                //             'transaction_id' => $loan->id,
-                //             'transaction_type' => 'Loan Penalty',
-                //             'date' => $validated['date_applied'],
-                //             'description' => $notes,
-                //             'branch_id' => $branchId,
-                //             'user_id' => $userId,
-                //         ],
-                //         [
-                //             'chart_account_id' => $incomeId,
-                //             'customer_id' => $loan->customer_id,
-                //             'amount' => $feeAmount,
-                //             'nature' => 'credit',
-                //             'transaction_id' => $loan->id,
-                //             'transaction_type' => 'Loan Penalty',
-                //             'date' => $validated['date_applied'],
-                //             'description' => $notes,
-                //             'branch_id' => $branchId,
-                //             'user_id' => $userId,
-                //         ]
-                //     ]);
-                // }
             });
 
             return redirect()->route('loans.list')->with('success', 'Loan application created successfully.');

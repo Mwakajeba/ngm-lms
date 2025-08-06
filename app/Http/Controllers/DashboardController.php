@@ -10,6 +10,7 @@ use App\Models\GlTransaction;
 use App\Models\BankReconciliation;
 use App\Models\Journal;
 use App\Models\Payment;
+use App\Models\Penalty;
 use App\Models\Receipt;
 
 class DashboardController extends Controller
@@ -60,6 +61,8 @@ class DashboardController extends Controller
             SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as draft
         ')
         ->first();
+
+        $penaltyBalance = Penalty::getTotalPenaltyBalance();
             
         return view('dashboard', compact(
             'balanceSheetData',
@@ -67,7 +70,8 @@ class DashboardController extends Controller
             'recentJournals',
             'recentPayments', 
             'recentReceipts',
-            'bankReconciliationStats'
+            'bankReconciliationStats',
+            'penaltyBalance'
         ));
     }
     

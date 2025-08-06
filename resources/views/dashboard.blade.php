@@ -7,65 +7,69 @@ use Vinkla\Hashids\Facades\Hashids;
 @endphp
 
 <style>
-.financial-section {
-    margin-bottom: 20px;
-}
-
-.section-header {
-    border-radius: 8px 8px 0 0 !important;
-}
-
-.section-content {
-    border-radius: 0 0 8px 8px !important;
-    border-top: none !important;
-}
-
-.account-row:hover {
-    background-color: #f8f9fa;
-    transition: background-color 0.2s ease;
-}
-
-.account-row a:hover {
-    color: #007bff !important;
-    text-decoration: underline !important;
-}
-
-.table-sm td {
-    padding: 0.5rem;
-    vertical-align: middle;
-}
-
-.section-title {
-    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-}
-
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
-}
-
-.bg-gradient-info {
-    background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
-}
-
-.bg-gradient-success {
-    background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
-}
-
-@media print {
-    .btn, .overlay, .back-to-top, footer {
-        display: none !important;
+    .financial-section {
+        margin-bottom: 20px;
     }
-    
-    .card {
-        border: none !important;
-        box-shadow: none !important;
-    }
-    
+
     .section-header {
-        background: #333 !important;
-        color: white !important;
+        border-radius: 8px 8px 0 0 !important;
     }
-}
+
+    .section-content {
+        border-radius: 0 0 8px 8px !important;
+        border-top: none !important;
+    }
+
+    .account-row:hover {
+        background-color: #f8f9fa;
+        transition: background-color 0.2s ease;
+    }
+
+    .account-row a:hover {
+        color: #007bff !important;
+        text-decoration: underline !important;
+    }
+
+    .table-sm td {
+        padding: 0.5rem;
+        vertical-align: middle;
+    }
+
+    .section-title {
+        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    }
+
+    .bg-gradient-primary {
+        background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+    }
+
+    .bg-gradient-info {
+        background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+    }
+
+    .bg-gradient-success {
+        background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%);
+    }
+
+    @media print {
+
+        .btn,
+        .overlay,
+        .back-to-top,
+        footer {
+            display: none !important;
+        }
+
+        .card {
+            border: none !important;
+            box-shadow: none !important;
+        }
+
+        .section-header {
+            background: #333 !important;
+            color: white !important;
+        }
+    }
 </style>
 
 @section('content')
@@ -102,6 +106,25 @@ use Vinkla\Hashids\Facades\Hashids;
 
         <!-- Quick Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0 text-muted">Total Penalty</p>
+                                <h4 class="font-weight-bold text-dark">
+                                    TZS {{ number_format($penaltyBalance, 2) }}
+                                </h4>
+                                <p class="text-success mb-0 font-13">Penalty balance</p>
+                            </div>
+                            <div class="widgets-icons bg-gradient-cosmic text-white">
+                                <i class='bx bx-money'></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -251,7 +274,7 @@ use Vinkla\Hashids\Facades\Hashids;
             </div>
         </div>
         <!--end row-->
-        
+
         <!-- Recent Activities -->
         <div class="row row-cols-1 row-cols-lg-3">
             <div class="col">
@@ -347,7 +370,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                         <h4 class="mb-0"><i class="bx bx-balance me-2"></i>BALANCE SHEET</h4>
                                         <small class="text-white-50">As of {{ date('d-m-Y') }}</small>
                                     </div>
-                                    
+
                                     <!-- Assets Section -->
                                     <div class="section-content border rounded-bottom">
                                         <div class="section-title bg-light p-2 border-bottom">
@@ -357,32 +380,32 @@ use Vinkla\Hashids\Facades\Hashids;
                                             <table class="table table-sm mb-0">
                                                 @php $sumAsset = 0; @endphp
                                                 @foreach($financialReportData['chartAccountsAssets'] as $groupName => $accounts)
-                                                    @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
-                                                    @if($groupTotal != 0)
-                                                        <tr class="table-light">
-                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
-                                                        </tr>
-                                                        @foreach($accounts as $chartAccountAsset)
-                                                            @if($chartAccountAsset['sum'] != 0)
-                                                                @php $sumAsset += $chartAccountAsset['sum'] ?? 0; @endphp
-                                                                <tr class="account-row">
-                                                                    <td>
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountAsset['account_id'])) }}" 
-                                                                           class="text-decoration-none text-dark fw-medium">
-                                                                            <i class="bx bx-chevron-right me-1 text-success"></i>
-                                                                            {{ $chartAccountAsset['account'] }}
-                                                                        </a>
-                                                                    </td>
-                                                                                                                                         <td class="text-end">
-                                                                         <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountAsset['account_id'])) }}" 
-                                                                            class="text-decoration-none fw-bold text-success">
-                                                                            {{ number_format($chartAccountAsset['sum'] ?? 0,2) }}
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
+                                                @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
+                                                @if($groupTotal != 0)
+                                                <tr class="table-light">
+                                                    <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                </tr>
+                                                @foreach($accounts as $chartAccountAsset)
+                                                @if($chartAccountAsset['sum'] != 0)
+                                                @php $sumAsset += $chartAccountAsset['sum'] ?? 0; @endphp
+                                                <tr class="account-row">
+                                                    <td>
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountAsset['account_id'])) }}"
+                                                            class="text-decoration-none text-dark fw-medium">
+                                                            <i class="bx bx-chevron-right me-1 text-success"></i>
+                                                            {{ $chartAccountAsset['account'] }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountAsset['account_id'])) }}"
+                                                            class="text-decoration-none fw-bold text-success">
+                                                            {{ number_format($chartAccountAsset['sum'] ?? 0,2) }}
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endforeach
+                                                @endif
                                                 @endforeach
                                                 <tr class="table-success fw-bold">
                                                     <td>TOTAL ASSETS</td>
@@ -390,7 +413,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 </tr>
                                             </table>
                                         </div>
-                                        
+
                                         <!-- Equity Section -->
                                         <div class="section-title bg-light p-2 border-bottom mt-3">
                                             <h6 class="mb-0 text-info"><i class="bx bx-user me-1"></i>EQUITY</h6>
@@ -399,36 +422,36 @@ use Vinkla\Hashids\Facades\Hashids;
                                             <table class="table table-sm mb-0">
                                                 @php $sumEquity = 0; @endphp
                                                 @foreach($financialReportData['chartAccountsEquitys'] as $groupName => $accounts)
-                                                    @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
-                                                    @if($groupTotal != 0)
-                                                        <tr class="table-light">
-                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
-                                                        </tr>
-                                                                                                                @foreach($accounts as $chartAccountEquity)
-                                                            @if($chartAccountEquity['sum'] != 0)
-                                                                @php $sumEquity += abs($chartAccountEquity['sum'] ?? 0); @endphp
-                                                                <tr class="account-row">
-                                                                    <td>
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountEquity['account_id'])) }}" 
-                                                                           class="text-decoration-none text-dark fw-medium">
-                                                                            <i class="bx bx-chevron-right me-1 text-info"></i>
-                                                                            {{ $chartAccountEquity['account'] }}
-                                                                        </a>
-                                                                    </td>
-                                                                    <td class="text-end">
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountEquity['account_id'])) }}" 
-                                                                           class="text-decoration-none fw-bold text-info">
-                                                                            {{ number_format(abs($chartAccountEquity['sum'] ?? 0),2) }}
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
+                                                @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
+                                                @if($groupTotal != 0)
+                                                <tr class="table-light">
+                                                    <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                </tr>
+                                                @foreach($accounts as $chartAccountEquity)
+                                                @if($chartAccountEquity['sum'] != 0)
+                                                @php $sumEquity += abs($chartAccountEquity['sum'] ?? 0); @endphp
+                                                <tr class="account-row">
+                                                    <td>
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountEquity['account_id'])) }}"
+                                                            class="text-decoration-none text-dark fw-medium">
+                                                            <i class="bx bx-chevron-right me-1 text-info"></i>
+                                                            {{ $chartAccountEquity['account'] }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountEquity['account_id'])) }}"
+                                                            class="text-decoration-none fw-bold text-info">
+                                                            {{ number_format(abs($chartAccountEquity['sum'] ?? 0),2) }}
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endforeach
+                                                @endif
                                                 @endforeach
                                                 <tr class="table-info">
                                                     <td>Profit And Loss</td>
-                                                    <td class="text-end fw-bold">{{ number_format($financialReportData['profitLoss'],2) }}</td> 
+                                                    <td class="text-end fw-bold">{{ number_format($financialReportData['profitLoss'],2) }}</td>
                                                 </tr>
                                                 <tr class="table-info fw-bold">
                                                     <td>TOTAL EQUITY</td>
@@ -436,7 +459,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 </tr>
                                             </table>
                                         </div>
-                                        
+
                                         <!-- Liabilities Section -->
                                         <div class="section-title bg-light p-2 border-bottom mt-3">
                                             <h6 class="mb-0 text-warning"><i class="bx bx-trending-down me-1"></i>LIABILITIES</h6>
@@ -445,32 +468,32 @@ use Vinkla\Hashids\Facades\Hashids;
                                             <table class="table table-sm mb-0">
                                                 @php $sumLiability = 0; @endphp
                                                 @foreach($financialReportData['chartAccountsLiabilities'] as $groupName => $accounts)
-                                                    @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
-                                                    @if($groupTotal != 0)
-                                                        <tr class="table-light">
-                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
-                                                        </tr>
-                                                                                                                @foreach($accounts as $chartAccountLiability)
-                                                            @if($chartAccountLiability['sum'] != 0)
-                                                                @php $sumLiability += abs($chartAccountLiability['sum'] ?? 0); @endphp
-                                                                <tr class="account-row">
-                                                                    <td>
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountLiability['account_id'])) }}" 
-                                                                           class="text-decoration-none text-dark fw-medium">
-                                                                            <i class="bx bx-chevron-right me-1 text-warning"></i>
-                                                                            {{ $chartAccountLiability['account'] }}
-                                                                        </a>
-                                                                    </td>
-                                                                    <td class="text-end">
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountLiability['account_id'])) }}" 
-                                                                           class="text-decoration-none fw-bold text-warning">
-                                                                            {{ number_format(abs($chartAccountLiability['sum'] ?? 0),2) }}
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
+                                                @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
+                                                @if($groupTotal != 0)
+                                                <tr class="table-light">
+                                                    <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                </tr>
+                                                @foreach($accounts as $chartAccountLiability)
+                                                @if($chartAccountLiability['sum'] != 0)
+                                                @php $sumLiability += abs($chartAccountLiability['sum'] ?? 0); @endphp
+                                                <tr class="account-row">
+                                                    <td>
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountLiability['account_id'])) }}"
+                                                            class="text-decoration-none text-dark fw-medium">
+                                                            <i class="bx bx-chevron-right me-1 text-warning"></i>
+                                                            {{ $chartAccountLiability['account'] }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountLiability['account_id'])) }}"
+                                                            class="text-decoration-none fw-bold text-warning">
+                                                            {{ number_format(abs($chartAccountLiability['sum'] ?? 0),2) }}
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endforeach
+                                                @endif
                                                 @endforeach
                                                 <tr class="table-warning fw-bold">
                                                     <td>TOTAL LIABILITIES</td>
@@ -478,7 +501,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 </tr>
                                                 <tr class="table-dark fw-bold">
                                                     <td>TOTAL EQUITY & LIABILITY</td>
-                                                    <td class="text-end">{{ number_format($sumLiability + $sumEquity + $financialReportData['profitLoss'],2) }}</td> 
+                                                    <td class="text-end">{{ number_format($sumLiability + $sumEquity + $financialReportData['profitLoss'],2) }}</td>
                                                 </tr>
                                             </table>
                                         </div>
@@ -493,7 +516,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                         <h4 class="mb-0"><i class="bx bx-line-chart me-2"></i>PROFIT & LOSS STATEMENT</h4>
                                         <small class="text-white-50">From 01-01-{{date('Y')}} to {{ date('d-m-Y') }}</small>
                                     </div>
-                                    
+
                                     <div class="section-content border rounded-bottom">
                                         <!-- Revenue Section -->
                                         <div class="section-title bg-light p-2 border-bottom">
@@ -503,32 +526,32 @@ use Vinkla\Hashids\Facades\Hashids;
                                             <table class="table table-sm mb-0">
                                                 @php $sumRevenue = 0; @endphp
                                                 @foreach($financialReportData['chartAccountsRevenues'] as $groupName => $accounts)
-                                                    @php $groupTotal = collect($accounts)->sum('sum'); @endphp
-                                                    @if($groupTotal != 0)
-                                                        <tr class="table-light">
-                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
-                                                        </tr>
-                                                        @foreach($accounts as $chartAccountRevenue)
-                                                            @if($chartAccountRevenue['sum'] != 0)
-                                                                @php $sumRevenue += $chartAccountRevenue['sum']; @endphp
-                                                                <tr class="account-row">
-                                                                    <td>
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountRevenue['account_id'])) }}" 
-                                                                           class="text-decoration-none text-dark fw-medium">
-                                                                            <i class="bx bx-chevron-right me-1 text-success"></i>
-                                                                            {{ $chartAccountRevenue['account'] }}
-                                                                        </a>
-                                                                    </td>
-                                                                                                                                         <td class="text-end">
-                                                                         <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountRevenue['account_id'])) }}" 
-                                                                            class="text-decoration-none fw-bold text-success">
-                                                                            {{ number_format($chartAccountRevenue['sum'],2) }}
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
+                                                @php $groupTotal = collect($accounts)->sum('sum'); @endphp
+                                                @if($groupTotal != 0)
+                                                <tr class="table-light">
+                                                    <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                </tr>
+                                                @foreach($accounts as $chartAccountRevenue)
+                                                @if($chartAccountRevenue['sum'] != 0)
+                                                @php $sumRevenue += $chartAccountRevenue['sum']; @endphp
+                                                <tr class="account-row">
+                                                    <td>
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountRevenue['account_id'])) }}"
+                                                            class="text-decoration-none text-dark fw-medium">
+                                                            <i class="bx bx-chevron-right me-1 text-success"></i>
+                                                            {{ $chartAccountRevenue['account'] }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountRevenue['account_id'])) }}"
+                                                            class="text-decoration-none fw-bold text-success">
+                                                            {{ number_format($chartAccountRevenue['sum'],2) }}
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endforeach
+                                                @endif
                                                 @endforeach
                                                 <tr class="table-success fw-bold">
                                                     <td>TOTAL INCOME</td>
@@ -536,7 +559,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 </tr>
                                             </table>
                                         </div>
-                                        
+
                                         <!-- Expenses Section -->
                                         <div class="section-title bg-light p-2 border-bottom mt-3">
                                             <h6 class="mb-0 text-danger"><i class="bx bx-trending-down me-1"></i>EXPENSES</h6>
@@ -545,32 +568,32 @@ use Vinkla\Hashids\Facades\Hashids;
                                             <table class="table table-sm mb-0">
                                                 @php $sumExpense = 0; @endphp
                                                 @foreach($financialReportData['chartAccountsExpense'] as $groupName => $accounts)
-                                                    @php $groupTotal = collect($accounts)->sum('sum'); @endphp
-                                                    @if($groupTotal != 0)
-                                                        <tr class="table-light">
-                                                            <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
-                                                        </tr>
-                                                                                                                @foreach($accounts as $chartAccountExpense)
-                                                            @if($chartAccountExpense['sum'] != 0)
-                                                                @php $sumExpense += abs($chartAccountExpense['sum']); @endphp
-                                                                <tr class="account-row">
-                                                                    <td>
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountExpense['account_id'])) }}" 
-                                                                           class="text-decoration-none text-dark fw-medium">
-                                                                            <i class="bx bx-chevron-right me-1 text-danger"></i>
-                                                                            {{ $chartAccountExpense['account'] }}
-                                                                        </a>
-                                                                    </td>
-                                                                    <td class="text-end">
-                                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountExpense['account_id'])) }}" 
-                                                                           class="text-decoration-none fw-bold text-danger">
-                                                                            {{ number_format(abs($chartAccountExpense['sum']),2) }}
-                                                                        </a>
-                                                                    </td>
-                                                                </tr>
-                                                            @endif
-                                                        @endforeach
-                                                    @endif
+                                                @php $groupTotal = collect($accounts)->sum('sum'); @endphp
+                                                @if($groupTotal != 0)
+                                                <tr class="table-light">
+                                                    <td colspan="2" class="fw-bold text-primary">{{ $groupName }}</td>
+                                                </tr>
+                                                @foreach($accounts as $chartAccountExpense)
+                                                @if($chartAccountExpense['sum'] != 0)
+                                                @php $sumExpense += abs($chartAccountExpense['sum']); @endphp
+                                                <tr class="account-row">
+                                                    <td>
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountExpense['account_id'])) }}"
+                                                            class="text-decoration-none text-dark fw-medium">
+                                                            <i class="bx bx-chevron-right me-1 text-danger"></i>
+                                                            {{ $chartAccountExpense['account'] }}
+                                                        </a>
+                                                    </td>
+                                                    <td class="text-end">
+                                                        <a href="{{ route('accounting.transactions.doubleEntries', Hashids::encode($chartAccountExpense['account_id'])) }}"
+                                                            class="text-decoration-none fw-bold text-danger">
+                                                            {{ number_format(abs($chartAccountExpense['sum']),2) }}
+                                                        </a>
+                                                    </td>
+                                                </tr>
+                                                @endif
+                                                @endforeach
+                                                @endif
                                                 @endforeach
                                                 <tr class="table-danger fw-bold">
                                                     <td>TOTAL EXPENSES</td>
@@ -604,4 +627,3 @@ use Vinkla\Hashids\Facades\Hashids;
     <p class="mb-0">Copyright © 2021. All right reserved.</p>
 </footer>
 @endsection
-
