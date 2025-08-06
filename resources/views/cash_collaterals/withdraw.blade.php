@@ -64,7 +64,7 @@
                                     step="0.01"
                                     min="0.01"
                                     max="{{ $collateral->amount }}"
-                                    placeholder="0.00"
+                                    placeholder="0"
                                     required>
                             </div>
                             <small class="form-text text-muted">Available collateral: TSHS:{{ number_format($collateral->amount, 2) }}</small>

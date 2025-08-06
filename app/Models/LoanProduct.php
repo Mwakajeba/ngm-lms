@@ -97,6 +97,12 @@ class LoanProduct extends Model
         return $this->belongsToMany(Fee::class, null, null, null, 'fees_ids');
     }
 
+    public function fee()
+    {
+        return $this->belongsTo(Fee::class, 'fee_ids')->where('include_in_schedule', true);
+    }
+
+
     /**
      * Get the penalties associated with this loan product
      */
@@ -104,6 +110,11 @@ class LoanProduct extends Model
     {
         return $this->belongsToMany(Penalty::class, null, null, null, 'penalty_ids');
     }
+    public function penalty()
+    {
+        return $this->belongsTo(Penalty::class, 'penalty_ids');
+    }
+
 
     /**
      * Get the fees for this loan product
@@ -169,7 +180,7 @@ class LoanProduct extends Model
     {
         if (!$this->has_cash_collateral) return 0;
 
-        return $this->cash_collateral_value_type === 'percent'
+        return $this->cash_collateral_value_type === 'percentage'
             ? ($loanAmount * $this->cash_collateral_value / 100)
             : $this->cash_collateral_value;
     }
