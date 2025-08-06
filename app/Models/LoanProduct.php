@@ -18,6 +18,7 @@ class LoanProduct extends Model
         'maximum_principal',
         'minimum_period',
         'maximum_period',
+        'grace_period', // Added grace period
         'top_up_type',
         'top_up_type_value',
         'has_cash_collateral',

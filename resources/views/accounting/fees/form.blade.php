@@ -130,6 +130,16 @@
                             </select>
                             @error('deduction_criteria') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
+
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Include in Schedule</label>
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="include_in_schedule" id="include_in_schedule" value="1" {{ old('include_in_schedule', $fee->include_in_schedule ?? false) ? 'checked' : '' }}>
+                                <label class="form-check-label" for="include_in_schedule">
+                                    Yes
+                                </label>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
