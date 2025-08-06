@@ -38,7 +38,7 @@
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Chart of Accounts - Account Class Groups</h5>
                         <div>
-                            <a href="{{ route('accounting.fsli-accounts.create') }}" class="btn btn-primary ms-2">
+                            <a href="{{ route('accounting.account-class-groups.create') }}" class="btn btn-primary ms-2">
                                 <i class="bx bx-plus"></i> Add New Group
                             </a>
                         </div>

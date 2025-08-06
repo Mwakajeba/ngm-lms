@@ -21,6 +21,8 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
             $table->decimal('principal', 10, 2);
             $table->decimal('interest', 10, 2);
+            $table->decimal('fee_amount', 10, 2);
+            $table->decimal('penalty_amount', 10, 2)->default(0);
             $table->timestamps();
         });
     }

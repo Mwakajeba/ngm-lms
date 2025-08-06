@@ -435,8 +435,7 @@ class Loan extends Model
     public function generateRepaymentSchedule(float $rate)
     {
         $product = $this->product;
-        if (!$product)
-            return;
+        if (!$product) return;
 
         $principal = $this->amount;
         $interestAmount = $this->interest_amount;
@@ -445,43 +444,157 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        switch ($method) {
-            case 'flat_rate':
-                $principalInstallment = round($principal / $period, 2);
-                $interestInstallment = round($interestAmount / $period, 2);
+        $fee = $product->fee;
+        $penalty = $product->penalty;
 
-                for ($i = 0; $i < $period; $i++) {
-                    $dueDate = $startDate->copy()->addMonths($i);
-                    LoanSchedule::create([
-                        'loan_id' => $this->id,
-                        'customer_id' => $this->customer_id,
-                        'due_date' => $dueDate,
-                        'end_date' => $dueDate->copy()->addDays(5),
-                        'end_grace_date' => $dueDate->copy()->addDays($gracePeriod),
-                        'principal' => $principalInstallment,
-                        'interest' => $interestInstallment,
+        $isReducing = in_array($method, [
+            'reducing_balance_with_equal_installment',
+            'reducing_balance_with_equal_principal'
+        ]);
+
+        $schedule = $isReducing
+            ? $this->calculateInterestAmount($rate, true)
+            : array_fill(0, $period, [
+                'principal' => round($principal / $period, 2),
+                'interest' => round($interestAmount / $period, 2)
+            ]);
+
+        foreach ($schedule as $i => $row) {
+            $dueDate = $startDate->copy()->addMonths($i);
+            $endDate = $dueDate->copy()->addDays(5);
+            $endGraceDate = $dueDate->copy()->addDays($gracePeriod);
+
+            // === Handle Fees ===
+
+            $loanFee = 0;
+            if ($fee) {
+                $feeAmount = $fee->amount;
+                $feeType = $fee->fee_type;
+                $criteria = $fee->deduction_criteria;
+
+                $applyFee = match ($criteria) {
+                    'charge_same_fee_to_all_repayments' => true,
+                    'distribute_fee_evenly_to_all_repayments' => true,
+                    'charge_fee_on_first_repayment' => $i === 0,
+                    'charge_fee_on_last_repayment' => $i === ($period - 1),
+                    default => false
+                };
+
+                if ($applyFee) {
+                    $divideAcross = in_array($criteria, [
+                        'charge_same_fee_to_all_repayments',
+                        'distribute_fee_evenly_to_all_repayments'
                     ]);
-                }
-                break;
 
-            case 'reducing_balance_with_equal_installment':
-            case 'reducing_balance_with_equal_principal':
-                // ✅ FIXED: return schedule as array
-                $schedule = $this->calculateInterestAmount($rate, true);
+                    $calculated = $feeType === 'percentage'
+                        ? ($principal * $feeAmount / 100)
+                        : $feeAmount;
 
-                foreach ($schedule as $i => $row) {
-                    $dueDate = $startDate->copy()->addMonths($i);
-                    LoanSchedule::create([
-                        'loan_id' => $this->id,
-                        'customer_id' => $this->customer_id,
-                        'due_date' => $dueDate,
-                        'end_date' => $dueDate->copy()->addDays(5),
-                        'end_grace_date' => $dueDate->copy()->addDays($gracePeriod),
-                        'principal' => $row['principal'],
-                        'interest' => $row['interest'],
-                    ]);
+                    $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
                 }
-                break;
+            }
+
+            // === Penalty — only apply if overdue ===
+            $penaltyAmount = 0;
+            if ($penalty && Carbon::now()->gt($dueDate)) {
+                $type = $penalty->penalty_type;
+                $criteria = $penalty->deduction_type;
+
+                $base = match ($criteria) {
+                    'over_due_principal_amount' => $row['principal'],
+                    'over_due_interest_amount' => $row['interest'],
+                    'over_due_principal_and_interest' => $row['principal'] + $row['interest'],
+                    'total_principal_amount_released' => $principal,
+                    default => $principal
+                };
+
+                $penaltyAmount = $type === 'percentage'
+                    ? round($base * $penalty->amount / 100, 2)
+                    : round($penalty->amount, 2);
+            }
+
+            LoanSchedule::create([
+                'loan_id'        => $this->id,
+                'customer_id'    => $this->customer_id,
+                'due_date'       => $dueDate,
+                'end_date'       => $endDate,
+                'end_grace_date' => $endGraceDate,
+                'principal'      => $row['principal'],
+                'interest'       => $row['interest'],
+                'fee_amount'     => $loanFee,
+                'penalty_amount' => $penaltyAmount,
+            ]);
+        }
+
+        // ===== Flat rate method (already working fine) =====
+        if ($method === 'flat_rate') {
+            $principalInstallment = round($principal / $period, 2);
+            $interestInstallment = round($interestAmount / $period, 2);
+
+            for ($i = 0; $i < $period; $i++) {
+                $dueDate = $startDate->copy()->addMonths($i);
+                $endDate = $dueDate->copy()->addDays(5);
+                $endGraceDate = $dueDate->copy()->addDays($gracePeriod);
+
+                // === Handle Fees ===
+                $loanFee = 0;
+                if ($fee) {
+                    $feeAmount = $fee->amount;
+                    $feeType = $fee->fee_type;
+                    $criteria = $fee->deduction_criteria;
+
+                    $applyFee = match ($criteria) {
+                        'charge_same_fee_to_all_repayments' => true,
+                        'distribute_fee_evenly_to_all_repayments' => true,
+                        'charge_fee_on_first_repayment' => $i === 0,
+                        'charge_fee_on_last_repayment' => $i === ($period - 1),
+                        default => false
+                    };
+
+                    if ($applyFee) {
+                        $divideAcross = in_array($criteria, [
+                            'charge_same_fee_to_all_repayments',
+                            'distribute_fee_evenly_to_all_repayments'
+                        ]);
+
+                        $calculated = $feeType === 'percentage'
+                            ? ($principal * $feeAmount / 100)
+                            : $feeAmount;
+
+                        $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
+                    }
+                }
+                // === Penalty (only if overdue) ===
+                $penaltyAmount = 0;
+                if ($penalty && Carbon::now()->gt($dueDate)) {
+                    $type = $penalty->penalty_type;
+                    $criteria = $penalty->deduction_type;
+
+                    $base = match ($criteria) {
+                        'over_due_principal_amount' => $principalInstallment,
+                        'over_due_interest_amount' => $interestInstallment,
+                        'over_due_principal_and_interest' => $principalInstallment + $interestInstallment,
+                        'total_principal_amount_released' => $principal,
+                        default => $principal
+                    };
+
+                    $penaltyAmount = $type === 'percentage'
+                        ? round($base * $penalty->amount / 100, 2)
+                        : round($penalty->amount, 2);
+                }
+
+                LoanSchedule::create([
+                    'loan_id'        => $this->id,
+                    'customer_id'    => $this->customer_id,
+                    'due_date'       => $dueDate,
+                    'end_date'       => $endDate,
+                    'end_grace_date' => $endGraceDate,
+                    'principal'      => $principalInstallment,
+                    'interest'       => $interestInstallment,
+                    'fee_amount'     => $loanFee,
+                    'penalty_amount' => $penaltyAmount,
+                ]);
+            }
         }
     }
 }

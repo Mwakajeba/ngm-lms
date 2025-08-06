@@ -58,12 +58,11 @@
                                 <span class="input-group-text">TSHS</span>
                                 <input type="number"
                                     class="form-control"
-                                    id="amount"
                                     name="amount"
                                     value="{{ old('amount') }}"
                                     step="0.01"
                                     min="0.01"
-                                    placeholder="0.00"
+                                    placeholder="0"
                                     required>
                             </div>
                             @error('amount')
@@ -112,12 +111,7 @@
         }
 
         // Format amount input
-        $('#amount').on('input', function() {
-            let value = $(this).val();
-            if (value && !isNaN(value)) {
-                $(this).val(parseFloat(value).toFixed(2));
-            }
-        });
+        
     });
 </script>
 @endpush
