@@ -23,7 +23,10 @@ class CashCollateralTypeController extends Controller
      */
     public function create()
     {
-        $chartAccounts = ChartAccount::all();
+        // Only chart accounts where class is liabilities (fix: use relationship chain)
+        $chartAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->where('name', 'Liabilities');
+        })->get();
         return view('cash_collateral_types.create', compact('chartAccounts'));
     }
 
@@ -62,8 +65,11 @@ class CashCollateralTypeController extends Controller
      */
     public function edit(CashCollateralType $cashCollateralType)
     {
-         $chartAccounts = ChartAccount::all();
-         return view('cash_collateral_types.edit', compact('cashCollateralType', 'chartAccounts'));
+        // Only chart accounts where class is liabilities (fix: use relationship chain)
+        $chartAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->where('name', 'Liabilities');
+        })->get();
+        return view('cash_collateral_types.edit', compact('cashCollateralType', 'chartAccounts'));
     }
 
     /**

@@ -325,6 +325,57 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Group Loans Table -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-info text-white">
+                            <h5 class="card-title mb-0">
+                                <i class="bx bx-credit-card me-2"></i>Group Loans
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            @if(isset($loans) && $loans->count() > 0)
+                                <div class="table-responsive">
+                                    <table class="table table-hover">
+                                        <thead>
+                                            <tr>
+                                                <th>Loan ID</th>
+                                                <th>Customer</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                                <th>Created Date</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($loans as $loan)
+                                                <tr>
+                                                    <td><strong>#{{ $loan->id ?? 'N/A' }}</strong></td>
+                                                    <td>{{ $loan->customer->name ?? 'N/A' }}</td>
+                                                    <td>{{ number_format($loan->amount ?? 0, 2) }}</td>
+                                                    <td>
+                                                        <span class="badge bg-{{ $loan->status == 'active' ? 'success' : 'secondary' }}">
+                                                            {{ ucfirst($loan->status ?? 'N/A') }}
+                                                        </span>
+                                                    </td>
+                                                    <td>{{ $loan->created_at ? $loan->created_at->format('M d, Y') : 'N/A' }}</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <div class="text-center py-4">
+                                    <i class="bx bx-credit-card text-muted" style="font-size: 3rem;"></i>
+                                    <h5 class="text-muted mt-3">No Loans Associated</h5>
+                                    <p class="text-muted">This group doesn't have any associated loans yet.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
