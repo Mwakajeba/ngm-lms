@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Penalty extends Model
 {
@@ -204,5 +205,32 @@ class Penalty extends Model
             'over_due_principal_and_interest' => 'Over Due Principal and Interest',
             'total_principal_amount_released' => 'Total Principal Amount Released',
         ];
+    }
+
+
+    public static function getTotalPenaltyBalance(): float
+    {
+        $penaltyAccountIds = self::query()
+            ->select('penalty_receivables_account_id')
+            ->union(
+                self::query()->select('penalty_income_account_id')
+            )
+            ->pluck('penalty_receivables_account_id')
+            ->merge(
+                self::query()->pluck('penalty_income_account_id')
+            )
+            ->unique()
+            ->filter()
+            ->values();
+
+        $totals = DB::table('gl_transactions')
+            ->whereIn('chart_account_id', $penaltyAccountIds)
+            ->selectRaw('
+                SUM(CASE WHEN nature = "debit" THEN amount ELSE 0 END) as total_debit,
+                SUM(CASE WHEN nature = "credit" THEN amount ELSE 0 END) as total_credit
+            ')
+            ->first();
+
+        return ($totals->total_debit ?? 0) - ($totals->total_credit ?? 0);
     }
 }

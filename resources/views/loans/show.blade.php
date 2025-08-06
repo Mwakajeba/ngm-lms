@@ -256,6 +256,8 @@
                                         <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">Due Date</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Principal</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Interest</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Penalty amount</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Fee Amount</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Total Installment</th>
                                     </tr>
                                 </thead>
@@ -265,7 +267,9 @@
                                         <td class="ps-4">{{ \Carbon\Carbon::parse($item->due_date)->format('M d, Y') }}</td>
                                         <td>{{ number_format($item->principal, 2) }}</td>
                                         <td>{{ number_format($item->interest, 2) }}</td>
-                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest, 2) }}</td>
+                                        <td>{{ number_format($item->penalty_amount, 2) }}</td>
+                                        <td>{{ number_format($item->fee_amount, 2) }}</td>
+                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest + $item->fee_amount + $item->penalty_amount, 2) }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -328,6 +332,7 @@
                     <p class="text-secondary">Click the button above to add a guarantor.</p>
                 </div>
                 @endif
+                
             </div>
 
             <div class="tab-pane fade" id="documents" role="tabpanel">
