@@ -276,7 +276,7 @@ class Loan extends Model
                 $applyFee = match ($criteria) {
                     'charge_same_fee_to_all_repayments' => true,
                     'distribute_fee_evenly_to_all_repayments' => true,
-                    'charge_fee_on_first_repayment', 'charge_fee_on_release_date' => $i === 0,
+                    'charge_fee_on_first_repayment' => $i === 0,
                     'charge_fee_on_last_repayment' => $i === ($period - 1),
                     default => false
                 };
@@ -347,7 +347,7 @@ class Loan extends Model
                     $applyFee = match ($criteria) {
                         'charge_same_fee_to_all_repayments' => true,
                         'distribute_fee_evenly_to_all_repayments' => true,
-                        'charge_fee_on_first_repayment', 'charge_fee_on_release_date' => $i === 0,
+                        'charge_fee_on_first_repayment' => $i === 0,
                         'charge_fee_on_last_repayment' => $i === ($period - 1),
                         default => false
                     };
