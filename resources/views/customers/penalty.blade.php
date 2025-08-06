@@ -11,19 +11,7 @@
         ]" />
         <h6 class="mb-0 text-uppercase">CUSTOMER PENALTY LIST</h6>
         <hr />
-        <div class="row row-cols-1 row-cols-lg-4">
-            <div class="col mb-4">
-                <div class="card radius-10">
-                    <div class="card-body d-flex align-items-center">
-                        <div class="flex-grow-1">
-                            <p class="text-muted mb-1">Total Penalty Amount</p>
-                            <h4 class="mb-0">{{ number_format($penaltyBalance,2) }}</h4>
-                        </div>
-                        <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-error'></i></div>
-                    </div>
-                </div>
-            </div>
-        </div>
+   
 
         <!-- Customers Table -->
         <div class="row">

@@ -107,23 +107,27 @@ use Vinkla\Hashids\Facades\Hashids;
         <!-- Quick Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
             <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0 text-muted">Total Penalty</p>
-                                <h4 class="font-weight-bold text-dark">
-                                    TZS {{ number_format($penaltyBalance, 2) }}
-                                </h4>
-                                <p class="text-success mb-0 font-13">Penalty balance</p>
+                <a href="{{ route('customers.penalty') }}" class="text-decoration-none">
+                    <div class="card radius-10">
+                        <div class="card-body position-relative">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 text-muted">Total Penalty</p>
+                                    <h4 class="font-weight-bold text-dark">
+                                        TZS {{ number_format($penaltyBalance, 2) }}
+                                    </h4>
+                                    <p class="text-success mb-0 font-13">Penalty balance</p>
+                                </div>
+                                <div class="widgets-icons bg-gradient-cosmic text-white">
+                                    <i class='bx bx-error'></i>
+                                </div>
                             </div>
-                            <div class="widgets-icons bg-gradient-cosmic text-white">
-                                <i class='bx bx-money'></i>
-                            </div>
+                            <span class="stretched-link"></span>
                         </div>
                     </div>
-                </div>
+                </a>
             </div>
+
 
             <div class="col">
                 <div class="card radius-10">
