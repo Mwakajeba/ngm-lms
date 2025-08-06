@@ -265,7 +265,9 @@
                                         <td class="ps-4">{{ \Carbon\Carbon::parse($item->due_date)->format('M d, Y') }}</td>
                                         <td>{{ number_format($item->principal, 2) }}</td>
                                         <td>{{ number_format($item->interest, 2) }}</td>
-                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest, 2) }}</td>
+                                        <td>{{ number_format($item->penalty_amount, 2) }}</td>
+                                        <td>{{ number_format($item->fee_amount, 2) }}</td>
+                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest + $item->fee_amount + $item->penalty_amount, 2) }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
