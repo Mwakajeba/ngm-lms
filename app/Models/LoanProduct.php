@@ -92,10 +92,10 @@ class LoanProduct extends Model
     /**
      * Get the fees associated with this loan product
      */
-    public function fees()
-    {
-        return $this->belongsToMany(Fee::class, null, null, null, 'fees_ids');
-    }
+    // public function fees()
+    // {
+    //     return $this->belongsToMany(Fee::class, null, null, null, 'fees_ids');
+    // }
 
     public function fee()
     {
@@ -106,13 +106,13 @@ class LoanProduct extends Model
     /**
      * Get the penalties associated with this loan product
      */
-    public function penalties()
-    {
-        return $this->belongsToMany(Penalty::class, null, null, null, 'penalty_ids');
-    }
+    // public function penalties()
+    // {
+    //     return $this->belongsToMany(Penalty::class, null, null, null, 'penalty_ids');
+    // }
     public function penalty()
     {
-        return $this->belongsTo(Penalty::class, 'penalty_ids');
+        return $this->belongsTo(Penalty::class, 'penalty_ids')->where('status','active');
     }
 
 
