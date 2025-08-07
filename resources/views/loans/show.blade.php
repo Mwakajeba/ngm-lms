@@ -162,6 +162,7 @@
                         <div class="row g-3">
                             @if(auth()->user() && $loan->canBeApprovedByUser(auth()->user()) && !$loan->hasUserApproved(auth()->user()))
                             <div class="col-md-6 col-lg-4">
+                                @can('approve loan')
                                 <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="approveLoan('{{ Hashids::encode($loan->id) }}')">
                                     <i class="bx bx-check-circle me-2"></i>
                                     <div class="text-start">
@@ -169,11 +170,13 @@
                                         <small class="d-block">{{ $nextRoleName }} (Level {{ $nextLevel }})</small>
                                     </div>
                                 </button>
+                                @endcan
                             </div>
                             @endif
 
                             @if($loan->canBeRejected() && auth()->user() && $loan->canBeApprovedByUser(auth()->user()) && !$loan->hasUserApproved(auth()->user()))
                             <div class="col-md-6 col-lg-4">
+                                @can('reject loan')
                                 <button type="button" class="btn btn-danger w-100 d-flex align-items-center justify-content-center" onclick="rejectLoan('{{ Hashids::encode($loan->id) }}')">
                                     <i class="bx bx-x-circle me-2"></i>
                                     <div class="text-start">
@@ -181,6 +184,7 @@
                                         <small class="d-block">Decline Application</small>
                                     </div>
                                 </button>
+                                @endcan
                             </div>
                             @endif
                         </div>
@@ -218,6 +222,7 @@
                         </div>
                         @elseif($loan->status === 'active')
                         <div class="row g-3">
+                            @can('default loan')
                             <div class="col-md-6 col-lg-4">
                                 <button type="button" class="btn btn-dark w-100 d-flex align-items-center justify-content-center" onclick="defaultLoan('{{ Hashids::encode($loan->id) }}')">
                                     <i class="bx bx-error-circle me-2"></i>
@@ -227,6 +232,7 @@
                                     </div>
                                 </button>
                             </div>
+                            @endcan
                         </div>
                         @else
                         <div class="text-center py-4">
@@ -289,12 +295,15 @@
 
 
             <div class="tab-pane fade" id="guarantors" role="tabpanel">
+
+                @can('add guarantor')
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0 text-dark">Guarantors</h5>
                     <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#addGuarantorModal">
                         <i class="bx bx-user-plus me-2 font-18"></i>Add Guarantor
                     </button>
                 </div>
+                @endcan
 
                 @if($loan->guarantors && $loan->guarantors->count())
                 <div class="card shadow-sm border-0">
@@ -315,6 +324,7 @@
                                         <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                         <td>{{ $guarantor->name }}</td>
                                         <td>{{ $guarantor->phone }}</td>
+                                        @can('remove guarantor')
                                         <td class="text-end pe-4">
                                             <form action="{{ route('loans.removeGuarantor', [$loan->id, $guarantor->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this guarantor?');" class="d-inline">
                                                 @csrf
@@ -322,6 +332,7 @@
                                                 <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
                                             </form>
                                         </td>
+                                        @endcan
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -339,12 +350,14 @@
             </div>
 
             <div class="tab-pane fade" id="documents" role="tabpanel">
+                @can('manage loan documents')
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0 text-dark">Documents</h5>
                     <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
                         <i class="bx bx-cloud-upload me-2 font-18"></i>Upload Document
                     </button>
                 </div>
+                @endcan
 
                 @if($loan->loanFiles->count())
                 <div class="card shadow-sm border-0">
@@ -363,6 +376,7 @@
                                     <tr>
                                         <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                         <td>{{ $doc->fileType->name }}</td>
+                                        @can('view loan documents')
                                         <td class="text-end pe-4">
                                             <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
                                                 View
@@ -371,6 +385,7 @@
                                                 Download
                                             </a>
                                         </td>
+                                        @endcan
                                     </tr>
                                     @endforeach
                                 </tbody>

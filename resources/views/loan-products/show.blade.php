@@ -16,6 +16,7 @@
                     ['label' => 'Product Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
                 ]" />
                 <div>
+                    @can('deactivate loan product')
                     <button type="button" class="btn {{ $loanProduct->is_active ?? true ? 'btn-warning' : 'btn-success' }} toggle-status-btn"
                         title="{{ $loanProduct->is_active ?? true ? 'Deactivate' : 'Activate' }} Product"
                         data-product-id="{{ Hashids::encode($loanProduct->id) }}"
@@ -24,12 +25,19 @@
                         <i class="bx {{ $loanProduct->is_active ?? true ? 'bx-pause-circle' : 'bx-play-circle' }}"></i>
                         {{ $loanProduct->is_active ?? true ? 'Deactivate' : 'Activate' }}
                     </button>
+                    @endcan
+
+                    @can('edit loan product')
                     <a href="{{ route('loan-products.edit', Hashids::encode($loanProduct->id)) }}" class="btn btn-primary">
                         <i class="bx bx-edit"></i> Edit Product
                     </a>
+                    @endcan
+
+                    @can('view loan product')
                     <a href="{{ route('loan-products.index') }}" class="btn btn-secondary">
                         <i class="bx bx-arrow-back"></i> Back to List
                     </a>
+                    @endcan
                 </div>
             </div>
 

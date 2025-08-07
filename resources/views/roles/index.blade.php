@@ -86,12 +86,17 @@
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h4 class="card-title mb-0">Roles List</h4>
                             <div class="d-flex gap-2">
+                                @can('create permission')
                                 <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#createPermissionModal">
                                     <i class="bx bx-key"></i> Create Permission
                                 </button>
+                                @endcan
+
+                                @can('create role')
                                 <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createRoleModal">
                                     <i class="bx bx-plus"></i> Create New Role
                                 </button>
+                                @endcan
                             </div>
                         </div>
                         <div class="table-responsive">
@@ -148,11 +153,19 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
+                                            @can('view role')
                                             <button class="btn btn-sm btn-outline-info me-1" onclick="viewRole({{ $role->id }})" title="View"><i class="bx bx-show"></i></button>
+                                            @endcan
+
+                                            @can('edit role')
                                             <button class="btn btn-sm btn-outline-primary me-1" onclick="editRole({{ $role->id }})" title="Edit"><i class="bx bx-edit"></i></button>
+                                            @endcan
+
+                                            @can('delete role')
                                             @if(!in_array($role->name, ['super-admin', 'admin']))
                                             <button class="btn btn-sm btn-outline-danger" onclick="deleteRole({{ $role->id }})" title="Delete"><i class="bx bx-trash"></i></button>
                                             @endif
+                                            @endcan
                                         </td>
                                     </tr>
                                     @endforeach
@@ -170,10 +183,12 @@
 <div class="modal fade" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
+            @can('create role')
             <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="createRoleModalLabel"><i class="bx bx-plus me-2"></i> Create New Role</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            @endcan
             <form id="createRoleForm" action="{{ route('roles.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">
@@ -241,10 +256,12 @@
 <div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-xl">
         <div class="modal-content">
+            @can('edit role')
             <div class="modal-header">
                 <h5 class="modal-title" id="editRoleModalLabel">Edit Role</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            @endcan
             <form id="editRoleForm" method="POST">
                 @csrf
                 @method('PUT')
@@ -261,10 +278,12 @@
 <div class="modal fade" id="createPermissionModal" tabindex="-1" aria-labelledby="createPermissionModalLabel" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
+            @can('create permission')
             <div class="modal-header bg-success text-white">
                 <h5 class="modal-title" id="createPermissionModalLabel"><i class="bx bx-key me-2"></i> Create New Permission</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            @endcan
             <form id="createPermissionForm" action="{{ route('permissions.store') }}" method="POST">
                 @csrf
                 <div class="modal-body">

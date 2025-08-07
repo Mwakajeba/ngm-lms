@@ -73,12 +73,14 @@
                 <hr />
                 <div class="card">
                     <div class="card-body">
+                        @can('create bank account')
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <h5 class="mb-0">Bank Accounts</h5>
                             <a href="{{ route('accounting.bank-accounts.create') }}" class="btn btn-primary">
                                 <i class="bx bx-plus"></i> Add New Bank Account
                             </a>
                         </div>
+                        @endcan
                         <div class="table-responsive">
                             <table id="bankAccountsTable" class="table table-striped table-bordered" style="width:100%">
                                 <thead>
@@ -113,18 +115,25 @@
                                             </td>
                                             <td>{{ $bankAccount->created_at->format('M d, Y') }}</td>
                                             <td>
-                                                <a href="{{ route('accounting.bank-accounts.show', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
+                                                @can('view bank  account details')
+                                                <a href="{{ route('accounting.bank-accounts.show', Hashids::encode($bankAccount->id)) }}"
                                                     class="btn btn-sm btn-info">View</a>
-                                                <a href="{{ route('accounting.bank-accounts.edit', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
-                                                    class="btn btn-sm btn-primary">Edit</a>
+                                                    @endcan
 
-                                                <form action="{{ route('accounting.bank-accounts.destroy', \Vinkla\Hashids\Facades\Hashids::encode($bankAccount->id)) }}"
+                                                    @can('edit bank account')
+                                                <a href="{{ route('accounting.bank-accounts.edit', Hashids::encode($bankAccount->id)) }}"
+                                                    class="btn btn-sm btn-primary">Edit</a>
+                                                    @endcan
+                                                    
+                                                    @can('delete bank account')
+                                                <form action="{{ route('accounting.bank-accounts.destroy', Hashids::encode($bankAccount->id)) }}"
                                                     method="POST" class="d-inline delete-form">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger"
                                                         data-name="{{ $bankAccount->name }}">Delete</button>
                                                 </form>
+                                                @endcan
                                             </td>
                                         </tr>
                                     @endforeach

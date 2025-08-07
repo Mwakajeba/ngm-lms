@@ -22,6 +22,7 @@
                     <h4 class="mb-1">Loan Application #{{ $loanApplication->id }}</h4>
                     <p class="text-muted mb-0">{{ $loanApplication->customer->name ?? 'Unknown Customer' }}</p>
                 </div>
+                @can('edit loan')
                 <div class="d-flex gap-2">
                     <a href="{{ route('loans.application.index') }}" class="btn btn-secondary">
                         <i class="bx bx-arrow-back me-1"></i> Back
@@ -32,6 +33,7 @@
                         </a>
                     @endif
                 </div>
+                @endcan
             </div>
 
             <!-- Status Card -->
@@ -295,12 +297,14 @@
 
                         <!-- Documents Tab -->
                         <div class="tab-pane fade" id="documents" role="tabpanel">
+                            @can('manage loan documents')
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h5 class="mb-0">Loan Documents</h5>
                                 <button class="btn btn-primary" onclick="addDocument()">
                                     <i class="bx bx-plus me-1"></i> Add Document
                                 </button>
                             </div>
+                            @endcan
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
                                     <div class="text-center py-5">
@@ -317,12 +321,14 @@
 
                         <!-- Guarantors Tab -->
                         <div class="tab-pane fade" id="guarantors" role="tabpanel">
+                            @can('add addGuarantor')
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h5 class="mb-0">Loan Guarantors</h5>
                                 <button class="btn btn-primary" onclick="addGuarantor()">
                                     <i class="bx bx-plus me-1"></i> Add Guarantor
                                 </button>
                             </div>
+                            @endcan
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
                                     <div class="text-center py-5">
@@ -339,12 +345,14 @@
 
                         <!-- Collaterals Tab -->
                         <div class="tab-pane fade" id="collaterals" role="tabpanel">
+                            @can('manage loan collateral')
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h5 class="mb-0">Loan Collaterals</h5>
                                 <button class="btn btn-primary" onclick="addCollateral()">
                                     <i class="bx bx-plus me-1"></i> Add Collateral
                                 </button>
                             </div>
+                            @endcan
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
                                     <div class="text-center py-5">
@@ -361,12 +369,14 @@
 
                         <!-- Repayment Schedule Tab -->
                         <div class="tab-pane fade" id="schedule" role="tabpanel">
+                            @can('generate loan schedule')
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h5 class="mb-0">Repayment Schedule</h5>
                                 <button class="btn btn-outline-primary" onclick="generateSchedule()">
                                     <i class="bx bx-refresh me-1"></i> Generate Schedule
                                 </button>
                             </div>
+                            @endcan
                             <div class="card border-0 shadow-sm">
                                 <div class="card-body">
                                     <div class="text-center py-5">

@@ -73,6 +73,7 @@ use Vinkla\Hashids\Facades\Hashids;
 </style>
 
 @section('content')
+@can('view dashboard')
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Welcome Section -->
@@ -106,6 +107,7 @@ use Vinkla\Hashids\Facades\Hashids;
 
         <!-- Quick Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
+            @can('view charges')
             <div class="col">
                 <a href="{{ route('customers.penalty') }}" class="text-decoration-none">
                     <div class="card radius-10">
@@ -127,6 +129,7 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </a>
             </div>
+            @endcan
 
 
             <div class="col">
@@ -621,6 +624,7 @@ use Vinkla\Hashids\Facades\Hashids;
 
     </div>
 </div>
+@endcan
 <!--end page wrapper -->
 <!--start overlay-->
 <div class="overlay toggle-icon"></div>

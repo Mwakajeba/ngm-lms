@@ -83,11 +83,13 @@
                     </div>
 
                     <div class="row mt-4">
+                        @can('view borrower profile')
                         <div class="col-md-6">
                             <a href="{{ route('customers.show', Hashids::encode($customer->id))}}" class="btn btn-secondary">
                                 <i class="bx bx-arrow-back me-1"></i> Back
                             </a>
                         </div>
+                        @endcan
                         <div class="col-md-6 text-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bx bx-save me-1"></i> Process Deposit

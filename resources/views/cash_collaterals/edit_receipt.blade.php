@@ -86,11 +86,13 @@
                     </div>
 
                     <div class="row mt-4">
+                        @can('view cah collateral')
                         <div class="col-md-6">
                             <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-secondary">
                                 <i class="bx bx-arrow-back me-1"></i> Back
                             </a>
                         </div>
+                        @endcan
                         <div class="col-md-6 text-end">
                             <button type="submit" class="btn btn-primary">
                                 <i class="bx bx-save me-1"></i> Update Deposit

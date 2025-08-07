@@ -232,9 +232,11 @@
                             <div class="row">
                                 <div class="col-12">
                                     <div class="d-flex justify-content-end gap-2">
+                                        @can('view users')
                                         <a href="{{ route('users.index') }}" class="btn btn-secondary">
                                             <i class="bx bx-arrow-back me-1"></i> Cancel
                                         </a>
+                                        @endcan
                                         <button type="submit" class="btn btn-primary">
                                             <i class="bx bx-save me-1"></i> {{ isset($user) ? 'Update User' : 'Create User' }}
                                         </button>

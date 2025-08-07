@@ -16,6 +16,7 @@
                 <div class="col-12">
                     <div class="card">
                         <div class="card-body">
+                            @can('manage system configurations')
                             <h4 class="card-title mb-4">System Settings</h4>
 
                             @if(session('success'))
@@ -38,9 +39,11 @@
                                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                                 </div>
                             @endif
+                            @endcan
 
                             <div class="row">
                                 <!-- Company Settings -->
+                                 @can('manage campany setting')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-primary">
                                         <div class="card-body text-center">
@@ -55,8 +58,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Branch Settings -->
+                                 @can('manage branch setting')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-success">
                                         <div class="card-body text-center">
@@ -71,8 +76,11 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
+
 
                                 <!-- User Settings -->
+                                 @can('manage user setting')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-info">
                                         <div class="card-body text-center">
@@ -87,6 +95,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- System Settings -->
                                 @can('view system configurations')
@@ -126,6 +135,7 @@
                                 @endcan
 
                                 <!-- AI Assistant -->
+                                 @can('use AI assistant')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-purple">
                                         <div class="card-body text-center">
@@ -141,8 +151,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Roles & Permissions -->
+                                 @can('manage role & permission')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-secondary">
                                         <div class="card-body text-center">
@@ -157,6 +169,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-info">
@@ -174,6 +187,7 @@
                                 </div>
 
                                 <!-- Fees Settings -->
+                                 @can('manage fee setting')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-teal">
                                         <div class="card-body text-center">
@@ -188,8 +202,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Penalties Settings -->
+                                 @can('manage penalty setting')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
@@ -204,8 +220,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                  <!-- Filetypes Settings -->
+                                  @can('manage filetype setting')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
@@ -220,6 +238,7 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                             </div>
                         </div>

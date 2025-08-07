@@ -77,9 +77,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">{{ __('app.user_list') }}</h5>
+                        @can('create users')
                         <a href="{{ route('users.create') }}" class="btn btn-primary">
                             <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
                         </a>
+                        @endcan
                     </div>
 
 
@@ -105,11 +107,13 @@
                                         <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
                                             <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">{{ strtoupper(substr($user->name, 0, 1)) }}</span>
                                         </div>
+                                        @can('view user profile')
                                         <div>
                                             <div class="fw-bold">
                                                 <a href="{{ route('users.profile') }}" class="text-decoration-none">{{ $user->name }}</a>
                                             </div>
                                         </div>
+                                        @endcan
                                     </div>
                                 </td>
                                 <td>{{ $user->email }}</td>
@@ -131,13 +135,20 @@
                                 </td>
                                 <td>{{ $user->created_at->format('M d, Y') }}</td>
                                 <td>
+                                    @can('view user profile')
                                     <a href="{{ route('users.profile') }}" class="btn btn-sm btn-outline-info" title="Profile"><i class="bx bx-show"></i></a>
+                                    @endcan
+
+                                    @can('edit user')
                                     <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
+                                    @endcan
+                                    @can('delete user')
                                     <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form" onsubmit="return confirmDelete(this, '{{ __('app.are_you_sure_delete_user') }}');">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
                                     </form>
+                                    @endcan
                                 </td>
                             </tr>
                           @endforeach
