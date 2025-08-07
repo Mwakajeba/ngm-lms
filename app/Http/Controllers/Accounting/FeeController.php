@@ -44,16 +44,14 @@ class FeeController extends Controller
     {
         $user = auth()->user();
         $companyId = $user->company_id ?? null;
+        $branchId = $user->branch_id ?? null;
 
         $companies = Company::orderBy('name')->get();
+        $branches = Branch::where('id', $branchId)->orderBy('name')->get();
 
-        if ($companyId) {
-            $branches = Branch::where('company_id', $companyId)->orderBy('name')->get();
-        } else {
-            $branches = Branch::orderBy('name')->get();
-        }
-
-        $chartAccounts = ChartAccount::orderBy('account_name')->get();
+        $chartAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->whereIn('name', ['Revenue', 'Liabilities']);
+        })->orderBy('account_name')->get();
         $statusOptions = Fee::getStatusOptions();
         $feeTypeOptions = Fee::getFeeTypeOptions();
         $deductionCriteriaOptions = Fee::getDeductionCriteriaOptions();
@@ -136,16 +134,14 @@ class FeeController extends Controller
 
         $user = auth()->user();
         $companyId = $user->company_id ?? null;
+        $branchId = $user->branch_id ?? null;
 
         $companies = Company::orderBy('name')->get();
+        $branches = Branch::where('id', $branchId)->orderBy('name')->get();
 
-        if ($companyId) {
-            $branches = Branch::where('company_id', $companyId)->orderBy('name')->get();
-        } else {
-            $branches = Branch::orderBy('name')->get();
-        }
-
-        $chartAccounts = ChartAccount::orderBy('account_name')->get();
+        $chartAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->whereIn('name', ['Revenue', 'Liabilities']);
+        })->orderBy('account_name')->get();
         $statusOptions = Fee::getStatusOptions();
         $feeTypeOptions = Fee::getFeeTypeOptions();
         $deductionCriteriaOptions = Fee::getDeductionCriteriaOptions();

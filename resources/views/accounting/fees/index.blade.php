@@ -26,12 +26,7 @@
                                 <p class="text-muted mb-1">Total Fees</p>
                                 <h4 class="mb-0">{{ $stats['total'] }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-dollar-circle font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-dollar-circle'></i></div>
                         </div>
                     </div>
                 </div>
@@ -42,12 +37,7 @@
                                 <p class="text-muted mb-1">Active Fees</p>
                                 <h4 class="mb-0 text-success">{{ $stats['active'] }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-check-circle font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-ohhappiness text-white"><i class='bx bx-check-circle'></i></div>
                         </div>
                     </div>
                 </div>
@@ -58,12 +48,7 @@
                                 <p class="text-muted mb-1">Fixed Fees</p>
                                 <h4 class="mb-0 text-info">{{ $stats['fixed'] }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-money font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-blues text-white"><i class='bx bx-money'></i></div>
                         </div>
                     </div>
                 </div>
@@ -74,12 +59,7 @@
                                 <p class="text-muted mb-1">Percentage Fees</p>
                                 <h4 class="mb-0 text-warning">{{ $stats['percentage'] }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-percentage font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-percentage'></i></div>
                         </div>
                     </div>
                 </div>

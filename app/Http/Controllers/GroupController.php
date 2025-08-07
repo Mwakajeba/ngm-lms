@@ -55,7 +55,18 @@ class GroupController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'minimum_members' => 'required|integer|min:1|max:1000000',
             'maximum_members' => 'required|integer|min:1|max:1000000',
-            'group_leader' => 'nullable|exists:users,id',
+            'group_leader' => [
+                'nullable',
+                'exists:customers,id',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        $customer = \App\Models\Customer::find($value);
+                        if (!$customer || $customer->category !== 'Borrower') {
+                            $fail('The selected group leader must be a customer in the Borrower category.');
+                        }
+                    }
+                }
+            ],
             'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'meeting_time' => 'nullable|date_format:H:i',
         ], [
@@ -183,7 +194,18 @@ class GroupController extends Controller
             'branch_id' => 'required|exists:branches,id',
             'minimum_members' => 'required|integer|min:1|max:1000000',
             'maximum_members' => 'required|integer|min:1|max:1000000',
-            'group_leader' => 'nullable|exists:users,id',
+            'group_leader' => [
+                'nullable',
+                'exists:customers,id',
+                function ($attribute, $value, $fail) {
+                    if ($value) {
+                        $customer = \App\Models\Customer::find($value);
+                        if (!$customer || $customer->category !== 'Borrower') {
+                            $fail('The selected group leader must be a customer in the Borrower category.');
+                        }
+                    }
+                }
+            ],
             'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'meeting_time' => 'nullable|date_format:H:i',
         ], [
