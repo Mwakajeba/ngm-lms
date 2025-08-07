@@ -32,12 +32,19 @@ class PenaltyController extends Controller
 
     public function create()
     {
-        $chartAccounts = ChartAccount::orderBy('account_name')->get();
+        // Only chart accounts with class name Revenue for penalty income
+        $penaltyIncomeAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->where('name', 'Revenue');
+        })->orderBy('account_name')->get();
+        // Only chart accounts with class name Assets for penalty receivables
+        $penaltyReceivablesAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->where('name', 'Assets');
+        })->orderBy('account_name')->get();
         $statusOptions = Penalty::getStatusOptions();
         $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
         $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.penalties.create', compact('chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
+        return view('accounting.penalties.create', compact('penaltyIncomeAccounts', 'penaltyReceivablesAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
     public function store(Request $request)
@@ -99,13 +106,19 @@ class PenaltyController extends Controller
         }
 
         $penalty = Penalty::findOrFail($decoded[0]);
-
-        $chartAccounts = ChartAccount::orderBy('account_name')->get();
+        // Only chart accounts with class name Revenue for penalty income
+        $penaltyIncomeAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->where('name', 'Revenue');
+        })->orderBy('account_name')->get();
+        // Only chart accounts with class name Assets for penalty receivables
+        $penaltyReceivablesAccounts = ChartAccount::whereHas('accountClassGroup.accountClass', function($q) {
+            $q->where('name', 'Assets');
+        })->orderBy('account_name')->get();
         $statusOptions = Penalty::getStatusOptions();
         $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
         $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.penalties.edit', compact('penalty', 'chartAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
+        return view('accounting.penalties.edit', compact('penalty', 'penaltyIncomeAccounts', 'penaltyReceivablesAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
     }
 
     public function update(Request $request, $encodedId)
