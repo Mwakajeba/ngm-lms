@@ -77,10 +77,10 @@
 			</li>
 			@php
 				$today = \Carbon\Carbon::today()->toDateString();
-				$dueSchedules = \DB::table('loan_shedules')
-					->join('customers', 'loan_shedules.customer_id', '=', 'customers.id')
-					->where('loan_shedules.due_date', $today)
-					->select('customers.name', \DB::raw('(loan_shedules.principal + loan_shedules.interest) as amount_due'))
+				$dueSchedules = \DB::table('loan_schedules')
+					->join('customers', 'loan_schedules.customer_id', '=', 'customers.id')
+					->where('loan_schedules.due_date', $today)
+					->select('customers.name', \DB::raw('(loan_schedules.principal + loan_schedules.interest) as amount_due'))
 					->get();
 			@endphp
 			<li class="nav-item dropdown dropdown-large">
