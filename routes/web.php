@@ -518,9 +518,12 @@ Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
 
 Route::get('/get-districts/{regionId}', [LocationController::class, 'getDistricts']);
 
-
-
-
+// Chat routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
+    Route::get('/chat/messages/{user}', [App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('chat.messages');
+    Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+});
 
 
 
