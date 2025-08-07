@@ -44,9 +44,11 @@
     </div>
 
     <div class="d-flex justify-content-end gap-2">
+        @can('view bank accounts')
         <a href="{{ route('accounting.bank-accounts') }}" class="btn btn-secondary">
             <i class="bx bx-x me-1"></i> Cancel
         </a>
+        @endcan
         <button type="submit" class="btn btn-{{ isset($bankAccount) ? 'primary' : 'success' }}">
             <i class="bx bx-{{ isset($bankAccount) ? 'check' : 'plus' }} me-1"></i>
             {{ isset($bankAccount) ? 'Update Bank Account' : 'Create Bank Account' }}

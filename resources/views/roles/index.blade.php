@@ -90,14 +90,19 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4 class="card-title mb-0">Roles List</h4>
                                 <div class="d-flex gap-2">
+                                @can('create permission')
                                     <button type="button" class="btn btn-success" data-bs-toggle="modal"
                                         data-bs-target="#createPermissionModal">
                                         <i class="bx bx-key"></i> Create Permission
                                     </button>
+                                @endcan
+
+                                @can('create role')
                                     <button type="button" class="btn btn-primary" data-bs-toggle="modal"
                                         data-bs-target="#createRoleModal">
                                         <i class="bx bx-plus"></i> Create New Role
                                     </button>
+                                @endcan
                                 </div>
                             </div>
                             <div class="table-responsive">
@@ -155,12 +160,19 @@
                                                     @endif
                                                 </td>
                                                 <td class="text-center">
+                                            @can('view role')
                                                     <button class="btn btn-sm btn-outline-info me-1"
                                                         onclick="viewRole({{ $role->id }})" title="View"><i
                                                             class="bx bx-show"></i></button>
+                                            @endcan
+
+                                            @can('edit role')
                                                     <button class="btn btn-sm btn-outline-primary me-1"
                                                         onclick="editRole({{ $role->id }})" title="Edit"><i
                                                             class="bx bx-edit"></i></button>
+                                            @endcan
+
+                                            @can('delete role')
                                                     <a href="{{ route('roles.menus', $role) }}"
                                                         class="btn btn-sm btn-outline-success me-1" title="Manage Menus"><i
                                                             class="bx bx-menu"></i></a>
@@ -169,6 +181,7 @@
                                                             onclick="deleteRole({{ $role->id }})" title="Delete"><i
                                                                 class="bx bx-trash"></i></button>
                                                     @endif
+                                            @endcan
                                                 </td>
                                             </tr>
                                         @endforeach
@@ -182,161 +195,163 @@
         </div>
     </div>
 
-    <!-- Create Role Modal -->
-    <div class="modal fade" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header bg-primary text-white">
-                    <h5 class="modal-title" id="createRoleModalLabel"><i class="bx bx-plus me-2"></i> Create New Role</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <form id="createRoleForm" action="{{ route('roles.store') }}" method="POST">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <p class="text-muted">Fill in the details below to create a new role. Assign permissions as
-                                needed.</p>
+<!-- Create Role Modal -->
+<div class="modal fade" id="createRoleModal" tabindex="-1" aria-labelledby="createRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @can('create role')
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="createRoleModalLabel"><i class="bx bx-plus me-2"></i> Create New Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            @endcan
+            <form id="createRoleForm" action="{{ route('roles.store') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <p class="text-muted">Fill in the details below to create a new role. Assign permissions as needed.</p>
+                    </div>
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="roleName" class="form-label">Role Name <span class="text-danger">*</span></label>
+                                <input type="text" class="form-control" id="roleName" name="name" required>
+                            </div>
                         </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="roleGuard" class="form-label">Guard</label>
+                                <select class="form-select" id="roleGuard" name="guard_name">
+                                    <option value="web" selected>Web</option>
+                                    <option value="api">API</option>
+                                </select>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="roleDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="roleDescription" name="description" rows="3"></textarea>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Permissions</label>
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="roleName" class="form-label">Role Name <span
-                                            class="text-danger">*</span></label>
-                                    <input type="text" class="form-control" id="roleName" name="name" required>
-                                </div>
-                            </div>
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="roleGuard" class="form-label">Guard</label>
-                                    <select class="form-select" id="roleGuard" name="guard_name">
-                                        <option value="web" selected>Web</option>
-                                        <option value="api">API</option>
-                                    </select>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="mb-3">
-                            <label for="roleDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="roleDescription" name="description" rows="3"></textarea>
-                        </div>
-                        <div class="mb-3">
-                            <label class="form-label">Permissions</label>
-                            <div class="row">
-                                @foreach($permissionGroups as $group => $permissions)
-                                    <div class="col-md-4 mb-3">
-                                        <div class="card border">
-                                            <div class="card-header bg-light py-2">
-                                                <h6 class="mb-0">{{ ucfirst($group) }}</h6>
-                                            </div>
-                                            <div class="card-body py-2" style="max-height: 200px; overflow-y: auto;">
-                                                @foreach($permissions as $permission)
-                                                    <div class="form-check">
-                                                        <input class="form-check-input" type="checkbox" name="permissions[]"
-                                                            value="{{ $permission->id }}" id="perm_{{ $permission->id }}">
-                                                        <label class="form-check-label small" for="perm_{{ $permission->id }}">
-                                                            {{ ucwords(str_replace(['-', '_'], ' ', $permission->name)) }}
-                                                        </label>
-                                                    </div>
-                                                @endforeach
-                                            </div>
-                                        </div>
+                            @foreach($permissionGroups as $group => $permissions)
+                            <div class="col-md-4 mb-3">
+                                <div class="card border">
+                                    <div class="card-header bg-light py-2">
+                                        <h6 class="mb-0">{{ ucfirst($group) }}</h6>
                                     </div>
-                                @endforeach
+                                    <div class="card-body py-2" style="max-height: 200px; overflow-y: auto;">
+                                        @foreach($permissions as $permission)
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="checkbox" 
+                                                   name="permissions[]" value="{{ $permission->id }}" 
+                                                   id="perm_{{ $permission->id }}">
+                                            <label class="form-check-label small" for="perm_{{ $permission->id }}">
+                                                {{ ucwords(str_replace(['-', '_'], ' ', $permission->name)) }}
+                                            </label>
+                                        </div>
+                                        @endforeach
+                                    </div>
+                                </div>
                             </div>
+                            @endforeach
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-primary">Save Role</button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Edit Role Modal -->
-    <div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
-        <div class="modal-dialog modal-xl">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="editRoleModalLabel">Edit Role</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
-                <form id="editRoleForm" method="POST">
-                    @csrf
-                    @method('PUT')
-                    <div class="modal-body" id="editRoleModalBody">
-                        <!-- Content will be loaded dynamically -->
-                    </div>
-
-                </form>
-            </div>
-        </div>
-    </div>
-
-    <!-- Create Permission Modal -->
-    <div class="modal fade" id="createPermissionModal" tabindex="-1" aria-labelledby="createPermissionModalLabel"
-        aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header bg-success text-white">
-                    <h5 class="modal-title" id="createPermissionModalLabel"><i class="bx bx-key me-2"></i> Create New
-                        Permission</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save Role</button>
                 </div>
-                <form id="createPermissionForm" action="{{ route('permissions.store') }}" method="POST">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <p class="text-muted">Create a new permission for the system.</p>
-                        </div>
-                        <div class="mb-3">
-                            <label for="permissionName" class="form-label">Permission Name <span
-                                    class="text-danger">*</span></label>
-                            <input type="text" class="form-control" id="permissionName" name="name"
-                                placeholder="e.g., create-loans, view-reports" required>
-                            <small class="text-muted">Use lowercase with hyphens (e.g., create-loans, view-reports)</small>
-                        </div>
-                        <div class="mb-3">
-                            <label for="permissionGuard" class="form-label">Guard</label>
-                            <select class="form-select" id="permissionGuard" name="guard_name">
-                                <option value="web" selected>Web</option>
-                                <option value="api">API</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="permissionGroup" class="form-label">Permission Group</label>
-                            <select class="form-select" id="permissionGroup" name="group">
-                                <option value="user">User Management</option>
-                                <option value="client">Client Management</option>
-                                <option value="loan">Loan Management</option>
-                                <option value="borrower">Borrower Management</option>
-                                <option value="collection">Collections & Payments</option>
-                                <option value="accounting">Accounting & Financial</option>
-                                <option value="savings">Savings & Deposits</option>
-                                <option value="report">Reports & Analytics</option>
-                                <option value="risk">Risk Management</option>
-                                <option value="settings">Settings & Configuration</option>
-                                <option value="ai">AI Assistant</option>
-                                <option value="dashboard">Dashboard & Analytics</option>
-                                <option value="menu">Menu Management</option>
-                            </select>
-                            <small class="text-muted">Select the category this permission belongs to</small>
-                        </div>
-                        <div class="mb-3">
-                            <label for="permissionDescription" class="form-label">Description</label>
-                            <textarea class="form-control" id="permissionDescription" name="description" rows="3"
-                                placeholder="Describe what this permission allows users to do"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Create Permission</button>
-                    </div>
-                </form>
-            </div>
+            </form>
         </div>
     </div>
+</div>
+
+<!-- Edit Role Modal -->
+<div class="modal fade" id="editRoleModal" tabindex="-1" aria-labelledby="editRoleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            @can('edit role')
+            <div class="modal-header">
+                <h5 class="modal-title" id="editRoleModalLabel">Edit Role</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            @endcan
+            <form id="editRoleForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-body" id="editRoleModalBody">
+                    <!-- Content will be loaded dynamically -->
+                </div>
+                
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Create Permission Modal -->
+<div class="modal fade" id="createPermissionModal" tabindex="-1" aria-labelledby="createPermissionModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            @can('create permission')
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="createPermissionModalLabel"><i class="bx bx-key me-2"></i> Create New Permission</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            @endcan
+            <form id="createPermissionForm" action="{{ route('permissions.store') }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <p class="text-muted">Create a new permission for the system.</p>
+                    </div>
+                    <div class="mb-3">
+                        <label for="permissionName" class="form-label">Permission Name <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control" id="permissionName" name="name" 
+                               placeholder="e.g., create-loans, view-reports" required>
+                        <small class="text-muted">Use lowercase with hyphens (e.g., create-loans, view-reports)</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="permissionGuard" class="form-label">Guard</label>
+                        <select class="form-select" id="permissionGuard" name="guard_name">
+                            <option value="web" selected>Web</option>
+                            <option value="api">API</option>
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="permissionGroup" class="form-label">Permission Group</label>
+                        <select class="form-select" id="permissionGroup" name="group">
+                            <option value="user">User Management</option>
+                            <option value="client">Client Management</option>
+                            <option value="loan">Loan Management</option>
+                            <option value="borrower">Borrower Management</option>
+                            <option value="collection">Collections & Payments</option>
+                            <option value="accounting">Accounting & Financial</option>
+                            <option value="savings">Savings & Deposits</option>
+                            <option value="report">Reports & Analytics</option>
+                            <option value="risk">Risk Management</option>
+                            <option value="settings">Settings & Configuration</option>
+                            <option value="ai">AI Assistant</option>
+                            <option value="dashboard">Dashboard & Analytics</option>
+                            <option value="menu">Menu Management</option>
+                        </select>
+                        <small class="text-muted">Select the category this permission belongs to</small>
+                    </div>
+                    <div class="mb-3">
+                        <label for="permissionDescription" class="form-label">Description</label>
+                        <textarea class="form-control" id="permissionDescription" name="description" 
+                                  rows="3" placeholder="Describe what this permission allows users to do"></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Create Permission</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 
     <!-- View Role Modal -->
     <div class="modal fade" id="viewRoleModal" tabindex="-1" aria-labelledby="viewRoleModalLabel" aria-hidden="true">

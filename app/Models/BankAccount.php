@@ -34,6 +34,10 @@ class BankAccount extends Model
         return $this->hasMany(GlTransaction::class, 'chart_account_id', 'chart_account_id');
     }
 
+    public function repaymente(){
+        return $this->hasMany(Repayment::class,'bank_account_id');
+    }
+
     /**
      * Calculate the current balance of the bank account.
      */

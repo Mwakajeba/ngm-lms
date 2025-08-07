@@ -49,6 +49,7 @@
                 <div class="col-12">
                     <div class="card radius-10">
                         <div class="card-body">
+                            @can('create group')
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4 class="card-title mb-0">Groups List</h4>
                                 <div>
@@ -57,6 +58,7 @@
                                     </a>
                                 </div>
                             </div>
+                            @endcan
 
                             <div class="table-responsive">
                                 <table class="table table-bordered dt-responsive nowrap w-100" id="groupsTable">
@@ -114,20 +116,28 @@
                                                 </td>
                                                 <td class="text-center text-nowrap">
                                                     <div class="btn-group" role="group">
+                                                        @can('view group details')
                                                         <a href="{{ route('groups.show', Hashids::encode($group->id)) }}"
                                                             class="btn btn-sm btn-outline-info" title="View Details">
                                                             View
                                                         </a>
+                                                        @endcan
+
+                                                        @can('edit group')
                                                         <a href="{{ route('groups.edit', Hashids::encode($group->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="Edit Group">
                                                             Edit
                                                         </a>
+                                                        @endcan
+
+                                                        @can('delete group')
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                             title="Delete Group"
                                                             data-group-id="{{ Hashids::encode($group->id) }}"
                                                             data-group-name="{{ $group->name }}">
                                                             Delete
                                                         </button>
+                                                        @endcan
                                                     </div>
                                                 </td>
                                             </tr>

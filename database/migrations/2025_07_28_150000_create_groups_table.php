@@ -15,10 +15,10 @@ return new class extends Migration {
             $table->string('name');
             $table->foreignId('loan_officer')->constrained('users')->onDelete('cascade');
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
-            $table->integer('minimum_members')->default(5);
-            $table->integer('maximum_members')->default(20);
+            $table->integer('minimum_members')->nullable();
+            $table->integer('maximum_members')->nullable();
             $table->foreignId('group_leader')->nullable()->constrained('customers')->onDelete('cascade');
-            $table->enum('meeting_day', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday'])->nullable();
+            $table->enum('meeting_day', ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday','every_week','every_day','every_month'])->nullable();
             $table->time('meeting_time')->nullable();
             $table->timestamps();
         });

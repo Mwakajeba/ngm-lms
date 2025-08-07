@@ -36,9 +36,11 @@
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h4 class="card-title mb-0">Cash Collateral List</h4>
+                    @can('create cash collateral')
                     <a href="{{ route('cash_collaterals.create') }}" class="btn btn-primary">
                         <i class="bx bx-plus"></i> Add Collateral
                     </a>
+                    @endcan
                 </div>
 
                 <div class="table-responsive">
@@ -63,13 +65,21 @@
                                         <div class="btn-group" role="group">
                                             <a href="" class="btn btn-sm btn-outline-success">Deposit</a>
                                             <a href="" class="btn btn-sm btn-outline-primary">Withdraw</a>
-                                            <a href="{{ route('cash_collaterals.show', $collateral) }}" class="btn btn-sm btn-outline-info">View</a>
-                                            <a href="{{ route('cash_collaterals.edit', $collateral) }}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                            <form action="{{ route('cash_collaterals.destroy', $collateral) }}" method="POST" class="d-inline delete-form">
+                                            @can('view cash collateral details')
+                                            <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-info">View</a>
+                                            @endcan
+                                            
+                                            @can('edit cash collateral')
+                                            <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-warning">Edit</a>
+                                            @endcan
+
+                                            @can('delete cash collateral')
+                                            <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" class="d-inline delete-form">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-outline-danger" data-name="{{ $collateral->id }}">Delete</button>
                                             </form>
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>

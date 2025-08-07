@@ -76,6 +76,10 @@ class Customer extends Model
         return $this->hasMany(CashCollateral::class);
     }
 
+    public function repayments(){
+        return $this->hasMany(Repayment::class,'customer_id');
+    }
+
     public function loans()
     {
         return $this->hasMany(Loan::class);

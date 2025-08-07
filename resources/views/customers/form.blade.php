@@ -312,9 +312,11 @@ $isEdit = isset($customer);
         <hr class="my-4">
 
         <div class="d-flex justify-content-between">
+            @can('view borrower')
             <a href="{{ route('customers.index') }}" class="btn btn-secondary">
                 <i class="bx bx-arrow-back me-1"></i> Back to Customers
             </a>
+            @endcan
             <button type="submit" class="btn btn-primary">
                 <i class="bx bx-save me-1"></i> {{ $isEdit ? 'Update Customer' : 'Create Customer' }}
             </button>

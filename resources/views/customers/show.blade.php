@@ -12,9 +12,11 @@
         ]" />
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0 text-uppercase">Customer Profile</h6>
+            @can('create loan')
             <a href="#" class="btn btn-sm btn-primary">
                 <i class="bx bx-plus"></i> Apply for Loan
             </a>
+            @endcan
         </div>
         <div class="row">
             <!-- Total Loans -->
@@ -211,9 +213,13 @@
 
                         <!-- Action Buttons -->
                         <div class="mt-4 d-flex flex-wrap gap-2">
+                            @can('edit borrower')
                             <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-sm btn-warning flex-fill">
                                 <i class="bx bx-edit"></i> Edit
                             </a>
+                            @endcan
+
+                            @can('delete borrower')
 
                             <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="flex-fill">
                                 @csrf
@@ -222,6 +228,7 @@
                                     <i class="bx bx-trash"></i> Delete
                                 </button>
                             </form>
+                            @endcan
 
                         </div>
 
@@ -255,25 +262,40 @@
                                         <td>{{ number_format($collateral->amount, 2) }}</td> {{-- Assuming 'amount' field --}}
                                         <td>{{ $collateral->created_at->format('M d, Y') }}</td>
                                         <td class="text-center">
+                                            @can('view cash collateral details')
                                             <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-warning">
                                                 View
                                             </a>
+                                            @endcan
+
+                                            @can('edit cash collateral')
                                             <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-info">
                                                 Edit
                                             </a>
+                                            @endcan
+
+                                            @can('delete cash collateral')
                                             <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" style="display:inline;">
                                                 @csrf
                                                 @method('DELETE')
                                                 <button type="submit" class="btn btn-sm btn-danger">Delete</button>
                                             </form>
+                                            @endcan
+
+                                            @can('deposit cash collateral')
 
                                             <a href="{{ route('cash_collaterals.deposit',Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-primary">
                                                 Deposit
                                             </a>
 
+                                            @endcan
+
+                                            @can('withdraw cash collateral')
+
                                             <a href="{{ route('cash_collaterals.withdraw', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-success">
                                                 Withdraw
                                             </a>
+                                            @endcan
                                         </td>
                                     </tr>
                                     @endforeach
@@ -307,10 +329,15 @@
                                             <td>{{ $loan->status }}</td>
                                             <td>{{ $loan->disbursed_on }}</td>
                                             <td class="text-center">
-                                                <a href="{{ route('loans.show', $loan->id) }}" class="btn btn-sm btn-info">View</a>
+                                                @can('view loan details')
+                                                <a href="{{ route('loans.show', Hashids::encode($loan->id)) }}" class="btn btn-sm btn-info">View</a>
+                                                @endcan
+
+                                                @can('edit loan')
                                                 @if($loan->status == 'Pending')
-                                                <a href="{{ route('loans.edit', $loan->id) }}" class="btn btn-sm btn-primary">Edit</a>
+                                                <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}" class="btn btn-sm btn-primary">Edit</a>
                                                 @endif
+                                                @endcan
                                             </td>
                                         </tr>
                                         @endforeach
@@ -343,18 +370,18 @@
                                     </thead>
                                     <tbody>
                                         @foreach ($customer->filetypes as $index => $file)
-                                            <tr>
-                                                <td>{{ $index + 1 }}</td>
-                                                <td>{{ $file->name }}</td>
-                                                <td>
-                                                    @if($file->pivot->document_path)
-                                                        <a href="{{ asset('storage/' . $file->pivot->document_path) }}" class="btn btn-sm btn-info" target="_blank">View</a>
-                                                        <a href="{{ asset('storage/' . $file->pivot->document_path) }}" class="btn btn-sm btn-success" download>Download</a>
-                                                    @else
-                                                        <span class="text-danger">No file to view/download</span>
-                                                    @endif
-                                                </td>
-                                            </tr>
+                                        <tr>
+                                            <td>{{ $index + 1 }}</td>
+                                            <td>{{ $file->name }}</td>
+                                            <td>
+                                                @if($file->pivot->document_path)
+                                                <a href="{{ asset('storage/' . $file->pivot->document_path) }}" class="btn btn-sm btn-info" target="_blank">View</a>
+                                                <a href="{{ asset('storage/' . $file->pivot->document_path) }}" class="btn btn-sm btn-success" download>Download</a>
+                                                @else
+                                                <span class="text-danger">No file to view/download</span>
+                                                @endif
+                                            </td>
+                                        </tr>
                                         @endforeach
                                     </tbody>
                                 </table>

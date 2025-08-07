@@ -20,11 +20,13 @@
                                 Create New Bank Account
                             </h4>
                         </div>
+                        @can('view bank accounts')
                         <div>
                             <a href="{{ route('accounting.bank-accounts') }}" class="btn btn-outline-secondary">
                                 <i class="bx bx-arrow-back me-1"></i> Back to List
                             </a>
                         </div>
+                        @endcan
                     </div>
                 </div>
             </div>

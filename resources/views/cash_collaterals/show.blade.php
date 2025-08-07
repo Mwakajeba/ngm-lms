@@ -35,14 +35,19 @@
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="btn-group" role="group">
+                                    @can(deposit cash collateral)
                                     <a href="{{ route('cash_collaterals.deposit', Hashids::encode($cashCollateral->id)) }}"
                                         class="btn btn-success">
                                         <i class="bx bx-plus me-1"></i> Deposit
                                     </a>
+                                    @endcan
+
+                                    @can('withdraw cash collateral')
                                     <a href="{{ route('cash_collaterals.withdraw', Hashids::encode($cashCollateral->id)) }}"
                                         class="btn btn-warning">
                                         <i class="bx bx-minus me-1"></i> Withdraw
                                     </a>
+                                    @endcan
                                 </div>
                             </div>
                         </div>
@@ -60,6 +65,7 @@
                             <div class="col-md-6">
                                 <h5 class="mb-0">Transaction History</h5>
                             </div>
+                            @can('print transactions')
                             <div class="col-md-6 text-end">
                                 <div class="btn-group" role="group">
                                     <button type="button" class="btn btn-outline-primary" onclick="printTransactions()">
@@ -68,6 +74,7 @@
 
                                 </div>
                             </div>
+                            @endcan
                         </div>
                     </div>
                     <div class="card-body">
@@ -117,6 +124,7 @@
                                         <td>
                                             <div class="btn-group" role="group">
                                                 @if($transaction['type'] === 'Deposit')
+                                                @can('edit transaction')
                                                 <a href="{{ route('receipts.edit', Hashids::encode($transaction['id'])) }}"
                                                     class="btn btn-sm btn-outline-primary"
                                                     title="Edit Deposit">
@@ -128,18 +136,23 @@
                                                     title="Edit Withdrawal">
                                                     <i class="bx bx-edit"></i>
                                                 </a>
+                                                @endcan
                                                 @endif
 
                                                 @php
                                                 $encodedId = Hashids::encode($transaction['id']);
                                                 @endphp
 
+
+
+                                                @can('delete transaction')
                                                 <button type="button"
                                                     class="btn btn-sm btn-outline-danger"
                                                     onclick="deleteTransaction('{{ $encodedId }}', '{{ $transaction['type'] }}', '{{ $transaction['transaction_type'] }}')"
                                                     title="Delete Transaction">
                                                     <i class="bx bx-trash"></i>
                                                 </button>
+                                                @endcan
 
                                             </div>
                                         </td>
@@ -153,10 +166,12 @@
                             <i class="bx bx-money bx-lg text-muted mb-3"></i>
                             <h5 class="text-muted">No transactions found</h5>
                             <p class="text-muted">No deposits or withdrawals have been made for this cash collateral yet.</p>
+                            @can('deposit cash collateral')
                             <a href="{{ route('cash_collaterals.deposit', Hashids::encode($cashCollateral->id)) }}"
                                 class="btn btn-primary">
                                 <i class="bx bx-plus me-1"></i> Make First Deposit
                             </a>
+                            @endcan
                         </div>
                         @endif
                     </div>
@@ -348,15 +363,24 @@
     $(document).ready(function() {
         $('#transactionsTable').DataTable({
             responsive: true,
-            order: [[1, 'desc']],
+            order: [
+                [1, 'desc']
+            ],
             pageLength: 10,
             language: {
                 search: "",
                 searchPlaceholder: "Search transactions..."
             },
-            columnDefs: [
-                { targets: -1, responsivePriority: 1, orderable: false, searchable: false },
-                { targets: [0,1,2], responsivePriority: 2 }
+            columnDefs: [{
+                    targets: -1,
+                    responsivePriority: 1,
+                    orderable: false,
+                    searchable: false
+                },
+                {
+                    targets: [0, 1, 2],
+                    responsivePriority: 2
+                }
             ]
         });
     });
