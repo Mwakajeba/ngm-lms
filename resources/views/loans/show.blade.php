@@ -159,44 +159,42 @@
                         @endphp
 
                         @if($nextLevel && $nextAction)
-                        <div class="row g-3">
-                            @if(auth()->user() && $loan->canBeApprovedByUser(auth()->user()) && !$loan->hasUserApproved(auth()->user()))
-                            <div class="col-md-6 col-lg-4">
-                                <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="approveLoan('{{ Hashids::encode($loan->id) }}')">
-                                    <i class="bx bx-check-circle me-2"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">{{ ucfirst($nextAction) }} Loan</div>
-                                        <small class="d-block">{{ $nextRoleName }} (Level {{ $nextLevel }})</small>
+                            <div class="row g-3">
+                                @if(auth()->user() && $loan->canBeApprovedByUser(auth()->user()))
+                                    <div class="col-md-6 col-lg-4">
+                                        <button type="button" class="btn btn-primary w-100 d-flex align-items-center justify-content-center" onclick="approveLoan('{{ Hashids::encode($loan->id) }}')">
+                                            <i class="bx bx-check-circle me-2"></i>
+                                            <div class="text-start">
+                                                <div class="fw-bold">{{ ucfirst($nextAction) }} Loan</div>
+                                                <small class="d-block">{{ $nextRoleName }} (Level {{ $nextLevel }})</small>
+                                            </div>
+                                        </button>
                                     </div>
-                                </button>
-                            </div>
-                            @endif
+                                @endif
 
-                            @if($loan->canBeRejected() && auth()->user() && $loan->canBeApprovedByUser(auth()->user()) && !$loan->hasUserApproved(auth()->user()))
-                            <div class="col-md-6 col-lg-4">
-                                <button type="button" class="btn btn-danger w-100 d-flex align-items-center justify-content-center" onclick="rejectLoan('{{ Hashids::encode($loan->id) }}')">
-                                    <i class="bx bx-x-circle me-2"></i>
-                                    <div class="text-start">
-                                        <div class="fw-bold">Reject Loan</div>
-                                        <small class="d-block">Decline Application</small>
+                                @if($loan->canBeRejected() && auth()->user() && $loan->canBeApprovedByUser(auth()->user()))
+                                    <div class="col-md-6 col-lg-4">
+                                        <button type="button" class="btn btn-danger w-100 d-flex align-items-center justify-content-center" onclick="rejectLoan('{{ Hashids::encode($loan->id) }}')">
+                                            <i class="bx bx-x-circle me-2"></i>
+                                            <div class="text-start">
+                                                <div class="fw-bold">Reject Loan</div>
+                                                <small class="d-block">Decline Application</small>
+                                            </div>
+                                        </button>
                                     </div>
-                                </button>
+                                @endif
                             </div>
-                            @endif
-                        </div>
 
-                        @if(!auth()->user() || !$loan->canBeApprovedByUser(auth()->user()) || $loan->hasUserApproved(auth()->user()))
-                        <div class="alert alert-info">
-                            <i class="bx bx-info-circle me-2"></i>
-                            @if(!auth()->user())
-                            Please log in to perform approval actions.
-                            @elseif(!$loan->canBeApprovedByUser(auth()->user()))
-                            You don't have permission to approve this loan. Required role: {{ $nextRoleName }}
-                            @elseif($loan->hasUserApproved(auth()->user()))
-                            You have already approved this loan.
+                            @if(!auth()->user() || !$loan->canBeApprovedByUser(auth()->user()))
+                                <div class="alert alert-info">
+                                    <i class="bx bx-info-circle me-2"></i>
+                                    @if(!auth()->user())
+                                        Please log in to perform approval actions.
+                                    @elseif(!$loan->canBeApprovedByUser(auth()->user()))
+                                        You don't have permission to approve this loan. Required role: {{ $nextRoleName }}
+                                    @endif
+                                </div>
                             @endif
-                        </div>
-                        @endif
 
                         <div class="mt-3">
                             <small class="text-muted">

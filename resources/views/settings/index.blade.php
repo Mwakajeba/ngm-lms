@@ -6,9 +6,9 @@
     <div class="page-wrapper">
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
-                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-                ['label' => 'Settings', 'url' => '#', 'icon' => 'bx bx-cog']
-            ]" />
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Settings', 'url' => '#', 'icon' => 'bx bx-cog']
+        ]" />
             <h6 class="mb-0 text-uppercase">SETTINGS</h6>
             <hr />
 
@@ -90,39 +90,39 @@
 
                                 <!-- System Settings -->
                                 @can('view system configurations')
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-warning">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-cog fs-1 text-warning"></i>
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card border-warning">
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <i class="bx bx-cog fs-1 text-warning"></i>
+                                                </div>
+                                                <h5 class="card-title">System Settings</h5>
+                                                <p class="card-text">Configure system-wide settings and preferences.</p>
+                                                <a href="{{ route('settings.system') }}" class="btn btn-warning">
+                                                    <i class="bx bx-cog me-1"></i> Configure
+                                                </a>
                                             </div>
-                                            <h5 class="card-title">System Settings</h5>
-                                            <p class="card-text">Configure system-wide settings and preferences.</p>
-                                            <a href="{{ route('settings.system') }}" class="btn btn-warning">
-                                                <i class="bx bx-cog me-1"></i> Configure
-                                            </a>
                                         </div>
                                     </div>
-                                </div>
                                 @endcan
-        
+
 
                                 <!-- Backup Settings -->
                                 @can('view backup settings')
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-danger">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-data fs-1 text-danger"></i>
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card border-danger">
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <i class="bx bx-data fs-1 text-danger"></i>
+                                                </div>
+                                                <h5 class="card-title">Backup Settings</h5>
+                                                <p class="card-text">Manage data backup and restore operations.</p>
+                                                <a href="{{ route('settings.backup') }}" class="btn btn-danger">
+                                                    <i class="bx bx-cog me-1"></i> Configure
+                                                </a>
                                             </div>
-                                            <h5 class="card-title">Backup Settings</h5>
-                                            <p class="card-text">Manage data backup and restore operations.</p>
-                                            <a href="{{ route('settings.backup') }}" class="btn btn-danger">
-                                                <i class="bx bx-cog me-1"></i> Configure
-                                            </a>
                                         </div>
                                     </div>
-                                </div>
                                 @endcan
 
                                 <!-- AI Assistant -->
@@ -152,7 +152,7 @@
                                             <h5 class="card-title">Roles & Permissions</h5>
                                             <p class="card-text">Manage user roles, permissions, and access control.</p>
                                             <a href="{{ route('roles.index') }}" class="btn btn-secondary">
-                                                <i class="bx bx-shield me-1"></i> Manage
+                                                <i class="bx bx-shield me-1"></i> Role, Permissions & Menu
                                             </a>
                                         </div>
                                     </div>
@@ -205,7 +205,7 @@
                                     </div>
                                 </div>
 
-                                 <!-- Filetypes Settings -->
+                                <!-- Filetypes Settings -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
@@ -213,7 +213,8 @@
                                                 <i class="bx bx-file fs-1 text-primary"></i>
                                             </div>
                                             <h5 class="card-title">File Types Management</h5>
-                                            <p class="card-text">Configure the filetypes to be used in uploading documents.</p>
+                                            <p class="card-text">Configure the filetypes to be used in uploading documents.
+                                            </p>
                                             <a href="{{ route('settings.filetypes.index') }}" class="btn btn-primary">
                                                 <i class="bx bx-list-ul me-1"></i> Manage File Types
                                             </a>

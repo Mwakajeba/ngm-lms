@@ -9,7 +9,7 @@ use Illuminate\Support\ServiceProvider;
 
 class ViewServiceProvider extends ServiceProvider
 {
-     public function boot()
+    public function boot()
     {
         View::composer('incs.sideMenu', function ($view) {
             $user = Auth::user();
@@ -19,11 +19,23 @@ class ViewServiceProvider extends ServiceProvider
                 return;
             }
 
-            $role = $user->roles->first();
+            // Get all user roles
+            $userRoles = $user->roles;
 
+            if ($userRoles->isEmpty()) {
+                $view->with('menus', []);
+                return;
+            }
+
+            // Get role IDs
+            $roleIds = $userRoles->pluck('id')->toArray();
+
+            // Get menus for all user roles
             $menus = Menu::with('children')
                 ->whereNull('parent_id')
-                ->whereHas('roles', fn($q) => $q->where('roles.id', $role->id)) // 👈 FIXED HERE
+                ->whereHas('roles', function ($query) use ($roleIds) {
+                    $query->whereIn('roles.id', $roleIds);
+                })
                 ->get();
 
             $view->with('menus', $menus);

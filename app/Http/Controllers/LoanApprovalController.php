@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\GlTransaction;
 use App\Models\Loan;
 use App\Models\LoanApproval;
+use App\Models\Payment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
@@ -320,7 +322,7 @@ class LoanApprovalController extends Controller
         }
 
         // Create Payment record
-        $payment = \App\Models\Payment::create([
+        $payment = Payment::create([
             'reference' => $loan->id,
             'reference_type' => 'Loan Payment',
             'reference_number' => null,
@@ -336,7 +338,7 @@ class LoanApprovalController extends Controller
             'approved_at' => now(),
         ]);
 
-        \App\Models\PaymentItem::create([
+        Payment::create([
             'payment_id' => $payment->id,
             'chart_account_id' => $principalReceivable,
             'amount' => $loan->amount,
@@ -344,7 +346,7 @@ class LoanApprovalController extends Controller
         ]);
 
         // Create GL Transactions
-        \App\Models\GlTransaction::insert([
+        GlTransaction::insert([
             [
                 'chart_account_id' => $bankAccount->chart_account_id,
                 'customer_id' => $loan->customer_id,
