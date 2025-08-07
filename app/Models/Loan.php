@@ -76,6 +76,10 @@ class Loan extends Model
         return $this->hasMany(LoanSchedule::class, 'loan_id');
     }
 
+    public function repayments(){
+        return $this->hasMany(Repayment::class, 'loan_id');
+    }
+
     public function loanFiles()
     {
         return $this->hasMany(LoanFile::class, 'loan_id');

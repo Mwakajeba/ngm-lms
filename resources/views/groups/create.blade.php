@@ -54,7 +54,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Loan Officer <span class="text-danger">*</span></label>
                                         <select name="loan_officer"
-                                            class="form-select @error('loan_officer') is-invalid @enderror" required>
+                                            class="form-select  select2-single @error('loan_officer') is-invalid @enderror" required>
                                             <option value="">-- Select Loan Officer --</option>
                                             @foreach($loanOfficers as $officer)
                                                 <option value="{{ $officer->id }}" {{ old('loan_officer') == $officer->id ? 'selected' : '' }}>
@@ -67,29 +67,12 @@
                                         @enderror
                                     </div>
 
-                                    <!-- Branch -->
-                                    <div class="col-md-6 mb-3">
-                                        <label class="form-label">Branch <span class="text-danger">*</span></label>
-                                        <select name="branch_id"
-                                            class="form-select @error('branch_id') is-invalid @enderror" required>
-                                            <option value="">-- Select Branch --</option>
-                                            @foreach($branches as $branch)
-                                                <option value="{{ $branch->id }}" {{ old('branch_id') == $branch->id ? 'selected' : '' }}>
-                                                    {{ $branch->name }}
-                                                </option>
-                                            @endforeach
-                                        </select>
-                                        @error('branch_id')
-                                            <div class="invalid-feedback">{{ $message }}</div>
-                                        @enderror
-                                    </div>
-
                                     <!-- Minimum Members -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Minimum Members</label>
+                                        <label class="form-label">Minimum Members(Optional)</label>
                                         <input type="number" name="minimum_members"
                                             class="form-control @error('minimum_members') is-invalid @enderror"
-                                            value="{{ old('minimum_members', 5) }}" min="1" max="1000000">
+                                            value="{{ old('minimum_members') }}" min="1" max="1000000">
                                         @error('minimum_members')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -97,10 +80,10 @@
 
                                     <!-- Maximum Members -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Maximum Members</label>
+                                        <label class="form-label">Maximum Members(optional)</label>
                                         <input type="number" name="maximum_members"
                                             class="form-control @error('maximum_members') is-invalid @enderror"
-                                            value="{{ old('maximum_members', 20) }}" min="1" max="1000000">
+                                            value="{{ old('maximum_members') }}" min="1" max="1000000">
                                         @error('maximum_members')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -108,7 +91,7 @@
 
                                     <!-- Group Leader -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Group Leader</label>
+                                        <label class="form-label">Group Leader(optional)</label>
                                         <select name="group_leader"
                                             class="form-select select2-single @error('group_leader') is-invalid @enderror">
                                             <option value="">-- Select Group Leader --</option>
@@ -125,9 +108,9 @@
 
                                     <!-- Meeting Day -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Meeting Day</label>
+                                        <label class="form-label">Meeting Day(Optional)</label>
                                         <select name="meeting_day"
-                                            class="form-select @error('meeting_day') is-invalid @enderror">
+                                            class="form-select  select2-single @error('meeting_day') is-invalid @enderror">
                                             <option value="">-- Select Meeting Day --</option>
                                             <option value="monday" {{ old('meeting_day') == 'monday' ? 'selected' : '' }}>
                                                 Monday</option>
@@ -142,6 +125,12 @@
                                                 Saturday</option>
                                             <option value="sunday" {{ old('meeting_day') == 'sunday' ? 'selected' : '' }}>
                                                 Sunday</option>
+                                            <option value="every_week" {{ old('meeting_day') == 'every_week' ? 'selected' : '' }}>
+                                                Every Week</option>
+                                                 <option value="every_day" {{ old('meeting_day') == 'every_day' ? 'selected' : '' }}>
+                                                Every Day</option>
+                                                <option value="every_month" {{ old('meeting_day') == 'every_month' ? 'selected' : '' }}>
+                                                Every Month</option>
                                         </select>
                                         @error('meeting_day')
                                             <div class="invalid-feedback">{{ $message }}</div>
@@ -164,9 +153,12 @@
                                 <div class="row mt-4">
                                     <div class="col-12">
                                         <div class="d-flex justify-content-end gap-2">
+                                            @can('view groups')
                                             <a href="{{ route('groups.index') }}" class="btn btn-secondary">
                                                 <i class="bx bx-x"></i> Cancel
                                             </a>
+                                            @endcan
+
                                             <button type="submit" class="btn btn-primary">
                                                 <i class="bx bx-save"></i> Create Group
                                             </button>
@@ -245,7 +237,7 @@
     document.addEventListener('DOMContentLoaded', function() {
         if (window.jQuery) {
             $('.select2-single').select2({
-                placeholder: 'Select an Group leader',
+                placeholder: 'Select an option',
                 allowClear: true,
                 width: '100%',
                 theme: 'bootstrap-5'

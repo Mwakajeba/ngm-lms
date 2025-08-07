@@ -52,14 +52,15 @@
                     <i class="bx bx-file me-2 font-18"></i>Documents
                 </a>
             </li>
-            <li class="nav-item" role="presentation">
-                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#repayments" role="tab">
-                    <i class="bx bx-credit-card me-2 font-18"></i>Repayments
-                </a>
-            </li>
+
             <li class="nav-item" role="presentation">
                 <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#collaterals" role="tab">
                     <i class="bx bx-shield me-2 font-18"></i>Collaterals
+                </a>
+            </li>
+            <li class="nav-item" role="presentation">
+                <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#repayments" role="tab">
+                    <i class="bx bx-credit-card me-2 font-18"></i>Repayments
                 </a>
             </li>
             <li class="nav-item" role="presentation">
@@ -189,16 +190,16 @@
                             @endif
                         </div>
 
-                            @if(!auth()->user() || !$loan->canBeApprovedByUser(auth()->user()))
-                                <div class="alert alert-info">
-                                    <i class="bx bx-info-circle me-2"></i>
-                                    @if(!auth()->user())
-                                        Please log in to perform approval actions.
-                                    @elseif(!$loan->canBeApprovedByUser(auth()->user()))
-                                        You don't have permission to approve this loan. Required role: {{ $nextRoleName }}
-                                    @endif
-                                </div>
+                        @if(!auth()->user() || !$loan->canBeApprovedByUser(auth()->user()))
+                        <div class="alert alert-info">
+                            <i class="bx bx-info-circle me-2"></i>
+                            @if(!auth()->user())
+                            Please log in to perform approval actions.
+                            @elseif(!$loan->canBeApprovedByUser(auth()->user()))
+                            You don't have permission to approve this loan. Required role: {{ $nextRoleName }}
                             @endif
+                        </div>
+                        @endif
 
                         <div class="mt-3">
                             <small class="text-muted">
@@ -416,7 +417,7 @@
                                     <tr>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Date</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Amount</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Amount Paid</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Type</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Actions</th>
                                     </tr>
@@ -426,7 +427,7 @@
                                     <tr>
                                         <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                         <td>{{ \Carbon\Carbon::parse($repayment->payment_date)->format('M d, Y') }}</td>
-                                        <td>{{ number_format($repayment->amount, 2) }}</td>
+                                        <td>{{ number_format($repayment->amount_paid, 2) }}</td>
                                         <td>{{ ucfirst($repayment->payment_type ?? 'Regular') }}</td>
                                         <td class="text-end pe-4">
                                             <a href="#" class="btn btn-sm btn-outline-secondary">View</a>

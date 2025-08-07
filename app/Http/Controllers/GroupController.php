@@ -7,7 +7,9 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\Loan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -36,12 +38,11 @@ class GroupController extends Controller
 
 
         $branchId = auth()->user()->branch_id;
-        $branches = Branch::where('id', $branchId)->get();
         // Only customers in 'Borrower' category can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
             ->where('category', 'Borrower')->get();
 
-        return view('groups.create', compact('loanOfficers', 'groupLeaders', 'branches'));
+        return view('groups.create', compact('loanOfficers', 'groupLeaders'));
     }
 
     /**
@@ -52,46 +53,33 @@ class GroupController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:groups,name',
             'loan_officer' => 'required|exists:users,id',
-            'branch_id' => 'required|exists:branches,id',
-            'minimum_members' => 'required|integer|min:1|max:1000000',
-            'maximum_members' => 'required|integer|min:1|max:1000000',
+            'minimum_members' => 'nullable|integer|min:1|max:1000000',
+            'maximum_members' => 'nullable|integer|min:1|max:1000000',
             'group_leader' => [
                 'nullable',
                 'exists:customers,id',
                 function ($attribute, $value, $fail) {
                     if ($value) {
-                        $customer = \App\Models\Customer::find($value);
+                        $customer = Customer::find($value);
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
                         }
                     }
                 }
             ],
-            'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday,every_day,every_month,every_week',
             'meeting_time' => 'nullable|date_format:H:i',
         ], [
             'name.required' => 'Group name is required.',
             'name.unique' => 'A group with this name already exists.',
             'loan_officer.required' => 'Please select a loan officer.',
             'loan_officer.exists' => 'The selected loan officer is invalid.',
-            'branch_id.required' => 'Please select a branch.',
-            'branch_id.exists' => 'The selected branch is invalid.',
-            'minimum_members.required' => 'Minimum members is required.',
-            'minimum_members.min' => 'Minimum members must be at least 1.',
-            'minimum_members.max' => 'Minimum members cannot exceed 1000000.',
-            'maximum_members.required' => 'Maximum members is required.',
-            'maximum_members.min' => 'Maximum members must be at least 1.',
-            'maximum_members.max' => 'Maximum members cannot exceed 1000000.',
             'group_leader.exists' => 'The selected group leader is invalid.',
             'meeting_day.in' => 'Please select a valid meeting day.',
             'meeting_time.date_format' => 'Please enter a valid meeting time.',
         ]);
 
-        // Validate that maximum is greater than minimum
-        if ($request->maximum_members <= $request->minimum_members) {
-            $validator->errors()->add('maximum_members', 'Maximum members must be greater than minimum members.');
-        }
-
+       
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
@@ -100,7 +88,7 @@ class GroupController extends Controller
             $group = Group::create([
                 'name' => $request->name,
                 'loan_officer' => $request->loan_officer,
-                'branch_id' => $request->branch_id,
+                'branch_id' => Auth::user()->branch_id,
                 'minimum_members' => $request->minimum_members,
                 'maximum_members' => $request->maximum_members,
                 'group_leader' => $request->group_leader,
@@ -144,7 +132,7 @@ class GroupController extends Controller
 
         // Get all loans for this group (assuming each member has loans)
         $memberIds = $group->members->pluck('customer_id');
-        $loans = \App\Models\Loan::whereIn('customer_id', $memberIds)->get();
+        $loans = Loan::whereIn('customer_id', $memberIds)->get();
 
         return view('groups.show', compact('group', 'loans'));
     }
@@ -167,12 +155,11 @@ class GroupController extends Controller
         })->get();
 
         $branchId = auth()->user()->branch_id;
-        $branches = Branch::where('id', $branchId)->get();
         // Only customers in 'Borrower' category can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
             ->where('category', 'Borrower')->get();
 
-        return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders', 'branches'));
+        return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders'));
     }
 
     /**
@@ -191,50 +178,33 @@ class GroupController extends Controller
         $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:groups,name,' . $group->id,
             'loan_officer' => 'required|exists:users,id',
-            'branch_id' => 'required|exists:branches,id',
-            'minimum_members' => 'required|integer|min:1|max:1000000',
-            'maximum_members' => 'required|integer|min:1|max:1000000',
+            'minimum_members' => 'nullable|integer|min:1|max:1000000',
+            'maximum_members' => 'nullable|integer|min:1|max:1000000',
             'group_leader' => [
                 'nullable',
                 'exists:customers,id',
                 function ($attribute, $value, $fail) {
                     if ($value) {
-                        $customer = \App\Models\Customer::find($value);
+                        $customer = Customer::find($value);
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
                         }
                     }
                 }
             ],
-            'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
+            'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday,every_month,every_day,every_week',
             'meeting_time' => 'nullable|date_format:H:i',
         ], [
             'name.required' => 'Group name is required.',
             'name.unique' => 'A group with this name already exists.',
             'loan_officer.required' => 'Please select a loan officer.',
             'loan_officer.exists' => 'The selected loan officer is invalid.',
-            'branch_id.required' => 'Please select a branch.',
-            'branch_id.exists' => 'The selected branch is invalid.',
-            'minimum_members.required' => 'Minimum members is required.',
-            'minimum_members.min' => 'Minimum members must be at least 1.',
-            'minimum_members.max' => 'Minimum members cannot exceed 1000000.',
-            'maximum_members.required' => 'Maximum members is required.',
-            'maximum_members.min' => 'Maximum members must be at least 1.',
-            'maximum_members.max' => 'Maximum members cannot exceed 1000000.',
             'group_leader.exists' => 'The selected group leader is invalid.',
             'meeting_day.in' => 'Please select a valid meeting day.',
             'meeting_time.date_format' => 'Please enter a valid meeting time.',
         ]);
 
-        // Validate that maximum is greater than minimum
-        if ($request->maximum_members <= $request->minimum_members) {
-            $validator->errors()->add('maximum_members', 'Maximum members must be greater than minimum members.');
-        }
-
-        // Validate that minimum is not greater than current member count
-        if ($request->minimum_members > $group->current_member_count) {
-            $validator->errors()->add('minimum_members', 'Minimum members cannot be greater than current member count (' . $group->current_member_count . ').');
-        }
+     
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();

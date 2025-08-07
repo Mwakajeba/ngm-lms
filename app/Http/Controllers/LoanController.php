@@ -505,6 +505,7 @@ class LoanController extends Controller
             'group',
             'loanFiles',
             'schedule',
+            'repayments',
             'approvals.user',
             'approvals' => function ($query) {
                 $query->orderBy('approval_level', 'asc');
