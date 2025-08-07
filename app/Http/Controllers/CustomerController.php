@@ -348,9 +348,11 @@ class CustomerController extends Controller
     }
 
     // Delete customer
-    public function destroy(Customer $customer)
+    public function destroy($id)
     {
+        $decoded = Hashids::decode($id)[0] ?? null;
         try {
+            $customer = Customer::findOrFail($decoded);
             $customer->delete();
             return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
         } catch (\Exception $e) {

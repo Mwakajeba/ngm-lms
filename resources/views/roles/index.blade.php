@@ -372,7 +372,7 @@
 @endsection
 
 @push('scripts')
-    {!! confirm_delete() !!}
+
     <script>
         $(document).ready(function () {
             // Initialize DataTable
