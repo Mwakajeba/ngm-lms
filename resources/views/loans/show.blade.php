@@ -189,18 +189,16 @@
                             @endif
                         </div>
 
-                        @if(!auth()->user() || !$loan->canBeApprovedByUser(auth()->user()) || $loan->hasUserApproved(auth()->user()))
-                        <div class="alert alert-info">
-                            <i class="bx bx-info-circle me-2"></i>
-                            @if(!auth()->user())
-                            Please log in to perform approval actions.
-                            @elseif(!$loan->canBeApprovedByUser(auth()->user()))
-                            You don't have permission to approve this loan. Required role: {{ $nextRoleName }}
-                            @elseif($loan->hasUserApproved(auth()->user()))
-                            You have already approved this loan.
+                            @if(!auth()->user() || !$loan->canBeApprovedByUser(auth()->user()))
+                                <div class="alert alert-info">
+                                    <i class="bx bx-info-circle me-2"></i>
+                                    @if(!auth()->user())
+                                        Please log in to perform approval actions.
+                                    @elseif(!$loan->canBeApprovedByUser(auth()->user()))
+                                        You don't have permission to approve this loan. Required role: {{ $nextRoleName }}
+                                    @endif
+                                </div>
                             @endif
-                        </div>
-                        @endif
 
                         <div class="mt-3">
                             <small class="text-muted">

@@ -170,7 +170,7 @@
                             <label class="form-label">Penalty Income Account <span class="text-danger">*</span></label>
                             <select name="penalty_income_account_id" class="form-select @error('penalty_income_account_id') is-invalid @enderror" required>
                                 <option value="">-- Select Penalty Income Account --</option>
-                                @foreach($chartAccounts as $account)
+                                @foreach($penaltyIncomeAccounts as $account)
                                     <option value="{{ $account->id }}" 
                                         {{ old('penalty_income_account_id', $penalty->penalty_income_account_id ?? '') == $account->id ? 'selected' : '' }}>
                                         {{ $account->account_name }} ({{ $account->account_code }})
@@ -184,7 +184,7 @@
                             <label class="form-label">Penalty Receivable Account <span class="text-danger">*</span></label>
                             <select name="penalty_receivables_account_id" class="form-select @error('penalty_receivables_account_id') is-invalid @enderror" required>
                                 <option value="">-- Select Penalty Receivable Account --</option>
-                                @foreach($chartAccounts as $account)
+                                @foreach($penaltyReceivablesAccounts as $account)
                                     <option value="{{ $account->id }}" 
                                         {{ old('penalty_receivables_account_id', $penalty->penalty_receivables_account_id ?? '') == $account->id ? 'selected' : '' }}>
                                         {{ $account->account_name }} ({{ $account->account_code }})

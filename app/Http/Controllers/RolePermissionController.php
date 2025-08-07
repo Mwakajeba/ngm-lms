@@ -3,9 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 use Spatie\Permission\Models\Permission;
 use App\Models\User;
+use App\Models\Menu;
 use Illuminate\Support\Facades\DB;
 
 class RolePermissionController extends Controller
@@ -16,10 +17,10 @@ class RolePermissionController extends Controller
         $permissions = Permission::all();
         $activeUsers = User::where('status', 'active')->count();
         $systemRoles = Role::whereIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer'])->count();
-        
+
         // Group permissions by category
         $permissionGroups = $this->groupPermissions($permissions);
-        
+
         return view('roles.index', compact('roles', 'permissions', 'permissionGroups', 'activeUsers', 'systemRoles'));
     }
 
@@ -27,7 +28,7 @@ class RolePermissionController extends Controller
     {
         $permissions = Permission::all();
         $permissionGroups = $this->groupPermissions($permissions);
-        
+
         return view('roles.create', compact('permissions', 'permissionGroups'));
     }
 
@@ -69,7 +70,7 @@ class RolePermissionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -86,7 +87,7 @@ class RolePermissionController extends Controller
     {
         $role->load(['permissions', 'users']);
         $permissionGroups = $this->groupPermissions($role->permissions);
-        
+
         return view('roles.show', compact('role', 'permissionGroups'));
     }
 
@@ -94,7 +95,7 @@ class RolePermissionController extends Controller
     {
         $permissions = Permission::all();
         $permissionGroups = $this->groupPermissions($permissions);
-        
+
         return view('roles.edit', compact('role', 'permissions', 'permissionGroups'));
     }
 
@@ -115,10 +116,10 @@ class RolePermissionController extends Controller
                 'description' => $request->description,
             ]);
 
-            $permissions = $request->has('permissions') 
+            $permissions = $request->has('permissions')
                 ? Permission::whereIn('id', $request->permissions)->get()
                 : collect();
-            
+
             $role->syncPermissions($permissions);
 
             DB::commit();
@@ -135,7 +136,7 @@ class RolePermissionController extends Controller
 
         } catch (\Exception $e) {
             DB::rollBack();
-            
+
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
@@ -174,14 +175,14 @@ class RolePermissionController extends Controller
 
         try {
             $role->delete();
-            
+
             if (request()->wantsJson()) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Role deleted successfully!'
                 ]);
             }
-            
+
             return redirect()->route('roles.index')
                 ->with('success', 'Role deleted successfully!');
 
@@ -192,7 +193,7 @@ class RolePermissionController extends Controller
                     'message' => 'Failed to delete role: ' . $e->getMessage()
                 ], 422);
             }
-            
+
             return back()->with('error', 'Failed to delete role: ' . $e->getMessage());
         }
     }
@@ -236,7 +237,7 @@ class RolePermissionController extends Controller
     {
         $permissions = Permission::with('roles')->get();
         $permissionGroups = $this->groupPermissions($permissions);
-        
+
         return view('roles.permissions', compact('permissions', 'permissionGroups'));
     }
 
@@ -319,7 +320,7 @@ class RolePermissionController extends Controller
 
         foreach ($permissions as $permission) {
             $name = strtolower($permission->name);
-            
+
             if (str_contains($name, 'user') || str_contains($name, 'staff')) {
                 $groups['user'][] = $permission;
             } elseif (str_contains($name, 'client')) {
@@ -328,29 +329,43 @@ class RolePermissionController extends Controller
                 $groups['loan'][] = $permission;
             } elseif (str_contains($name, 'borrower')) {
                 $groups['borrower'][] = $permission;
-            } elseif (str_contains($name, 'collection') || str_contains($name, 'payment') || 
-                     str_contains($name, 'receipt') || str_contains($name, 'penalty')) {
+            } elseif (
+                str_contains($name, 'collection') || str_contains($name, 'payment') ||
+                str_contains($name, 'receipt') || str_contains($name, 'penalty')
+            ) {
                 $groups['collection'][] = $permission;
-            } elseif (str_contains($name, 'accounting') || str_contains($name, 'journal') || 
-                     str_contains($name, 'bank') || str_contains($name, 'ledger') || 
-                     str_contains($name, 'financial')) {
+            } elseif (
+                str_contains($name, 'accounting') || str_contains($name, 'journal') ||
+                str_contains($name, 'bank') || str_contains($name, 'ledger') ||
+                str_contains($name, 'financial')
+            ) {
                 $groups['accounting'][] = $permission;
-            } elseif (str_contains($name, 'saving') || str_contains($name, 'deposit') || 
-                     str_contains($name, 'withdrawal')) {
+            } elseif (
+                str_contains($name, 'saving') || str_contains($name, 'deposit') ||
+                str_contains($name, 'withdrawal')
+            ) {
                 $groups['savings'][] = $permission;
-            } elseif (str_contains($name, 'report') || str_contains($name, 'audit') || 
-                     str_contains($name, 'compliance') || str_contains($name, 'analytics')) {
+            } elseif (
+                str_contains($name, 'report') || str_contains($name, 'audit') ||
+                str_contains($name, 'compliance') || str_contains($name, 'analytics')
+            ) {
                 $groups['report'][] = $permission;
-            } elseif (str_contains($name, 'risk') || str_contains($name, 'credit') || 
-                     str_contains($name, 'collateral') || str_contains($name, 'insurance')) {
+            } elseif (
+                str_contains($name, 'risk') || str_contains($name, 'credit') ||
+                str_contains($name, 'collateral') || str_contains($name, 'insurance')
+            ) {
                 $groups['risk'][] = $permission;
-            } elseif (str_contains($name, 'setting') || str_contains($name, 'backup') || 
-                     str_contains($name, 'configuration')) {
+            } elseif (
+                str_contains($name, 'setting') || str_contains($name, 'backup') ||
+                str_contains($name, 'configuration')
+            ) {
                 $groups['settings'][] = $permission;
             } elseif (str_contains($name, 'ai') || str_contains($name, 'assistant')) {
                 $groups['ai'][] = $permission;
-            } elseif (str_contains($name, 'dashboard') || str_contains($name, 'statistic') || 
-                     str_contains($name, 'kpi')) {
+            } elseif (
+                str_contains($name, 'dashboard') || str_contains($name, 'statistic') ||
+                str_contains($name, 'kpi')
+            ) {
                 $groups['dashboard'][] = $permission;
             } elseif (str_contains($name, 'menu')) {
                 $groups['menu'][] = $permission;
@@ -376,12 +391,77 @@ class RolePermissionController extends Controller
             'total_roles' => Role::count(),
             'total_permissions' => Permission::count(),
             'total_users' => User::count(),
-            'active_users' => User::where('status', 'active')->count(),
             'system_roles' => Role::whereIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer'])->count(),
-            'custom_roles' => Role::whereNotIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer'])->count(),
         ];
 
         return response()->json($stats);
+    }
+
+    // Menu Management Methods
+    public function manageMenus(Role $role)
+    {
+        $role->load([
+            'menus' => function ($query) {
+                $query->with('children');
+            }
+        ]);
+
+        $allMenus = Menu::with('children')
+            ->whereNull('parent_id')
+            ->get();
+
+        return view('roles.manage-menus', compact('role', 'allMenus'));
+    }
+
+    public function assignMenus(Request $request, Role $role)
+    {
+        $request->validate([
+            'menu_ids' => 'required|array',
+            'menu_ids.*' => 'exists:menus,id'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            $role->menus()->sync($request->menu_ids);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Menus assigned successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to assign menus: ' . $e->getMessage()
+            ], 422);
+        }
+    }
+
+    public function removeMenu(Request $request, Role $role)
+    {
+        $request->validate([
+            'menu_id' => 'required|exists:menus,id'
+        ]);
+
+        try {
+            $role->menus()->detach($request->menu_id);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Menu removed successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to remove menu: ' . $e->getMessage()
+            ], 422);
+        }
     }
 }
 

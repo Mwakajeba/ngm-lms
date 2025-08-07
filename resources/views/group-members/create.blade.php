@@ -55,7 +55,7 @@
 
                                     <div class="row mb-4">
                                         <div class="col-md-8">
-                                            <select id="customerSelect" class="form-select">
+                                            <select id="customerSelect" class="form-select select2-single">
                                                 <option value="">Select Customer</option>
                                                 @foreach($availableCustomers as $customer)
                                                     <option value="{{ $customer->id }}"
@@ -217,7 +217,19 @@
 @endpush
 
 @push('scripts')
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            if (window.jQuery) {
+                $('#customerSelect.select2-single').select2({
+                    placeholder: 'Select Customer',
+                    allowClear: true,
+                    width: '100%',
+                    theme: 'bootstrap-5'
+                });
+            }
+        });
+
         let selectedCustomers = [];
 
         function addCustomerToList() {

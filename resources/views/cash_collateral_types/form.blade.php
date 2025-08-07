@@ -27,7 +27,7 @@
         </div>
 
         <div class="col-md-6 mb-3">
-            <label for="chart_account_id" class="form-label">Chart Account <span class="text-muted">(optional)</span></label>
+            <label for="chart_account_id" class="form-label">Chart Account <span class="text-danger">*</span></label>
             <select name="chart_account_id" id="chart_account_id" class="form-select">
                 <option value="">-- Select Chart Account --</option>
                 @foreach($chartAccounts as $account)

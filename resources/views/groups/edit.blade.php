@@ -110,7 +110,7 @@
                                     <!-- Group Leader -->
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Group Leader</label>
-                                        <select name="group_leader" class="form-select @error('group_leader') is-invalid @enderror">
+                                        <select name="group_leader" class="form-select select2-single @error('group_leader') is-invalid @enderror">
                                             <option value="">-- Select Group Leader --</option>
                                             @foreach($groupLeaders as $leader)
                                                 <option value="{{ $leader->id }}" 
@@ -228,4 +228,20 @@
             color: #dc3545;
         }
     </style>
-@endpush 
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.jQuery) {
+            $('.select2-single').select2({
+                placeholder: 'Select an option',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
+        }
+    });
+</script>
+@endpush

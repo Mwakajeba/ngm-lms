@@ -55,7 +55,10 @@ class ChartAccount extends Model
      */
     public function accountClass()
     {
-        return $this->accountClassGroup->accountClass;
+        if ($this->accountClassGroup && $this->accountClassGroup->accountClass) {
+            return $this->accountClassGroup->accountClass;
+        }
+        return null;
     }
 
     /**

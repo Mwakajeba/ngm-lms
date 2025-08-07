@@ -16,17 +16,13 @@
         <!-- Stats Card -->
         <div class="row row-cols-1 row-cols-lg-4 mb-4">
             <div class="col">
-                <div class="card radius-10">
+                <div class="card radius-10 shadow-sm border-0">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-grow-1">
                             <p class="text-muted mb-1">Total Types</p>
-                            <h4 class="mb-0">{{ $cashCollaterals->count() }}</h4>
+                            <h4 class="mb-0 fw-bold">{{ $cashCollaterals->count() }}</h4>
                         </div>
-                        <div class="ms-3">
-                            <div class="avatar-sm bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
-                                <i class="bx bx-credit-card font-size-24"></i>
-                            </div>
-                        </div>
+                        <div class="widgets-icons bg-gradient-warning text-primary"><i class='bx bx-refresh'></i></div>
                     </div>
                 </div>
             </div>
