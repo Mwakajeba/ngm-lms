@@ -75,6 +75,9 @@ Route::get('/reports/transactions', [App\Http\Controllers\ReportsController::cla
 
 ////////////////////////////////////////ROLES & PERMISSIONSMANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
+    // Explicit route model binding for Role
+    Route::model('role', \App\Models\Role::class);
+
     // Roles management
     Route::get('roles', [RolePermissionController::class, 'index'])->name('roles.index');
     Route::get('roles/create', [RolePermissionController::class, 'create'])->name('roles.create');
@@ -83,6 +86,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('roles/{role}/edit', [RolePermissionController::class, 'edit'])->name('roles.edit');
     Route::post('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy');
+
+    // Menu management for roles
+    Route::get('roles/{role}/menus', [RolePermissionController::class, 'manageMenus'])->name('roles.menus');
+    Route::post('roles/{role}/menus/assign', [RolePermissionController::class, 'assignMenus'])->name('roles.menus.assign');
+    Route::delete('roles/{role}/menus/remove', [RolePermissionController::class, 'removeMenu'])->name('roles.menus.remove');
 
     // Permissions management
     Route::get('permissions', [RolePermissionController::class, 'permissions'])->name('permissions.index');

@@ -64,19 +64,6 @@
             @error('product_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
-        <!-- Bank Account -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Disbursement Account <span class="text-danger">*</span></label>
-            <select name="account_id" class="form-select @error('account_id') is-invalid @enderror" required>
-                <option value="">Select Disbursement Account</option>
-                @foreach($bankAccounts as $bankAccount)
-                    <option value="{{ $bankAccount->id }}" {{ old('account_id', $loanApplication->bank_account_id ?? '') == $bankAccount->id ? 'selected' : '' }}>
-                        {{ $bankAccount->name }} - {{ $bankAccount->account_number ?? 'No account number' }}
-                    </option>
-                @endforeach
-            </select>
-            @error('account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
 
         <!-- Date Applied -->
         <div class="col-md-6 mb-3">

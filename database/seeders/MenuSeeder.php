@@ -11,6 +11,7 @@ class MenuSeeder extends Seeder
     public function run()
     {
         $adminRole = Role::where('name', 'admin')->first();
+        
         if (!$adminRole) {
             $this->command->warn('Admin role not found.');
             return;

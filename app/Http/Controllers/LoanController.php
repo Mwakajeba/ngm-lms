@@ -542,7 +542,7 @@ class LoanController extends Controller
 
     public function applicationCreate()
     {
-        $customers = Customer::all();
+        $customers = Customer::where('category','borrower')->get();
         $groups = Group::all();
         $products = LoanProduct::all();
         $bankAccounts = BankAccount::all();
@@ -560,8 +560,7 @@ class LoanController extends Controller
             'amount' => 'required|numeric|min:0',
             'date_applied' => 'required|date|before_or_equal:today',
             'customer_id' => 'required|exists:customers,id',
-            'group_id' => 'nullable|exists:groups,id',
-            'account_id' => 'required|exists:bank_accounts,id',
+            'group_id' => 'nullable|exists:groups,id',                       
             'sector' => 'required|string',
         ]);
 
@@ -632,7 +631,7 @@ class LoanController extends Controller
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
-                'bank_account_id' => $validated['account_id'],
+                'bank_account_id' => '',
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
                 'branch_id' => $branchId,
@@ -817,7 +816,7 @@ class LoanController extends Controller
                 'next_role' => $loan->getNextApprovalRole(),
                 'next_action' => $loan->getNextApprovalAction(),
                 'can_approve' => $loan->canBeApprovedByUser($user),
-                'has_approved' => $loan->hasUserApproved($user)
+                // 'has_approved' => $loan->hasUserApproved($user)
             ]);
 
             // Validate user has permission to approve
@@ -831,13 +830,13 @@ class LoanController extends Controller
             }
 
             // Check if user has already approved this loan
-            if ($loan->hasUserApproved($user)) {
-                \Log::warning('User has already approved this loan', [
-                    'user_id' => $user->id,
-                    'loan_id' => $loan->id
-                ]);
-                return redirect()->back()->withErrors(['You have already approved this loan.']);
-            }
+            // if ($loan->hasUserApproved($user)) {
+            //     \Log::warning('User has already approved this loan', [
+            //         'user_id' => $user->id,
+            //         'loan_id' => $loan->id
+            //     ]);
+            //     return redirect()->back()->withErrors(['You have already approved this loan.']);
+            // }
 
             $validated = $request->validate([
                 'comments' => 'nullable|string|max:1000',
@@ -995,9 +994,9 @@ class LoanController extends Controller
             }
 
             // Check if user has already approved this loan
-            if ($loan->hasUserApproved($user)) {
-                return redirect()->back()->withErrors(['You have already approved this loan.']);
-            }
+            // if ($loan->hasUserApproved($user)) {
+            //     return redirect()->back()->withErrors(['You have already approved this loan.']);
+            // }
 
             $validated = $request->validate([
                 'comments' => 'required|string|max:1000',
