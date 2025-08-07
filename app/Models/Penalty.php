@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\DB;
 
 class Penalty extends Model
 {
@@ -205,4 +206,5 @@ class Penalty extends Model
             'total_principal_amount_released' => 'Total Principal Amount Released',
         ];
     }
+
 }

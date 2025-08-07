@@ -69,7 +69,7 @@ $isEdit = isset($customer);
         <!-- Region -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Region <span class="text-danger">*</span></label>
-            <select name="region_id" id="region" class="form-select @error('region_id') is-invalid @enderror" required>
+            <select name="region_id" id="region" class="form-select select2-single @error('region_id') is-invalid @enderror" required>
                 <option value="">Select Region</option>
                 @foreach($regions as $region)
                 <option value="{{ $region->id }}" {{ old('region_id', $customer->region_id ?? '') == $region->id ? 'selected' : '' }}>
@@ -141,7 +141,7 @@ $isEdit = isset($customer);
         <div class="col-md-6 mb-3">
             <label class="form-label">Date of Birth <span class="text-danger">*</span></label>
             <input type="date" name="dob" class="form-control @error('dob') is-invalid @enderror"
-                value="{{ old('dob', $customer->dob ?? '') }}">
+                value="{{ old('dob', isset($customer) && $customer->dob ? \Carbon\Carbon::parse($customer->dob)->format('Y-m-d') : '') }}">
             @error('dob') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -207,7 +207,7 @@ $isEdit = isset($customer);
                 <option value="">Select Collateral Type</option>
                 @foreach($collateralTypes as $type)
                     <option value="{{ $type->id }}"
-                        {{ old('collateral_type_id', $customer->collateral_type_id ?? '') == $type->id ? 'selected' : '' }}>
+                        {{ old('collateral_type_id', isset($customer) ? ($customer->collaterals->first()->type_id ?? $customer->collateral_type_id ?? '') : '') == $type->id ? 'selected' : '' }}>
                         {{ $type->name }}
                     </option>
                 @endforeach
@@ -362,6 +362,58 @@ $isEdit = isset($customer);
                 })
                 .catch(error => console.error('Error loading districts:', error));
         });
+
+        // Initialize Select2 for region only (not district)
+        if (window.jQuery) {
+            $('#region').select2({
+                placeholder: 'Select Region',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
+            // Use jQuery event for region change
+            $('#region').on('change', function() {
+                const regionId = this.value;
+                const districtSelect = document.getElementById('district');
+                if (!regionId) {
+                    districtSelect.innerHTML = '<option value="">Select District</option>';
+                    return;
+                }
+                fetch(`/get-districts/${regionId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        districtSelect.innerHTML = '<option value="">Select District</option>';
+                        Object.entries(data).forEach(([id, name]) => {
+                            const option = document.createElement('option');
+                            option.value = id;
+                            option.textContent = name;
+                            districtSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error loading districts:', error));
+            });
+        } else {
+            // Fallback for non-jQuery environments
+            regionSelect.addEventListener('change', function() {
+                const regionId = this.value;
+                if (!regionId) {
+                    districtSelect.innerHTML = '<option value="">Select District</option>';
+                    return;
+                }
+                fetch(`/get-districts/${regionId}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        districtSelect.innerHTML = '<option value="">Select District</option>';
+                        Object.entries(data).forEach(([id, name]) => {
+                            const option = document.createElement('option');
+                            option.value = id;
+                            option.textContent = name;
+                            districtSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => console.error('Error loading districts:', error));
+            });
+        }
     });
 
     // Image preview function

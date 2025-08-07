@@ -37,7 +37,9 @@ class GroupController extends Controller
 
         $branchId = auth()->user()->branch_id;
         $branches = Branch::where('id', $branchId)->get();
-        $groupLeaders = Customer::where('branch_id', $branchId)->get();
+        // Only customers in 'Borrower' category can be group leaders
+        $groupLeaders = Customer::where('branch_id', $branchId)
+            ->where('category', 'Borrower')->get();
 
         return view('groups.create', compact('loanOfficers', 'groupLeaders', 'branches'));
     }
@@ -51,8 +53,8 @@ class GroupController extends Controller
             'name' => 'required|string|max:255|unique:groups,name',
             'loan_officer' => 'required|exists:users,id',
             'branch_id' => 'required|exists:branches,id',
-            'minimum_members' => 'required|integer|min:1|max:50',
-            'maximum_members' => 'required|integer|min:1|max:100',
+            'minimum_members' => 'required|integer|min:1|max:1000000',
+            'maximum_members' => 'required|integer|min:1|max:1000000',
             'group_leader' => 'nullable|exists:users,id',
             'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'meeting_time' => 'nullable|date_format:H:i',
@@ -65,10 +67,10 @@ class GroupController extends Controller
             'branch_id.exists' => 'The selected branch is invalid.',
             'minimum_members.required' => 'Minimum members is required.',
             'minimum_members.min' => 'Minimum members must be at least 1.',
-            'minimum_members.max' => 'Minimum members cannot exceed 50.',
+            'minimum_members.max' => 'Minimum members cannot exceed 1000000.',
             'maximum_members.required' => 'Maximum members is required.',
             'maximum_members.min' => 'Maximum members must be at least 1.',
-            'maximum_members.max' => 'Maximum members cannot exceed 100.',
+            'maximum_members.max' => 'Maximum members cannot exceed 1000000.',
             'group_leader.exists' => 'The selected group leader is invalid.',
             'meeting_day.in' => 'Please select a valid meeting day.',
             'meeting_time.date_format' => 'Please enter a valid meeting time.',
@@ -97,10 +99,15 @@ class GroupController extends Controller
 
             // Add the group leader as the first member
             if ($request->group_leader) {
-                GroupMember::create([
-                    'group_id' => $group->id,
-                    'customer_id' => $request->group_leader,
-                ]);
+                // Ensure group leader is a Borrower
+                $leader = Customer::where('id', $request->group_leader)
+                    ->where('category', 'Borrower')->first();
+                if ($leader) {
+                    GroupMember::create([
+                        'group_id' => $group->id,
+                        'customer_id' => $request->group_leader,
+                    ]);
+                }
             }
 
             return redirect()->route('groups.index')->with('success', 'Group created successfully!');
@@ -122,9 +129,13 @@ class GroupController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer', 'loans']);
+        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer']);
 
-        return view('groups.show', compact('group'));
+        // Get all loans for this group (assuming each member has loans)
+        $memberIds = $group->members->pluck('customer_id');
+        $loans = \App\Models\Loan::whereIn('customer_id', $memberIds)->get();
+
+        return view('groups.show', compact('group', 'loans'));
     }
 
     /**
@@ -144,9 +155,11 @@ class GroupController extends Controller
             $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
 
-        $groupLeaders = Customer::all(); // All customer can be group leaders
         $branchId = auth()->user()->branch_id;
         $branches = Branch::where('id', $branchId)->get();
+        // Only customers in 'Borrower' category can be group leaders
+        $groupLeaders = Customer::where('branch_id', $branchId)
+            ->where('category', 'Borrower')->get();
 
         return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders', 'branches'));
     }
@@ -168,8 +181,8 @@ class GroupController extends Controller
             'name' => 'required|string|max:255|unique:groups,name,' . $group->id,
             'loan_officer' => 'required|exists:users,id',
             'branch_id' => 'required|exists:branches,id',
-            'minimum_members' => 'required|integer|min:1|max:50',
-            'maximum_members' => 'required|integer|min:1|max:100',
+            'minimum_members' => 'required|integer|min:1|max:1000000',
+            'maximum_members' => 'required|integer|min:1|max:1000000',
             'group_leader' => 'nullable|exists:users,id',
             'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday',
             'meeting_time' => 'nullable|date_format:H:i',
@@ -182,10 +195,10 @@ class GroupController extends Controller
             'branch_id.exists' => 'The selected branch is invalid.',
             'minimum_members.required' => 'Minimum members is required.',
             'minimum_members.min' => 'Minimum members must be at least 1.',
-            'minimum_members.max' => 'Minimum members cannot exceed 50.',
+            'minimum_members.max' => 'Minimum members cannot exceed 1000000.',
             'maximum_members.required' => 'Maximum members is required.',
             'maximum_members.min' => 'Maximum members must be at least 1.',
-            'maximum_members.max' => 'Maximum members cannot exceed 100.',
+            'maximum_members.max' => 'Maximum members cannot exceed 1000000.',
             'group_leader.exists' => 'The selected group leader is invalid.',
             'meeting_day.in' => 'Please select a valid meeting day.',
             'meeting_time.date_format' => 'Please enter a valid meeting time.',
@@ -216,6 +229,13 @@ class GroupController extends Controller
                 'meeting_day' => $request->meeting_day,
                 'meeting_time' => $request->meeting_time,
             ]);
+
+            // Optionally, if you allow updating group members elsewhere, ensure only Borrowers are added
+            // Example: (pseudo-code, adapt as needed)
+            // foreach ($request->members as $memberId) {
+            //     $member = Customer::where('id', $memberId)->where('category', 'Borrower')->first();
+            //     if ($member) { /* add to group */ }
+            // }
 
             return redirect()->route('groups.index')->with('success', 'Group updated successfully!');
         } catch (\Exception $e) {

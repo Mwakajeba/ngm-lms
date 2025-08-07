@@ -26,7 +26,7 @@ $isEdit = isset($loan);
             <!-- Customer -->
             <div class="col-md-6 mb-3">
                 <label class="form-label">Customer <span class="text-danger">*</span></label>
-                <select name="customer_id" id="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
+                <select name="customer_id" id="customer_id" class="form-select select2-single @error('customer_id') is-invalid @enderror" required>
                     <option value="">Select Customer</option>
                     @foreach($customers as $customer)
                     <option value="{{ $customer->id }}" {{ old('customer_id', $loan->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
@@ -188,36 +188,46 @@ $isEdit = isset($loan);
                 interestRangeLabel.innerText = '';
             }
         });
-    });
-</script>
-<script>
-    const customers = @json($customers);
 
-    const customerSelect = document.getElementById('customer_id');
-    const groupIdInput = document.getElementById('group_id');
-    const groupNameDisplay = document.getElementById('group_name');
-
-    function updateGroupForCustomer(customerId) {
-        const selectedCustomer = customers.find(c => c.id == customerId);
-
-        groupIdInput.value = '';
-        groupNameDisplay.value = '';
-
-        if (selectedCustomer && selectedCustomer.groups.length > 0) {
-            const group = selectedCustomer.groups[0]; // Only first group
-            groupIdInput.value = group.id;
-            groupNameDisplay.value = group.name;
+        // Initialize Select2 for all .select2-single selects
+        if (window.jQuery) {
+            $('.select2-single').select2({
+                placeholder: 'Select Customer',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
         }
-    }
 
-    customerSelect.addEventListener('change', function () {
-        updateGroupForCustomer(this.value);
-    });
-
-    // Trigger on page load (for edit form or old values)
-    window.addEventListener('DOMContentLoaded', () => {
-        if (customerSelect.value) {
-            updateGroupForCustomer(customerSelect.value);
+        // Group update logic for customer select
+        const customers = @json($customers);
+        const groupIdInput = document.getElementById('group_id');
+        const groupNameDisplay = document.getElementById('group_name');
+        function updateGroupForCustomer(customerId) {
+            const selectedCustomer = customers.find(c => c.id == customerId);
+            groupIdInput.value = '';
+            groupNameDisplay.value = '';
+            if (selectedCustomer && selectedCustomer.groups.length > 0) {
+                const group = selectedCustomer.groups[0];
+                groupIdInput.value = group.id;
+                groupNameDisplay.value = group.name;
+            }
+        }
+        if (window.jQuery) {
+            $('#customer_id').on('change', function () {
+                updateGroupForCustomer(this.value);
+            });
+            // Trigger on page load (for edit form or old values)
+            $('#customer_id').trigger('change');
+        } else {
+            const customerSelect = document.getElementById('customer_id');
+            customerSelect.addEventListener('change', function () {
+                updateGroupForCustomer(this.value);
+            });
+            // Trigger on page load
+            if (customerSelect.value) {
+                updateGroupForCustomer(customerSelect.value);
+            }
         }
     });
 </script>

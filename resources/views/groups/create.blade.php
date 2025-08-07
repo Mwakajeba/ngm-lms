@@ -86,10 +86,10 @@
 
                                     <!-- Minimum Members -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Minimum Members <span class="text-danger">*</span></label>
+                                        <label class="form-label">Minimum Members</label>
                                         <input type="number" name="minimum_members"
                                             class="form-control @error('minimum_members') is-invalid @enderror"
-                                            value="{{ old('minimum_members', 5) }}" min="1" max="50" required>
+                                            value="{{ old('minimum_members', 5) }}" min="1" max="1000000">
                                         @error('minimum_members')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -97,10 +97,10 @@
 
                                     <!-- Maximum Members -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Maximum Members <span class="text-danger">*</span></label>
+                                        <label class="form-label">Maximum Members</label>
                                         <input type="number" name="maximum_members"
                                             class="form-control @error('maximum_members') is-invalid @enderror"
-                                            value="{{ old('maximum_members', 20) }}" min="1" max="100" required>
+                                            value="{{ old('maximum_members', 20) }}" min="1" max="1000000">
                                         @error('maximum_members')
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
@@ -110,7 +110,7 @@
                                     <div class="col-md-6 mb-3">
                                         <label class="form-label">Group Leader</label>
                                         <select name="group_leader"
-                                            class="form-select @error('group_leader') is-invalid @enderror">
+                                            class="form-select select2-single @error('group_leader') is-invalid @enderror">
                                             <option value="">-- Select Group Leader --</option>
                                             @foreach($groupLeaders as $leader)
                                                 <option value="{{ $leader->id }}" {{ old('group_leader') == $leader->id ? 'selected' : '' }}>
@@ -125,9 +125,9 @@
 
                                     <!-- Meeting Day -->
                                     <div class="col-md-6 mb-3">
-                                        <label class="form-label">Meeting Day <span class="text-danger">*</span></label>
+                                        <label class="form-label">Meeting Day</label>
                                         <select name="meeting_day"
-                                            class="form-select @error('meeting_day') is-invalid @enderror" required>
+                                            class="form-select @error('meeting_day') is-invalid @enderror">
                                             <option value="">-- Select Meeting Day --</option>
                                             <option value="monday" {{ old('meeting_day') == 'monday' ? 'selected' : '' }}>
                                                 Monday</option>
@@ -237,4 +237,20 @@
             color: #dc3545;
         }
     </style>
+@endpush
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        if (window.jQuery) {
+            $('.select2-single').select2({
+                placeholder: 'Select an Group leader',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
+        }
+    });
+</script>
 @endpush

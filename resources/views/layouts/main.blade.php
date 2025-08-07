@@ -6,6 +6,8 @@
 <html lang="{{ app()->getLocale() }}" class="color-sidebar sidebarcolor3">
 
 <head>
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
     <!-- DataTables Bootstrap CSS -->
     <link rel="stylesheet" href="https://cdn.datatables.net/1.13.6/css/dataTables.bootstrap5.min.css">
     <!-- DataTables Buttons CSS -->
@@ -74,20 +76,10 @@
     <script src="{{ asset('assets/js/index4.js') }}"></script>
     <script src="{{ asset('assets/plugins/datatable/js/jquery.dataTables.min.js')}}"></script>
     <script src="{{ asset('assets/plugins/datatable/js/dataTables.bootstrap5.min.js')}}"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
         $(document).ready(function () {
             $('#example').DataTable();
-        });
-    </script>
-    <script>
-        $(document).ready(function () {
-            var table = $('#example2').DataTable({
-                lengthChange: false,
-                buttons: ['copy', 'excel', 'pdf', 'print']
-            });
-
-            table.buttons().container()
-                .appendTo('#example2_wrapper .col-md-6:eq(0)');
         });
     </script>
 

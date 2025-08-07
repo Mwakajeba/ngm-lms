@@ -78,12 +78,12 @@
                     <div class="card-body">
                         <div class="row g-3">
                             @foreach([
-                                ['label' => 'Customer Name', 'value' => $loan->customer->name, 'icon' => 'bx bx-user'],
-                                ['label' => 'Product', 'value' => $loan->product->name, 'icon' => 'bx bx-package'],
-                                ['label' => 'Branch', 'value' => $loan->branch->name ?? 'N/A', 'icon' => 'bx bx-building'],
-                                ['label' => 'Group', 'value' => $loan->group->name ?? 'N/A', 'icon' => 'bx bx-group'],
-                                ['label' => 'Bank Account', 'value' => $loan->bankAccount->name ?? 'N/A', 'icon' => 'bx bx-bank'],
-                                ['label' => 'Sector', 'value' => $loan->sector, 'icon' => 'bx bx-tag']
+                            ['label' => 'Customer Name', 'value' => $loan->customer->name, 'icon' => 'bx bx-user'],
+                            ['label' => 'Product', 'value' => $loan->product->name, 'icon' => 'bx bx-package'],
+                            ['label' => 'Branch', 'value' => $loan->branch->name ?? 'N/A', 'icon' => 'bx bx-building'],
+                            ['label' => 'Group', 'value' => $loan->group->name ?? 'N/A', 'icon' => 'bx bx-group'],
+                            ['label' => 'Bank Account', 'value' => $loan->bankAccount->name ?? 'N/A', 'icon' => 'bx bx-bank'],
+                            ['label' => 'Sector', 'value' => $loan->sector, 'icon' => 'bx bx-tag']
                             ] as $item)
                             <div class="col-12 col-md-6">
                                 <div class="p-3 bg-light rounded-3 d-flex align-items-center">
@@ -101,14 +101,14 @@
                             </div>
 
                             @foreach([
-                                ['label' => 'Amount', 'value' => 'TZS ' . number_format($loan->amount, 2), 'icon' => 'bx bx-money'],
-                                ['label' => 'Interest Amount', 'value' => 'TZS ' . number_format($loan->interest_amount, 2), 'icon' => 'bx bx-trending-up'],
-                                ['label' => 'Total Repayable', 'value' => 'TZS ' . number_format($loan->amount_total, 2), 'icon' => 'bx bx-calculator'],
-                                ['label' => 'Period', 'value' => $loan->period . ' months', 'icon' => 'bx bx-time'],
-                                ['label' => 'Interest Method', 'value' => $loan->product->interest_method, 'icon' => 'bx bx-bar-chart-alt-2'],
-                                ['label' => 'Interest Rate', 'value' => ($loan->interest ?? 'N/A') . '%', 'icon' => 'bx bx-bar-chart-alt-2'],
-                                ['label' => 'Repayment Installment', 'value' => 'TZS ' . number_format($loan->amount_total / $loan->period, 2), 'icon' => 'bx bx-credit-card'],
-                                ['label' => 'Total Repayments', 'value' => 'TZS ' . number_format($loan->repayments?->sum('amount') ?? 0, 2), 'icon' => 'bx bx-transfer']
+                            ['label' => 'Amount', 'value' => 'TZS ' . number_format($loan->amount, 2), 'icon' => 'bx bx-money'],
+                            ['label' => 'Interest Amount', 'value' => 'TZS ' . number_format($loan->interest_amount, 2), 'icon' => 'bx bx-trending-up'],
+                            ['label' => 'Total Repayable', 'value' => 'TZS ' . number_format($loan->amount_total, 2), 'icon' => 'bx bx-calculator'],
+                            ['label' => 'Period', 'value' => $loan->period . ' months', 'icon' => 'bx bx-time'],
+                            ['label' => 'Interest Method', 'value' => $loan->product->interest_method, 'icon' => 'bx bx-bar-chart-alt-2'],
+                            ['label' => 'Interest Rate', 'value' => ($loan->interest ?? 'N/A') . '%', 'icon' => 'bx bx-bar-chart-alt-2'],
+                            ['label' => 'Repayment Installment', 'value' => 'TZS ' . number_format($loan->amount_total / $loan->period, 2), 'icon' => 'bx bx-credit-card'],
+                            ['label' => 'Total Repayments', 'value' => 'TZS ' . number_format($loan->repayments?->sum('amount') ?? 0, 2), 'icon' => 'bx bx-transfer']
                             ] as $item)
                             <div class="col-12 col-md-6">
                                 <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
@@ -126,10 +126,10 @@
                             </div>
 
                             @foreach([
-                                ['label' => 'Disbursed On', 'value' => \Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y'), 'icon' => 'bx bx-calendar-check'],
-                                ['label' => 'First Repayment', 'value' => \Carbon\Carbon::parse($loan->first_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-event'],
-                                ['label' => 'Last Repayment', 'value' => \Carbon\Carbon::parse($loan->last_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-minus'],
-                                ['label' => 'Applied On', 'value' => \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y'), 'icon' => 'bx bx-calendar-plus']
+                            ['label' => 'Disbursed On', 'value' => \Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y'), 'icon' => 'bx bx-calendar-check'],
+                            ['label' => 'First Repayment', 'value' => \Carbon\Carbon::parse($loan->first_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-event'],
+                            ['label' => 'Last Repayment', 'value' => \Carbon\Carbon::parse($loan->last_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-minus'],
+                            ['label' => 'Applied On', 'value' => \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y'), 'icon' => 'bx bx-calendar-plus']
                             ] as $item)
                             <div class="col-12 col-md-6 col-lg-3">
                                 <div class="p-3 bg-light rounded-3 d-flex align-items-center">
@@ -152,10 +152,10 @@
                     </div>
                     <div class="card-body">
                         @php
-                            $approvalRoles = $loan->getApprovalRoles();
-                            $nextLevel = $loan->getNextApprovalLevel();
-                            $nextAction = $loan->getNextApprovalAction();
-                            $nextRoleName = $nextLevel ? $loan->getApprovalLevelName($nextLevel) : null;
+                        $approvalRoles = $loan->getApprovalRoles();
+                        $nextLevel = $loan->getNextApprovalLevel();
+                        $nextAction = $loan->getNextApprovalAction();
+                        $nextRoleName = $nextLevel ? $loan->getApprovalLevelName($nextLevel) : null;
                         @endphp
 
                         @if($nextLevel && $nextAction)
@@ -196,48 +196,48 @@
                                 </div>
                             @endif
 
-                            <div class="mt-3">
-                                <small class="text-muted">
-                                    <strong>Approval Flow:</strong> 
-                                    @foreach($approvalRoles as $index => $roleId)
-                                        @php
-                                            $roleName = $loan->getApprovalLevelName($index + 1);
-                                            $isCurrent = ($index + 1) === $nextLevel;
-                                            $isCompleted = ($index + 1) < $nextLevel;
-                                        @endphp
-                                        <span class="badge {{ $isCurrent ? 'bg-primary' : ($isCompleted ? 'bg-success' : 'bg-secondary') }} me-1">
-                                            {{ $roleName }}
-                                        </span>
-                                        @if($index < count($approvalRoles) - 1)
-                                            <i class="bx bx-chevron-right text-muted"></i>
+                        <div class="mt-3">
+                            <small class="text-muted">
+                                <strong>Approval Flow:</strong>
+                                @foreach($approvalRoles as $index => $roleId)
+                                @php
+                                $roleName = $loan->getApprovalLevelName($index + 1);
+                                $isCurrent = ($index + 1) === $nextLevel;
+                                $isCompleted = ($index + 1) < $nextLevel;
+                                    @endphp
+                                    <span class="badge {{ $isCurrent ? 'bg-primary' : ($isCompleted ? 'bg-success' : 'bg-secondary') }} me-1">
+                                    {{ $roleName }}
+                                    </span>
+                                    @if($index < count($approvalRoles) - 1)
+                                        <i class="bx bx-chevron-right text-muted"></i>
                                         @endif
-                                    @endforeach
-                                </small>
-                            </div>
+                                        @endforeach
+                            </small>
+                        </div>
                         @elseif($loan->status === 'active')
-                            <div class="row g-3">
-                                <div class="col-md-6 col-lg-4">
-                                    <button type="button" class="btn btn-dark w-100 d-flex align-items-center justify-content-center" onclick="defaultLoan('{{ Hashids::encode($loan->id) }}')">
-                                        <i class="bx bx-error-circle me-2"></i>
-                                        <div class="text-start">
-                                            <div class="fw-bold">Mark as Defaulted</div>
-                                            <small class="d-block">Default Loan</small>
-                                        </div>
-                                    </button>
-                                </div>
+                        <div class="row g-3">
+                            <div class="col-md-6 col-lg-4">
+                                <button type="button" class="btn btn-dark w-100 d-flex align-items-center justify-content-center" onclick="defaultLoan('{{ Hashids::encode($loan->id) }}')">
+                                    <i class="bx bx-error-circle me-2"></i>
+                                    <div class="text-start">
+                                        <div class="fw-bold">Mark as Defaulted</div>
+                                        <small class="d-block">Default Loan</small>
+                                    </div>
+                                </button>
                             </div>
+                        </div>
                         @else
-                            <div class="text-center py-4">
-                                <i class="bx bx-info-circle fs-1 text-muted mb-3"></i>
-                                <h6 class="text-muted">No Actions Available</h6>
-                                <p class="text-muted">
-                                    @if(empty($approvalRoles))
-                                        This loan product does not require approval levels.
-                                    @else
-                                        This loan status does not require any approval actions.
-                                    @endif
-                                </p>
-                            </div>
+                        <div class="text-center py-4">
+                            <i class="bx bx-info-circle fs-1 text-muted mb-3"></i>
+                            <h6 class="text-muted">No Actions Available</h6>
+                            <p class="text-muted">
+                                @if(empty($approvalRoles))
+                                This loan product does not require approval levels.
+                                @else
+                                This loan status does not require any approval actions.
+                                @endif
+                            </p>
+                        </div>
                         @endif
                     </div>
                 </div>
@@ -245,25 +245,31 @@
 
             <div class="tab-pane fade" id="schedule" role="tabpanel">
                 @if($loan->schedule->count())
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                <div class="card shadow-sm border-0 w-100">
+                    <div class="card-body p-0 w-100">
+                        <div class="table-responsive w-100" style="overflow-x: auto;">
+                            <table class="table table-bordered nowrap w-100" id="loansTableDetail">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">Due Date</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Principal</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Interest</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Total Installment</th>
+                                        <th>#</th>
+                                        <th class="text-uppercase fw-bold text-secondary ps-4">Due Date</th>
+                                        <th class="text-uppercase fw-bold text-secondary">Principal</th>
+                                        <th class="text-uppercase fw-bold text-secondary">Interest</th>
+                                        <th class="text-uppercase fw-bold text-secondary">Penalty Amount</th>
+                                        <th class="text-uppercase fw-bold text-secondary">Fee Amount</th>
+                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Total Installment</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($loan->schedule as $item)
+                                    @foreach($loan->schedule as $index => $item)
                                     <tr>
+                                        <td>{{ $index + 1 }}</td>
                                         <td class="ps-4">{{ \Carbon\Carbon::parse($item->due_date)->format('M d, Y') }}</td>
                                         <td>{{ number_format($item->principal, 2) }}</td>
                                         <td>{{ number_format($item->interest, 2) }}</td>
-                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest, 2) }}</td>
+                                        <td>{{ number_format($item->penalty_amount, 2) }}</td>
+                                        <td>{{ number_format($item->fee_amount, 2) }}</td>
+                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest + $item->fee_amount + $item->penalty_amount, 2) }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -278,6 +284,7 @@
                 </div>
                 @endif
             </div>
+
 
             <div class="tab-pane fade" id="guarantors" role="tabpanel">
                 <div class="d-flex justify-content-between align-items-center mb-4">
@@ -326,6 +333,7 @@
                     <p class="text-secondary">Click the button above to add a guarantor.</p>
                 </div>
                 @endif
+
             </div>
 
             <div class="tab-pane fade" id="documents" role="tabpanel">
@@ -742,10 +750,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to disburse this loan? This will mark the loan as disbursed and activate the repayment schedule.';
         form.action = `/loans/${loanId}/disburse`;
-        
+
         modal.show();
     }
 
@@ -753,10 +761,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to approve this loan? This will change the loan status to approved.';
         form.action = `/loans/${loanId}/approve`;
-        
+
         modal.show();
     }
 
@@ -764,10 +772,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to check this loan? This will mark the loan as checked for first level approval.';
         form.action = `/loans/${loanId}/check`;
-        
+
         modal.show();
     }
 
@@ -775,10 +783,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to authorize this loan? This will mark the loan as authorized for final approval.';
         form.action = `/loans/${loanId}/authorize`;
-        
+
         modal.show();
     }
 
@@ -786,10 +794,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to reject this loan? This action cannot be undone.';
         form.action = `/loans/${loanId}/reject`;
-        
+
         modal.show();
     }
 
@@ -797,10 +805,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to approve this loan application? This will convert it to an active loan.';
         form.action = `/loans/application/${loanId}/approve`;
-        
+
         modal.show();
     }
 
@@ -808,10 +816,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to mark this loan as defaulted? This will change the loan status to defaulted.';
         form.action = `/loans/${loanId}/default`;
-        
+
         modal.show();
     }
 
@@ -829,17 +837,17 @@
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = `/loans/${loanId}`;
-                
+
                 const csrfToken = document.createElement('input');
                 csrfToken.type = 'hidden';
                 csrfToken.name = '_token';
                 csrfToken.value = '{{ csrf_token() }}';
-                
+
                 const methodField = document.createElement('input');
                 methodField.type = 'hidden';
                 methodField.name = '_method';
                 methodField.value = 'DELETE';
-                
+
                 form.appendChild(csrfToken);
                 form.appendChild(methodField);
                 document.body.appendChild(form);

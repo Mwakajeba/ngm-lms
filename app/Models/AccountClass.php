@@ -21,6 +21,8 @@ class AccountClass extends Model
      */
     protected $fillable = [
         'name',
+        'range_from',
+        'range_to',
     ];
 
     /**
@@ -31,6 +33,8 @@ class AccountClass extends Model
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'range_from' => 'integer',
+        'range_to' => 'integer',
     ];
 
     /**
