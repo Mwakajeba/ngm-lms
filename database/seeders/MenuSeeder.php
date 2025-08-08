@@ -103,6 +103,13 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => [],
             ],
+            'Chat' => [
+                'icon' => 'bx bx-message',
+                'visibleRoutes' => [
+                    ['name' => 'Chat', 'route' => 'chat.index'],
+                ],
+                'hiddenRoutes' => ['chat.messages', 'chat.send'],
+            ],
         ];
 
         foreach ($entities as $parentName => $data) {
