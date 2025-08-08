@@ -290,10 +290,9 @@
 			</div>
 		</a>
 		<ul class="dropdown-menu dropdown-menu-end">
-			<li><a class="dropdown-item" href="profile.php"><i class="bx bx-user"></i><span>Profile</span></a>
+			<li><a class="dropdown-item" href="{{ route('users.profile') }}"><i class="bx bx-user"></i><span>Profile</span></a>
 			</li>
-			</li>
-			<li><a class="dropdown-item" href="change_password.php"><i class='bx bx-home-circle'></i><span>Change Password</span></a>
+			<li><a class="dropdown-item" href="{{ route('users.profile') }}"><i class='bx bx-home-circle'></i><span>Change Password</span></a>
 			</li>
 			<li>
 				<div class="dropdown-divider mb-0"></div>

@@ -6,26 +6,31 @@
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-flex align-items-center">
-            <div class="me-auto">
-                <h5 class="page-title text-dark fw-semibold fs-3">Bank Reconciliation</h5>
-                <ul class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item active">Bank Reconciliation</li>
-                </ul>
-            </div>
-            <div class="ms-auto">
-                <button type="button" class="btn btn-info me-2" onclick="refreshAllReconciliations()" id="refreshAllBtn">
-                    <i class="bx bx-refresh me-2"></i>Refresh All
-                </button>
-                <a href="{{ route('accounting.reports.bank-reconciliation-report') }}" class="btn btn-danger me-2">
-                    <i class="bx bx-file-pdf me-2"></i>Reports
-                </a>
-                <a href="{{ route('accounting.bank-reconciliation.create') }}" class="btn btn-primary">
-                    <i class="bx bx-plus me-2"></i>New Reconciliation
-                </a>
+        <div class="row">
+            <div class="col-12">
+                <div class="page-breadcrumb d-flex align-items-center">
+                    <div class="me-auto">
+                        <x-breadcrumbs-with-icons :links="[
+                            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                            ['label' => 'Bank Reconciliation', 'url' => '#', 'icon' => 'bx bx-credit-card']
+                        ]" />
+                    </div>
+                    <div class="ms-auto">
+                        <button type="button" class="btn btn-info me-2" onclick="refreshAllReconciliations()" id="refreshAllBtn">
+                            <i class="bx bx-refresh me-2"></i>Refresh All
+                        </button>
+                        <a href="{{ route('accounting.reports.bank-reconciliation-report') }}" class="btn btn-danger me-2">
+                            <i class="bx bx-file-pdf me-2"></i>Reports
+                        </a>
+                        <a href="{{ route('accounting.bank-reconciliation.create') }}" class="btn btn-primary">
+                            <i class="bx bx-plus me-2"></i>New Reconciliation
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+        <h6 class="mb-0 text-uppercase">BANK RECONCILIATION</h6>
+        <hr />
 
         <!-- Statistics Cards -->
         <div class="row row-cols-1 row-cols-lg-4">

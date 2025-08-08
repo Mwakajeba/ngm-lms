@@ -6,21 +6,13 @@
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-flex align-items-center">
-            <div class="me-auto">
-                <h5 class="page-title text-dark fw-semibold fs-3">Create Bank Reconciliation</h5>
-                <ul class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('accounting.bank-reconciliation.index') }}">Bank Reconciliation</a></li>
-                    <li class="breadcrumb-item active">Create Reconciliation</li>
-                </ul>
-            </div>
-            <div class="ms-auto">
-                <a href="{{ route('accounting.bank-reconciliation.index') }}" class="btn btn-secondary">
-                    <i class="bx bx-arrow-back me-2"></i>Back to Reconciliations
-                </a>
-            </div>
-        </div>
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Bank Reconciliation', 'url' => route('accounting.bank-reconciliation.index'), 'icon' => 'bx bx-credit-card'],
+            ['label' => 'Create Reconciliation', 'url' => '#', 'icon' => 'bx bx-plus']
+        ]" />
+        <h6 class="mb-0 text-uppercase">CREATE BANK RECONCILIATION</h6>
+        <hr />
 
         <div class="row">
             <div class="col-12">
