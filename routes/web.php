@@ -421,7 +421,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('groups', [GroupController::class, 'store'])->name('groups.store');
     Route::get('groups/{encodedId}', [GroupController::class, 'show'])->name('groups.show');
     Route::get('groups/{encodedId}/edit', [GroupController::class, 'edit'])->name('groups.edit');
-    Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');
+    Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');// Badilisha 'GroupController' na jina la controller yako halisi.
+    Route::post('groups/repayments', [GroupController::class, 'groupStore'])->name('groups.groupStore');
     Route::delete('groups/{encodedId}', [GroupController::class, 'destroy'])->name('groups.destroy');
     Route::get('groups/{encodedId}/payment', [GroupController::class, 'payment'])->name('groups.payment');
 });
