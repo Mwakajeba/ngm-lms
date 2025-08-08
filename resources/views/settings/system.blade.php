@@ -272,6 +272,9 @@ document.addEventListener('DOMContentLoaded', function() {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
 
+    // Show password requirements for security settings
+    showPasswordRequirements();
+    
     // Auto-save functionality (optional)
     let autoSaveTimer;
     const form = document.querySelector('form');
@@ -296,50 +299,74 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
+function showPasswordRequirements() {
+    // Get current password settings
+    const minLength = document.getElementById('password_min_length')?.value || 8;
+    const requireSpecial = document.getElementById('password_require_special')?.checked || false;
+    const requireNumbers = document.getElementById('password_require_numbers')?.checked || false;
+    const requireUppercase = document.getElementById('password_require_uppercase')?.checked || false;
+    
+    // Create requirements text
+    let requirements = [`Minimum ${minLength} characters`];
+    if (requireUppercase) requirements.push('At least one uppercase letter');
+    if (requireNumbers) requirements.push('At least one number');
+    if (requireSpecial) requirements.push('At least one special character');
+    
+    // Show requirements in security tab
+    const securityTab = document.getElementById('security-content');
+    if (securityTab) {
+        const requirementsDiv = securityTab.querySelector('.password-requirements');
+        if (!requirementsDiv) {
+            const div = document.createElement('div');
+            div.className = 'alert alert-info password-requirements mt-3';
+            div.innerHTML = '<strong>Current Password Requirements:</strong><br>' + requirements.join('<br>');
+            securityTab.appendChild(div);
+        } else {
+            requirementsDiv.innerHTML = '<strong>Current Password Requirements:</strong><br>' + requirements.join('<br>');
+        }
+    }
+}
+
 function confirmReset() {
     var resetModal = new bootstrap.Modal(document.getElementById('resetModal'));
     resetModal.show();
 }
 
+// Test email configuration
 function testEmailConfig() {
+    const emailField = document.getElementById('mail_from_address');
+    const email = emailField.value;
+    
+    if (!email) {
+        alert('Please enter an email address first.');
+        return;
+    }
+    
+    // Show loading state
     const testBtn = event.target;
     const originalText = testBtn.innerHTML;
-    
     testBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i> Testing...';
     testBtn.disabled = true;
     
+    // Make AJAX request
     fetch('{{ route("settings.system.test-email") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-        }
+        },
+        body: JSON.stringify({ email: email })
     })
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            Swal.fire({
-                icon: 'success',
-                title: 'Email Test Successful!',
-                text: data.message,
-                confirmButtonText: 'OK'
-            });
+            alert('Email test successful!');
         } else {
-            Swal.fire({
-                icon: 'error',
-                title: 'Email Test Failed',
-                text: data.message,
-                confirmButtonText: 'OK'
-            });
+            alert('Email test failed: ' + data.message);
         }
     })
     .catch(error => {
-        Swal.fire({
-            icon: 'error',
-            title: 'Email Test Failed',
-            text: 'An error occurred while testing email configuration.',
-            confirmButtonText: 'OK'
-        });
+        alert('Email test failed: ' + error.message);
     })
     .finally(() => {
         testBtn.innerHTML = originalText;

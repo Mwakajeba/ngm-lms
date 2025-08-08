@@ -318,9 +318,25 @@ class SettingsController extends Controller
             // Clear cache
             \App\Models\SystemSetting::clearCache();
 
+            // Apply security settings to configuration
+            $this->applySecuritySettings();
+
             return redirect()->route('settings.system')->with('success', 'System settings updated successfully!');
         } catch (\Exception $e) {
             return redirect()->route('settings.system')->with('error', 'Failed to update settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Apply security settings to Laravel configuration
+     */
+    private function applySecuritySettings()
+    {
+        $securityConfig = \App\Services\SystemSettingService::getSecurityConfig();
+        
+        // Apply session lifetime
+        if (isset($securityConfig['session_lifetime'])) {
+            config(['session.lifetime' => $securityConfig['session_lifetime']]);
         }
     }
 

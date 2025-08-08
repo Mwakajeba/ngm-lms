@@ -143,6 +143,16 @@
                         <h6 class="mb-0"><i class="bx bx-list-ul me-2"></i>Transaction History</h6>
                     </div>
                     <div class="card-body">
+                        <!-- Help Information -->
+                        <div class="alert alert-info mb-3">
+                            <div class="d-flex align-items-center">
+                                <i class="bx bx-info-circle me-2"></i>
+                                <div>
+                                    <strong>Tip:</strong> Click on any <strong class="text-success">Debit</strong> or <strong class="text-danger">Credit</strong> amount to view the complete double entry details for that transaction.
+                                </div>
+                            </div>
+                        </div>
+                        
                         <div class="table-responsive">
                             <table id="doubleEntriesTable" class="table table-striped table-hover">
                                 <thead class="table-light">

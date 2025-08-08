@@ -140,7 +140,23 @@
                                             <div class="invalid-feedback">{{ $message }}</div>
                                         @enderror
                                         <small class="form-text text-muted">
-                                            {{ isset($user) ? 'Leave blank to keep current password. Must be at least 8 characters if changed.' : 'Password must be at least 8 characters long.' }}
+                                            @php
+                                                $securityConfig = \App\Services\SystemSettingService::getSecurityConfig();
+                                                $minLength = $securityConfig['password_min_length'] ?? 8;
+                                                $requirements = ["Minimum {$minLength} characters"];
+                                                
+                                                if ($securityConfig['password_require_uppercase'] ?? true) {
+                                                    $requirements[] = 'At least one uppercase letter';
+                                                }
+                                                if ($securityConfig['password_require_numbers'] ?? true) {
+                                                    $requirements[] = 'At least one number';
+                                                }
+                                                if ($securityConfig['password_require_special'] ?? true) {
+                                                    $requirements[] = 'At least one special character';
+                                                }
+                                            @endphp
+                                            {{ isset($user) ? 'Leave blank to keep current password. ' : '' }}
+                                            Password requirements: {{ implode(', ', $requirements) }}
                                         </small>
                                     </div>
                                 </div>
@@ -308,21 +324,31 @@ document.getElementById('password').addEventListener('input', function() {
         let strength = 0;
         let feedbackText = '';
         
+        // Get system settings for password requirements
+        const securityConfig = @json(\App\Services\SystemSettingService::getSecurityConfig());
+        const minLength = securityConfig.password_min_length || 8;
+        const requireUppercase = securityConfig.password_require_uppercase || true;
+        const requireNumbers = securityConfig.password_require_numbers || true;
+        const requireSpecial = securityConfig.password_require_special || true;
+        
         // Check length
-        if (password.length >= 8) strength += 25;
-        if (password.length >= 12) strength += 25;
+        if (password.length >= minLength) strength += 25;
+        if (password.length >= minLength + 4) strength += 25;
         
         // Check for lowercase
         if (/[a-z]/.test(password)) strength += 25;
         
-        // Check for uppercase
-        if (/[A-Z]/.test(password)) strength += 25;
+        // Check for uppercase (if required)
+        if (requireUppercase && /[A-Z]/.test(password)) strength += 25;
+        else if (!requireUppercase) strength += 25; // Give points even if not required
         
-        // Check for numbers
-        if (/[0-9]/.test(password)) strength += 25;
+        // Check for numbers (if required)
+        if (requireNumbers && /[0-9]/.test(password)) strength += 25;
+        else if (!requireNumbers) strength += 25; // Give points even if not required
         
-        // Check for special characters
-        if (/[^A-Za-z0-9]/.test(password)) strength += 25;
+        // Check for special characters (if required)
+        if (requireSpecial && /[^A-Za-z0-9]/.test(password)) strength += 25;
+        else if (!requireSpecial) strength += 25; // Give points even if not required
         
         // Cap at 100%
         strength = Math.min(strength, 100);

@@ -6,17 +6,25 @@
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="breadcrumb-title pe-3">Accounting</div>
-            <div class="ps-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Bill Purchases</li>
-                    </ol>
-                </nav>
+        <div class="row">
+            <div class="col-12">
+                <div class="page-breadcrumb d-flex align-items-center">
+                    <div class="me-auto">
+                        <x-breadcrumbs-with-icons :links="[
+                            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                            ['label' => 'Bill Purchases', 'url' => '#', 'icon' => 'bx bx-receipt']
+                        ]" />
+                    </div>
+                    <div class="ms-auto">
+                        <a href="{{ route('accounting.bill-purchases.create') }}" class="btn btn-primary">
+                            <i class="bx bx-plus"></i> New Bill Purchase
+                        </a>
+                    </div>
+                </div>
             </div>
         </div>
+        <h6 class="mb-0 text-uppercase">BILL PURCHASES</h6>
+        <hr />
 
         <!-- Page Header -->
         <div class="row">
