@@ -50,76 +50,72 @@ class GroupController extends Controller
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
-    {
-        $validator = Validator::make($request->all(), [
-            'name' => 'required|string|max:255|unique:groups,name',
-            'loan_officer' => 'required|exists:users,id',
-            'minimum_members' => 'nullable|integer|min:1|max:1000000',
-            'maximum_members' => 'nullable|integer|min:1|max:1000000',
-            'group_leader' => [
-                'nullable',
-                'exists:customers,id',
-                function ($attribute, $value, $fail) {
-                    if ($value) {
-                        $customer = Customer::find($value);
-                        if (!$customer || $customer->category !== 'Borrower') {
-                            $fail('The selected group leader must be a customer in the Borrower category.');
-                        }
+{
+    $validator = Validator::make($request->all(), [
+        'name' => 'required|string|max:255|unique:groups,name',
+        'loan_officer' => 'required|exists:users,id',
+        'minimum_members' => 'nullable|integer|min:1|max:1000000',
+        'maximum_members' => 'nullable|integer|min:1|max:1000000',
+        'group_leader' => [
+            'nullable',
+            'exists:customers,id',
+            function ($attribute, $value, $fail) {
+                if ($value) {
+                    $customer = Customer::find($value);
+                    if (!$customer || $customer->category !== 'Borrower') {
+                        $fail('The selected group leader must be a customer in the Borrower category.');
                     }
                 }
-            ],
-            'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday,every_day,every_month,every_week',
-            'meeting_time' => 'nullable|date_format:H:i',
-        ], [
-            'name.required' => 'Group name is required.',
-            'name.unique' => 'A group with this name already exists.',
-            'loan_officer.required' => 'Please select a loan officer.',
-            'loan_officer.exists' => 'The selected loan officer is invalid.',
-            'group_leader.exists' => 'The selected group leader is invalid.',
-            'meeting_day.in' => 'Please select a valid meeting day.',
-            'meeting_time.date_format' => 'Please enter a valid meeting time.',
-        ]);
-
-
-        if ($validator->fails()) {
-            return redirect()->back()->withErrors($validator)->withInput();
-        }
-
-        try {
-            DB::beginTransaction();
-
-            $group = Group::create([
-                'name' => $request->name,
-                'loan_officer' => $request->loan_officer,
-                'branch_id' => Auth::user()->branch_id,
-                'minimum_members' => $request->minimum_members,
-                'maximum_members' => $request->maximum_members,
-                'group_leader' => $request->group_leader,
-                'meeting_day' => $request->meeting_day,
-                'meeting_time' => $request->meeting_time,
-            ]);
-
-            if ($request->group_leader) {
-                $leader = Customer::where('id', $request->group_leader)
-                    ->where('category', 'Borrower')->first();
-                if ($leader) {
-                    GroupMember::create([
-                        'group_id' => $group->id,
-                        'customer_id' => $request->group_leader,
-                    ]);
-                }
             }
+        ],
+        'meeting_day' => 'nullable|in:monday,tuesday,wednesday,thursday,friday,saturday,sunday,every_day,every_week,every_month',
+        'meeting_time' => 'nullable|date_format:H:i',
+    ], [
+        'name.required' => 'Group name is required.',
+        'name.unique' => 'A group with this name already exists.',
+        'loan_officer.required' => 'Please select a loan officer.',
+        'loan_officer.exists' => 'The selected loan officer is invalid.',
+        'group_leader.exists' => 'The selected group leader is invalid.',
+        'meeting_day.in' => 'Please select a valid meeting day.',
+        'meeting_time.date_format' => 'Please enter a valid meeting time.',
+    ]);
 
-            DB::commit(); // Everything went fine
-
-            return redirect()->route('groups.index')->with('success', 'Group created successfully!');
-        } catch (\Exception $e) {
-            DB::rollBack();
-            \Log::error('Group creation failed: ' . $e->getMessage());
-            return redirect()->back()->with('error', 'Failed to create group. Please try again.')->withInput();
-        }
+    if ($validator->fails()) {
+        return redirect()->back()->withErrors($validator)->withInput();
     }
 
+    try {
+        DB::beginTransaction();
+
+        $group = Group::create([
+            'name' => $request->name,
+            'loan_officer' => $request->loan_officer,
+            'branch_id' => Auth::user()->branch_id,
+            'minimum_members' => $request->minimum_members,
+            'maximum_members' => $request->maximum_members,
+            'group_leader' => $request->group_leader,
+            'meeting_day' => $request->meeting_day,
+            'meeting_time' => $request->meeting_time,
+        ]);
+
+        // Only create a GroupMember if a group leader was provided and is valid
+        if ($request->filled('group_leader')) {
+            GroupMember::create([
+                'group_id' => $group->id,
+                'customer_id' => $request->group_leader,
+                'joined_date' => now()->format('Y M D')
+            ]);
+        }
+
+        DB::commit();
+
+        return redirect()->route('groups.index')->with('success', 'Group created successfully!');
+    } catch (\Exception $e) {
+        DB::rollBack();
+        \Log::error('Group creation failed: ' . $e->getMessage());
+        return redirect()->back()->with('error', 'Failed to create group. Please try again.')->withInput();
+    }
+}
     /**
      * Display the specified resource.
      */
