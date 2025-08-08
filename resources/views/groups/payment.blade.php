@@ -51,11 +51,12 @@
                                 <tr>
                                     <th>#</th>
                                     <th>Customer</th>
-                                    <th>Loan Amount</th>
                                     <th>Due Date</th>
-                                    <th>Total Due</th>
+                                    <th>Installment Amount</th>
+                                    <th>Fee</th>
                                     <th>Penalty</th>
                                     <th>Already Paid</th>
+                                    <th>Total Due</th>
                                     <th>Amount to Pay</th>
                                     <th>Action</th>
                                 </tr>
@@ -72,17 +73,21 @@
                                                     <strong>{{ $customerData['customer']->name }}</strong><br>
                                                 @endif
                                             </td>
-                                            <td>{{ number_format($loanData['loan']->amount, 2) }}</td>
                                             <td>{{ Carbon\Carbon::parse($loanData['schedule']->due_date)->format('d M, Y') }}</td>
-                                            <td>{{ number_format($loanData['total_due'], 2) }}</td>
+                                            <td>{{ number_format($loanData['installment_amount'], 2) }}</td>
+                                            <td>{{ number_format($loanData['fee_amount'], 2) }}</td>
                                             <td>{{ number_format($loanData['penalty_amount'], 2) }}</td>
                                             <td>{{ number_format($loanData['amount_already_paid'], 2) }}</td>
+                                            <td>{{ number_format($loanData['total_due'], 2) }}</td>
                                             <td>
+                                                <input type="hidden" name="repayments[{{ $customerData['customer']->id }}][{{ $loanData['loan']->id }}][schedule_id]" value="{{ $loanData['schedule']->id }}">
+                                                <input type="hidden" name="repayments[{{ $customerData['customer']->id }}][{{ $loanData['loan']->id }}][customer_id]" value="{{ $customerData['customer']->id }}">
+                                                <input type="hidden" name="repayments[{{ $customerData['customer']->id }}][{{ $loanData['loan']->id }}][loan_id]" value="{{ $loanData['loan']->id }}">
+                                                
                                                 <input type="number" step="0.01" name="repayments[{{ $customerData['customer']->id }}][{{ $loanData['loan']->id }}][amount_paid]" 
                                                     class="form-control amount-input" 
                                                     value="{{ old('repayments.'.$customerData['customer']->id.'.'.$loanData['loan']->id.'.amount_paid', number_format($loanData['amount_to_pay'], 2, '.', '')) }}"
                                                     min="0" max="{{ number_format($loanData['amount_to_pay'], 2, '.', '') }}">
-                                                <input type="hidden" name="repayments[{{ $customerData['customer']->id }}][{{ $loanData['loan']->id }}][schedule_id]" value="{{ $loanData['schedule']->id }}">
                                             </td>
                                             <td>
                                                 <button type="button" class="btn btn-danger btn-sm remove-customer" data-row-id="customer-row-{{ $customerData['customer']->id }}-loan-{{ $loanData['loan']->id }}">

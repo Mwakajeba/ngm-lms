@@ -7,8 +7,12 @@ use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\User;
 use App\Models\Branch;
+use App\Models\GlTransaction;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
+use App\Models\Receipt;
+use App\Models\ReceiptItem;
+use App\Models\Repayment;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -265,22 +269,24 @@ class GroupController extends Controller
         }
     }
 
+
+                       ////////////GROUP REPAYMENT FUNCTION /////////////
     public function payment($encodedId)
     {
         // Tumia Hashids kupata Group ID na kutafuta group husika
         $ids = Hashids::decode($encodedId)[0] ?? null;
         $group = Group::findOrFail($ids);
-        
+
         // Pata wateja wote walio kwenye kundi kupitia uhusiano wa `GroupMember`.
         // Kisha pakia (eager load) uhusiano wa customer, mikopo, schedules, na repayments.
         $customers = $group->members()->with(['customer.loans' => function ($query) {
             $query->where('status', 'Active') // Chagua mikopo iliyo "Active" tu
-                  ->with(['schedule.repayments']); // Pakia schedules na repayments zake
+                ->with(['schedule.repayments']); // Pakia schedules na repayments zake
         }])->get()->pluck('customer'); // Chukua tu objects za customers
-    
+
         $repaymentData = [];
         $totalAmountToPay = 0;
-    
+
         foreach ($customers as $customer) {
             // Hapa tunaangalia tena ikiwa mteja ana mikopo iliyo active baada ya Eager Loading
             if ($customer->loans->isNotEmpty()) {
@@ -288,85 +294,304 @@ class GroupController extends Controller
                     'customer' => $customer,
                     'loans' => [],
                 ];
-                
+
                 foreach ($customer->loans as $loan) {
                     // Pata schedule ya kwanza ambayo haijalipwa kikamilifu
-                    $unpaidSchedule = $loan->schedule->sortBy('due_date')->first(function ($schedule) {
-                        $amountDue = $schedule->principal + $schedule->interest + $schedule->fee_amount + $schedule->penalty_amount;
-            
-                        $totalPaid = $schedule->repayments->sum(function ($repayment) {
-                            return $repayment->principal + $repayment->interest + $repayment->penalt_amount + $repayment->fee_amount;
+                    $unpaidSchedule = $loan->schedule
+                        ->sortBy('due_date')
+                        ->first(function ($schedule) {
+                            $amountDue = $schedule->principal
+                                + $schedule->interest
+                                + $schedule->fee_amount
+                                + $schedule->penalty_amount;
+
+                            $totalPaid = $schedule->repayments->sum(function ($repayment) {
+                                return $repayment->principal
+                                    + $repayment->interest
+                                    + $repayment->penalt_amount
+                                    + $repayment->fee_amount;
+                            });
+
+                            // Iwe haijalipwa kabisa au imelipwa nusu
+                            return $totalPaid < $amountDue;
                         });
-            
-                        return $totalPaid < $amountDue;
-                    });
-            
+
+
                     if ($unpaidSchedule) {
-                        $totalDue = $unpaidSchedule->principal + $unpaidSchedule->interest + $unpaidSchedule->penalty_amount + $unpaidSchedule->fee_amount;
+                        $totalDue = $unpaidSchedule->principal
+                            + $unpaidSchedule->interest
+                            + $unpaidSchedule->penalty_amount
+                            + $unpaidSchedule->fee_amount;
+
                         $amountAlreadyPaid = $unpaidSchedule->repayments->sum(function ($repayment) {
-                            return $repayment->principal + $repayment->interest + $repayment->penalt_amount + $repayment->fee_amount;
+                            return $repayment->principal
+                                + $repayment->interest
+                                + $repayment->penalt_amount
+                                + $repayment->fee_amount;
                         });
-            
+
                         $remainingAmountToPay = $totalDue - $amountAlreadyPaid;
                         $totalAmountToPay += $remainingAmountToPay;
-            
+
                         $customerData['loans'][] = [
                             'loan' => $loan,
                             'schedule' => $unpaidSchedule,
                             'amount_to_pay' => $remainingAmountToPay,
+                            'installment_amount' => $unpaidSchedule->principal + $unpaidSchedule->interest,
                             'penalty_amount' => $unpaidSchedule->penalty_amount,
+                            'fee_amount' => $unpaidSchedule->fee_amount,
                             'total_due' => $totalDue,
                             'amount_already_paid' => $amountAlreadyPaid,
                         ];
                     }
                 }
-                
+
                 // Ongeza mteja kwenye data ya malipo tu ikiwa ana schedules ambazo hazijalipwa
                 if (!empty($customerData['loans'])) {
                     $repaymentData[] = $customerData;
                 }
             }
         }
-        
+
         return view('groups.payment', compact('group', 'repaymentData', 'totalAmountToPay'));
     }
-    public function groupStore(Request $request, Group $group)
+    public function groupStore(Request $request, $encodedId)
     {
-        // Validation logic for the form data
+        // Validation logic kwa data ya fomu
         $request->validate([
-            'repayments.*.schedule_id' => 'required|exists:loan_schedules,id',
-            'repayments.*.amount_paid' => 'required|numeric|min:0',
+            'repayments.*.*.schedule_id' => 'required|exists:loan_schedules,id',
+            'repayments.*.*.amount_paid' => 'required|numeric|min:0',
         ]);
 
         try {
             DB::beginTransaction();
 
-            foreach ($request->repayments as $repayment) {
-                $schedule = LoanSchedule::find($repayment['schedule_id']);
+            $user = Auth::user();
+            $allReceiptItems = [];
+            $allGlTransactions = [];
 
-                $amountPaid = $repayment['amount_paid'];
-                $amountDue = $schedule->principal_amount + $schedule->interest_amount + $schedule->penalty_amount;
+            foreach ($request->repayments as $customerId => $loans) {
+                foreach ($loans as $loanId => $repaymentData) {
+                    // Pata schedule na uhusiano muhimu
+                    $schedule = LoanSchedule::with(['loan.product', 'loan.bankAccount', 'repayments'])->findOrFail($repaymentData['schedule_id']);
 
-                // Hifadhi kiasi kilicholipwa
-                $schedule->paid_amount = ($schedule->paid_amount ?? 0) + $amountPaid;
+                    $amountPaid = (float) $repaymentData['amount_paid'];
+                    if ($amountPaid <= 0) {
+                        continue;
+                    }
 
-                // Mantiki ya kurekebisha status ya schedule
-                if ($schedule->paid_amount >= $amountDue) {
-                    $schedule->status = 'Paid'; // Malipo kamili
-                } else {
-                    $schedule->status = 'Partial Payment'; // Malipo ya nusu
+                    $bankAccountId = $schedule->loan->bankAccount->id ?? null;
+                    $loanProduct = $schedule->loan->product;
+                    $customer = Customer::findOrFail($customerId);
+
+                    // *** 1. Kugawa malipo kulingana na Payment Order ***
+                    $paymentOrder = explode(',', $loanProduct->repayment_order);
+
+                    $principalPaid = 0;
+                    $interestPaid = 0;
+                    $penaltyPaid = 0;
+                    $feePaid = 0;
+
+                    // Pata salio lililobaki la schedule kwa kuzingatia malipo ya zamani
+                    $totalPaidOnSchedule = $schedule->repayments->sum(function ($r) {
+                        return $r->principal + $r->interest + $r->penalt_amount + $r->fee_amount;
+                    });
+                    $totalDue = $schedule->principal + $schedule->interest + $schedule->fee_amount + $schedule->penalty_amount;
+                    $balance = $totalDue - $totalPaidOnSchedule;
+
+                    $amountToDistribute = min($amountPaid, $balance);
+                    $remainingAmount = $amountToDistribute;
+
+                    foreach ($paymentOrder as $item) {
+                        switch (trim($item)) {
+                            case 'fees':
+                                $feeBalance = $schedule->fee_amount - $schedule->repayments->sum('fee_amount');
+                                $payment = min($remainingAmount, $feeBalance);
+                                $feePaid += $payment;
+                                $remainingAmount -= $payment;
+                                break;
+                            case 'penalties':
+                                $penaltyBalance = $schedule->penalty_amount - $schedule->repayments->sum('penalt_amount');
+                                $payment = min($remainingAmount, $penaltyBalance);
+                                $penaltyPaid += $payment;
+                                $remainingAmount -= $payment;
+                                break;
+                            case 'interest':
+                                $interestBalance = $schedule->interest_amount - $schedule->repayments->sum('interest');
+                                $payment = min($remainingAmount, $interestBalance);
+                                $interestPaid += $payment;
+                                $remainingAmount -= $payment;
+                                break;
+                            case 'principal':
+                                $principalBalance = $schedule->principal_amount - $schedule->repayments->sum('principal');
+                                $payment = min($remainingAmount, $principalBalance);
+                                $principalPaid += $payment;
+                                $remainingAmount -= $payment;
+                                break;
+                        }
+                    }
+
+                    // *** 2. Kuhifadhi Repayment ***
+                    $repayment = Repayment::create([
+                        'customer_id' => $customerId,
+                        'loan_id' => $loanId,
+                        'loan_schedule_id' => $schedule->id,
+                        'principal' => $principalPaid,
+                        'interest' => $interestPaid,
+                        'penalt_amount' => $penaltyPaid,
+                        'bank_account_id' => $bankAccountId,
+                        'fee_amount' => $feePaid,
+                        'cash_deposit' => $amountPaid,
+                        'due_date' => $schedule->due_date,
+                        'payment_date' => now(),
+                    ]);
+
+                    // *** 3. Kuhifadhi Receipt na ReceiptItem ***
+                    $notes = "Being Repayment for {$loanProduct->name} Loan from {$customer->name}, of TSHS {$amountPaid}";
+
+                    $receipt = Receipt::create([
+                        'reference' => $repayment->id,
+                        'reference_type' => 'Repayment',
+                        'reference_number' => null,
+                        'amount' => $amountPaid,
+                        'date' => now(),
+                        'description' => $notes,
+                        'user_id' => $user->id,
+                        'bank_account_id' => $bankAccountId,
+                        'customer_id' => $customerId,
+                        'branch_id' => $user->branch_id,
+                        'approved' => true,
+                        'approved_by' => $user->id,
+                        'approved_at' => now(),
+                    ]);
+
+                    if ($principalPaid > 0) {
+                        $allReceiptItems[] = [
+                            'receipt_id' => $receipt->id,
+                            'chart_account_id' => $loanProduct->principal_receivable_account_id,
+                            'amount' => $principalPaid,
+                            'description' => $notes,
+                        ];
+                    }
+                    if ($interestPaid > 0) {
+                        $allReceiptItems[] = [
+                            'receipt_id' => $receipt->id,
+                            'chart_account_id' => $loanProduct->interest_revenue_account_id,
+                            'amount' => $interestPaid,
+                            'description' => $notes,
+                        ];
+                    }
+                    if ($feePaid > 0) {
+                        $allReceiptItems[] = [
+                            'receipt_id' => $receipt->id,
+                            'chart_account_id' => $loanProduct->fee->chart_account_id,
+                            'amount' => $feePaid,
+                            'description' => $notes,
+                        ];
+                    }
+                    if ($penaltyPaid > 0) {
+                        $allReceiptItems[] = [
+                            'receipt_id' => $receipt->id,
+                            'chart_account_id' => $loanProduct->penalty->penalty_receivables_account_id,
+                            'amount' => $penaltyPaid,
+                            'description' => $notes,
+                        ];
+                    }
+
+                    // *** 4. Kuhifadhi GL Transactions ***
+                    $bankChartAccountId = $schedule->loan->bankAccount->chart_account_id ?? null;
+
+                    // Debit: Bank Account na kiasi chote kilicholipwa
+                    $allGlTransactions[] = [
+                        'chart_account_id' => $bankChartAccountId,
+                        'customer_id' => $customerId,
+                        'amount' => $amountPaid,
+                        'nature' => 'debit',
+                        'transaction_id' => $repayment->id,
+                        'transaction_type' => 'Repayment',
+                        'date' => now(),
+                        'description' => $notes,
+                        'branch_id' => $user->branch_id,
+                        'user_id' => $user->id,
+                    ];
+
+                    // Credit transactions kulingana na kiasi kilicholipwa kwa kila sehemu
+                    if ($principalPaid > 0) {
+                        $allGlTransactions[] = [
+                            'chart_account_id' => $loanProduct->principal_receivable_account_id,
+                            'customer_id' => $customerId,
+                            'amount' => $principalPaid,
+                            'nature' => 'credit',
+                            'transaction_id' => $repayment->id,
+                            'transaction_type' => 'Repayment',
+                            'date' => now(),
+                            'description' => $notes,
+                            'branch_id' => $user->branch_id,
+                            'user_id' => $user->id,
+                        ];
+                    }
+
+                    if ($interestPaid > 0) {
+                        $allGlTransactions[] = [
+                            'chart_account_id' => $loanProduct->interest_revenue_account_id,
+                            'customer_id' => $customerId,
+                            'amount' => $interestPaid,
+                            'nature' => 'credit',
+                            'transaction_id' => $repayment->id,
+                            'transaction_type' => 'Repayment',
+                            'date' => now(),
+                            'description' => $notes,
+                            'branch_id' => $user->branch_id,
+                            'user_id' => $user->id,
+                        ];
+                    }
+
+                    if ($feePaid > 0) {
+                        $allGlTransactions[] = [
+                            'chart_account_id' => $loanProduct->fee->chart_account_id,
+                            'customer_id' => $customerId,
+                            'amount' => $feePaid,
+                            'nature' => 'credit',
+                            'transaction_id' => $repayment->id,
+                            'transaction_type' => 'Repayment',
+                            'date' => now(),
+                            'description' => $notes,
+                            'branch_id' => $user->branch_id,
+                            'user_id' => $user->id,
+                        ];
+                    }
+
+                    if ($penaltyPaid > 0) {
+                        $allGlTransactions[] = [
+                            'chart_account_id' => $loanProduct->penalty->penalty_receivables_account_id,
+                            'customer_id' => $customerId,
+                            'amount' => $penaltyPaid,
+                            'nature' => 'credit',
+                            'transaction_id' => $repayment->id,
+                            'transaction_type' => 'Repayment',
+                            'date' => now(),
+                            'description' => $notes,
+                            'branch_id' => $user->branch_id,
+                            'user_id' => $user->id,
+                        ];
+                    }
                 }
+            }
 
-                $schedule->paid_at = now();
-                $schedule->save();
+            // Hifadhi GL Transactions na ReceiptItems zote kwa pamoja
+            if (!empty($allReceiptItems)) {
+                ReceiptItem::insert($allReceiptItems);
+            }
+            if (!empty($allGlTransactions)) {
+                GlTransaction::insert($allGlTransactions);
             }
 
             DB::commit();
-
-            return redirect()->route('groups.repayments.create', $group)->with('success', 'Group repayment processed successfully!');
+            return redirect()->route('groups.show',$encodedId)->with('success', 'Group repayment processed successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to process repayment. ' . $e->getMessage());
         }
     }
+    //////////////END OF  GROUP REPAYMENT FUNCTION ///////////
 }
