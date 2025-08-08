@@ -110,7 +110,7 @@
                                         @can('view user profile')
                                         <div>
                                             <div class="fw-bold">
-                                                <a href="{{ route('users.profile') }}" class="text-decoration-none">{{ $user->name }}</a>
+                                                <a href="{{ route('users.show', $user) }}" class="text-decoration-none">{{ $user->name }}</a>
                                             </div>
                                         </div>
                                         @endcan
@@ -136,7 +136,7 @@
                                 <td>{{ $user->created_at->format('M d, Y') }}</td>
                                 <td>
                                     @can('view user profile')
-                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-outline-info" title="Profile"><i class="bx bx-show"></i></a>
+                                    <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-info" title="Profile"><i class="bx bx-show"></i></a>
                                     @endcan
 
                                     @can('edit user')

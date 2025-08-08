@@ -20,7 +20,7 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = \App\Models\User::with(['branch', 'roles']);
+        $query = User::with(['branch', 'roles']);
 
         // Optionally filter by status
         if ($request->has('status') && $request->status) {
@@ -29,7 +29,7 @@ class UserController extends Controller
 
         // Optionally filter by role
         if ($request->has('role') && $request->role) {
-            $query->whereHas('roles', function($q) use ($request) {
+            $query->whereHas('roles', function ($q) use ($request) {
                 $q->where('name', $request->role);
             });
         }
@@ -184,8 +184,10 @@ class UserController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Redirect to edit page since we don't have a dedicated show view
-        return redirect()->route('users.edit', $user);
+        // Load the user with relationships
+        $user->load(['branch', 'company', 'roles']);
+
+        return view('users.show', compact('user'));
     }
 
     public function edit(User $user)

@@ -28,7 +28,7 @@ class User extends Authenticatable
         'password',
         'sms_verification_code',
         'sms_verified_at',
-        'branch_id', 
+        'branch_id',
         'company_id',
         'role',
         'is_active',
@@ -57,21 +57,21 @@ class User extends Authenticatable
     public function scopeByPhone($query, $phone)
     {
         $normalized = normalize_phone_number($phone);
-        
+
         // Try to find user with normalized phone number
         $user = $query->where('phone', $normalized)->first();
-        
+
         if ($user) {
             return $user;
         }
-        
+
         // If not found, try different variations
         $variations = [];
-        
+
         // If it's a Tanzania number, try different formats
         if (strpos($normalized, '255') === 0 && strlen($normalized) === 12) {
             $number = substr($normalized, 3); // Remove 255 prefix
-            
+
             $variations = [
                 $normalized,                    // 255xxxxxxxxx
                 '0' . $number,                  // 0xxxxxxxxx
@@ -79,7 +79,7 @@ class User extends Authenticatable
                 $number                         // xxxxxxxxx (9 digits)
             ];
         }
-        
+
         // Try each variation
         foreach ($variations as $variation) {
             $user = $query->where('phone', $variation)->first();
@@ -87,7 +87,7 @@ class User extends Authenticatable
                 return $user;
             }
         }
-        
+
         return null;
     }
 
@@ -108,7 +108,7 @@ class User extends Authenticatable
      */
     public function getRouteKeyName()
     {
-        return 'id';
+        return 'hash_id';
     }
 
     /**
@@ -121,11 +121,11 @@ class User extends Authenticatable
     {
         // Try to decode the hash ID first
         $decoded = Hashids::decode($value);
-        
+
         if (!empty($decoded)) {
             return static::where('id', $decoded[0])->first();
         }
-        
+
         // Fallback to regular ID lookup
         return static::where('id', $value)->first();
     }
@@ -151,7 +151,7 @@ class User extends Authenticatable
     ];
 
     protected $dates = [
-    'sms_verified_at',
+        'sms_verified_at',
     ];
 
     /**
