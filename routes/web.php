@@ -423,6 +423,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('groups/{encodedId}/edit', [GroupController::class, 'edit'])->name('groups.edit');
     Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');
     Route::delete('groups/{encodedId}', [GroupController::class, 'destroy'])->name('groups.destroy');
+    Route::get('groups/{encodedId}/payment', [GroupController::class, 'payment'])->name('groups.payment');
 });
 ////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
