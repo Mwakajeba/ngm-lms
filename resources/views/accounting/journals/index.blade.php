@@ -96,11 +96,6 @@
             <div class="card-header bg-transparent border-0">
                 <div class="d-flex justify-content-between align-items-center">
                     <h6 class="mb-0"><i class="bx bx-list-ul me-2"></i>Journal Entries</h6>
-                    <div class="d-flex gap-2">
-                        <button class="btn btn-outline-secondary btn-sm" onclick="exportToExcel()">
-                            <i class="bx bx-export me-1"></i> Export
-                        </button>
-                    </div>
                 </div>
             </div>
             <div class="card-body">
@@ -240,6 +235,76 @@
 </div>
 @endsection
 
+@push('styles')
+<style>
+    /* Ensure DataTable controls are visible */
+    .dataTables_wrapper .dataTables_filter {
+        display: block !important;
+        margin-bottom: 10px;
+    }
+    
+    .dataTables_wrapper .dataTables_length {
+        display: block !important;
+        margin-bottom: 10px;
+    }
+    
+    .dataTables_wrapper .dataTables_info {
+        display: block !important;
+        margin-top: 10px;
+    }
+    
+    .dataTables_wrapper .dataTables_paginate {
+        display: block !important;
+        margin-top: 10px;
+    }
+    
+    /* Improve search box styling */
+    .dataTables_filter input {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 6px 12px;
+        margin-left: 8px;
+    }
+    
+    /* Improve length filter styling */
+    .dataTables_length select {
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 4px 8px;
+        margin: 0 4px;
+    }
+    
+    /* Ensure action column is visible and properly styled */
+    #journalsTable th:last-child,
+    #journalsTable td:last-child {
+        min-width: 120px;
+        text-align: center;
+    }
+    
+    /* Style action buttons */
+    #journalsTable .btn-group {
+        display: flex;
+        gap: 2px;
+        justify-content: center;
+    }
+    
+    #journalsTable .btn-group .btn {
+        padding: 4px 8px;
+        font-size: 12px;
+    }
+    
+    /* Ensure table is responsive */
+    .table-responsive {
+        overflow-x: auto;
+    }
+    
+    /* Fix DataTable responsive issues */
+    .dataTables_wrapper .dataTables_scroll {
+        overflow-x: auto;
+    }
+</style>
+@endpush
+
 @push('scripts')
 <script>
     // Fix perfect-scrollbar passive event listener warning
@@ -266,15 +331,40 @@
     }
 
     $(document).ready(function() {
+        // Destroy existing DataTable if it exists
+        if ($.fn.DataTable.isDataTable('#journalsTable')) {
+            $('#journalsTable').DataTable().destroy();
+        }
+        
         $('#journalsTable').DataTable({
-            responsive: true,
+            responsive: {
+                details: {
+                    display: $.fn.dataTable.Responsive.display.modal({
+                        header: function(row) {
+                            var data = row.data();
+                            return 'Details for ' + data[1]; // Reference column
+                        }
+                    }),
+                    renderer: $.fn.dataTable.Responsive.renderer.tableAll()
+                }
+            },
+            paging: true,
+            searching: true,
+            ordering: true,
+            info: true,
+            lengthChange: true,
+            pageLength: 10,
+            lengthMenu: [[10, 25, 50, 100], [10, 25, 50, 100]],
             order: [[1, 'desc']],
-            pageLength: 15,
             language: {
                 search: "",
                 searchPlaceholder: "Search journal entries...",
                 lengthMenu: "Show _MENU_ entries per page",
                 info: "Showing _START_ to _END_ of _TOTAL_ entries",
+                infoEmpty: "Showing 0 to 0 of 0 entries",
+                infoFiltered: "(filtered from _MAX_ total entries)",
+                emptyTable: "No journal entries found",
+                zeroRecords: "No matching journal entries found",
                 paginate: {
                     first: "First",
                     last: "Last",
@@ -283,8 +373,8 @@
                 }
             },
             columnDefs: [
-                { targets: -1, orderable: false, searchable: false },
-                { targets: [0, 6, 8], orderable: false }
+                { targets: 0, orderable: false, searchable: false, width: '50px' }, // Row number
+                { targets: -1, orderable: false, searchable: false, width: '120px' } // Actions column
             ],
             dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
                  '<"row"<"col-sm-12"tr>>' +
@@ -292,6 +382,17 @@
             initComplete: function() {
                 // Add custom styling
                 $('.dataTables_wrapper').addClass('mt-3');
+                
+                // Ensure search box and length filter are visible
+                $('.dataTables_filter').show();
+                $('.dataTables_length').show();
+                
+                // Ensure action column is properly displayed
+                $('#journalsTable th:last-child').show();
+                $('#journalsTable td:last-child').show();
+                
+                // Fix any responsive issues
+                $(window).trigger('resize');
             }
         });
     });
@@ -299,11 +400,6 @@
     function confirmDelete(url) {
         document.getElementById('deleteForm').action = url;
         new bootstrap.Modal(document.getElementById('deleteModal')).show();
-    }
-
-    function exportToExcel() {
-        // Implement Excel export functionality
-        alert('Export functionality will be implemented here');
     }
 </script>
 @endpush
