@@ -269,8 +269,6 @@ class GroupController extends Controller
         }
     }
 
-
-                       ////////////GROUP REPAYMENT FUNCTION /////////////
     public function payment($encodedId)
     {
         // Tumia Hashids kupata Group ID na kutafuta group husika
@@ -366,42 +364,47 @@ class GroupController extends Controller
         try {
             DB::beginTransaction();
 
-            $user = Auth::user();
-            $allReceiptItems = [];
-            $allGlTransactions = [];
-
             foreach ($request->repayments as $customerId => $loans) {
                 foreach ($loans as $loanId => $repaymentData) {
-                    // Pata schedule na uhusiano muhimu
-                    $schedule = LoanSchedule::with(['loan.product', 'loan.bankAccount', 'repayments'])->findOrFail($repaymentData['schedule_id']);
+                    // Pata schedule husika
+                    $schedule = LoanSchedule::with('loan.product', 'loan.bankAccount')->findOrFail($repaymentData['schedule_id']);
 
+                    // Kiasi kilicholipwa sasa hivi
                     $amountPaid = (float) $repaymentData['amount_paid'];
+
+                    // Ikiwa hakuna kiasi kilicholipwa, ruka malipo haya
                     if ($amountPaid <= 0) {
                         continue;
                     }
 
-                    $bankAccountId = $schedule->loan->bankAccount->id ?? null;
-                    $loanProduct = $schedule->loan->product;
-                    $customer = Customer::findOrFail($customerId);
+                    ////GET BANK ACCOUNT ID ///
 
-                    // *** 1. Kugawa malipo kulingana na Payment Order ***
+                    $user = Auth::user();
+                    $bankId = $schedule->loan->bankAccount->id;
+                    $bankAccountId = $schedule->loan->bankAccount->id ?? null;
+                    $loanProduct = $schedule->loan->loanProduct;
+                    $customer = Customer::findOrFail($customerId);
+                    // Pata payment order kutoka kwenye LoanProduct
+                    $loanProduct = $schedule->loan->product;
                     $paymentOrder = explode(',', $loanProduct->repayment_order);
 
+                    // Anzisha kiasi kitakacholipwa kwa kila sehemu
                     $principalPaid = 0;
                     $interestPaid = 0;
                     $penaltyPaid = 0;
                     $feePaid = 0;
 
-                    // Pata salio lililobaki la schedule kwa kuzingatia malipo ya zamani
+                    // Pata salio lililobaki la schedule
                     $totalPaidOnSchedule = $schedule->repayments->sum(function ($r) {
                         return $r->principal + $r->interest + $r->penalt_amount + $r->fee_amount;
                     });
-                    $totalDue = $schedule->principal + $schedule->interest + $schedule->fee_amount + $schedule->penalty_amount;
-                    $balance = $totalDue - $totalPaidOnSchedule;
+                    $balance = ($schedule->principal + $schedule->interest + $schedule->fee_amount + $schedule->penalty_amount) - $totalPaidOnSchedule;
 
+                    // Hakikisha kiasi kinacholipwa hakizidi salio
                     $amountToDistribute = min($amountPaid, $balance);
                     $remainingAmount = $amountToDistribute;
 
+                    // Gawa kiasi kulingana na payment order
                     foreach ($paymentOrder as $item) {
                         switch (trim($item)) {
                             case 'fees':
@@ -417,13 +420,13 @@ class GroupController extends Controller
                                 $remainingAmount -= $payment;
                                 break;
                             case 'interest':
-                                $interestBalance = $schedule->interest_amount - $schedule->repayments->sum('interest');
+                                $interestBalance = $schedule->interest - $schedule->repayments->sum('interest');
                                 $payment = min($remainingAmount, $interestBalance);
                                 $interestPaid += $payment;
                                 $remainingAmount -= $payment;
                                 break;
                             case 'principal':
-                                $principalBalance = $schedule->principal_amount - $schedule->repayments->sum('principal');
+                                $principalBalance = $schedule->principal - $schedule->repayments->sum('principal');
                                 $payment = min($remainingAmount, $principalBalance);
                                 $principalPaid += $payment;
                                 $remainingAmount -= $payment;
@@ -431,21 +434,20 @@ class GroupController extends Controller
                         }
                     }
 
-                    // *** 2. Kuhifadhi Repayment ***
-                    $repayment = Repayment::create([
+                    // Hifadhi malipo kwenye `repayments` table
+                    $repayment =   Repayment::create([
                         'customer_id' => $customerId,
                         'loan_id' => $loanId,
                         'loan_schedule_id' => $schedule->id,
                         'principal' => $principalPaid,
                         'interest' => $interestPaid,
                         'penalt_amount' => $penaltyPaid,
-                        'bank_account_id' => $bankAccountId,
+                        'bank_account_id' => $bankId,
                         'fee_amount' => $feePaid,
                         'cash_deposit' => $amountPaid,
                         'due_date' => $schedule->due_date,
                         'payment_date' => now(),
                     ]);
-
                     // *** 3. Kuhifadhi Receipt na ReceiptItem ***
                     $notes = "Being Repayment for {$loanProduct->name} Loan from {$customer->name}, of TSHS {$amountPaid}";
 
@@ -586,12 +588,13 @@ class GroupController extends Controller
                 GlTransaction::insert($allGlTransactions);
             }
 
+
+
             DB::commit();
-            return redirect()->route('groups.show',$encodedId)->with('success', 'Group repayment processed successfully!');
+            return redirect()->route('groups.show', $encodedId)->with('success', 'Group repayment processed successfully!');
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Failed to process repayment. ' . $e->getMessage());
         }
     }
-    //////////////END OF  GROUP REPAYMENT FUNCTION ///////////
 }

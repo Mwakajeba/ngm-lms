@@ -417,6 +417,7 @@
                                     <tr>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Date</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Due Date</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Amount Paid</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Type</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Actions</th>
@@ -427,6 +428,7 @@
                                     <tr>
                                         <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                         <td>{{ \Carbon\Carbon::parse($repayment->payment_date)->format('M d, Y') }}</td>
+                                        <td>{{ \Carbon\Carbon::parse($repayment->due_date)->format('M d, Y') }}</td>
                                         <td>{{ number_format($repayment->amount_paid, 2) }}</td>
                                         <td>{{ ucfirst($repayment->payment_type ?? 'Regular') }}</td>
                                         <td class="text-end pe-4">
