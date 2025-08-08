@@ -10,11 +10,10 @@
                 <div class="col-12">
                     <div class="page-breadcrumb d-flex align-items-center">
                         <div class="me-auto">
-                            <h5 class="page-title text-dark fw-semibold fs-3">Payment Vouchers</h5>
-                            <ul class="breadcrumb">
-                                <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                                <li class="breadcrumb-item active">Payment Vouchers</li>
-                            </ul>
+                            <x-breadcrumbs-with-icons :links="[
+                                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                                ['label' => 'Payment Vouchers', 'url' => '#', 'icon' => 'bx bx-receipt']
+                            ]" />
                         </div>
                         <div class="ms-auto">
                             <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
@@ -24,6 +23,7 @@
                     </div>
                 </div>
             </div>
+            <h6 class="mb-0 text-uppercase">PAYMENT VOUCHERS</h6>
             <hr />
 
             <!-- Dashboard Stats -->

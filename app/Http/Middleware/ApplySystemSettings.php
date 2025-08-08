@@ -16,9 +16,28 @@ class ApplySystemSettings
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Apply system settings to Laravel configuration
-        SystemSettingService::applyToConfig();
+        // Apply security settings
+        $this->applySecuritySettings();
         
         return $next($request);
+    }
+
+    /**
+     * Apply security settings to the application
+     */
+    private function applySecuritySettings()
+    {
+        try {
+            $securityConfig = SystemSettingService::getSecurityConfig();
+            
+            // Apply session lifetime
+            if (isset($securityConfig['session_lifetime'])) {
+                config(['session.lifetime' => $securityConfig['session_lifetime']]);
+            }
+            
+        } catch (\Exception $e) {
+            // Log error but don't break the application
+            \Log::warning('Failed to apply system settings: ' . $e->getMessage());
+        }
     }
 }

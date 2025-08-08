@@ -1,24 +1,19 @@
 @extends('layouts.main')
 
-@section('title', 'Edit Bill Purchase - ' . $billPurchase->reference)
+@section('title', 'Edit Bill Purchase')
 
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="breadcrumb-title pe-3">Accounting</div>
-            <div class="ps-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('accounting.bill-purchases') }}">Bill Purchases</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('accounting.bill-purchases.show', $billPurchase) }}">{{ $billPurchase->reference }}</a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Edit</li>
-                    </ol>
-                </nav>
-            </div>
-        </div>
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Bill Purchases', 'url' => route('accounting.bill-purchases'), 'icon' => 'bx bx-receipt'],
+            ['label' => 'Bill #' . $bill->reference, 'url' => route('accounting.bill-purchases.show', $bill), 'icon' => 'bx bx-show'],
+            ['label' => 'Edit Bill', 'url' => '#', 'icon' => 'bx bx-edit']
+        ]" />
+        <h6 class="mb-0 text-uppercase">EDIT BILL PURCHASE</h6>
+        <hr />
 
         <!-- Page Header -->
         <div class="row">

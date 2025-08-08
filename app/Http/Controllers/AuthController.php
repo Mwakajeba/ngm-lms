@@ -2,6 +2,9 @@
 namespace App\Http\Controllers;
 
 use App\Models\OtpCode;
+use App\Models\LoginAttempt;
+use App\Rules\PasswordValidation;
+use App\Services\SystemSettingService;
 use Illuminate\Support\Carbon;
 use App\Helpers\SmsHelper;
 use Illuminate\Http\Request;
@@ -24,10 +27,21 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
 
+        // Check if IP is locked out
+        if (LoginAttempt::isLockedOut($request->ip())) {
+            $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
+            return back()->withErrors([
+                'phone' => "Account is temporarily locked. Please try again in {$remainingTime} minutes.",
+            ])->withInput();
+        }
+
         // Find user by phone with flexible matching
         $user = find_user_by_phone($request->phone);
         
         if (!$user) {
+            // Record failed attempt
+            LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+            
             return back()->withErrors([
                 'phone' => 'Phone number not found.',
             ])->withInput();
@@ -40,7 +54,26 @@ class AuthController extends Controller
         ];
 
         if (Auth::attempt($credentials)) {
+            // Record successful attempt
+            LoginAttempt::record($user->phone, $request->ip(), $request->userAgent(), true);
+            
+            // Clear old login attempts
+            LoginAttempt::clearOldAttempts();
+            
             return redirect()->intended('/dashboard');
+        }
+
+        // Record failed attempt
+        LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+        
+        // Check if this failed attempt triggers a lockout
+        if (LoginAttempt::isLockedOut($request->ip())) {
+            $securityConfig = SystemSettingService::getSecurityConfig();
+            $duration = $securityConfig['lockout_duration'] ?? 15;
+            
+            return back()->withErrors([
+                'phone' => "Too many failed attempts. Account is locked for {$duration} minutes.",
+            ])->withInput();
         }
 
         return back()->withErrors([
@@ -183,7 +216,7 @@ class AuthController extends Controller
     {
         $request->validate([
             'phone' => 'required',
-            'password' => 'required|min:6|confirmed',
+            'password' => ['required', 'confirmed', new PasswordValidation],
         ]);
 
         // Find user by phone with flexible matching
