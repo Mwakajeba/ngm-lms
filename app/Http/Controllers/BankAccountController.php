@@ -15,7 +15,7 @@ class BankAccountController extends Controller
     /**
      * Display a listing of the resource.
      */
-    public function index(): View
+    public function index()
     {
         $bankAccounts = BankAccount::with('chartAccount.accountClassGroup.accountClass')
             ->orderBy('created_at', 'desc')
@@ -58,7 +58,7 @@ class BankAccountController extends Controller
     /**
      * Show the form for creating a new resource.
      */
-    public function create(): View
+    public function create()
     {
         $chartAccounts = ChartAccount::with('accountClassGroup.accountClass')
             ->orderBy('account_name')
