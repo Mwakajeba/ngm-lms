@@ -16,8 +16,8 @@
             ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
         ]" />
                 <div>
-                    <a href="{{ route('groups.edit', Hashids::encode($group->id)) }}" class="btn btn-primary">
-                        <i class="bx bx-edit"></i> Edit Group
+                    <a href="{{ route('groups.payment', Hashids::encode($group->id)) }}" class="btn btn-primary">
+                        <i class="bx bx-edit"></i> Add Group Payment
                     </a>
                 </div>
             </div>
