@@ -10,6 +10,7 @@ use App\Models\Branch;
 use App\Models\Loan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use Vinkla\Hashids\Facades\Hashids;
 
@@ -79,12 +80,14 @@ class GroupController extends Controller
             'meeting_time.date_format' => 'Please enter a valid meeting time.',
         ]);
 
-       
+
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();
         }
 
         try {
+            DB::beginTransaction();
+
             $group = Group::create([
                 'name' => $request->name,
                 'loan_officer' => $request->loan_officer,
@@ -96,9 +99,7 @@ class GroupController extends Controller
                 'meeting_time' => $request->meeting_time,
             ]);
 
-            // Add the group leader as the first member
             if ($request->group_leader) {
-                // Ensure group leader is a Borrower
                 $leader = Customer::where('id', $request->group_leader)
                     ->where('category', 'Borrower')->first();
                 if ($leader) {
@@ -109,8 +110,12 @@ class GroupController extends Controller
                 }
             }
 
+            DB::commit(); // Everything went fine
+
             return redirect()->route('groups.index')->with('success', 'Group created successfully!');
         } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Group creation failed: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to create group. Please try again.')->withInput();
         }
     }
@@ -204,7 +209,7 @@ class GroupController extends Controller
             'meeting_time.date_format' => 'Please enter a valid meeting time.',
         ]);
 
-     
+
 
         if ($validator->fails()) {
             return redirect()->back()->withErrors($validator)->withInput();

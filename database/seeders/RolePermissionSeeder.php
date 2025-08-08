@@ -166,9 +166,10 @@ class RolePermissionSeeder extends Seeder
             'manage interest rates',
             'manage fee setting',
             'manage role & permission',
-            'mange penalty setting',
+            'manage penalty setting',
             'manage payment terms',
             'view backup settings',
+            'manage filetype setting',
             'create backup',
             'restore backup',
             'delete backup',
@@ -397,7 +398,7 @@ class RolePermissionSeeder extends Seeder
         //     'manage menus',
         //     'assign menu permissions'
         // ];
-        
+
         $adminRole->syncPermissions(Permission::all());
 
         // Manager Role - Branch level management
