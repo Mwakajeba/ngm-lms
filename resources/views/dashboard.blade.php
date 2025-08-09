@@ -91,11 +91,11 @@ use Vinkla\Hashids\Facades\Hashids;
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="d-flex gap-2 justify-content-end">
-                                    <a href="{{ route('accounting.journals.create') }}" class="btn btn-primary">
-                                        <i class="bx bx-plus me-1"></i> New Journal
+                                    <a href="{{ route('customers.create') }}" class="btn btn-primary">
+                                        <i class="bx bx-user-plus me-1"></i> Create Customer
                                     </a>
-                                    <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-success">
-                                        <i class="bx bx-money me-1"></i> New Payment
+                                    <a href="{{ route('loans.create') }}" class="btn btn-success">
+                                        <i class="bx bx-money me-1"></i> Create Loan
                                     </a>
                                 </div>
                             </div>
@@ -152,7 +152,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
                                 <p class="mb-0">Total Payments</p>
-                                <h4 class="font-weight-bold">{{ $recentPayments->count() > 0 ? $recentPayments->count() : 0 }}</h4>
+                                <h4 class="font-weight-bold">TZS {{ number_format($recentPayments->sum('amount') ?? 0, 2) }}</h4>
                                 <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
                             <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
@@ -166,7 +166,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
                                 <p class="mb-0">Total Receipts</p>
-                                <h4 class="font-weight-bold">{{ $recentReceipts->count() > 0 ? $recentReceipts->count() : 0 }}</h4>
+                                <h4 class="font-weight-bold">TZS {{ number_format($recentReceipts->sum('amount') ?? 0, 2) }}</h4>
                                 <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
                             <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-receipt'></i></div>

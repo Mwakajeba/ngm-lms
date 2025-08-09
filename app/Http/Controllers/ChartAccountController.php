@@ -7,6 +7,7 @@ use App\Models\AccountClassGroup;
 use App\Models\ChartAccount;
 use App\Models\CashFlowCategory;
 use App\Models\EquityCategory;
+use App\Models\GlTransaction;
 use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -178,6 +179,14 @@ class ChartAccountController extends Controller
         }
 
         $chartAccount = ChartAccount::findOrFail($decoded[0]);
+
+        // Prevent delete if used in GL Transactions
+        $hasGlTransactions = GlTransaction::where('chart_account_id', $chartAccount->id)->exists();
+        if ($hasGlTransactions) {
+            return redirect()->route('accounting.chart-accounts.index')
+                ->withErrors(['This account cannot be deleted because it is used in GL Transactions.']);
+        }
+
         $chartAccount->delete();
 
         return redirect()->route('accounting.chart-accounts.index')
