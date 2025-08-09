@@ -77,7 +77,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">{{ __('app.user_list') }}</h5>
-                        @can('create users')
+                        @can('create user')
                         <a href="{{ route('users.create') }}" class="btn btn-primary">
                             <i class="bx bx-plus"></i> {{ __('app.add_new_user') }}
                         </a>
@@ -110,7 +110,7 @@
                                         @can('view user profile')
                                         <div>
                                             <div class="fw-bold">
-                                                <a href="{{ route('users.profile') }}" class="text-decoration-none">{{ $user->name }}</a>
+                                                <a href="{{ route('users.show', $user) }}" class="text-decoration-none">{{ $user->name }}</a>
                                             </div>
                                         </div>
                                         @endcan
@@ -136,7 +136,7 @@
                                 <td>{{ $user->created_at->format('M d, Y') }}</td>
                                 <td>
                                     @can('view user profile')
-                                    <a href="{{ route('users.profile') }}" class="btn btn-sm btn-outline-info" title="Profile"><i class="bx bx-show"></i></a>
+                                    <a href="{{ route('users.show', $user) }}" class="btn btn-sm btn-outline-info" title="View Profile"><i class="bx bx-show"></i></a>
                                     @endcan
 
                                     @can('edit user')
@@ -186,11 +186,7 @@
             {{ __('app.by_safco_fintech') }}</p>
     </footer>
 
-    <!-- Delete User Form -->
-    <form id="deleteUserForm" method="POST" style="display: none;">
-        @csrf
-        @method('DELETE')
-    </form>
+
 
 @endsection
 
@@ -216,19 +212,52 @@ $(function() {
 });
 </script>
 <script>
-function confirmDelete(form, message) {
-    if (confirm(message)) {
-        form.submit();
-    }
-    return false;
-}
+// Delete user functionality with SweetAlert
+$(document).on('click', '.delete-user-btn', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    const userName = $(this).data('user-name');
+    
+    Swal.fire({
+        title: '{{ __('app.are_you_sure_delete_user') }}',
+        text: `Are you sure you want to delete user "${userName}"? This action cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete!',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitDeleteUserForm(userId);
+        }
+    });
+});
 
-function deleteUser(userHashId) {
-    if (confirm('{{ __('app.are_you_sure_delete_user') }}')) {
-        const form = document.getElementById('deleteUserForm');
-        form.action = `/users/${userHashId}`;
-        form.submit();
-    }
+// Helper function to submit delete user form
+function submitDeleteUserForm(userId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/users/${userId}`;
+    
+    // Add CSRF token
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = '_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    form.appendChild(csrfToken);
+    
+    // Add method override
+    const methodField = document.createElement('input');
+    methodField.type = 'hidden';
+    methodField.name = '_method';
+    methodField.value = 'DELETE';
+    form.appendChild(methodField);
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
 }
 
         // Search functionality

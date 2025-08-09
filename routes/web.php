@@ -34,6 +34,7 @@ use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
 use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\LoanReportController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -372,6 +373,14 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     // Transaction Routes
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
+
+
+
+
+    //////LOANS REPORT ROUTE////////
+    Route::get('/loan-disbursement', [LoanReportController::class, 'loanDisbursementReport'])->name('loans.reports.disbursed');
+    Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loans.reports.loan-export');
+
 });
 
 ////////////////////////////////////////////// END ACCOUNTING MANAGEMENT ///////////////////////////////////////////
@@ -421,7 +430,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('groups', [GroupController::class, 'store'])->name('groups.store');
     Route::get('groups/{encodedId}', [GroupController::class, 'show'])->name('groups.show');
     Route::get('groups/{encodedId}/edit', [GroupController::class, 'edit'])->name('groups.edit');
-    Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');
+    Route::put('groups/{encodedId}', [GroupController::class, 'update'])->name('groups.update');// Badilisha 'GroupController' na jina la controller yako halisi.
+    Route::post('repayments/{encodedId}', [GroupController::class, 'groupStore'])->name('groups.groupStore');
     Route::delete('groups/{encodedId}', [GroupController::class, 'destroy'])->name('groups.destroy');
     Route::get('groups/{encodedId}/payment', [GroupController::class, 'payment'])->name('groups.payment');
 });

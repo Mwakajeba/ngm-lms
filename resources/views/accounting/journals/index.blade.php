@@ -5,43 +5,25 @@
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-none d-sm-flex align-items-center mb-3">
-            <div class="breadcrumb-title pe-3">Accounting</div>
-            <div class="ps-3">
-                <nav aria-label="breadcrumb">
-                    <ol class="breadcrumb mb-0 p-0">
-                        <li class="breadcrumb-item"><a href="{{ route('dashboard') }}"><i class="bx bx-home-alt"></i></a></li>
-                        <li class="breadcrumb-item active" aria-current="page">Journal Entries</li>
-                    </ol>
-                </nav>
-            </div>
-        </div>
-
-        <!-- Page Header -->
         <div class="row">
             <div class="col-12">
-                <div class="card border-top border-0 border-4 border-primary">
-                    <div class="card-body p-5">
-                        <div class="row align-items-center">
-                            <div class="col-md-8">
-                                <div class="card-title d-flex align-items-center">
-                                    <div><i class="bx bx-book-open me-1 font-22 text-primary"></i></div>
-                                    <h5 class="mb-0 text-primary">Journal Entries</h5>
-                                </div>
-                                <p class="mb-0 text-muted">Manage and track all journal entries</p>
-                            </div>
-                            <div class="col-md-4 text-end">
-                                <div class="d-flex gap-2 justify-content-end">
-                                    <a href="{{ route('accounting.journals.create') }}" class="btn btn-primary">
-                                        <i class="bx bx-plus me-1"></i> New Journal Entry
-                                    </a>
-                                </div>
-                            </div>
-                        </div>
+                <div class="page-breadcrumb d-flex align-items-center">
+                    <div class="me-auto">
+                        <x-breadcrumbs-with-icons :links="[
+                            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                            ['label' => 'Journal Entries', 'url' => '#', 'icon' => 'bx bx-book-open']
+                        ]" />
+                    </div>
+                    <div class="ms-auto">
+                        <a href="{{ route('accounting.journals.create') }}" class="btn btn-primary">
+                            <i class="bx bx-plus"></i> New Journal Entry
+                        </a>
                     </div>
                 </div>
             </div>
         </div>
+        <h6 class="mb-0 text-uppercase">JOURNAL ENTRIES</h6>
+        <hr />
 
         <!-- Statistics Cards -->
         <div class="row row-cols-1 row-cols-lg-4 g-3 mb-4">

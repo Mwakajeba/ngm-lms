@@ -6,28 +6,29 @@
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="page-breadcrumb d-flex align-items-center">
-            <div class="me-auto">
-                <h5 class="page-title text-dark fw-semibold fs-3">Bank Reconciliation Details</h5>
-                <ul class="breadcrumb">
-                    <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                    <li class="breadcrumb-item"><a href="{{ route('accounting.bank-reconciliation.index') }}">Bank Reconciliation</a></li>
-                    <li class="breadcrumb-item active">{{ $bankReconciliation->bankAccount->name }} - {{ $bankReconciliation->formatted_reconciliation_date }}</li>
-                </ul>
-            </div>
-            <div class="ms-auto">
-                <a href="{{ route('accounting.reports.bank-reconciliation-report.export', $bankReconciliation) }}" class="btn btn-danger me-2">
-                    <i class="bx bx-download me-2"></i>Export PDF
-                </a>
-                @if($bankReconciliation->status === 'draft')
-                    <a href="{{ route('accounting.bank-reconciliation.edit', $bankReconciliation) }}" class="btn btn-warning me-2">
-                        <i class="bx bx-edit me-2"></i>Edit Reconciliation
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Bank Reconciliation', 'url' => route('accounting.bank-reconciliation.index'), 'icon' => 'bx bx-credit-card'],
+            ['label' => $bankReconciliation->bankAccount->name . ' - ' . $bankReconciliation->formatted_reconciliation_date, 'url' => '#', 'icon' => 'bx bx-show']
+        ]" />
+        <h6 class="mb-0 text-uppercase">BANK RECONCILIATION DETAILS</h6>
+        <hr />
+
+        <div class="row">
+            <div class="col-12">
+                <div class="d-flex justify-content-end mb-3">
+                    <a href="{{ route('accounting.reports.bank-reconciliation-report.export', $bankReconciliation) }}" class="btn btn-danger me-2">
+                        <i class="bx bx-download me-2"></i>Export PDF
                     </a>
-                @endif
-                @if($bankReconciliation->status !== 'completed')
-                            <button type="button" class="btn btn-info me-2" onclick="refreshBookBalance()" id="refreshBookBalanceBtn">
-                                <i class="bx bx-refresh me-2"></i>Refresh Book Balance
-                            </button>
+                    @if($bankReconciliation->status === 'draft')
+                        <a href="{{ route('accounting.bank-reconciliation.edit', $bankReconciliation) }}" class="btn btn-warning me-2">
+                            <i class="bx bx-edit me-2"></i>Edit Reconciliation
+                        </a>
+                    @endif
+                    @if($bankReconciliation->status !== 'completed')
+                                <button type="button" class="btn btn-info me-2" onclick="refreshBookBalance()" id="refreshBookBalanceBtn">
+                                    <i class="bx bx-refresh me-2"></i>Refresh Book Balance
+                                </button>
                     <form action="{{ route('accounting.bank-reconciliation.complete', $bankReconciliation) }}" method="POST" class="d-inline">
                         @csrf
                         <button type="submit" class="btn btn-success me-2" onclick="return confirm('Mark this reconciliation as completed?')">
