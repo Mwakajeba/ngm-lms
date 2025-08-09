@@ -76,7 +76,8 @@ class Loan extends Model
         return $this->hasMany(LoanSchedule::class, 'loan_id');
     }
 
-    public function repayments(){
+    public function repayments()
+    {
         return $this->hasMany(Repayment::class, 'loan_id');
     }
 
@@ -528,5 +529,9 @@ class Loan extends Model
                 'penalty_amount' => $penaltyAmount,
             ]);
         }
+    }
+    public function company()
+    {
+        return $this->belongsTo(Company::class);
     }
 }

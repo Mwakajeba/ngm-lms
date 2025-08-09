@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Group;
 use App\Models\GroupMember;
 use App\Models\Customer;
+use App\Models\Loan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Validator;
 use Vinkla\Hashids\Facades\Hashids;
@@ -133,19 +134,30 @@ class GroupMemberController extends Controller
         if (empty($decoded)) {
             return redirect()->route('groups.index')->withErrors(['Group not found.']);
         }
-
+    
         $group = Group::findOrFail($decoded[0]);
-
+    
         // Ensure the member belongs to this group
         if ($member->group_id !== $group->id) {
             return redirect()->back()->with('error', 'Invalid member.');
         }
-
+    
+        // ✅ Check kama ana mkopo
+        $hasLoan = Loan::where('customer_id', $member->customer_id)
+            ->where('status', 'active') 
+            ->exists();
+    
+        if ($hasLoan) {
+            return redirect()->back()->with('error', 'Cannot remove member with active loan.');
+        }
+    
         try {
-            $member->delete(); // Actually delete the record instead of making inactive
-            return redirect()->route('groups.show', Hashids::encode($group->id))->with('success', 'Member removed successfully!');
+            $member->delete();
+            return redirect()->route('groups.show', Hashids::encode($group->id))
+                ->with('success', 'Member removed successfully!');
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Failed to remove member. Please try again.');
         }
     }
+    
 }

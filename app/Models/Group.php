@@ -37,6 +37,15 @@ class Group extends Model
         return $this->belongsTo(User::class, 'loan_officer');
     }
 
+
+    /**
+     * Accessor to get the count of loans for this group.
+     * 
+     */
+    public function getLoansCountAttribute()
+    {
+        return $this->loans()->count();
+    }
     /**
      * Get the branch for this group.
      */
