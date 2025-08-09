@@ -26,29 +26,33 @@ class DashboardController extends Controller
         // Get comprehensive financial report data
         $financialReportData = $this->getFinancialReportData();
         
-        // Get recent activities - filter by company through branch
+        // Get current month
+        $currentMonth = now()->format('Y-m');
+
+        // Get recent activities - filter by company through branch and current month
         $recentJournals = Journal::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
         })
+        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
         ->latest()
         ->take(5)
         ->get();
-            
+        
         $recentPayments = Payment::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
         })
+        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
         ->latest()
-        ->take(5)
         ->get();
-            
+        
         $recentReceipts = Receipt::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
         })
+        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch', 'customer'])
         ->latest()
-        ->take(5)
         ->get();
             
         // Get bank reconciliation stats
@@ -230,4 +234,4 @@ class DashboardController extends Controller
             'profitLoss' => $profitLoss
         ];
     }
-} 
+}

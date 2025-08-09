@@ -127,14 +127,23 @@
                                             <a href="{{ route('accounting.chart-accounts.edit', Hashids::encode($account->id)) }}"
                                                 class="btn btn-sm btn-outline-warning">Edit</a>
 
-                                            <form
-                                                action="{{ route('accounting.chart-accounts.destroy', Hashids::encode($account->id)) }}"
-                                                method="POST" class="d-inline delete-form">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger"
-                                                    data-name="{{ $account->account_name }}">Delete</button>
-                                            </form>
+                                            @php
+                                                $isLocked = $account->glTransactions()->exists();
+                                            @endphp
+                                            @if($isLocked)
+                                                <button class="btn btn-sm btn-outline-secondary" title="Account is used in GL Transactions and cannot be deleted" disabled>
+                                                    <i class="bx bx-lock"></i> Locked
+                                                </button>
+                                            @else
+                                                <form
+                                                    action="{{ route('accounting.chart-accounts.destroy', Hashids::encode($account->id)) }}"
+                                                    method="POST" class="d-inline delete-form">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <button type="submit" class="btn btn-sm btn-outline-danger"
+                                                        data-name="{{ $account->account_name }}">Delete</button>
+                                                </form>
+                                            @endif
                                         </td>
                                     </tr>
                                 @endforeach

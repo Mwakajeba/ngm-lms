@@ -118,21 +118,30 @@
                                                 @can('view bank  account details')
                                                 <a href="{{ route('accounting.bank-accounts.show', Hashids::encode($bankAccount->id)) }}"
                                                     class="btn btn-sm btn-info">View</a>
-                                                    @endcan
+                                                @endcan
 
-                                                    @can('edit bank account')
+                                                @can('edit bank account')
                                                 <a href="{{ route('accounting.bank-accounts.edit', Hashids::encode($bankAccount->id)) }}"
                                                     class="btn btn-sm btn-primary">Edit</a>
-                                                    @endcan
-                                                    
-                                                    @can('delete bank account')
-                                                <form action="{{ route('accounting.bank-accounts.destroy', Hashids::encode($bankAccount->id)) }}"
-                                                    method="POST" class="d-inline delete-form">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger"
-                                                        data-name="{{ $bankAccount->name }}">Delete</button>
-                                                </form>
+                                                @endcan
+
+                                                @can('delete bank account')
+                                                    @php
+                                                        $isLocked = $bankAccount->glTransactions()->exists();
+                                                    @endphp
+                                                    @if($isLocked)
+                                                        <button class="btn btn-sm btn-outline-secondary" title="Bank account's chart account is used in GL Transactions and cannot be deleted" disabled>
+                                                            <i class="bx bx-lock"></i> Locked
+                                                        </button>
+                                                    @else
+                                                        <form action="{{ route('accounting.bank-accounts.destroy', Hashids::encode($bankAccount->id)) }}"
+                                                            method="POST" class="d-inline delete-form">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            <button type="submit" class="btn btn-sm btn-danger"
+                                                                data-name="{{ $bankAccount->name }}">Delete</button>
+                                                        </form>
+                                                    @endif
                                                 @endcan
                                             </td>
                                         </tr>
