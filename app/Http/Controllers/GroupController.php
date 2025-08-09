@@ -448,6 +448,9 @@ class GroupController extends Controller
                         'due_date' => $schedule->due_date,
                         'payment_date' => now(),
                     ]);
+
+
+                    
                     // *** 3. Kuhifadhi Receipt na ReceiptItem ***
                     $notes = "Being Repayment for {$loanProduct->name} Loan from {$customer->name}, of TSHS {$amountPaid}";
 
