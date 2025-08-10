@@ -1,0 +1,32 @@
+name: Deploy Laravel to Server
+
+on:
+  push:
+    branches:
+      - dev 
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup SSH
+        uses: webfactory/ssh-agent@v0.8.1
+        with:
+          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+
+      - name: Sync files to server
+        run: |
+          rsync -avz --delete --exclude='.git*' --exclude='node_modules' ./ root@161.97.75.172:/var/www/smartfinance
+
+      - name: Run composer install on server
+        run: ssh root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader"
+
+      - name: Run migrations on server
+        run: ssh  root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
+
+      - name: Clear caches on server
+        run: ssh root@161.97.75.172 "cd /var/www/smartfinance && php artisan config:cache && php artisan route:cache && php artisan view:cache"

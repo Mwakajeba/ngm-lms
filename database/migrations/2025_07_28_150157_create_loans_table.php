@@ -1,4 +1,5 @@
 <?php
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -23,6 +24,11 @@ return new class extends Migration {
                 ->constrained('loan_products') // Assuming loan_products table exists
                 ->onDelete('set null'); // Assuming products table exists
 
+            $table->foreignId('loan_officer_id')
+                ->nullable()
+                ->constrained('users') // Assuming loan_products table exists
+                ->onDelete('set null'); // Assuming products table exists
+
             $table->decimal('amount', 15, 2)->default(0);
             $table->decimal('interest', 8, 2)->default(0); // Interest rate percentage
             $table->decimal('interest_amount', 15, 2)->default(0);
@@ -45,8 +51,11 @@ return new class extends Migration {
             $table->date('first_repayment_date')->nullable();
             $table->date('last_repayment_date')->nullable();
 
+            $table->string('interest_cycle');
+
             $table->string('status')->nullable();
             $table->string('sector')->nullable();
+            $table->string('loanNo')->unique();
 
             $table->foreignId('top_up_id')
                 ->nullable()
@@ -55,7 +64,6 @@ return new class extends Migration {
 
             $table->timestamps();
         });
-
     }
 
     public function down(): void
