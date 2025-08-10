@@ -20,12 +20,47 @@
         <div class="card shadow-sm border-0 mb-4">
             <div class="card-body d-flex align-items-center justify-content-between">
                 <div>
-                    <span class="badge bg-primary fs-6">{{ ucfirst($loan->status) }}</span>
+                    @php
+                        $status = strtolower($loan->status);
+                        $badgeClass = match($status) {
+                            'pending' => 'bg-secondary',
+                            'checked' => 'bg-info',
+                            'approved' => 'bg-success',
+                            'active' => 'bg-primary',
+                            'disbursed' => 'bg-primary',
+                            'completed' => 'bg-success',
+                            'defaulted' => 'bg-danger',
+                            'rejected' => 'bg-danger',
+                            'cancelled' => 'bg-dark',
+                            default => 'bg-secondary',
+                        };
+                    @endphp
+                    <span class="badge {{ $badgeClass }} fs-6">{{ ucfirst($loan->status) }}</span>
                 </div>
                 <div class="text-end">
-                    <p class="mb-1 fw-bold text-dark">{{ $loan->repayment_progress }}% Complete</p>
+                    @php
+                        $totalPaid = $loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0;
+                        $progress = $loan->amount_total > 0 ? round(($totalPaid / $loan->amount_total) * 100) : 0;
+                        $progressBarClass = match(true) {
+                            $progress === 100 => 'bg-success',
+                            $progress >= 75 => 'bg-primary',
+                            $progress >= 50 => 'bg-info',
+                            $progress >= 25 => 'bg-warning',
+                            default => 'bg-danger',
+                        };
+                    @endphp
+                    <p class="mb-1 fw-bold text-dark">
+                        {{ $progress }}% Complete
+                        @if($progress === 100)
+                            <span class="badge bg-success ms-2">Fully Paid</span>
+                        @elseif($progress === 0)
+                            <span class="badge bg-danger ms-2">No Repayments</span>
+                        @else
+                            <span class="badge bg-warning text-dark ms-2">Partially Paid</span>
+                        @endif
+                    </p>
                     <div class="progress" style="width: 250px; height: 10px;">
-                        <div class="progress-bar bg-success" role="progressbar" style="width: {{ $loan->repayment_progress }}%;" aria-valuenow="{{ $loan->repayment_progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                        <div class="progress-bar {{ $progressBarClass }}" role="progressbar" style="width: {{ $progress }}%;" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
                     </div>
                 </div>
             </div>
@@ -73,8 +108,8 @@
         <div class="tab-content py-3">
             <div class="tab-pane fade show active" id="loan_detail" role="tabpanel">
                 <div class="card shadow-sm border-0">
-                    <div class="card-header bg-white border-0 py-3">
-                        <h6 class="mb-0 text-dark fw-bold">Loan Information</h6>
+                    <div class="card-header bg-primary border-0 py-3">
+                        <h6 class="mb-0 text-dark fw-bold"><i class="bx bx-info-circle me-2"></i> Loan Information</h6>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -109,7 +144,8 @@
                             ['label' => 'Interest Method', 'value' => $loan->product->interest_method, 'icon' => 'bx bx-bar-chart-alt-2'],
                             ['label' => 'Interest Rate', 'value' => ($loan->interest ?? 'N/A') . '%', 'icon' => 'bx bx-bar-chart-alt-2'],
                             ['label' => 'Repayment Installment', 'value' => 'TZS ' . number_format($loan->amount_total / $loan->period, 2), 'icon' => 'bx bx-credit-card'],
-                            ['label' => 'Total Repayments', 'value' => 'TZS ' . number_format($loan->repayments?->sum('amount') ?? 0, 2), 'icon' => 'bx bx-transfer']
+                            ['label' => 'Total Repayments', 'value' => 'TZS ' . number_format($loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0, 2), 'icon' => 'bx bx-transfer'],
+                            ['label' => 'Balance', 'value' => 'TZS ' . number_format($loan->amount_total - ($loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0), 2), 'icon' => 'bx bx-calculator']
                             ] as $item)
                             <div class="col-12 col-md-6">
                                 <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
