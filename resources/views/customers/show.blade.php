@@ -26,7 +26,9 @@
                         <div class="d-flex align-items-center">
                             <div>
                                 <p class="mb-0 text-secondary">Total Loans</p>
-                                <h4 class="my-1">100,000</h4>
+                                <h4 class="my-1">
+                                    {{ number_format($customer->loans->sum('amount'), 2) }}
+                                </h4>
                                 <p class="mb-0 font-13 text-success">
                                     <i class="bx bxs-up-arrow align-middle"></i> Up to date
                                 </p>
@@ -46,9 +48,20 @@
                         <div class="d-flex align-items-center">
                             <div>
                                 <p class="mb-0 text-secondary">Default Loans</p>
-                                <h4 class="my-1">100,000</h4>
+                                <h4 class="my-1">
+                                    {{
+                                        number_format(
+                                            \App\Models\LoanSchedule::where('customer_id', $customer->id)
+                                                ->whereDate('due_date', '<', now())
+                                                ->sum(\DB::raw('principal + interest'))
+                                            -
+                                            \App\Models\Repayment::where('customer_id', $customer->id)
+                                                ->sum(\DB::raw('principal + interest'))
+                                        , 2)
+                                    }}
+                                </h4>
                                 <p class="mb-0 font-13 text-danger">
-                                    <i class="bx bxs-down-arrow align-middle"></i> In arrears
+                                    <i class="bx bxs-down-arrow align-middle"></i> In arrears (10 days)
                                 </p>
                             </div>
                             <div class="widgets-icons bg-light-danger text-danger ms-auto">
@@ -66,9 +79,45 @@
                         <div class="d-flex align-items-center">
                             <div>
                                 <p class="mb-0 text-secondary">Total Arrears</p>
-                                <h4 class="my-1">100,000</h4>
+                                <h4 class="my-1">
+                                    {{
+                                        number_format(
+                                            \App\Models\LoanSchedule::where('customer_id', $customer->id)
+                                                ->whereDate('due_date', '<', now())
+                                                ->sum(\DB::raw('principal + interest'))
+                                            -
+                                            \App\Models\Repayment::where('customer_id', $customer->id)
+                                                ->sum(\DB::raw('principal + interest'))
+                                        , 2)
+                                    }}
+                                </h4>
                                 <p class="mb-0 font-13 text-warning">
-                                    <i class="bx bxs-info-circle align-middle"></i> Needs attention
+                                    <i class="bx bxs-info-circle align-middle"></i>
+                                    @php
+                                        $today = now()->toDateString();
+                                        $daysInArrears = \DB::table('loan_schedules as s')
+                                            ->leftJoin('repayments as r', 's.id', '=', 'r.loan_schedule_id')
+                                            ->where('s.customer_id', $customer->id)
+                                            ->selectRaw('
+                                                s.id,
+                                                s.due_date,
+                                                (s.principal + s.interest) as amount_due,
+                                                IFNULL(SUM(r.principal + r.interest), 0) as total_paid,
+                                                CASE
+                                                    WHEN SUM(r.principal + r.interest) < (s.principal + s.interest)
+                                                         AND ? > s.due_date
+                                                    THEN DATEDIFF(?, s.due_date)
+                                                    WHEN SUM(r.principal + r.interest) >= (s.principal + s.interest)
+                                                         AND MAX(r.payment_date) > s.due_date
+                                                    THEN DATEDIFF(MAX(r.payment_date), s.due_date)
+                                                    ELSE 0
+                                                END as days_in_arrears', [$today, $today])
+                                            ->groupBy('s.id', 's.due_date', 's.principal', 's.interest')
+                                            ->orderBy('s.due_date')
+                                            ->get();
+                                        $maxDays = $daysInArrears->max('days_in_arrears');
+                                    @endphp
+                                    {{ $maxDays > 0 ? $maxDays . ' days in Arrears' : 'Up to date' }}
                                 </p>
                             </div>
                             <div class="widgets-icons bg-light-warning text-warning ms-auto">
@@ -86,7 +135,9 @@
                         <div class="d-flex align-items-center">
                             <div>
                                 <p class="mb-0 text-secondary">Pending Penalties</p>
-                                <h4 class="my-1">100,000</h4>
+                                <h4 class="my-1">
+                                    {{ number_format(\App\Models\LoanSchedule::where('customer_id', $customer->id)->sum('penalty_amount') - \App\Models\Repayment::where('customer_id', $customer->id)->sum('penalt_amount'), 2) }}
+                                </h4>
                                 <p class="mb-0 font-13 text-danger">
                                     <i class="bx bxs-error-circle align-middle"></i> Unpaid
                                 </p>
@@ -213,23 +264,16 @@
 
                         <!-- Action Buttons -->
                         <div class="mt-4 d-flex flex-wrap gap-2">
-                            @can('edit borrower')
-                            <a href="{{ route('customers.edit', $customer->id) }}" class="btn btn-sm btn-warning flex-fill">
+                            <a href="{{ route('customers.edit', Hashids::encode($customer->id)) }}" class="btn btn-sm btn-warning flex-fill">
                                 <i class="bx bx-edit"></i> Edit
                             </a>
-                            @endcan
-
-                            @can('delete borrower')
-
-                            <form action="{{ route('customers.destroy', $customer->id) }}" method="POST" class="flex-fill">
+                            <form action="{{ route('customers.destroy', Hashids::encode($customer->id)) }}" method="POST" class="flex-fill delete-form" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger w-100" onclick="return confirm('Are you sure you want to delete this customer?');">
+                                <button type="submit" class="btn btn-sm btn-danger w-100" data-name="{{ $customer->name }}">
                                     <i class="bx bx-trash"></i> Delete
                                 </button>
                             </form>
-                            @endcan
-
                         </div>
 
                     </div>
@@ -269,15 +313,12 @@
                                             @endcan
 
                                             @can('deposit cash collateral')
-
                                             <a href="{{ route('cash_collaterals.deposit',Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-primary">
                                                 Deposit
                                             </a>
-
                                             @endcan
 
                                             @can('withdraw cash collateral')
-
                                             <a href="{{ route('cash_collaterals.withdraw', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-success">
                                                 Withdraw
                                             </a>

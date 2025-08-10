@@ -143,12 +143,18 @@
                                     <a href="{{ route('users.edit', $user) }}" class="btn btn-sm btn-outline-primary" title="Edit"><i class="bx bx-edit"></i></a>
                                     @endcan
                                     @can('delete user')
-                                    <button type="button" class="btn btn-sm btn-outline-danger delete-user-btn" 
-                                            title="Delete" 
-                                            data-user-id="{{ $user->id }}" 
-                                            data-user-name="{{ $user->name }}">
-                                        <i class="bx bx-trash"></i>
-                                    </button>
+                                    @php
+                                        $hasGL = \App\Models\GlTransaction::where('user_id', $user->id)->exists();
+                                    @endphp
+                                    @if($hasGL)
+                                        <button class="btn btn-sm btn-outline-danger" title="Cannot delete: User has GL transactions." disabled><i class="bx bx-lock"></i></button>
+                                    @else
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form" onsubmit="return confirmDelete(this, '{{ __('app.are_you_sure_delete_user') }}');">
+                                        @csrf
+                                        @method('DELETE')
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
+                                    </form>
+                                    @endif
                                     @endcan
                                 </td>
                             </tr>
