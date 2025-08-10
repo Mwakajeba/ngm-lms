@@ -76,15 +76,13 @@ class Repayment extends Model
         }
 
         // Total due from schedule
-        $totalDue = $schedule->principal + $schedule->interest + $schedule->penalty_amount + $schedule->fee_amount;
+        $totalDue = $schedule->principal + $schedule->interest;
 
         // Total paid across all repayments for that schedule
         $repayments = self::where('loan_schedule_id', $this->loan_schedule_id)->get();
 
         $totalPaid = $repayments->sum('principal')
-            + $repayments->sum('interest')
-            + $repayments->sum('penalt_amount')
-            + $repayments->sum('fee_amount');
+            + $repayments->sum('interest');
 
         return round($totalDue - $totalPaid, 2);
     }
