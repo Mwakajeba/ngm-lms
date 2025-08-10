@@ -21,30 +21,33 @@
                             <small class="text-muted">Generate and export detailed loan disbursement records.</small>
                         </div>
                         <div class="d-flex gap-2">
-                            <form id="loanDisbursementForm" method="GET" action="{{ route('accounting.loans.reports.disbursed') }}">
-                                <div class="relative inline-block text-left">
-                                    <button type="submit" class="btn btn-primary">
-                                        <i class="bx bx-search me-1"></i> Apply Filters
-                                    </button>
-                                </div>
-                            </form>
                             <div class="btn-group" role="group">
                                 <button type="button" class="btn btn-danger dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
                                     <i class="bx bx-download me-1"></i> Export
                                 </button>
                                 <ul class="dropdown-menu">
-                                    <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">
-                                        <i class="bx bx-file-pdf me-2"></i> Export PDF
-                                    </a></li>
-                                    <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">
-                                        <i class="bx bx-file me-2"></i> Export Excel
-                                    </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('pdf', 'download')">
+                                            <i class="bx bx-file-pdf me-2"></i> Export PDF
+                                        </a></li>
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('excel', 'download')">
+                                            <i class="bx bx-file me-2"></i> Export Excel
+                                        </a></li>
+                                </ul>
+                            </div>
+                            <div class="btn-group" role="group">
+                                <button type="button" class="btn btn-secondary dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
+                                    <i class="bx bx-show-alt me-1"></i> View
+                                </button>
+                                <ul class="dropdown-menu">
+                                    <li><a class="dropdown-item" href="#" onclick="exportReport('pdf', 'view')">
+                                            <i class="bx bx-file-pdf me-2"></i> View PDF
+                                        </a></li>
                                 </ul>
                             </div>
                         </div>
                     </div>
                     <div class="card-body">
-                        <!-- Filters Section (inside card-body) -->
+                        <!-- Filters Section -->
                         <form id="loanDisbursementForm" method="GET" action="{{ route('accounting.loans.reports.disbursed') }}">
                             <div class="row">
                                 <!-- Start Date -->
@@ -69,22 +72,9 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                <!-- Company -->
-                                <div class="col-md-6 col-lg-3 mb-3">
-                                    <label for="company_id" class="form-label">Company</label>
-                                    <select class="form-select" id="company_id" name="company_id">
-                                        <option value="">All Companies</option>
-                                        @foreach($companies as $company)
-                                        <option value="{{ $company->id }}" {{ request('company_id') == $company->id ? 'selected' : '' }}>
-                                            {{ $company->name }}
-                                        </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                            </div>
-                            <div class="row">
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-primary me-2">
+                                <!-- Button Section -->
+                                <div class="col-md-6 col-lg-3 mb-3 d-flex align-items-end">
+                                    <button type="submit" class="btn btn-primary w-100">
                                         <i class="bx bx-search me-1"></i> Apply Filters
                                     </button>
                                 </div>
@@ -148,56 +138,29 @@
                             <table class="table table-bordered table-striped">
                                 <thead>
                                     <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Disbursement Date
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Loan ID
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Customer Name
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Loan Product
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Disbursed Amount
-                                        </th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Branch
-                                        </th>
+                                        <th scope="col">Disbursement Date</th>
+                                        <th scope="col">Period</th>
+                                        <th scope="col">Customer Name</th>
+                                        <th scope="col">Application Date</th>
+                                        <th scope="col">Loan Product</th>
+                                        <th scope="col">Disbursed Amount</th>
+                                        <th scope="col">Amount To Pay</th>
+                                        <th scope="col">Branch</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @forelse($disbursements as $disbursement)
+                                    @foreach($disbursements as $disbursement)
                                     <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ \Carbon\Carbon::parse($disbursement->disbursement_date)->format('M d, Y') }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-blue-600">
-                                            {{ $disbursement->loan_id }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $disbursement->customer->name }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $disbursement->product->name }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-right font-medium text-gray-900">
-                                            {{ number_format($disbursement->amount, 2) }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $disbursement->branch->name }}
-                                        </td>
+                                        <td>{{ \Carbon\Carbon::parse($disbursement->disbursed_on)->format('M d, Y') }}</td>
+                                        <td>{{ $disbursement->period }} Months</td>
+                                        <td>{{ $disbursement->customer->name ?? 'N/A' }}</td>
+                                        <td>{{ $disbursement->date_applied }}</td>
+                                        <td>{{ $disbursement->product->name ?? 'N/A' }}</td>
+                                        <td class="text-right">{{ number_format($disbursement->amount, 2) }}</td>
+                                        <td>{{ number_format($disbursement->amount_total, 2) }}</td>
+                                        <td>{{ $disbursement->branch->name ?? 'N/A' }}</td>
                                     </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="6" class="px-6 py-10 text-center text-gray-500">
-                                            <i class="bx bx-info-circle text-4xl"></i>
-                                            <p class="mt-2">No loan disbursement data found for the selected criteria.</p>
-                                        </td>
-                                    </tr>
-                                    @endforelse
+                                    @endforeach
                                 </tbody>
                             </table>
                         </div>
@@ -216,23 +179,37 @@
 </div>
 
 <script>
-    function exportReport(type) {
+    function exportReport(type, action) {
         const form = document.getElementById('loanDisbursementForm');
         const formData = new FormData(form);
         formData.append('export_type', type);
+        formData.append('export_action', action); // Add the action parameter
 
+        // Create the URL with all form data
         const url = '{{ route("accounting.loans.reports.loan-export") }}?' + new URLSearchParams(Object.fromEntries(formData));
 
         Swal.fire({
             title: 'Generating Report...',
-            html: 'Please wait while we prepare your ' + type.toUpperCase() + ' report.',
+            html: `Please wait while we prepare your ${type.toUpperCase()} report.`,
             allowOutsideClick: false,
             didOpen: () => {
                 Swal.showLoading();
             }
         });
 
-        window.location.href = url;
+        // Create a temporary link to trigger the download/view without navigating the page
+        const link = document.createElement('a');
+        link.href = url;
+        link.target = '_blank'; // Open in a new tab for "view"
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        // Hide the loading spinner after a short delay (e.g., 3 seconds)
+        // This is a practical workaround since we don't have a direct callback
+        setTimeout(() => {
+            Swal.close();
+        }, 3000);
     }
 </script>
 @endsection
