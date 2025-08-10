@@ -140,11 +140,18 @@
                                     <tr>
                                         <th scope="col">Disbursement Date</th>
                                         <th scope="col">Period</th>
+                                        <th scope="col">Registra Name</th>
                                         <th scope="col">Customer Name</th>
+                                        <th scope="col">Customer No</th>
+                                        <th scope="col">Loan No</th>
+                                        <th scope="col">REF No</th>
                                         <th scope="col">Application Date</th>
                                         <th scope="col">Loan Product</th>
                                         <th scope="col">Disbursed Amount</th>
                                         <th scope="col">Amount To Pay</th>
+                                        <th scope="col">Inetrest Amount</th>
+                                        <th scope="col">Inetrest Rate</th>
+                                        <th scope="col">End Date</th>
                                         <th scope="col">Branch</th>
                                     </tr>
                                 </thead>
@@ -153,11 +160,19 @@
                                     <tr>
                                         <td>{{ \Carbon\Carbon::parse($disbursement->disbursed_on)->format('M d, Y') }}</td>
                                         <td>{{ $disbursement->period }} Months</td>
+                                        <td>{{ $disbursement->user->name ?? 'N/A' }}</td>
                                         <td>{{ $disbursement->customer->name ?? 'N/A' }}</td>
+                                        <td>{{ $disbursement->customer->customerNo ?? 'N/A' }}</td>
+                                        <td>{{ $disbursement->loanNo ?? 'N/A'}}</td>
+                                        <td>{{ $disbursement->loanNo ?? 'N/A'}}</td>
                                         <td>{{ $disbursement->date_applied }}</td>
                                         <td>{{ $disbursement->product->name ?? 'N/A' }}</td>
                                         <td class="text-right">{{ number_format($disbursement->amount, 2) }}</td>
                                         <td>{{ number_format($disbursement->amount_total, 2) }}</td>
+                                        <td>{{ number_format($disbursement->interest_amount, 2) }}</td>
+                                        <td>{{ number_format($disbursement->interest, 2) }}</td>
+
+                                        <td>{{ \Carbon\Carbon::parse($disbursement->disbursed_on)->format('M d, Y') }}</td>
                                         <td>{{ $disbursement->branch->name ?? 'N/A' }}</td>
                                     </tr>
                                     @endforeach
