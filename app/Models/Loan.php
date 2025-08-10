@@ -25,6 +25,9 @@ class Loan extends Model
         'disbursed_on',
         'status',
         'sector',
+        'interest_cycle',
+        'loan_officer_id',
+        'loanNo',
         'top_up_id',
         'first_repayment_date',
         'last_repayment_date',
@@ -40,7 +43,25 @@ class Loan extends Model
     const STATUS_REJECTED = 'rejected';
     const STATUS_DEFAULTED = 'defaulted';
 
-    // Relationships
+
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::creating(function ($loan) {
+            // Namba ya mwanzo unayotaka kuanzia
+            $startNumber = 1000000;
+
+            do {
+                $loanNumber = 'SF-' . ($startNumber + self::count());
+            } while (self::where('loanNo', $loanNumber)->exists());
+
+            $loan->loanNo = $loanNumber;
+        });
+    }
+
+
     public function customer()
     {
         return $this->belongsTo(Customer::class);

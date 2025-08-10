@@ -306,35 +306,10 @@
                                         <td>{{ number_format($collateral->amount, 2) }}</td> {{-- Assuming 'amount' field --}}
                                         <td>{{ $collateral->created_at->format('M d, Y') }}</td>
                                         <td class="text-center">
-                                            @can('view cash collateral details')
+                                            @can('view cash collaterals')
                                             <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-warning">
                                                 View
                                             </a>
-                                            @endcan
-
-                                            @can('edit cash collateral')
-                                            <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-info">
-                                                Edit
-                                            </a>
-                                            @endcan
-
-                                            @can('delete cash collateral')
-                                            @php
-                                                $hasReceipt = \App\Models\Receipt::where('reference', $collateral->id)->where('reference_type', 'Deposit')->exists();
-                                                $hasPayment = \App\Models\Payment::where('reference', $collateral->id)->where('reference_type', 'Withdrawal')->exists();
-                                                $hasJournal = false; // Set to true if you add journal linkage to collateral
-                                            @endphp
-                                            @if($hasReceipt || $hasPayment || $hasJournal)
-                                                <button class="btn btn-sm btn-danger" disabled title="Cannot delete: Transactions exist.">
-                                                    <i class="bx bx-lock"></i> Delete
-                                                </button>
-                                            @else
-                                            <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                            </form>
-                                            @endif
                                             @endcan
 
                                             @can('deposit cash collateral')
