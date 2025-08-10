@@ -25,6 +25,8 @@ class Loan extends Model
         'disbursed_on',
         'status',
         'sector',
+        'interest_cycle',
+        'loan_officer_id',
         'loanNo',
         'top_up_id',
         'first_repayment_date',
