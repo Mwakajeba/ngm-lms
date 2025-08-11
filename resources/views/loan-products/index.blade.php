@@ -59,13 +59,13 @@ use Vinkla\Hashids\Facades\Hashids;
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h4 class="card-title mb-0">Loan Products List</h4>
-                            <!-- @can('create loan product') -->
+                            @can('create loan product')
                             <div>
                                 <a href="{{ route('loan-products.create') }}" class="btn btn-primary">
                                     <i class="bx bx-plus"></i> Add Loan Product
                                 </a>
                             </div>
-                            <!-- @endcan -->
+                            @endcan
                         </div>
 
                         <div class="table-responsive">
@@ -110,21 +110,21 @@ use Vinkla\Hashids\Facades\Hashids;
                                         </td>
                                         <td class="text-center text-nowrap">
                                             <div class="btn-group" role="group">
-                                                <!-- @can('view product details') -->
+                                                @can('view product details')
                                                 <a href="{{ route('loan-products.show', Hashids::encode($product->id)) }}"
                                                     class="btn btn-sm btn-outline-info" title="View Details">
                                                     view
                                                 </a>
-                                                <!-- @endcan -->
+                                                @endcan
 
                                                 @can('edit loan product')
                                                 <a href="{{ route('loan-products.edit', Hashids::encode($product->id)) }}"
                                                     class="btn btn-sm btn-outline-primary" title="Edit Product">
                                                     edit
                                                 </a>
-                                                <!-- @endcan -->
+                                                @endcan
 
-                                                <!-- @can('deactivate loan product') -->
+                                                @can('deactivate loan product')
                                                 <button type="button"
                                                     class="btn btn-sm {{ $product->is_active ?? true ? 'btn-outline-warning' : 'btn-outline-success' }} toggle-status-btn"
                                                     title="{{ $product->is_active ?? true ? 'Deactivate' : 'Activate' }} Product"
@@ -133,16 +133,16 @@ use Vinkla\Hashids\Facades\Hashids;
                                                     data-current-status="{{ $product->is_active ?? true ? 'active' : 'inactive' }}">
                                                     {{ $product->is_active ?? true ? 'deactivate' : 'activate' }}
                                                 </button>
-                                                <!-- @endcan -->
+                                                @endcan
 
-                                                <!-- @can('delete loan product') -->
+                                                @can('delete loan product')
                                                 <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                     title="Delete Product"
                                                     data-product-id="{{ Hashids::encode($product->id) }}"
                                                     data-product-name="{{ $product->name }}">
                                                     delete
                                                 </button>
-                                                <!-- @endcan -->
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>

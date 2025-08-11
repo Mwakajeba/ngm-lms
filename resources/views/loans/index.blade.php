@@ -17,7 +17,7 @@
                 <div class="card">
                     <div class="card-body">
                         <div class="row">
-                            <!-- @can('view loans') -->
+                            @can('view loans')
                             <!-- Active Loans -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-primary">
@@ -33,8 +33,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
-                            <!-- @can('view applied loans') -->
+                            @endcan
+                            @can('view applied loans')
                             <!-- Applied Loans -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-success">
@@ -50,9 +50,9 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
+                            @endcan
 
-                            <!-- @can('view checked loans') -->
+                            @can('view checked loans')
                             <!-- Checked Applications -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-teal">
@@ -68,8 +68,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
-                            <!-- @can('view approved loans') -->
+                            @endcan
+                            @can('view approved loans')
                             <!-- Approved Applications -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-purple">
@@ -85,8 +85,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
-                            <!-- @can('view authorized loans') -->
+                            @endcan
+                            @can('view authorized loans')
                             <!-- Authorized Applications -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-orange">
@@ -102,8 +102,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
-                            <!-- @can('view defaulted loans') -->
+                            @endcan
+                            @can('view defaulted loans')
                             <!-- Defaulted Loans -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
@@ -119,8 +119,8 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
-                            <!-- @can('view rejected loans') -->
+                            @endcan
+                            @can('view rejected loans')
                             <!-- Rejected Applications -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
@@ -136,7 +136,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <!-- @endcan -->
+                            @endcan
                         </div>
                     </div>
                 </div>
