@@ -23,7 +23,7 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
-        $query = \App\Models\User::with(['branch', 'roles']);
+        $query = User::with(['branch', 'roles']);
 
         // Optionally filter by status
         if ($request->has('status') && $request->status) {
@@ -32,7 +32,7 @@ class UserController extends Controller
 
         // Optionally filter by role
         if ($request->has('role') && $request->role) {
-            $query->whereHas('roles', function($q) use ($request) {
+            $query->whereHas('roles', function ($q) use ($request) {
                 $q->where('name', $request->role);
             });
         }

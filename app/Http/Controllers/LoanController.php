@@ -210,7 +210,7 @@ class LoanController extends Controller
                     ]
                 ]);
                 // Step 7: Post Penalty Amount to GL (if exists)
-                $penalty = $product->penalty; 
+                $penalty = $product->penalty;
 
                 $penaltyAmount = LoanSchedule::where('loan_id', $loan->id)->sum('penalty_amount');
 
@@ -524,7 +524,10 @@ class LoanController extends Controller
 
         $filetypes = Filetype::all();
 
-        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes'));
+        // Get bank accounts for repayment modal
+        $bankAccounts = BankAccount::all();
+
+        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts'));
     }
 
 
@@ -585,7 +588,7 @@ class LoanController extends Controller
 
     public function applicationCreate()
     {
-        $customers = Customer::where('category','borrower')->get();
+        $customers = Customer::where('category', 'borrower')->get();
         $groups = Group::all();
         $products = LoanProduct::all();
         $bankAccounts = BankAccount::all();
@@ -603,7 +606,7 @@ class LoanController extends Controller
             'amount' => 'required|numeric|min:0',
             'date_applied' => 'required|date|before_or_equal:today',
             'customer_id' => 'required|exists:customers,id',
-            'group_id' => 'nullable|exists:groups,id',                       
+            'group_id' => 'nullable|exists:groups,id',
             'sector' => 'required|string',
         ]);
 

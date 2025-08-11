@@ -52,11 +52,7 @@
 							</div>
 							<div class="app-title">Branches</div>
 						</div>
-						<div class="col text-center">
-							<div class="app-box mx-auto bg-gradient-lush"><i class='bx bx-group'></i>
-							</div>
-							<div class="app-title">Users</div>
-						</div>
+
 						<div class="col text-center">
 							<div class="app-box mx-auto bg-gradient-kyoto"><i class='bx bx-notification'></i>
 							</div>

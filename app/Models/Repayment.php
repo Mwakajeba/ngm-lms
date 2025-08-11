@@ -63,7 +63,7 @@ class Repayment extends Model
         return $this->principal + $this->interest + $this->penalt_amount + $this->fee_amount;
     }
 
-        /***********
+    /***********
      * accesor arrears_amount
      */
     public function getArrearsAmountAttribute()
