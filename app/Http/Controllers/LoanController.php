@@ -16,6 +16,7 @@ use App\Models\LoanSchedule;
 use App\Models\Payment;
 use App\Models\PaymentItem;
 use App\Models\Role;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
@@ -74,9 +75,21 @@ class LoanController extends Controller
         $customers = Customer::with('groups')->where('category', 'Borrower')->get();
         info($customers);
         $products = LoanProduct::all();
+         $loanOfficers = User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['loan-officer', 'admin']);
+        })->get();
+
+        $interestCycles = [
+            'daily' => 'Daily',
+            'weekly' => 'Weekly',
+            'monthly' => 'Monthly',
+            'quarterly' => 'Quarterly',
+            'semi_annually' => 'Semi Annually',
+            'annually' => 'Annually'
+        ];
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // Example sectors
-        return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts'));
+        return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts','loanOfficers','interestCycles'));
     }
 
     public function store(Request $request)
@@ -88,6 +101,8 @@ class LoanController extends Controller
             'amount' => 'required|numeric|min:0',
             'date_applied' => 'required|date|before_or_equal:today',
             'customer_id' => 'required|exists:customers,id',
+            'interest_cycle' => 'required|string|max:50',
+            'loan_officer' => 'required|exists:users,id',
             'group_id' => 'required|exists:groups,id',
             'account_id' => 'required|exists:bank_accounts,id',
             'sector' => 'required|string',
@@ -133,6 +148,8 @@ class LoanController extends Controller
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
                     'status' => 'active',
+                    'interest_cycle' => $validated['interest_cycle'],
+                    'loan_officer_id' => $validated['loan_officer'],
                 ]);
 
                 // Step 2: Calculate interest and repayment dates

@@ -46,7 +46,36 @@ $isEdit = isset($loan);
             <!-- Hidden Group ID for form submission -->
             <input type="hidden" name="group_id" id="group_id" value="{{ old('group_id', $loan->group_id ?? '') }}">
         </div>
+        <!-- Loan Officer -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Loan Officer <span class="text-danger">*</span></label>
+            <select name="loan_officer"
+                class="form-select  select2-single @error('loan_officer') is-invalid @enderror" required>
+                <option value="">-- Select Loan Officer --</option>
+                @foreach($loanOfficers as $officer)
+                <option value="{{ $officer->id }}" {{ old('loan_officer') == $officer->id ? 'selected' : '' }}>
+                    {{ $officer->name }} ({{ $officer->email }})
+                </option>
+                @endforeach
+            </select>
+            @error('loan_officer')
+            <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
 
+        <!-- Interest Cycle and Method -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Interest Cycle <span class="text-danger">*</span></label>
+            <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
+                <option value="">-- Select Interest Cycle --</option>
+                @foreach($interestCycles as $key => $value)
+                <option value="{{ $key }}" {{ old('interest_cycle', $loanProduct->interest_cycle ?? '') == $key ? 'selected' : '' }}>
+                    {{ $value }}
+                </option>
+                @endforeach
+            </select>
+            @error('interest_cycle') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
 
         <!-- Product Select -->
         <div class="col-md-6 mb-3">
@@ -203,6 +232,7 @@ $isEdit = isset($loan);
         const customers = @json($customers);
         const groupIdInput = document.getElementById('group_id');
         const groupNameDisplay = document.getElementById('group_name');
+
         function updateGroupForCustomer(customerId) {
             const selectedCustomer = customers.find(c => c.id == customerId);
             groupIdInput.value = '';
@@ -214,14 +244,14 @@ $isEdit = isset($loan);
             }
         }
         if (window.jQuery) {
-            $('#customer_id').on('change', function () {
+            $('#customer_id').on('change', function() {
                 updateGroupForCustomer(this.value);
             });
             // Trigger on page load (for edit form or old values)
             $('#customer_id').trigger('change');
         } else {
             const customerSelect = document.getElementById('customer_id');
-            customerSelect.addEventListener('change', function () {
+            customerSelect.addEventListener('change', function() {
                 updateGroupForCustomer(this.value);
             });
             // Trigger on page load
