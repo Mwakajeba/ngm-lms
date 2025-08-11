@@ -492,6 +492,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/repayments/calculate-schedule/{loanId}', [LoanRepaymentController::class, 'calculateSchedule'])->name('repayments.calculate-schedule');
     Route::post('/repayments/bulk', [LoanRepaymentController::class, 'bulkRepayment'])->name('repayments.bulk');
 
+    // Repayment CRUD Routes
+    Route::get('/repayments/{id}/edit', [LoanRepaymentController::class, 'edit'])->name('repayments.edit');
+    Route::put('/repayments/{id}', [LoanRepaymentController::class, 'update'])->name('repayments.update');
+    Route::delete('/repayments/{id}', [LoanRepaymentController::class, 'destroy'])->name('repayments.destroy');
+    Route::get('/repayments/{id}/print', [LoanRepaymentController::class, 'printReceipt'])->name('repayments.print');
+
 
 });
 

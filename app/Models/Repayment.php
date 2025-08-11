@@ -54,6 +54,11 @@ class Repayment extends Model
         return $this->belongsTo(BankAccount::class);
     }
 
+    public function receipt()
+    {
+        return $this->hasOne(Receipt::class, 'reference_number', 'id');
+    }
+
     /***********
      * accesor amount_paid
      */
