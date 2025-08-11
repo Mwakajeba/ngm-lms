@@ -62,21 +62,6 @@ $isEdit = isset($loan);
             <div class="invalid-feedback">{{ $message }}</div>
             @enderror
         </div>
-
-        <!-- Interest Cycle and Method -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">Interest Cycle <span class="text-danger">*</span></label>
-            <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
-                <option value="">-- Select Interest Cycle --</option>
-                @foreach($interestCycles as $key => $value)
-                <option value="{{ $key }}" {{ old('interest_cycle', $loanProduct->interest_cycle ?? '') == $key ? 'selected' : '' }}>
-                    {{ $value }}
-                </option>
-                @endforeach
-            </select>
-            @error('interest_cycle') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
-
         <!-- Product Select -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Product</label>
@@ -91,7 +76,7 @@ $isEdit = isset($loan);
             @error('product_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
-        
+
         <!----account from --->
         <div class="col-md-6 mb-3">
             <label class="form-label">From Account</label>
@@ -128,20 +113,8 @@ $isEdit = isset($loan);
                 value="{{ old('amount', $loan->amount ?? '') }}" placeholder="Enter loan amount" required>
             @error('amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
-
-        <!-- Period -->
-        <div class="col-md-6 mb-3">
-            <label class="form-label">
-                Period (months) <span class="text-danger">*</span>
-                <small id="periodRangeLabel" class="text-muted ms-2"></small>
-            </label>
-            <input type="number" id="periodInput" name="period" class="form-control @error('period') is-invalid @enderror"
-                value="{{ old('period', $loan->period ?? '') }}" placeholder="Enter period in months" required>
-            @error('period') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
-
-        <!-- Interest Rate -->
-        <div class="col-md-6 mb-3">
+          <!-- Interest Rate -->
+          <div class="col-md-6 mb-3">
             <label class="form-label">
                 Interest Rate (%) <span class="text-danger">*</span>
                 <small id="interestRangeLabel" class="text-muted ms-2"></small>
@@ -150,6 +123,34 @@ $isEdit = isset($loan);
                 value="{{ old('interest', $loan->interest ?? '') }}" placeholder="Enter interest in %" required>
             @error('interest') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
+
+        <!-- Interest Cycle and Method -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Interest Cycle <span class="text-danger">*</span></label>
+            <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
+                <option value="">-- Select Interest Cycle --</option>
+                @foreach($interestCycles as $key => $value)
+                <option value="{{ $key }}" {{ old('interest_cycle', $loanProduct->interest_cycle ?? '') == $key ? 'selected' : '' }}>
+                    {{ $value }}
+                </option>
+                @endforeach
+            </select>
+            @error('interest_cycle') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+
+        <!-- Period -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">
+                Period <span class="text-danger">*</span>
+                <small id="periodRangeLabel" class="text-muted ms-2"></small>
+            </label>
+            <input type="number" id="periodInput" name="period" class="form-control @error('period') is-invalid @enderror"
+                value="{{ old('period', $loan->period ?? '') }}" placeholder="Enter period in months" required>
+            @error('period') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
+      
 
         <!-- Sector -->
         <div class="col-md-6 mb-3">
