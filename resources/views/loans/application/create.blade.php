@@ -11,14 +11,14 @@
             ['label' => 'Loan Applications', 'url' => route('loans.application.index'), 'icon' => 'bx bx-file-plus'],
             ['label' => 'Apply for Loan', 'url' => '#', 'icon' => 'bx bx-plus'],
         ]" />
-        @can('view loan')
+        <!-- @can('view loan') -->
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0 text-uppercase">APPLY FOR LOAN</h6>
             <a href="{{ route('loans.application.index') }}" class="btn btn-secondary">
                 <i class="bx bx-arrow-back me-1"></i> Back to Applications
             </a>
         </div>
-        @endcan
+        <!-- @endcan -->
         <hr />
 
         <div class="row">

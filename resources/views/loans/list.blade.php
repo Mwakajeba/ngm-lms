@@ -38,7 +38,7 @@ use Vinkla\Hashids\Facades\Hashids;
             <div class="col-12">
                 <div class="card radius-10">
                     <div class="card-body">
-                        @can('create loan')
+                        <!-- @can('create loan') -->
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="card-title mb-0">{{ $pageTitle ?? 'Loans List' }}</h6>
                             <div>
@@ -53,7 +53,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                 @endif
                             </div>
                         </div>
-                        @endcan
+                        <!-- @endcan -->
 
                         <div class="table-responsive">
                             <table class="table table-bordered dt-responsive nowrap table-striped" id="loansTable">
@@ -113,22 +113,22 @@ use Vinkla\Hashids\Facades\Hashids;
                                         <td>{{ $loan->date_applied }}</td>
                                         <td class="text-center">
 
-                                            @can('view loan details')
+                                            <!-- @can('view loan details') -->
                                             <a href="{{ route('loans.show', Hashids::encode($loan->id)) }}"
                                                 class="btn btn-sm btn-outline-info">
                                                 View
                                             </a>
-                                            @endcan
-                                            @can('edit loan')
+                                            <!-- @endcan -->
+                                            <!-- @can('edit loan') -->
                                             @if(!in_array($loan->status, ['active', 'authorized', 'defaulted']))
                                             <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}"
                                                 class="btn btn-sm btn-outline-primary">
                                                 Edit
                                             </a>
                                             @endif
-                                            @endcan
+                                            <!-- @endcan -->
 
-                                            @can('delete loan')
+                                            <!-- @can('delete loan') -->
                                             @if(!in_array($loan->status, ['active', 'authorized']))
                                             <form action="{{ route('loans.destroy', Hashids::encode($loan->id)) }}"
                                                 method="POST" class="d-inline-block delete-form">
@@ -138,7 +138,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 </button>
                                             </form>
                                             @endif
-                                            @endcan
+                                            <!-- @endcan -->
 
                                         </td>
 
