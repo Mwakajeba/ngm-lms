@@ -45,6 +45,7 @@ class DashboardController extends Controller
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
         ->latest()
+        ->take(5)
         ->get();
         
         $recentReceipts = Receipt::whereHas('branch', function($query) use ($company) {
@@ -53,6 +54,7 @@ class DashboardController extends Controller
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch', 'customer'])
         ->latest()
+        ->take(5)
         ->get();
             
         // Get bank reconciliation stats
