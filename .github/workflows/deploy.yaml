@@ -28,10 +28,27 @@ jobs:
           rsync -avz --delete --exclude='.git*' --exclude='node_modules' --exclude='.env' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/smartfinance
 
       - name: Run composer install on server
-        run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
+        run: |
+          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
 
       - name: Run migrations on server
-        run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
+        run: |
+          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
 
-      - name: Clear caches on server
-        run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan config:cache && php artisan route:cache && php artisan view:cache"
+      - name: Fix permissions on server
+        run: |
+          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "
+            sudo chown -R www-data:www-data /var/www/smartfinance/storage /var/www/smartfinance/bootstrap/cache &&
+            sudo chmod -R 775 /var/www/smartfinance/storage /var/www/smartfinance/bootstrap/cache
+          "
+
+      - name: Clear and cache configs on server
+        run: |
+          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "
+            cd /var/www/smartfinance &&
+            php artisan config:clear &&
+            php artisan cache:clear &&
+            php artisan config:cache &&
+            php artisan route:cache &&
+            php artisan view:cache
+          "
