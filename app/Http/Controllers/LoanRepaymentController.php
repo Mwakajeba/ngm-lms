@@ -5,6 +5,9 @@ namespace App\Http\Controllers;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
 use App\Models\Repayment;
+use App\Models\Receipt;
+use App\Models\ReceiptItem;
+use App\Models\GlTransaction;
 use App\Services\LoanRepaymentService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -88,25 +91,129 @@ class LoanRepaymentController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(string $id)
+    public function edit($id)
     {
-        //
+        $repayment = Repayment::with(['loan', 'schedule', 'bankAccount', 'customer'])->findOrFail($id);
+
+        return response()->json([
+            'success' => true,
+            'repayment' => $repayment
+        ]);
     }
 
     /**
      * Update the specified resource in storage.
      */
-    public function update(Request $request, string $id)
+    public function update(Request $request, $id)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $request->validate([
+                'payment_date' => 'required|date',
+                'amount' => 'required|numeric|min:0.01',
+                'bank_account_id' => 'required|exists:bank_accounts,id',
+            ]);
+
+            $repayment = Repayment::with(['loan', 'receipt', 'bankAccount'])->findOrFail($id);
+
+            // Store the loan and schedule info before deletion
+            $loanId = $repayment->loan_id;
+            $scheduleId = $repayment->loan_schedule_id;
+            $customerId = $repayment->customer_id;
+            $dueDate = $repayment->due_date;
+
+            // Delete the existing repayment (this will also delete receipt and GL transactions)
+            $this->deleteRepaymentInternal($repayment);
+
+            // Create new repayment with updated details
+            $paymentData = [
+                'payment_date' => $request->payment_date,
+                'bank_account_id' => $request->bank_account_id,
+            ];
+
+            // Get calculation method from loan product
+            $loan = Loan::with('product')->findOrFail($loanId);
+            $calculationMethod = $loan->product->interest_method ?? 'flat_rate';
+
+            // Process new repayment using service
+            $result = $this->repaymentService->processRepayment(
+                $loanId,
+                $request->amount,
+                $paymentData,
+                $calculationMethod
+            );
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repayment updated successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Repayment update error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to update repayment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Internal method to delete repayment and associated records
+     */
+    private function deleteRepaymentInternal($repayment)
+    {
+        // Delete associated receipt and GL transactions
+        if ($repayment->receipt) {
+            // Delete GL transactions
+            GlTransaction::where('transaction_id', $repayment->receipt->id)
+                ->where('transaction_type', 'receipt')
+                ->delete();
+
+            // Delete receipt items
+            ReceiptItem::where('receipt_id', $repayment->receipt->id)->delete();
+
+            // Delete receipt
+            $repayment->receipt->delete();
+        }
+
+        // Delete repayment
+        $repayment->delete();
     }
 
     /**
      * Remove the specified resource from storage.
      */
-    public function destroy(string $id)
+    public function destroy($id)
     {
-        //
+        DB::beginTransaction();
+
+        try {
+            $repayment = Repayment::with(['loan', 'receipt'])->findOrFail($id);
+
+            // Delete repayment and associated records
+            $this->deleteRepaymentInternal($repayment);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repayment deleted successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Repayment deletion error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete repayment: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
@@ -256,6 +363,52 @@ class LoanRepaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to process bulk repayment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Print receipt for repayment
+     */
+    public function printReceipt($id)
+    {
+        try {
+            $repayment = Repayment::with([
+                'loan.customer',
+                'schedule',
+                'bankAccount',
+                'receipt.receiptItems.chartAccount'
+            ])->findOrFail($id);
+
+            // Generate receipt data for thermal printer
+            $receiptData = [
+                'receipt_number' => $repayment->receipt->reference ?? 'N/A',
+                'date' => $repayment->payment_date,
+                'customer_name' => $repayment->customer->name,
+                'loan_number' => $repayment->loan->loanNo,
+                'amount_paid' => $repayment->amount_paid,
+                'payment_breakdown' => [
+                    'principal' => $repayment->principal,
+                    'interest' => $repayment->interest,
+                    'penalty' => $repayment->penalt_amount,
+                    'fee' => $repayment->fee_amount,
+                ],
+                'bank_account' => $repayment->bankAccount->name ?? 'N/A',
+                'received_by' => auth()->user()->name,
+                'branch' => auth()->user()->branch->name ?? 'N/A',
+            ];
+
+            return response()->json([
+                'success' => true,
+                'receipt_data' => $receiptData
+            ]);
+
+        } catch (\Exception $e) {
+            Log::error('Receipt print error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate receipt: ' . $e->getMessage()
             ], 500);
         }
     }
