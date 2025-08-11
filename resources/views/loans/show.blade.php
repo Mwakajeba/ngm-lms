@@ -109,7 +109,7 @@
             <div class="tab-pane fade show active" id="loan_detail" role="tabpanel">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary border-0 py-3">
-                        <h6 class="mb-0 text-dark fw-bold"><i class="bx bx-info-circle me-2"></i> Loan Information</h6>
+                        <h6 class="mb-0 text-dark fw-bold"><i class="bx bx-info-circle me-2"></i> LOAN INFORMATION</h6>
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
@@ -288,23 +288,26 @@
 
             <div class="tab-pane fade" id="schedule" role="tabpanel">
                 @if($loan->schedule->count())
-                <div class="card shadow-sm border-0 w-100">
-                    <div class="card-body p-0 w-100">
+                <div class="card radius-10">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>LOAN SCHEDULE LIST</h6>
+                    </div>
+                    <div class="card-body">
                         <div class="table-responsive w-100" style="overflow-x: auto;">
-                            <table class="table table-bordered nowrap w-100" id="loansTableDetail">
+                            <table class="table table-bordered nowrap w-100 table-striped">
                                 <thead class="bg-light">
                                     <tr>
                                         <th>#</th>
-                                        <th class="text-uppercase fw-bold text-secondary ps-4">Due Date</th>
-                                        <th class="text-uppercase fw-bold text-secondary">Principal</th>
-                                        <th class="text-uppercase fw-bold text-secondary">Interest</th>
-                                        <th class="text-uppercase fw-bold text-secondary">Penalty Amount</th>
-                                        <th class="text-uppercase fw-bold text-secondary">Fee Amount</th>
-                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Total Due</th>
-                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Paid Amount</th>
-                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Remaining</th>
-                                        <th class="text-uppercase fw-bold text-secondary text-center">Status</th>
-                                        <th class="text-uppercase fw-bold text-secondary text-center">Actions</th>
+                                        <th>Due Date</th>
+                                        <th>Principal</th>
+                                        <th>Interest</th>
+                                        <th>Penalty Amount</th>
+                                        <th>Fee Amount</th>
+                                        <th class="text-end pe-4">Total Due</th>
+                                        <th class="text-end pe-4">Paid Amount</th>
+                                        <th class="text-end pe-4">Remaining</th>
+                                        <th class="text-center">Status</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -379,30 +382,33 @@
                 @endcan
 
                 @if($loan->guarantors && $loan->guarantors->count())
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
+                <div class="card radius-10">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>GUARANTOR LIST</h6>
+                    </div>
+                    <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-bordered table-striped mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Name</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Phone</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Actions</th>
+                                        <th>#</th>
+                                        <th>Name</th>
+                                        <th>Phone</th>
+                                        <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     @foreach($loan->guarantors as $index => $guarantor)
                                     <tr>
-                                        <th scope="row" class="ps-4">{{ $index + 1 }}</th>
+                                        <td>{{ $index + 1 }}</td>
                                         <td>{{ $guarantor->name }}</td>
-                                        <td>{{ $guarantor->phone }}</td>
+                                        <td>{{ $guarantor->phone1 }}</td>
                                         @can('remove guarantor')
                                         <td class="text-end pe-4">
-                                            <form action="{{ route('loans.removeGuarantor', [$loan->id, $guarantor->id]) }}" method="POST" onsubmit="return confirm('Are you sure you want to remove this guarantor?');" class="d-inline">
+                                            <form action="{{ route('loans.removeGuarantor', [$loan->id, $guarantor->id]) }}" method="POST" class="d-inline form-delete">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger">Remove</button>
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" data-name="{{$guarantor->name}}">Remove</button>
                                             </form>
                                         </td>
                                         @endcan
@@ -433,15 +439,18 @@
                 @endcan
 
                 @if($loan->loanFiles->count())
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
+                <div class="card radius-10">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>DOCUMENT LIST</h6>
+                    </div>
+                    <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-bordered table-striped mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Document Name</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Actions</th>
+                                        <th>#</th>
+                                        <th>Document Name</th>
+                                        <th class="text-end pe-4">>Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -483,22 +492,25 @@
                 </div>
 
                 @if($loan->repayments && $loan->repayments->count())
-                <div class="card shadow-sm border-0">
-                    <div class="card-body p-0">
+                <div class="card radius-10">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>REPAYMENT LIST</h6>
+                    </div>
+                    <div class="card-body">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-bordered table-striped mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Payment Date</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Due Date</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Principal</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Interest</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Penalty</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Fee</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Total Paid</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Bank Account</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-center">Actions</th>
+                                        <th>#</th>
+                                        <th>Payment Date</th>
+                                        <th>Due Date</th>
+                                        <th>Principal</th>
+                                        <th>Interest</th>
+                                        <th>Penalty</th>
+                                        <th>Fee</th>
+                                        <th class="text-end pe-4">Total Paid</th>
+                                        <th>Bank Account</th>
+                                        <th class="text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -550,17 +562,20 @@
                 </div>
 
                 @if($loan->collaterals && $loan->collaterals->count())
-                <div class="card shadow-sm border-0">
+                <div class="card radius-10">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>LOAN COLLATERAL LIST</h6>
+                    </div>
                     <div class="card-body p-0">
                         <div class="table-responsive">
-                            <table class="table table-hover mb-0">
+                            <table class="table table-bordered table-striped mb-0">
                                 <thead class="bg-light">
                                     <tr>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Type</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Description</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Value</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Actions</th>
+                                        <th>#</th>
+                                        <th>Type</th>
+                                        <th>Description</th>
+                                        <th>Value</th>
+                                        <th class="text-end pe-4">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -590,7 +605,7 @@
 
             <div class="tab-pane fade" id="approval_history" role="tabpanel">
                 <div class="card border-0 shadow-sm mb-4">
-                    <div class="card-header bg-info text-white">
+                    <div class="card-header bg-primary text-white">
                         <h6 class="mb-0"><i class="bx bx-history me-2"></i>APPROVAL HISTORY</h6>
                     </div>
                     <div class="card-body">
