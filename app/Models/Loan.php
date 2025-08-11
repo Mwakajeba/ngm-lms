@@ -410,7 +410,7 @@ class Loan extends Model
 
     public function getRepaymentDates()
     {
-        $cycle = $this->product->interest_cycle ?? 'monthly'; // e.g., monthly, weekly
+        $cycle = $this->interest_cycle; // e.g., monthly, weekly
         $period = $this->period;
         $disbursedOn = Carbon::parse($this->disbursed_on);
 

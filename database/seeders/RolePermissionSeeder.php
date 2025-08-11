@@ -471,6 +471,7 @@ class RolePermissionSeeder extends Seeder
             'process withdrawals',
             'view savings history',
             'view reports',
+            'create loan',
             'generate reports',
             'export reports',
             'view loan portfolio report',

@@ -75,7 +75,7 @@ class LoanController extends Controller
         $customers = Customer::with('groups')->where('category', 'Borrower')->get();
         info($customers);
         $products = LoanProduct::all();
-         $loanOfficers = User::whereHas('roles', function ($query) {
+        $loanOfficers = User::whereHas('roles', function ($query) {
             $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
 
@@ -89,12 +89,11 @@ class LoanController extends Controller
         ];
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // Example sectors
-        return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts','loanOfficers','interestCycles'));
+        return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts', 'loanOfficers', 'interestCycles'));
     }
 
     public function store(Request $request)
     {
-        
         $validated = $request->validate([
             'product_id' => 'required|exists:loan_products,id',
             'period' => 'required|integer|min:1',
@@ -109,8 +108,11 @@ class LoanController extends Controller
             'sector' => 'required|string',
         ]);
 
+
+
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
+
         // 🔐 Check collateral OUTSIDE transaction
         if ($product->requiresCollateral()) {
             $requiredCollateral = $product->calculateRequiredCollateral($validated['amount']);
@@ -118,12 +120,28 @@ class LoanController extends Controller
 
             if ($availableCollateral < $requiredCollateral) {
                 return redirect()->back()->withErrors([
-                    'collateral' => 'The customer does not have enough cash collateral to qualify for this loan. 
+                    'collateral' => 'The customer does not have enough cash collateral to qualify for this loan.
                 Required: TZS ' . number_format($requiredCollateral, 2) .
                         ', Available: TZS ' . number_format($availableCollateral, 2) . '.',
                 ])->withInput();
             }
         }
+
+        // Check kama mteja tayari ana mkopo wa bidhaa hii
+        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
+            ->where('product_id', $validated['product_id'])
+            ->where('status', 'active')
+            ->first();
+
+        if ($existingLoan) {
+            $topupAmount = $product->topupAmount($validated['amount']);
+
+            return redirect()->back()->withErrors([
+                'loan_product' => 'The customer already has an active loan for this product. You can apply for a top-up instead. Top-up Amount: TZS ' . number_format($topupAmount, 2),
+            ])->withInput();
+        }
+
+
 
         $userId = auth()->id();
         $branchId = auth()->user()->branch_id;
@@ -152,6 +170,7 @@ class LoanController extends Controller
                     'interest_cycle' => $validated['interest_cycle'],
                     'loan_officer_id' => $validated['loan_officer'],
                 ]);
+                info('loaan-->' . $loan);
 
                 // Step 2: Calculate interest and repayment dates
                 $interestAmount = $loan->calculateInterestAmount($validated['interest']);
@@ -320,6 +339,8 @@ class LoanController extends Controller
             'amount' => 'required|numeric|min:0',
             'date_applied' => 'required|date|before_or_equal:today',
             'customer_id' => 'required|exists:customers,id',
+            'interest_cycle' => 'required|string|max:50',
+            'loan_officer' => 'required|exists:users,id',
             'group_id' => 'required|exists:groups,id',
             'account_id' => 'required|exists:bank_accounts,id',
             'sector' => 'required|string',
@@ -359,6 +380,8 @@ class LoanController extends Controller
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
                     'disbursed_on' => $validated['date_applied'],
+                    'interest_cycle' => $validated['interest_cycle'],
+                    'loan_officer_id' => $validated['loan_officer'],
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
                 ]);

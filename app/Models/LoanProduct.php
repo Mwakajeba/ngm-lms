@@ -112,7 +112,7 @@ class LoanProduct extends Model
     // }
     public function penalty()
     {
-        return $this->belongsTo(Penalty::class, 'penalty_ids')->where('status','active');
+        return $this->belongsTo(Penalty::class, 'penalty_ids')->where('status', 'active');
     }
 
 
@@ -183,5 +183,14 @@ class LoanProduct extends Model
         return $this->cash_collateral_value_type === 'percentage'
             ? ($loanAmount * $this->cash_collateral_value / 100)
             : $this->cash_collateral_value;
+    }
+
+    //// GET TOPUP AMOUNT FOR THIS LOAN////
+
+    public function topupAmount(float $loanAmount)
+    {
+        return $this->top_up_type === 'percentage'
+            ? ($loanAmount * $this->top_up_type_value / 100)
+            : $this->top_up_type_value;
     }
 }
