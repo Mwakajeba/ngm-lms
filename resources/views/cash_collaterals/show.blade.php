@@ -35,7 +35,7 @@
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="btn-group" role="group">
-                                    @can(deposit cash collateral)
+                                    @can('deposit cash collateral')
                                     <a href="{{ route('cash_collaterals.deposit', Hashids::encode($cashCollateral->id)) }}"
                                         class="btn btn-success">
                                         <i class="bx bx-plus me-1"></i> Deposit

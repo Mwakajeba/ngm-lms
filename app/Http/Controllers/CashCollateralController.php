@@ -15,6 +15,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
+use App\Helpers\SmsHelper;
 
 class CashCollateralController extends Controller
 {
@@ -198,6 +199,11 @@ class CashCollateralController extends Controller
         return view('cash_collaterals.deposit', compact('bankAccounts', 'customer', 'collateral'));
     }
 
+    protected function sendSms($phone, $message)
+    {
+        SmsHelper::send($phone, $message);
+    }
+
     /**
      * PROCESS CASH COLLATERAL FOR DEPOSIT OF CUSTOMER
      */
@@ -283,6 +289,12 @@ class CashCollateralController extends Controller
 
                 // Update collateral amount
                 $collateral->increment('amount', $request->amount);
+
+                // Send SMS to customer after successful deposit
+                if ($collateral->customer && $collateral->customer->phone1) {
+                    $smsMessage = "Cash collateral deposit processed successfully. Amount: TSHS" . number_format($request->amount, 2);
+                    $this->sendSms($collateral->customer->phone1, $smsMessage);
+                }
 
                 return redirect()->route('customers.show', Hashids::encode($collateral->customer_id))
                     ->with('success', 'Cash collateral deposit processed successfully. Amount: TSHS' . number_format($request->amount, 2));
@@ -401,6 +413,12 @@ class CashCollateralController extends Controller
 
                 // Update collateral amount
                 $collateral->decrement('amount', $request->amount);
+
+                // Send SMS to customer after successful withdrawal
+                if ($collateral->customer && $collateral->customer->phone1) {
+                    $smsMessage = "Cash collateral withdrawal processed successfully. Amount: TSHS" . number_format($request->amount, 2);
+                    $this->sendSms($collateral->customer->phone1, $smsMessage);
+                }
 
                 return redirect()->route('customers.show', Hashids::encode($collateral->customer_id))
                     ->with('success', 'Cash collateral withdrawal processed successfully. Amount: TSHS' . number_format($request->amount, 2));

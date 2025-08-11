@@ -290,7 +290,7 @@
                         <hr class="my-4">
 
                         <div class="table-responsive">
-                            <table class="table table-bordered dt-responsive nowrap" id="collateralTable">
+                            <table class="table table-bordered dt-responsive nowrap table-striped" id="collateralTable">
                                 <thead>
                                     <tr>
                                         <th>Type</th>
@@ -306,35 +306,10 @@
                                         <td>{{ number_format($collateral->amount, 2) }}</td> {{-- Assuming 'amount' field --}}
                                         <td>{{ $collateral->created_at->format('M d, Y') }}</td>
                                         <td class="text-center">
-                                            @can('view cash collateral details')
+                                            @can('view cash collaterals')
                                             <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-warning">
                                                 View
                                             </a>
-                                            @endcan
-
-                                            @can('edit cash collateral')
-                                            <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-info">
-                                                Edit
-                                            </a>
-                                            @endcan
-
-                                            @can('delete cash collateral')
-                                            @php
-                                                $hasReceipt = \App\Models\Receipt::where('reference', $collateral->id)->where('reference_type', 'Deposit')->exists();
-                                                $hasPayment = \App\Models\Payment::where('reference', $collateral->id)->where('reference_type', 'Withdrawal')->exists();
-                                                $hasJournal = false; // Set to true if you add journal linkage to collateral
-                                            @endphp
-                                            @if($hasReceipt || $hasPayment || $hasJournal)
-                                                <button class="btn btn-sm btn-danger" disabled title="Cannot delete: Transactions exist.">
-                                                    <i class="bx bx-lock"></i> Delete
-                                                </button>
-                                            @else
-                                            <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" style="display:inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger">Delete</button>
-                                            </form>
-                                            @endif
                                             @endcan
 
                                             @can('deposit cash collateral')
@@ -363,11 +338,14 @@
                             <h5 class="card-title mb-4">Loans Records</h5>
                             <hr class="my-4">
                             <div class="table-responsive">
-                                <table class="table table-bordered dt-responsive nowrap" id="loansTable">
+                                <table class="table table-bordered dt-responsive nowrap table-striped" id="loansTable">
                                     <thead>
                                         <tr>
                                             <th>Loan ID</th>
                                             <th>Amount</th>
+                                            <th>Total Amount</th>
+                                            <th>Paid Amount</th>
+                                            <th>Balance</th>
                                             <th>Status</th>
                                             <th>Disbursed On</th>
                                             <th class="text-center">Actions</th>
@@ -378,7 +356,26 @@
                                         <tr>
                                             <td>{{ $loan->id }}</td>
                                             <td>{{ number_format($loan->amount, 2) }}</td>
-                                            <td>{{ $loan->status }}</td>
+                                            <td>{{ number_format($loan->amount_total, 2) }}</td>
+                                            <td>
+                                                {{ number_format(\App\Models\Repayment::where('loan_id', $loan->id)->sum(\DB::raw('principal + interest')), 2) }}
+                                            </td>
+                                            <td>
+                                                {{ number_format($loan->amount_total - \App\Models\Repayment::where('loan_id', $loan->id)->sum(\DB::raw('principal + interest')), 2) }}
+                                            </td>
+                                            <td>
+                                                @if($loan->status === 'active')
+                                                    <span class="badge bg-success">{{ ucfirst($loan->status) }}</span>
+                                                @elseif($loan->status === 'pending')
+                                                    <span class="badge bg-warning">{{ ucfirst($loan->status) }}</span>
+                                                @elseif($loan->status === 'closed')
+                                                    <span class="badge bg-secondary">{{ ucfirst($loan->status) }}</span>
+                                                @elseif($loan->status === 'defaulted')
+                                                    <span class="badge bg-danger">{{ ucfirst($loan->status) }}</span>
+                                                @else
+                                                    <span class="badge bg-info">{{ ucfirst($loan->status) }}</span>
+                                                @endif
+                                            </td>
                                             <td>{{ $loan->disbursed_on }}</td>
                                             <td class="text-center">
                                                 @can('view loan details')
@@ -412,7 +409,7 @@
 
                             @if ($customer->filetypes->count())
                             <div class="table-responsive">
-                                <table class="table table-bordered" id="fileTable">
+                                <table class="table table-bordered table-striped" id="fileTable">
                                     <thead class="thead-light">
                                         <tr>
                                             <th>#</th>
