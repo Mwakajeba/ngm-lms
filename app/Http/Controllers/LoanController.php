@@ -209,7 +209,7 @@ class LoanController extends Controller
                     ]
                 ]);
                 // Step 7: Post Penalty Amount to GL (if exists)
-                $penalty = $product->penalty; // assuming single penalty relation
+                $penalty = $product->penalty; 
 
                 $penaltyAmount = LoanSchedule::where('loan_id', $loan->id)->sum('penalty_amount');
 

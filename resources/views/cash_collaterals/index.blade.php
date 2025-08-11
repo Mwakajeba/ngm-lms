@@ -10,7 +10,7 @@
             ['label' => 'Cash Collaterals', 'url' => '#', 'icon' => 'bx bx-credit-card']
         ]" />
         <h6 class="mb-0 text-uppercase">CASH COLLATERALS</h6>
-        <hr/>
+        <hr />
 
         <!-- Stats Card -->
         <div class="row row-cols-1 row-cols-lg-4 mb-4">
@@ -56,33 +56,46 @@
                         </thead>
                         <tbody>
                             @foreach($cashCollaterals as $collateral)
-                                <tr>
-                                    <td>{{ $collateral->customer->name ?? 'N/A' }}</td>
-                                    <td>{{ $collateral->type->name ?? 'N/A' }}</td>
-                                    <td>{{ number_format($collateral->amount, 2) }}</td>
-                                    <td>{{ $collateral->created_at->format('Y-m-d') }}</td>
-                                    <td class="text-center">
-                                        <div class="btn-group" role="group">
-                                            <a href="" class="btn btn-sm btn-outline-success">Deposit</a>
-                                            <a href="" class="btn btn-sm btn-outline-primary">Withdraw</a>
-                                            @can('view cash collateral details')
-                                            <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-info">View</a>
-                                            @endcan
-                                            
-                                            @can('edit cash collateral')
-                                            <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                            @endcan
+                            <tr>
+                                <td>{{ $collateral->customer->name ?? 'N/A' }}</td>
+                                <td>{{ $collateral->type->name ?? 'N/A' }}</td>
+                                <td>{{ number_format($collateral->amount, 2) }}</td>
+                                <td>{{ $collateral->created_at->format('Y-m-d') }}</td>
+                                <td class="text-center">
+                                    <div class="btn-group" role="group">
 
-                                            @can('delete cash collateral')
-                                            <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" class="d-inline delete-form">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-outline-danger" data-name="{{ $collateral->id }}">Delete</button>
-                                            </form>
-                                            @endcan
-                                        </div>
-                                    </td>
-                                </tr>
+                                        @can('deposit cash collateral')
+
+                                        <a href="{{ route('cash_collaterals.deposit',Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-primary">
+                                            Deposit
+                                        </a>
+
+                                        @endcan
+
+                                        @can('withdraw cash collateral')
+
+                                        <a href="{{ route('cash_collaterals.withdraw', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-success">
+                                            Withdraw
+                                        </a>
+                                        @endcan
+                                        @can('view cash collateral details')
+                                        <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-info">View</a>
+                                        @endcan
+
+                                        @can('edit cash collateral')
+                                        <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-warning">Edit</a>
+                                        @endcan
+
+                                        @can('delete cash collateral')
+                                        <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" class="d-inline delete-form">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger" data-name="{{ $collateral->id }}">Delete</button>
+                                        </form>
+                                        @endcan
+                                    </div>
+                                </td>
+                            </tr>
                             @endforeach
                         </tbody>
                     </table>
@@ -100,15 +113,24 @@
     $(document).ready(function() {
         $('#collateralTable').DataTable({
             responsive: true,
-            order: [[0, 'asc']],
+            order: [
+                [0, 'asc']
+            ],
             pageLength: 10,
             language: {
                 search: "",
                 searchPlaceholder: "Search collaterals..."
             },
-            columnDefs: [
-                { targets: -1, orderable: false, searchable: false, responsivePriority: 1 },
-                { targets: [0, 1], responsivePriority: 2 }
+            columnDefs: [{
+                    targets: -1,
+                    orderable: false,
+                    searchable: false,
+                    responsivePriority: 1
+                },
+                {
+                    targets: [0, 1],
+                    responsivePriority: 2
+                }
             ]
         });
     });

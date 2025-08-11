@@ -61,6 +61,9 @@ class BankAccountController extends Controller
     public function create()
     {
         $chartAccounts = ChartAccount::with('accountClassGroup.accountClass')
+            ->whereHas('accountClassGroup.accountClass', function($q) {
+                $q->where('name', 'Assets');
+            })
             ->orderBy('account_name')
             ->get();
 
@@ -157,6 +160,12 @@ class BankAccountController extends Controller
         }
 
         $bankAccount = BankAccount::findOrFail($decoded[0]);
+
+        // Prevent delete if used in GL Transactions
+        $hasGlTransactions = $bankAccount->glTransactions()->exists();
+        if ($hasGlTransactions) {
+            return redirect()->route('accounting.bank-accounts')->withErrors(['This bank account cannot be deleted because its chart account is used in GL Transactions.']);
+        }
 
         try {
             $bankAccount->delete();

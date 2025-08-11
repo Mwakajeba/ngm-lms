@@ -56,6 +56,7 @@ class RolePermissionSeeder extends Seeder
             'view rejected loans',
             'edit loan',
             'remove guarantor',
+            'add guarantor',
             'default loan',
             'delete loan',
             'approve loan',

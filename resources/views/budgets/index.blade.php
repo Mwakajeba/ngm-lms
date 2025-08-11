@@ -10,11 +10,10 @@
             <div class="col-12">
                 <div class="page-breadcrumb d-flex align-items-center">
                     <div class="me-auto">
-                        <h5 class="page-title text-dark fw-semibold fs-3">{{ __('app.budget_management') }}</h5>
-                        <ul class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active">{{ __('app.budgets') }}</li>
-                        </ul>
+                        <x-breadcrumbs-with-icons :links="[
+                            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                            ['label' => __('app.budgets'), 'url' => '#', 'icon' => 'bx bx-chart']
+                        ]" />
                     </div>
                     <div class="ms-auto">
                         <a href="{{ route('accounting.budgets.create') }}" class="btn btn-primary">
@@ -24,6 +23,8 @@
                 </div>
             </div>
         </div>
+        <h6 class="mb-0 text-uppercase">{{ __('app.budget_management') }}</h6>
+        <hr />
 
         <!-- Summary Cards -->
         <div class="row row-cols-1 row-cols-lg-4 g-4 mb-4">

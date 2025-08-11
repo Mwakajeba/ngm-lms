@@ -115,7 +115,7 @@
                                             @endcan
 
                                             @can('delete borrower')
-                                            <form action="{{ route('customers.destroy',  Hashids::encode($customer->id)) }}" method="POST" class="d-inline-block delete-form" onsubmit="return confirm('Delete this customer?');">
+                                            <form action="{{ route('customers.destroy',  Hashids::encode($customer->id)) }}" method="POST" class="d-inline-block delete-form">
                                                 @csrf @method('DELETE')
                                                 <button class="btn btn-sm btn-outline-danger" data-name = "{{ $customer->name }}"><i class="bx bx-trash"></i></button>
                                             </form>

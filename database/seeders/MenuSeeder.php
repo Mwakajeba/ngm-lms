@@ -55,7 +55,7 @@ class MenuSeeder extends Seeder
                     ['name' => 'Groups', 'route' => 'groups.index'],
                     ['name' => 'Loans', 'route' => 'loans.index'],
                 ],
-                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
+                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
             'Cash Collaterals' => [
                 'icon' => 'bx bx-outline',

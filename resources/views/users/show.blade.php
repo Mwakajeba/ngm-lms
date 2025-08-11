@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'User Profile - ' . $user->name)
+@section('title', 'User Profile')
 
 @section('content')
     <div class="page-wrapper">
@@ -11,21 +11,8 @@
             ['label' => $user->name, 'url' => '#', 'icon' => 'bx bx-user-circle']
         ]" />
 
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h6 class="mb-0 text-uppercase">USER PROFILE</h6>
-                <div>
-                    @can('edit user')
-                        <a href="{{ route('users.edit', $user) }}" class="btn btn-primary btn-sm">
-                            <i class="bx bx-edit me-1"></i> Edit User
-                        </a>
-                    @endcan
-                    <a href="{{ route('users.index') }}" class="btn btn-secondary btn-sm">
-                        <i class="bx bx-arrow-back me-1"></i> Back to Users
-                    </a>
-                </div>
-            </div>
+            <h6 class="mb-0 text-uppercase">USER PROFILE</h6>
             <hr />
-
             <div class="row">
                 <!-- Profile Card -->
                 <div class="col-xl-4">
@@ -58,7 +45,7 @@
                                         <tbody>
                                             <tr>
                                                 <th scope="row">User ID :</th>
-                                                <td>{{ $user->user_id ?? 'N/A' }}</td>
+                                                <td>{{ $user->user_id }}</td>
                                             </tr>
                                             <tr>
                                                 <th scope="row">Phone :</th>
@@ -84,11 +71,54 @@
                                     </table>
                                 </div>
                             </div>
+
+                            <hr class="my-4">
+
+                            <!-- Action Buttons -->
+                            <div class="d-grid gap-2">
+                                @can('edit user')
+                                <a href="{{ route('users.edit', $user) }}" class="btn btn-primary">
+                                    <i class="bx bx-edit me-1"></i> Edit User
+                                </a>
+                                @endcan
+
+                                @if($user->status === 'active')
+                                    @can('edit user')
+                                    <form action="{{ route('users.status', $user) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-warning w-100">
+                                            <i class="bx bx-pause-circle me-1"></i> Deactivate
+                                        </button>
+                                    </form>
+                                    @endcan
+                                @else
+                                    @can('edit user')
+                                    <form action="{{ route('users.status', $user) }}" method="POST" class="d-inline">
+                                        @csrf
+                                        @method('PATCH')
+                                        <button type="submit" class="btn btn-success w-100">
+                                            <i class="bx bx-play-circle me-1"></i> Activate
+                                        </button>
+                                    </form>
+                                    @endcan
+                                @endif
+
+                                @can('delete user')
+                                    @if($user->id !== auth()->id())
+                                    <button type="button" class="btn btn-danger w-100 delete-user-btn" 
+                                            data-user-id="{{ $user->id }}" 
+                                            data-user-name="{{ $user->name }}">
+                                        <i class="bx bx-trash me-1"></i> Delete User
+                                    </button>
+                                    @endif
+                                @endcan
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <!-- Profile Details -->
+                <!-- User Details -->
                 <div class="col-xl-8">
                     <div class="card">
                         <div class="card-body">
@@ -98,13 +128,13 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Full Name</label>
-                                        <p class="form-control-plaintext">{{ $user->name }}</p>
+                                        <p class="text-muted mb-0">{{ $user->name }}</p>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Email Address</label>
-                                        <p class="form-control-plaintext">{{ $user->email ?? 'No email provided' }}</p>
+                                        <p class="text-muted mb-0">{{ $user->email ?? 'Not provided' }}</p>
                                     </div>
                                 </div>
                             </div>
@@ -113,13 +143,22 @@
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Phone Number</label>
-                                        <p class="form-control-plaintext">{{ $user->phone }}</p>
+                                        <p class="text-muted mb-0">{{ $user->phone }}</p>
                                     </div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
+                                        <label class="form-label fw-bold">Branch</label>
+                                        <p class="text-muted mb-0">{{ $user->branch->name ?? 'Not assigned' }}</p>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
                                         <label class="form-label fw-bold">Status</label>
-                                        <p class="form-control-plaintext">
+                                        <p class="mb-0">
                                             @if($user->status === 'active')
                                                 <span class="badge bg-success">Active</span>
                                             @elseif($user->status === 'inactive')
@@ -130,109 +169,48 @@
                                         </p>
                                     </div>
                                 </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Branch</label>
-                                        <p class="form-control-plaintext">{{ $user->branch->name ?? 'N/A' }}</p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Company</label>
-                                        <p class="form-control-plaintext">{{ $user->company->name ?? 'N/A' }}</p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Roles</label>
-                                        <p class="form-control-plaintext">
-                                            @foreach($user->roles as $role)
-                                                <span class="badge bg-primary me-1">{{ $role->name }}</span>
-                                            @endforeach
-                                            @if($user->roles->isEmpty())
-                                                <span class="text-muted">No roles assigned</span>
-                                            @endif
-                                        </p>
-                                    </div>
-                                </div>
                                 <div class="col-md-6">
                                     <div class="mb-3">
                                         <label class="form-label fw-bold">Account Created</label>
-                                        <p class="form-control-plaintext">
-                                            {{ $user->created_at->format('M d, Y \a\t g:i A') }}
-                                        </p>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Last Updated</label>
-                                        <p class="form-control-plaintext">
-                                            {{ $user->updated_at->format('M d, Y \a\t g:i A') }}
-                                        </p>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label class="form-label fw-bold">Last Login</label>
-                                        <p class="form-control-plaintext">
-                                            @if($user->last_login_at)
-                                                {{ $user->last_login_at->format('M d, Y \a\t g:i A') }}
-                                            @else
-                                                <span class="text-muted">Never logged in</span>
-                                            @endif
-                                        </p>
+                                        <p class="text-muted mb-0">{{ $user->created_at->format('M d, Y \a\t g:i A') }}</p>
                                     </div>
                                 </div>
                             </div>
                         </div>
                     </div>
 
-                    <!-- Action Buttons -->
+                    <!-- Roles & Permissions -->
                     <div class="card">
                         <div class="card-body">
-                            <h5 class="card-title mb-3">Actions</h5>
-                            <div class="d-flex gap-2 flex-wrap">
-                                @can('edit user')
-                                    <a href="{{ route('users.edit', $user) }}" class="btn btn-primary">
-                                        <i class="bx bx-edit me-1"></i> Edit User
-                                    </a>
-                                @endcan
+                            <h4 class="card-title mb-4">Roles & Permissions</h4>
 
-                                @can('delete user')
-                                    @if($user->id !== auth()->id())
-                                        <form action="{{ route('users.destroy', $user) }}" method="POST"
-                                            style="display:inline-block;" class="delete-form"
-                                            onsubmit="return confirmDelete(this, 'Are you sure you want to delete this user?');">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-danger">
-                                                <i class="bx bx-trash me-1"></i> Delete User
-                                            </button>
-                                        </form>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Assigned Roles</h6>
+                                    @if($user->roles->count() > 0)
+                                        @foreach($user->roles as $role)
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-primary me-2">{{ $role->name }}</span>
+                                                <small class="text-muted">{{ $role->permissions->count() }} permissions</small>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <p class="text-muted">No roles assigned</p>
                                     @endif
-                                @endcan
+                                </div>
 
-                                @can('change user status')
-                                    <form action="{{ route('users.status', $user) }}" method="POST"
-                                        style="display:inline-block;">
-                                        @csrf
-                                        @method('PATCH')
-                                        <button type="submit"
-                                            class="btn btn-{{ $user->status === 'active' ? 'warning' : 'success' }}">
-                                            <i class="bx bx-{{ $user->status === 'active' ? 'pause' : 'play' }} me-1"></i>
-                                            {{ $user->status === 'active' ? 'Deactivate' : 'Activate' }}
-                                        </button>
-                                    </form>
-                                @endcan
+                                <div class="col-md-6">
+                                    <h6 class="mb-3">Direct Permissions</h6>
+                                    @if($user->permissions->count() > 0)
+                                        @foreach($user->permissions as $permission)
+                                            <div class="d-flex align-items-center mb-2">
+                                                <span class="badge bg-info me-2">{{ $permission->name }}</span>
+                                            </div>
+                                        @endforeach
+                                    @else
+                                        <p class="text-muted">No direct permissions</p>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -240,15 +218,69 @@
             </div>
         </div>
     </div>
+    <!--end page wrapper -->
+    <!--start overlay-->
+    <div class="overlay toggle-icon"></div>
+    <!--end overlay-->
+    <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
+    <!--End Back To Top Button-->
+    <footer class="page-footer">
+        <p class="mb-0">Copyright © {{ date('Y') }}. All right reserved. -- By SAFCO FINTECH</p>
+    </footer>
 @endsection
 
 @push('scripts')
-    <script>
-        function confirmDelete(form, message) {
-            if (confirm(message)) {
-                form.submit();
-            }
-            return false;
+<script>
+$(function() {
+    // Initialize any necessary scripts
+});
+
+// Delete user functionality with SweetAlert
+$(document).on('click', '.delete-user-btn', function(e) {
+    e.preventDefault();
+    const userId = $(this).data('user-id');
+    const userName = $(this).data('user-name');
+    
+    Swal.fire({
+        title: 'Delete User',
+        text: `Are you sure you want to delete user "${userName}"? This action cannot be undone.`,
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#d33',
+        cancelButtonColor: '#3085d6',
+        confirmButtonText: 'Yes, delete!',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            submitDeleteUserForm(userId);
         }
-    </script>
-@endpush
+    });
+});
+
+// Helper function to submit delete user form
+function submitDeleteUserForm(userId) {
+    const form = document.createElement('form');
+    form.method = 'POST';
+    form.action = `/users/${userId}`;
+    
+    // Add CSRF token
+    const csrfToken = document.createElement('input');
+    csrfToken.type = 'hidden';
+    csrfToken.name = '_token';
+    csrfToken.value = '{{ csrf_token() }}';
+    form.appendChild(csrfToken);
+    
+    // Add method override
+    const methodField = document.createElement('input');
+    methodField.type = 'hidden';
+    methodField.name = '_method';
+    methodField.value = 'DELETE';
+    form.appendChild(methodField);
+    
+    // Submit the form
+    document.body.appendChild(form);
+    form.submit();
+}
+</script>
+@endpush 

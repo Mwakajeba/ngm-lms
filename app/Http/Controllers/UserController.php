@@ -6,8 +6,11 @@ use App\Models\User;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Role;
+use App\Rules\PasswordValidation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Permission;
 
@@ -66,7 +69,7 @@ class UserController extends Controller
                 'name' => 'required|string|max:255',
                 'phone' => 'required|string|max:20|unique:users,phone,NULL,id,company_id,' . current_company_id(),
                 'email' => 'nullable|email|unique:users,email,NULL,id,company_id,' . current_company_id(),
-                'password' => 'required|string|min:8|confirmed',
+                'password' => ['required', 'confirmed', new PasswordValidation],
                 'branch_id' => 'required|exists:branches,id',
                 'role_id' => 'required|exists:roles,id',
                 'status' => 'required|in:active,inactive,suspended',
@@ -184,8 +187,8 @@ class UserController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Load the user with relationships
-        $user->load(['branch', 'company', 'roles']);
+        // Load user relationships
+        $user->load(['branch', 'company', 'roles', 'permissions']);
 
         return view('users.show', compact('user'));
     }

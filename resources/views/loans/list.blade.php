@@ -56,7 +56,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         @endcan
 
                         <div class="table-responsive">
-                            <table class="table table-bordered dt-responsive nowrap" id="loansTable">
+                            <table class="table table-bordered dt-responsive nowrap table-striped" id="loansTable">
                                 <thead>
                                     <tr>
                                         <th>#</th>

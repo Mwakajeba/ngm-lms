@@ -5,20 +5,13 @@
 <div class="page-wrapper">
     <div class="page-content">
         <!-- Breadcrumb -->
-        <div class="row">
-            <div class="col-12">
-                <div class="page-breadcrumb d-flex align-items-center">
-                    <div class="me-auto">
-                        <h5 class="page-title text-dark fw-semibold fs-3">{{ __('app.create_budget') }}</h5>
-                        <ul class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('accounting.budgets.index') }}">{{ __('app.budgets') }}</a></li>
-                            <li class="breadcrumb-item active">{{ __('app.create_budget') }}</li>
-                        </ul>
-                    </div>
-                </div>
-            </div>
-        </div>
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => __('app.budgets'), 'url' => route('accounting.budgets.index'), 'icon' => 'bx bx-chart'],
+            ['label' => __('app.create_budget'), 'url' => '#', 'icon' => 'bx bx-plus']
+        ]" />
+        <h6 class="mb-0 text-uppercase">{{ __('app.create_budget') }}</h6>
+        <hr />
 
         <div class="row">
             <div class="col-12">
