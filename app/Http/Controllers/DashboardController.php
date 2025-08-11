@@ -45,6 +45,7 @@ class DashboardController extends Controller
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
         ->latest()
+        ->take(5)
         ->get();
         
         $recentReceipts = Receipt::whereHas('branch', function($query) use ($company) {
@@ -53,6 +54,7 @@ class DashboardController extends Controller
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch', 'customer'])
         ->latest()
+        ->take(5)
         ->get();
             
         // Get bank reconciliation stats
@@ -69,6 +71,9 @@ class DashboardController extends Controller
 
         $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
         info('penaltyBalance'.$penaltyBalance);
+        
+        // Get previous year comparative data
+        $previousYearData = $this->getPreviousYearData();
             
         return view('dashboard', compact(
             'balanceSheetData',
@@ -77,7 +82,8 @@ class DashboardController extends Controller
             'recentPayments', 
             'recentReceipts',
             'bankReconciliationStats',
-            'penaltyBalance'
+            'penaltyBalance',
+            'previousYearData'
         ));
     }
     
@@ -234,4 +240,102 @@ class DashboardController extends Controller
             'profitLoss' => $profitLoss
         ];
     }
-}
+    
+    private function getPreviousYearData()
+    {
+        $company = auth()->user()->company;
+        $currentYear = date('Y');
+        $previousYear = $currentYear - 1;
+        
+        // Get previous year financial data by account
+        $previousYearData = DB::table('gl_transactions')
+            ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
+            ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
+            ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
+            ->where('account_class_groups.company_id', $company->id)
+            ->whereYear('gl_transactions.date', $previousYear)
+            ->select(
+                'chart_accounts.id as account_id',
+                'chart_accounts.account_name as account',
+                'account_class.name as class_name',
+                'account_class_groups.name as group_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
+            )
+            ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class.name', 'account_class_groups.name')
+            ->get();
+            
+        // Group by account class and calculate balances
+        $previousYearAssets = [];
+        $previousYearLiabilities = [];
+        $previousYearEquitys = [];
+        $previousYearRevenues = [];
+        $previousYearExpense = [];
+        
+        foreach ($previousYearData as $account) {
+            // Calculate balance based on account class
+            $balance = 0;
+            
+            // Categorize based on account class
+            switch (strtolower($account->class_name)) {
+                case 'assets':
+                    $balance = $account->debit_total - $account->credit_total; // Assets: debit increases
+                    $previousYearAssets[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
+                    break;
+                case 'liabilities':
+                    $balance = $account->credit_total - $account->debit_total; // Liabilities: credit increases
+                    $previousYearLiabilities[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
+                    break;
+                case 'equity':
+                    $balance = $account->credit_total - $account->debit_total; // Equity: credit increases
+                    $previousYearEquitys[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
+                    break;
+                case 'income':
+                case 'revenue':
+                    $balance = $account->credit_total - $account->debit_total; // Revenue: credit increases
+                    $previousYearRevenues[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
+                    break;
+                case 'expenses':
+                case 'expense':
+                    $balance = $account->debit_total - $account->credit_total; // Expenses: debit increases
+                    $previousYearExpense[$account->group_name][] = [
+                        'account_id' => $account->account_id,
+                        'account' => $account->account,
+                        'sum' => $balance
+                    ];
+                    break;
+            }
+        }
+        
+        // Calculate previous year profit/loss
+        $sumRevenue = collect($previousYearRevenues)->flatten(1)->sum('sum');
+        $sumExpense = collect($previousYearExpense)->flatten(1)->sum('sum');
+        $previousYearProfitLoss = $sumRevenue - $sumExpense;
+        
+        return [
+            'year' => $previousYear,
+            'chartAccountsAssets' => $previousYearAssets,
+            'chartAccountsLiabilities' => $previousYearLiabilities,
+            'chartAccountsEquitys' => $previousYearEquitys,
+            'chartAccountsRevenues' => $previousYearRevenues,
+            'chartAccountsExpense' => $previousYearExpense,
+            'profitLoss' => $previousYearProfitLoss
+        ];
+    }
+} 

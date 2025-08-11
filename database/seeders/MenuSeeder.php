@@ -25,14 +25,7 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => [],
             ],
-            'Users' => [
-                'icon' => 'bx bx-user',
-                'visibleRoutes' => [
-                    ['name' => 'User List', 'route' => 'users.index'],
-                    ['name' => 'Add New User', 'route' => 'users.create'],
-                ],
-                'hiddenRoutes' => ['users.edit', 'users.destroy', 'users.show', 'users.status', 'users.roles'],
-            ],
+
             'Settings' => [
                 'icon' => 'bx bx-cog',
                 'visibleRoutes' => [
