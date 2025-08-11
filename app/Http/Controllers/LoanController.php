@@ -94,6 +94,7 @@ class LoanController extends Controller
 
     public function store(Request $request)
     {
+        
         $validated = $request->validate([
             'product_id' => 'required|exists:loan_products,id',
             'period' => 'required|integer|min:1',
