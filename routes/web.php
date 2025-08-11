@@ -35,6 +35,7 @@ use App\Http\Controllers\GroupMemberController;
 use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LoanReportController;
+use App\Http\Controllers\LoanRepaymentController;
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -481,6 +482,13 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loans/{loan}/guarantors', [LoanController::class, 'addGuarantor'])->name('loans.addGuarantor');
     Route::delete('/loans/{loan}/guarantors/{guarantor}', [LoanController::class, 'removeGuarantor'])->name('loans.removeGuarantor');
 
+    // Loan Repayment Routes
+    Route::post('/repayments', [LoanRepaymentController::class, 'store'])->name('repayments.store');
+    Route::get('/repayments/history/{loanId}', [LoanRepaymentController::class, 'getRepaymentHistory'])->name('repayments.history');
+    Route::get('/repayments/schedule/{scheduleId}', [LoanRepaymentController::class, 'getScheduleDetails'])->name('repayments.schedule-details');
+    Route::post('/repayments/remove-penalty/{scheduleId}', [LoanRepaymentController::class, 'removePenalty'])->name('repayments.remove-penalty');
+    Route::post('/repayments/calculate-schedule/{loanId}', [LoanRepaymentController::class, 'calculateSchedule'])->name('repayments.calculate-schedule');
+    Route::post('/repayments/bulk', [LoanRepaymentController::class, 'bulkRepayment'])->name('repayments.bulk');
 
 
 });

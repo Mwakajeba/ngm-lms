@@ -300,19 +300,57 @@
                                         <th class="text-uppercase fw-bold text-secondary">Interest</th>
                                         <th class="text-uppercase fw-bold text-secondary">Penalty Amount</th>
                                         <th class="text-uppercase fw-bold text-secondary">Fee Amount</th>
-                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Total Installment</th>
+                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Total Due</th>
+                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Paid Amount</th>
+                                        <th class="text-uppercase fw-bold text-secondary text-end pe-4">Remaining</th>
+                                        <th class="text-uppercase fw-bold text-secondary text-center">Status</th>
+                                        <th class="text-uppercase fw-bold text-secondary text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($loan->schedule as $index => $item)
-                                    <tr>
+                                    @foreach($loan->schedule->sortBy('due_date') as $index => $item)
+                                    @php
+                                        $totalDue = $item->total_due;
+                                        $paidAmount = $item->paid_amount;
+                                        $remainingAmount = $item->remaining_amount;
+                                        $isFullyPaid = $item->is_fully_paid;
+                                        $paymentPercentage = $item->payment_percentage;
+                                    @endphp
+                                    <tr class="{{ $isFullyPaid ? 'table-success' : ($paidAmount > 0 ? 'table-warning' : '') }}">
                                         <td>{{ $index + 1 }}</td>
                                         <td class="ps-4">{{ \Carbon\Carbon::parse($item->due_date)->format('M d, Y') }}</td>
                                         <td>{{ number_format($item->principal, 2) }}</td>
                                         <td>{{ number_format($item->interest, 2) }}</td>
                                         <td>{{ number_format($item->penalty_amount, 2) }}</td>
                                         <td>{{ number_format($item->fee_amount, 2) }}</td>
-                                        <td class="text-end pe-4">{{ number_format($item->principal + $item->interest + $item->fee_amount + $item->penalty_amount, 2) }}</td>
+                                        <td class="text-end pe-4 fw-bold">{{ number_format($totalDue, 2) }}</td>
+                                        <td class="text-end pe-4 text-success">{{ number_format($paidAmount, 2) }}</td>
+                                        <td class="text-end pe-4 text-danger">{{ number_format($remainingAmount, 2) }}</td>
+                                        <td class="text-center">
+                                            @if($isFullyPaid)
+                                                <span class="badge bg-success">Paid</span>
+                                            @elseif($paidAmount > 0)
+                                                <span class="badge bg-warning text-dark">{{ $paymentPercentage }}%</span>
+                                            @else
+                                                <span class="badge bg-danger">Unpaid</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-center">
+                                            @if($isFullyPaid)
+                                                <button type="button" class="btn btn-sm btn-success" disabled>
+                                                    <i class="bx bx-check-circle me-1"></i>Paid
+                                                </button>
+                                            @else
+                                                <button type="button" class="btn btn-sm btn-primary" onclick="repayScheduleItem('{{ $item->id }}', '{{ number_format($remainingAmount, 2) }}', '{{ \Carbon\Carbon::parse($item->due_date)->format('M d, Y') }}', '{{ number_format($item->principal, 2) }}', '{{ number_format($item->interest, 2) }}', '{{ number_format($item->penalty_amount, 2) }}', '{{ number_format($item->fee_amount, 2) }}')">
+                                                    <i class="bx bx-credit-card me-1"></i>Repay
+                                                </button>
+                                            @endif
+                                            @if($item->penalty_amount > 0 && !$isFullyPaid)
+                                            <button type="button" class="btn btn-sm btn-warning ms-1" onclick="removePenalty('{{ $item->id }}', '{{ number_format($item->penalty_amount, 2) }}')">
+                                                <i class="bx bx-x-circle me-1"></i>Remove Penalty
+                                            </button>
+                                            @endif
+                                        </td>
                                     </tr>
                                     @endforeach
                                 </tbody>
@@ -753,15 +791,169 @@
     </div>
 </div>
 
+<!-- Repay Schedule Modal -->
+<div class="modal fade" id="repayScheduleModal" tabindex="-1" aria-labelledby="repayScheduleModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form action="{{ route('repayments.store') }}" method="POST" class="modal-content">
+            @csrf
+            <input type="hidden" name="loan_id" value="{{ $loan->id }}">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="repayScheduleModalLabel">
+                    <i class="bx bx-credit-card me-2"></i>Repay Schedule Item
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <input type="hidden" name="schedule_id" id="schedule_id">
+                
+                <!-- Schedule Details Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Schedule Details</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Due Date</label>
+                            <p id="modal_due_date" class="fw-bold text-dark mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Total Installment</label>
+                            <p id="modal_total_installment" class="fw-bold text-success mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Breakdown Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3"><i class="bx bx-calculator me-2"></i>Amount Breakdown</h6>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Principal</label>
+                            <p id="modal_principal" class="fw-bold text-dark mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Interest</label>
+                            <p id="modal_interest" class="fw-bold text-dark mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Penalty</label>
+                            <p id="modal_penalty" class="fw-bold text-danger mb-0"></p>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="mb-3">
+                            <label class="form-label text-muted small">Fee</label>
+                            <p id="modal_fee" class="fw-bold text-warning mb-0"></p>
+                        </div>
+                    </div>
+                </div>
+
+                <hr class="my-4">
+
+                <!-- Payment Details Section -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3"><i class="bx bx-credit-card me-2"></i>Payment Details</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="payment_date" class="form-label">Payment Date</label>
+                            <input type="date" class="form-control" name="payment_date" id="payment_date" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="payment_amount" class="form-label">Amount</label>
+                            <input type="number" step="0.01" class="form-control" name="amount" id="payment_amount" required>
+                        </div>
+                    </div>
+                    <div class="col-md-12">
+                        <div class="mb-3">
+                            <label for="bank_account_id" class="form-label">Bank Account</label>
+                            <select class="form-select" name="bank_account_id" id="bank_account_id" required>
+                                <option value="">-- Select Bank Account --</option>
+                                @foreach($bankAccounts ?? [] as $bankAccount)
+                                <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} - {{ $bankAccount->account_number }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bx bx-check me-1"></i>Add Repayment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
 <script>
+    // Toast notification function
+    function showToast(title, message, type = 'info') {
+        const toastClass = type === 'success' ? 'bg-success' : 
+                          type === 'error' ? 'bg-danger' : 
+                          type === 'warning' ? 'bg-warning' : 'bg-info';
+        
+        const toastHtml = `
+            <div class="toast align-items-center text-white ${toastClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                <div class="d-flex">
+                    <div class="toast-body">
+                        <strong>${title}</strong><br>
+                        ${message}
+                    </div>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                </div>
+            </div>
+        `;
+        
+        // Create toast container if it doesn't exist
+        let toastContainer = document.getElementById('toast-container');
+        if (!toastContainer) {
+            toastContainer = document.createElement('div');
+            toastContainer.id = 'toast-container';
+            toastContainer.className = 'toast-container position-fixed top-0 end-0 p-3';
+            toastContainer.style.zIndex = '9999';
+            document.body.appendChild(toastContainer);
+        }
+        
+        // Add toast to container
+        toastContainer.insertAdjacentHTML('beforeend', toastHtml);
+        
+        // Get the last added toast and show it
+        const toastElement = toastContainer.lastElementChild;
+        const toast = new bootstrap.Toast(toastElement, {
+            autohide: true,
+            delay: 3000
+        });
+        toast.show();
+        
+        // Remove toast element after it's hidden
+        toastElement.addEventListener('hidden.bs.toast', function() {
+            toastElement.remove();
+        });
+    }
+
     $(document).ready(function() {
         $('#loansTableDetail').DataTable({
             responsive: true,
             order: [
-                [1, 'asc']
+                [1, 'asc'] // Sort by due date column (index 1) in ascending order
             ],
             pageLength: 10,
             language: {
@@ -781,17 +973,6 @@
             ]
         });
 
-        // Handle repayment form submission
-        $('#repaymentForm').on('submit', function(e) {
-            e.preventDefault();
-            Swal.fire({
-                title: 'Feature Not Implemented',
-                text: 'Repayment functionality will be implemented soon.',
-                icon: 'info',
-                confirmButtonText: 'OK'
-            });
-        });
-
         // Handle collateral form submission
         $('#collateralForm').on('submit', function(e) {
             e.preventDefault();
@@ -802,7 +983,139 @@
                 confirmButtonText: 'OK'
             });
         });
+
+        // Handle repayment schedule form submission
+        $('#repayScheduleModal form').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Disable submit button and show loading
+            submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Processing...');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    // Close modal
+                    $('#repayScheduleModal').modal('hide');
+                    
+                    // Show success toast
+                    showToast('Success!', 'Repayment recorded successfully!', 'success');
+                    
+                    // Reload the page to show updated data
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred while processing the repayment.';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseText) {
+                        // Try to extract error message from response
+                        const match = xhr.responseText.match(/<title[^>]*>([^<]+)<\/title>/);
+                        if (match) {
+                            errorMessage = match[1];
+                        }
+                    }
+                    
+                    Swal.fire({
+                        title: 'Error!',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
     });
+
+    function repayScheduleItem(scheduleId, amount, dueDate, principal, interest, penalty, fee) {
+        // Set modal values
+        document.getElementById('schedule_id').value = scheduleId;
+        document.getElementById('modal_due_date').textContent = dueDate;
+        document.getElementById('modal_total_installment').textContent = 'TZS ' + amount;
+        document.getElementById('modal_principal').textContent = 'TZS ' + principal;
+        document.getElementById('modal_interest').textContent = 'TZS ' + interest;
+        document.getElementById('modal_penalty').textContent = 'TZS ' + penalty;
+        document.getElementById('modal_fee').textContent = 'TZS ' + fee;
+        document.getElementById('payment_amount').value = amount.replace(/[^\d.]/g, ''); // Remove TZS and commas
+        document.getElementById('payment_date').value = new Date().toISOString().split('T')[0]; // Set today's date
+        
+        // Show the modal
+        const modal = new bootstrap.Modal(document.getElementById('repayScheduleModal'));
+        modal.show();
+    }
+
+    function removePenalty(scheduleId, penaltyAmount) {
+        Swal.fire({
+            title: 'Remove Penalty',
+            html: `
+                <div class="text-start">
+                    <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
+                    <p class="text-muted">This will remove the penalty from this schedule item.</p>
+                    <div class="mb-3">
+                        <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
+                        <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
+                    </div>
+                </div>
+            `,
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Remove Penalty',
+            cancelButtonText: 'Cancel',
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            preConfirm: () => {
+                return {
+                    reason: document.getElementById('penalty_reason').value
+                };
+            }
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Send AJAX request to remove penalty
+                $.ajax({
+                    url: `/repayments/remove-penalty/${scheduleId}`,
+                    method: 'POST',
+                    data: {
+                        reason: result.value.reason,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        showToast('Success!', 'Penalty removed successfully!', 'success');
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to remove penalty.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        
+                        Swal.fire({
+                            title: 'Error!',
+                            text: errorMessage,
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                });
+            }
+        });
+    }
 
     function disburseLoan(loanId) {
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));

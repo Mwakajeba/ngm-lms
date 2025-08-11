@@ -150,10 +150,10 @@ class LoanProduct extends Model
      * Get the loans associated with this product
      */
     // TODO: Add loan_product_id to loans table and uncomment this relationship
-    // public function loans()
-    // {
-    //     return $this->hasMany(Loan::class);
-    // }
+    public function loans()
+    {
+        return $this->hasMany(Loan::class);
+    }
 
     /**
      * Get repayment order as array
