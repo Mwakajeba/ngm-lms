@@ -8,6 +8,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    
 
     steps:
       - name: Checkout repo
@@ -18,15 +19,20 @@ jobs:
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      - name: Add server to known_hosts
+        run: |
+          mkdir -p ~/.ssh
+          ssh-keyscan -H 161.97.75.172 >> ~/.ssh/known_hosts
+
       - name: Sync files to server
         run: |
-          rsync -avz --delete --exclude='.git*' --exclude='node_modules' ./ root@161.97.75.172:/var/www/smartfinance
+          rsync -avz --delete --exclude='.git*' --exclude='node_modules' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/smartfinance
 
       - name: Run composer install on server
-        run: ssh root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader"
+        run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader"
 
       - name: Run migrations on server
-        run: ssh root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
+        run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
 
       - name: Clear caches on server
-        run: ssh root@161.97.75.172 "cd /var/www/smartfinance && php artisan config:cache && php artisan route:cache && php artisan view:cache"
+        run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan config:cache && php artisan route:cache && php artisan view:cache"
