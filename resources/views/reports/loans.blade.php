@@ -66,14 +66,29 @@
                                 </div>
                             </div>
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-warning">
+                                <div class="card border-primary">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-error-circle fs-1 text-warning"></i>
+                                            <i class="bx bx-dollar-circle fs-1 text-primary"></i>
                                         </div>
                                         <h5 class="card-title">Loan Disbursement Report</h5>
-                                        <p class="card-text">Access a detailed summary of all loans that have been successfully disbursed to clients.</p>
+                                        <p class="card-text">Generate a detailed summary of all loans disbursed within a specific period.</p>
                                         <a href="{{ route('accounting.loans.reports.disbursed') }}" class="btn btn-success">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-money fs-1 text-success"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Repayments Report</h5>
+                                        <p class="card-text">Generate a detailed summary of all loan repayments received within a specific period.</p>
+                                        <a href="{{ route('accounting.loans.reports.repayment') }}" class="btn btn-success">
                                             <i class="bx bx-file me-1"></i> Generate Report
                                         </a>
                                     </div>
