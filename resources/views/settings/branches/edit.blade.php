@@ -5,6 +5,12 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
+            ['label' => 'Branch Settings', 'url' => route('settings.branches'), 'icon' => 'bx bx-building'],
+            ['label' => 'Edit Branch', 'url' => '#', 'icon' => 'bx bx-edit']
+        ]" />
         <h6 class="mb-0 text-uppercase">EDIT BRANCH</h6>
         <hr/>
 

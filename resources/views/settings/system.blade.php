@@ -5,6 +5,11 @@
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
+            ['label' => 'System Settings', 'url' => '#', 'icon' => 'bx bx-cog']
+        ]" />
         <h6 class="mb-0 text-uppercase">SYSTEM SETTINGS</h6>
         <hr/>
 
