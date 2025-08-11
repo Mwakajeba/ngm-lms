@@ -25,7 +25,7 @@ jobs:
 
       - name: Sync files to server
         run: |
-          rsync -avz --delete --exclude='.git*' --exclude='node_modules' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/smartfinance
+          rsync -avz --delete --exclude='.git*' --exclude='node_modules' --exclude='.env' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/smartfinance
 
       - name: Run composer install on server
         run: ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
