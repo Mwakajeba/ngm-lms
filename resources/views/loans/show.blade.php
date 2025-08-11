@@ -490,27 +490,41 @@
                                 <thead class="bg-light">
                                     <tr>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary ps-4">#</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Date</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Payment Date</th>
                                         <th scope="col" class="text-uppercase fw-bold text-secondary">Due Date</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Principal Paid</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Interest Paid</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Amount Paid</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Type</th>
-                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Actions</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Principal</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Interest</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Penalty</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Fee</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-end pe-4">Total Paid</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary">Bank Account</th>
+                                        <th scope="col" class="text-uppercase fw-bold text-secondary text-center">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($loan->repayments as $index => $repayment)
+                                    @foreach($loan->repayments->sortByDesc('payment_date') as $index => $repayment)
                                     <tr>
                                         <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                         <td>{{ \Carbon\Carbon::parse($repayment->payment_date)->format('M d, Y') }}</td>
                                         <td>{{ \Carbon\Carbon::parse($repayment->due_date)->format('M d, Y') }}</td>
-                                        <td>{{ number_format($repayment->principal, 2) }}</td>
-                                        <td>{{ number_format($repayment->interest, 2) }}</td>
-                                        <td>{{ number_format($repayment->amount_paid, 2) }}</td>
-                                        <td>{{ ucfirst($repayment->payment_type ?? 'Regular') }}</td>
-                                        <td class="text-end pe-4">
-                                            <a href="#" class="btn btn-sm btn-outline-secondary">View</a>
+                                        <td class="text-success">{{ number_format($repayment->principal, 2) }}</td>
+                                        <td class="text-info">{{ number_format($repayment->interest, 2) }}</td>
+                                        <td class="text-danger">{{ number_format($repayment->penalt_amount, 2) }}</td>
+                                        <td class="text-warning">{{ number_format($repayment->fee_amount, 2) }}</td>
+                                        <td class="text-end pe-4 fw-bold">{{ number_format($repayment->amount_paid, 2) }}</td>
+                                        <td>{{ $repayment->bankAccount->name ?? 'N/A' }}</td>
+                                        <td class="text-center">
+                                            <div class="btn-group" role="group">
+                                                <button type="button" class="btn btn-sm btn-outline-primary" onclick="printReceipt({{ $repayment->id }})" title="Print Receipt">
+                                                    Print
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-secondary" onclick="editRepayment({{ $repayment->id }})" title="Edit Repayment">
+                                                    Edit
+                                                </button>
+                                                <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteRepayment({{ $repayment->id }})" title="Delete Repayment">
+                                                    Delete
+                                                </button>
+                                            </div>
                                         </td>
                                     </tr>
                                     @endforeach
@@ -900,6 +914,49 @@
     </div>
 </div>
 
+<!-- Edit Repayment Modal -->
+<div class="modal fade" id="editRepaymentModal" tabindex="-1" aria-labelledby="editRepaymentModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <form id="editRepaymentForm" method="POST" class="modal-content">
+            @csrf
+            @method('PUT')
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="editRepaymentModalLabel">
+                    <i class="bx bx-edit me-2"></i>Edit Repayment
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label for="edit_payment_date" class="form-label">Payment Date</label>
+                    <input type="date" class="form-control" name="payment_date" id="edit_payment_date" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit_amount" class="form-label">Amount</label>
+                    <input type="number" step="0.01" class="form-control" name="amount" id="edit_amount" required>
+                </div>
+                <div class="mb-3">
+                    <label for="edit_bank_account_id" class="form-label">Bank Account</label>
+                    <select class="form-select" name="bank_account_id" id="edit_bank_account_id" required>
+                        <option value="">-- Select Bank Account --</option>
+                        @foreach($bankAccounts ?? [] as $bankAccount)
+                        <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} - {{ $bankAccount->account_number }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-secondary">
+                    <i class="bx bx-check me-1"></i>Update Repayment
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 @endsection
 
 @push('scripts')
@@ -1226,5 +1283,353 @@
             }
         });
     }
+
+    // Repayment Management Functions
+    function editRepayment(repaymentId) {
+        // Fetch repayment data
+        $.ajax({
+            url: `/repayments/${repaymentId}/edit`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const repayment = response.repayment;
+                    
+                    // Set form action
+                    $('#editRepaymentForm').attr('action', `/repayments/${repaymentId}`);
+                    
+                    // Populate form fields
+                    $('#edit_payment_date').val(repayment.payment_date);
+                    $('#edit_amount').val(repayment.cash_deposit);
+                    $('#edit_bank_account_id').val(repayment.bank_account_id);
+                    
+                    // Show modal
+                    $('#editRepaymentModal').modal('show');
+                }
+            },
+            error: function(xhr) {
+                showToast('Error!', 'Failed to load repayment data', 'error');
+            }
+        });
+    }
+
+    function deleteRepayment(repaymentId) {
+        Swal.fire({
+            title: 'Delete Repayment?',
+            text: "This will also delete associated receipts and GL transactions. This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/repayments/${repaymentId}`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('Success!', response.message, 'success');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showToast('Error!', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to delete repayment.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showToast('Error!', errorMessage, 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    function printReceipt(repaymentId) {
+        // Show loading
+        Swal.fire({
+            title: 'Generating Receipt...',
+            text: 'Please wait while we prepare your receipt for printing.',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        $.ajax({
+            url: `/repayments/${repaymentId}/print`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    Swal.close();
+                    
+                    // Generate thermal printer receipt
+                    const receiptData = response.receipt_data;
+                    printThermalReceipt(receiptData);
+                    
+                    showToast('Success!', 'Receipt generated successfully!', 'success');
+                } else {
+                    Swal.close();
+                    showToast('Error!', response.message, 'error');
+                }
+            },
+            error: function(xhr) {
+                Swal.close();
+                let errorMessage = 'Failed to generate receipt.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showToast('Error!', errorMessage, 'error');
+            }
+        });
+    }
+
+    function printThermalReceipt(receiptData) {
+        // Create a new window for thermal printer (narrow width)
+        const printWindow = window.open('', '_blank', 'width=320,height=600');
+        
+        // Set the document title to customer name for printing
+        const customerName = receiptData.customer_name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+        const fileName = `Receipt_${customerName}_${receiptData.date}`;
+        
+        const receiptHtml = `
+            <!DOCTYPE html>
+            <html>
+            <head>
+                <title>${fileName}</title>
+                <style>
+                    @page {
+                        size: 80mm 200mm;
+                        margin: 0;
+                        padding: 0;
+                    }
+                    
+                    @media print {
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            font-size: 10px; 
+                            margin: 0; 
+                            padding: 5px;
+                            width: 280px;
+                            max-width: 280px;
+                            min-width: 280px;
+                            page-break-after: avoid;
+                            page-break-before: avoid;
+                        }
+                        .header { text-align: center; margin-bottom: 8px; }
+                        .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                        .subtitle { font-size: 10px; margin-bottom: 8px; }
+                        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                        .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                        .label { font-weight: bold; }
+                        .value { text-align: right; }
+                        .total { font-weight: bold; font-size: 12px; }
+                        .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                        .center { text-align: center; }
+                        .bold { font-weight: bold; }
+                        
+                        /* Force thermal printer format */
+                        html, body {
+                            width: 280px !important;
+                            max-width: 280px !important;
+                            min-width: 280px !important;
+                        }
+                    }
+                    
+                    body { 
+                        font-family: 'Courier New', monospace; 
+                        font-size: 10px; 
+                        margin: 0; 
+                        padding: 5px;
+                        width: 280px;
+                        max-width: 280px;
+                        min-width: 280px;
+                    }
+                    .header { text-align: center; margin-bottom: 8px; }
+                    .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                    .subtitle { font-size: 10px; margin-bottom: 8px; }
+                    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                    .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                    .label { font-weight: bold; }
+                    .value { text-align: right; }
+                    .total { font-weight: bold; font-size: 12px; }
+                    .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                    .center { text-align: center; }
+                    .bold { font-weight: bold; }
+                </style>
+            </head>
+            <body>
+                <div class="header">
+                    <div class="title">SMARTFINANCE</div>
+                    <div class="subtitle">Loan Repayment Receipt</div>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="row">
+                    <span class="label">Customer:</span>
+                    <span class="value">${receiptData.customer_name}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Loan No:</span>
+                    <span class="value">${receiptData.loan_number}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="row">
+                    <span class="label">Receipt No:</span>
+                    <span class="value">${receiptData.receipt_number}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Date:</span>
+                    <span class="value">${receiptData.date}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Time:</span>
+                    <span class="value">${new Date().toLocaleTimeString()}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Bank Account:</span>
+                    <span class="value">${receiptData.bank_account}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="center bold">PAYMENT BREAKDOWN</div>
+                
+                <div class="row">
+                    <span class="label">Principal:</span>
+                    <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Interest:</span>
+                    <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Penalty:</span>
+                    <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Fee:</span>
+                    <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="row total">
+                    <span class="label">TOTAL PAID:</span>
+                    <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="row">
+                    <span class="label">Received By:</span>
+                    <span class="value">${receiptData.received_by}</span>
+                </div>
+                <div class="row">
+                    <span class="label">Branch:</span>
+                    <span class="value">${receiptData.branch}</span>
+                </div>
+                
+                <div class="divider"></div>
+                
+                <div class="footer">
+                    <div class="bold">Thank you for your payment!</div>
+                    <div>Keep this receipt for your records</div>
+                    <div style="margin-top: 5px;">--- End of Receipt ---</div>
+                </div>
+            </body>
+            </html>
+        `;
+        
+        printWindow.document.write(receiptHtml);
+        printWindow.document.close();
+        
+        // Print after a short delay
+        setTimeout(() => {
+            // Set print options for thermal printer
+            const printOptions = {
+                silent: false,
+                printBackground: false,
+                color: false,
+                margin: {
+                    marginType: 'none',
+                    top: 0,
+                    bottom: 0,
+                    left: 0,
+                    right: 0
+                },
+                landscape: false,
+                pagesPerSheet: 1,
+                collate: false,
+                copies: 1,
+                header: '',
+                footer: ''
+            };
+            
+            // Try to use print options if available (Electron/Chrome)
+            if (printWindow.print) {
+                printWindow.print();
+            } else {
+                // Fallback for regular browsers
+                printWindow.document.execCommand('print', false, null);
+            }
+            
+            printWindow.close();
+        }, 500);
+    }
+
+    // Handle edit repayment form submission
+    $('#editRepaymentForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        // Disable submit button and show loading
+        submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Updating...');
+        
+        $.ajax({
+            url: form.attr('action'),
+            method: 'PUT',
+            data: form.serialize(),
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                // Close modal
+                $('#editRepaymentModal').modal('hide');
+                
+                if (response.success) {
+                    showToast('Success!', response.message, 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('Error!', response.message, 'error');
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Failed to update repayment.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showToast('Error!', errorMessage, 'error');
+            },
+            complete: function() {
+                // Re-enable submit button
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
 </script>
 @endpush
