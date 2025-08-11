@@ -429,14 +429,14 @@
             </div>
 
             <div class="tab-pane fade" id="documents" role="tabpanel">
-                @can('manage loan documents')
+                <!-- @can('manage loan documents') -->
                 <div class="d-flex justify-content-between align-items-center mb-4">
                     <h5 class="mb-0 text-dark">Documents</h5>
                     <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal" data-bs-target="#uploadDocumentModal">
                         <i class="bx bx-cloud-upload me-2 font-18"></i>Upload Document
                     </button>
                 </div>
-                @endcan
+                <!-- @endcan -->
 
                 @if($loan->loanFiles->count())
                 <div class="card radius-10">
@@ -458,7 +458,7 @@
                                     <tr>
                                         <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                         <td>{{ $doc->fileType->name }}</td>
-                                        @can('view loan documents')
+                                        <!-- @can('view loan documents') -->
                                         <td class="text-end pe-4">
                                             <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank" class="btn btn-sm btn-outline-secondary me-2">
                                                 View
@@ -467,7 +467,7 @@
                                                 Download
                                             </a>
                                         </td>
-                                        @endcan
+                                        <!-- @endcan -->
                                     </tr>
                                     @endforeach
                                 </tbody>
