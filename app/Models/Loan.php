@@ -119,6 +119,10 @@ class Loan extends Model
             ->withTimestamps();
     }
 
+    public function loanOfficer(){
+        return $this->belongsTo(User::class);
+    }
+
     // New approval relationships
     public function approvals()
     {

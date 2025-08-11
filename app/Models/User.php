@@ -166,4 +166,8 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+
+    public function loans(){
+        return $this->hasMany(Loan::class, 'loan_officer_id');
+    }
 }
