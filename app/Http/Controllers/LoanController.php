@@ -152,6 +152,7 @@ class LoanController extends Controller
                     'interest_cycle' => $validated['interest_cycle'],
                     'loan_officer_id' => $validated['loan_officer'],
                 ]);
+                info('loaan-->'.$loan);
 
                 // Step 2: Calculate interest and repayment dates
                 $interestAmount = $loan->calculateInterestAmount($validated['interest']);
@@ -320,6 +321,8 @@ class LoanController extends Controller
             'amount' => 'required|numeric|min:0',
             'date_applied' => 'required|date|before_or_equal:today',
             'customer_id' => 'required|exists:customers,id',
+            'interest_cycle' => 'required|string|max:50',
+            'loan_officer' => 'required|exists:users,id',
             'group_id' => 'required|exists:groups,id',
             'account_id' => 'required|exists:bank_accounts,id',
             'sector' => 'required|string',
@@ -359,6 +362,8 @@ class LoanController extends Controller
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
                     'disbursed_on' => $validated['date_applied'],
+                    'interest_cycle' => $validated['interest_cycle'],
+                    'loan_officer_id' => $validated['loan_officer'],
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
                 ]);
