@@ -70,103 +70,125 @@
 <body>
     <div class="header">
         <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
-        <div class="report-title">ACCOUNTING NOTES</div>
+        <div class="report-title">ACCOUNT CLASSES REPORT</div>
         <div class="report-date">AS AT {{ \Carbon\Carbon::parse($accountingNotesData['as_of_date'])->format('d-m-Y') }}</div>
     </div>
 
+    <!-- Summary Statistics -->
     <table>
-        <!-- 1. Significant Accounting Policies -->
         <tr class="section-header">
-            <td colspan="2">1. SIGNIFICANT ACCOUNTING POLICIES</td>
+            <td colspan="4">SUMMARY STATISTICS</td>
         </tr>
-        
-        @foreach($accountingNotesData['accounting_policies'] as $policy => $details)
-            <tr class="subsection-header">
-                <td colspan="2">{{ $policy }}</td>
-            </tr>
-            <tr>
-                <td colspan="2">{{ $details['description'] }}</td>
-            </tr>
-            @foreach($details['details'] as $detail)
-                <tr>
-                    <td width="5%"></td>
-                    <td class="indent">• {{ $detail }}</td>
-                </tr>
-            @endforeach
-            <tr><td colspan="2" style="border: none; height: 10px;"></td></tr>
-        @endforeach
-
-        <!-- 2. Significant Transactions -->
-        <tr class="section-header">
-            <td colspan="2">2. SIGNIFICANT TRANSACTIONS</td>
+        <tr>
+            <td><strong>Total Account Classes:</strong></td>
+            <td>{{ $accountingNotesData['account_classes_data']['summary']['total_classes'] }}</td>
+            <td><strong>Total Account Groups:</strong></td>
+            <td>{{ $accountingNotesData['account_classes_data']['summary']['total_groups'] }}</td>
         </tr>
-        
-        @if(count($accountingNotesData['significant_transactions']) > 0)
-            <tr class="subsection-header">
-                <th>Date</th>
-                <th>Account</th>
-            </tr>
-            @foreach($accountingNotesData['significant_transactions'] as $transaction)
-                <tr>
-                    <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
-                    <td>{{ $transaction->account_name }} - {{ number_format($transaction->amount, 2) }}</td>
-                </tr>
-            @endforeach
-        @else
-            <tr>
-                <td colspan="2">No significant transactions during the period.</td>
-            </tr>
-        @endif
-
-        <!-- 3. Contingent Liabilities -->
-        <tr class="section-header">
-            <td colspan="2">3. CONTINGENT LIABILITIES</td>
+        <tr>
+            <td><strong>Total Chart Accounts:</strong></td>
+            <td>{{ $accountingNotesData['account_classes_data']['summary']['total_accounts'] }}</td>
+            <td><strong>Total Transactions:</strong></td>
+            <td>{{ number_format($accountingNotesData['account_classes_data']['summary']['total_transactions']) }}</td>
         </tr>
-        
-        @foreach($accountingNotesData['contingent_liabilities'] as $liability)
-            <tr class="subsection-header">
-                <td colspan="2">{{ $liability['description'] }}</td>
-            </tr>
-            <tr>
-                <td colspan="2">{{ $liability['notes'] }}</td>
-            </tr>
-            <tr><td colspan="2" style="border: none; height: 10px;"></td></tr>
-        @endforeach
-
-        <!-- 4. Related Party Transactions -->
-        <tr class="section-header">
-            <td colspan="2">4. RELATED PARTY TRANSACTIONS</td>
+        <tr>
+            <td><strong>Total Debit:</strong></td>
+            <td>{{ number_format($accountingNotesData['account_classes_data']['summary']['total_debit'], 2) }}</td>
+            <td><strong>Total Credit:</strong></td>
+            <td>{{ number_format($accountingNotesData['account_classes_data']['summary']['total_credit'], 2) }}</td>
         </tr>
-        
-        @foreach($accountingNotesData['related_party_transactions'] as $transaction)
-            <tr class="subsection-header">
-                <td colspan="2">{{ $transaction['party_name'] }} - {{ $transaction['transaction_type'] }}</td>
-            </tr>
-            <tr>
-                <td colspan="2">{{ $transaction['notes'] }}</td>
-            </tr>
-            <tr><td colspan="2" style="border: none; height: 10px;"></td></tr>
-        @endforeach
-
-        <!-- 5. Post-Balance Sheet Events -->
-        <tr class="section-header">
-            <td colspan="2">5. POST-BALANCE SHEET EVENTS</td>
+        <tr>
+            <td><strong>Net Amount:</strong></td>
+            <td colspan="3">{{ number_format($accountingNotesData['account_classes_data']['summary']['total_net'], 2) }}</td>
         </tr>
-        
-        @foreach($accountingNotesData['post_balance_sheet_events'] as $event)
-            <tr class="subsection-header">
-                <td colspan="2">{{ $event['event_description'] }}</td>
-            </tr>
-            <tr>
-                <td colspan="2">{{ $event['notes'] }}</td>
-            </tr>
-            <tr><td colspan="2" style="border: none; height: 10px;"></td></tr>
-        @endforeach
     </table>
 
+    <!-- Account Classes Hierarchical Detail -->
+    @php
+        $groupedData = collect($accountingNotesData['account_classes_data']['data'])->groupBy('class_name');
+    @endphp
+    
+    @foreach($groupedData as $className => $classData)
+        <!-- Account Class Section -->
+        <table>
+            <tr class="section-header">
+                <td colspan="6">{{ $className }}:</td>
+            </tr>
+        </table>
+        
+        @php
+            $groupedByGroup = $classData->groupBy('group_name');
+        @endphp
+        
+        @foreach($groupedByGroup as $groupName => $groupData)
+            <!-- Account Group Section -->
+            <table>
+                <tr class="subsection-header">
+                    <td colspan="6" style="padding-left: 20px;">{{ $groupName }}</td>
+                </tr>
+                
+                @if($accountingNotesData['account_classes_data']['level_of_detail'] === 'detailed')
+                    <!-- Detailed View - Show individual accounts -->
+                    <tr class="subsection-header">
+                        <th style="width: 15%; padding-left: 40px;">Account Code</th>
+                        <th style="width: 35%;">Account Name</th>
+                        <th style="width: 12%; text-align: center;">Total Debit</th>
+                        <th style="width: 12%; text-align: center;">Total Credit</th>
+                        <th style="width: 12%; text-align: center;">Net Amount</th>
+                        <th style="width: 14%; text-align: center;">Transactions</th>
+                    </tr>
+                    
+                    @foreach($groupData as $item)
+                        <tr>
+                            <td style="padding-left: 40px;"><code>{{ $item->account_code }}</code></td>
+                            <td>{{ $item->account_name }}</td>
+                            <td class="text-center">{{ number_format($item->total_debit, 2) }}</td>
+                            <td class="text-center">{{ number_format($item->total_credit, 2) }}</td>
+                            <td class="text-center"><strong>{{ number_format($item->net_amount, 2) }}</strong></td>
+                            <td class="text-center">{{ $item->transaction_count }}</td>
+                        </tr>
+                    @endforeach
+                @else
+                    <!-- Summary View - Show group totals -->
+                    <tr class="subsection-header">
+                        <th style="width: 25%; padding-left: 40px; text-align: center;">Total Debit</th>
+                        <th style="width: 25%; text-align: center;">Total Credit</th>
+                        <th style="width: 25%; text-align: center;">Net Amount</th>
+                        <th style="width: 25%; text-align: center;">Accounts | Transactions</th>
+                    </tr>
+                    
+                    @php
+                        $groupTotalDebit = $groupData->sum('total_debit');
+                        $groupTotalCredit = $groupData->sum('total_credit');
+                        $groupNetAmount = $groupTotalDebit - $groupTotalCredit;
+                        $groupAccountCount = $groupData->sum('account_count');
+                        $groupTransactionCount = $groupData->sum('transaction_count');
+                    @endphp
+                    
+                    <tr>
+                        <td style="padding-left: 40px; text-align: center;">{{ number_format($groupTotalDebit, 2) }}</td>
+                        <td class="text-center">{{ number_format($groupTotalCredit, 2) }}</td>
+                        <td class="text-center"><strong>{{ number_format($groupNetAmount, 2) }}</strong></td>
+                        <td class="text-center">{{ $groupAccountCount }} | {{ $groupTransactionCount }}</td>
+                    </tr>
+                @endif
+            </table>
+            
+            <!-- Add spacing between groups -->
+            <table>
+                <tr><td colspan="6" style="border: none; height: 10px;"></td></tr>
+            </table>
+        @endforeach
+        
+        <!-- Add spacing between classes -->
+        <table>
+            <tr><td colspan="6" style="border: none; height: 20px;"></td></tr>
+        </table>
+    @endforeach
+
     <div style="margin-top: 30px; font-size: 9px; color: #666;">
-        <p><strong>Report Generated:</strong> {{ now()->format('d-m-Y H:i:s') }}</p>
-        <p><strong>Generated By:</strong> {{ auth()->user()->name ?? 'System' }}</p>
+        <p><strong>This report was generated on {{ now()->format('d/m/Y H:i:s') }} by {{ $company->name ?? 'SAFCO FINTECH LTD' }}</strong></p>
+        <p><strong>Report Period:</strong> 01/01/2025 to {{ \Carbon\Carbon::parse($accountingNotesData['as_of_date'])->format('d/m/Y') }}</p>
         <p><strong>Basis of Preparation:</strong> {{ ucfirst($accountingNotesData['reporting_type']) }}</p>
     </div>
 </body>

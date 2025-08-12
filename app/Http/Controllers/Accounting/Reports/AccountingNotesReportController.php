@@ -46,6 +46,9 @@ class AccountingNotesReportController extends Controller
         $user = Auth::user();
         $company = $user->company;
 
+        // Get account classes with their groups and chart accounts from gl_transactions
+        $accountClassesData = $this->getAccountClassesData($asOfDate, $reportingType, $branchId, $levelOfDetail);
+
         // Get significant accounting policies and notes
         $accountingPolicies = [
             'Basis of Preparation' => [
@@ -119,6 +122,7 @@ class AccountingNotesReportController extends Controller
         $postBalanceSheetEvents = $this->getPostBalanceSheetEvents($asOfDate, $branchId);
 
         return [
+            'account_classes_data' => $accountClassesData,
             'accounting_policies' => $accountingPolicies,
             'significant_transactions' => $significantTransactions,
             'contingent_liabilities' => $contingentLiabilities,
@@ -127,6 +131,105 @@ class AccountingNotesReportController extends Controller
             'as_of_date' => $asOfDate,
             'reporting_type' => $reportingType,
             'branch_id' => $branchId,
+            'level_of_detail' => $levelOfDetail
+        ];
+    }
+
+    private function getAccountClassesData($asOfDate, $reportingType, $branchId, $levelOfDetail)
+    {
+        $user = Auth::user();
+        $company = $user->company;
+
+        // Get all account classes with their groups and chart accounts that have transactions
+        $query = DB::table('account_class')
+            ->join('account_class_groups', 'account_class.id', '=', 'account_class_groups.class_id')
+            ->join('chart_accounts', 'account_class_groups.id', '=', 'chart_accounts.account_class_group_id')
+            ->join('gl_transactions', 'chart_accounts.id', '=', 'gl_transactions.chart_account_id')
+            ->where('account_class_groups.company_id', $company->id)
+            ->where('gl_transactions.date', '<=', $asOfDate);
+
+        if ($branchId && $branchId != 'all') {
+            $query->where('gl_transactions.branch_id', $branchId);
+        }
+
+        if ($reportingType === 'cash') {
+            $query->whereExists(function ($subquery) {
+                $subquery->select(DB::raw(1))
+                    ->from('gl_transactions as gl2')
+                    ->whereColumn('gl2.transaction_id', 'gl_transactions.transaction_id')
+                    ->whereColumn('gl2.transaction_type', 'gl_transactions.transaction_type')
+                    ->whereIn('gl2.chart_account_id', function($bankSubquery) {
+                        $bankSubquery->select('chart_account_id')
+                            ->from('bank_accounts');
+                    });
+            });
+        }
+
+        if ($levelOfDetail === 'summary') {
+            // Summary view - group by account class and account class group
+            $accountClassesData = $query->select(
+                'account_class.id as class_id',
+                'account_class.name as class_name',
+                'account_class_groups.id as group_id',
+                'account_class_groups.name as group_name',
+                DB::raw('COUNT(DISTINCT chart_accounts.id) as account_count'),
+                DB::raw('COUNT(*) as transaction_count'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit'),
+                DB::raw('MIN(gl_transactions.date) as first_transaction_date'),
+                DB::raw('MAX(gl_transactions.date) as last_transaction_date')
+            )
+            ->groupBy('account_class.id', 'account_class.name', 'account_class_groups.id', 'account_class_groups.name')
+            ->orderBy('account_class.name')
+            ->orderBy('account_class_groups.name')
+            ->get();
+
+            // Calculate net amounts and organize data
+            foreach ($accountClassesData as $item) {
+                $item->net_amount = $item->total_debit - $item->total_credit;
+            }
+        } else {
+            // Detailed view - include individual chart accounts
+            $accountClassesData = $query->select(
+                'account_class.id as class_id',
+                'account_class.name as class_name',
+                'account_class_groups.id as group_id',
+                'account_class_groups.name as group_name',
+                'chart_accounts.id as account_id',
+                'chart_accounts.account_name',
+                'chart_accounts.account_code',
+                DB::raw('COUNT(*) as transaction_count'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit'),
+                DB::raw('MIN(gl_transactions.date) as first_transaction_date'),
+                DB::raw('MAX(gl_transactions.date) as last_transaction_date')
+            )
+            ->groupBy('account_class.id', 'account_class.name', 'account_class_groups.id', 'account_class_groups.name', 'chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code')
+            ->orderBy('account_class.name')
+            ->orderBy('account_class_groups.name')
+            ->orderBy('chart_accounts.account_code')
+            ->get();
+
+            // Calculate net amounts and organize data
+            foreach ($accountClassesData as $item) {
+                $item->net_amount = $item->total_debit - $item->total_credit;
+            }
+        }
+
+        // Calculate summary statistics
+        $summaryStats = [
+            'total_classes' => $accountClassesData->unique('class_id')->count(),
+            'total_groups' => $accountClassesData->unique('group_id')->count(),
+            'total_accounts' => $levelOfDetail === 'detailed' ? $accountClassesData->unique('account_id')->count() : $accountClassesData->sum('account_count'),
+            'total_transactions' => $accountClassesData->sum('transaction_count'),
+            'total_debit' => $accountClassesData->sum('total_debit'),
+            'total_credit' => $accountClassesData->sum('total_credit'),
+            'total_net' => $accountClassesData->sum('net_amount')
+        ];
+
+        return [
+            'data' => $accountClassesData,
+            'summary' => $summaryStats,
             'level_of_detail' => $levelOfDetail
         ];
     }
@@ -381,58 +484,148 @@ class AccountingNotesReportController extends Controller
 
         // Set headers
         $sheet->setCellValue('A1', $company->name ?? 'SmartFinance');
-        $sheet->setCellValue('A2', 'ACCOUNTING NOTES');
+        $sheet->setCellValue('A2', 'ACCOUNT CLASSES REPORT');
         $sheet->setCellValue('A3', 'As at: ' . Carbon::parse($asOfDate)->format('M d, Y'));
         $sheet->setCellValue('A4', 'Basis: ' . ucfirst($reportingType));
 
         $row = 6;
 
-        // Accounting Policies
-        $sheet->setCellValue('A' . $row, '1. SIGNIFICANT ACCOUNTING POLICIES');
+        // Summary Statistics
+        $sheet->setCellValue('A' . $row, 'SUMMARY STATISTICS');
         $sheet->getStyle('A' . $row)->getFont()->setBold(true);
         $row++;
 
-        foreach ($accountingNotesData['accounting_policies'] as $policy => $details) {
-            $sheet->setCellValue('A' . $row, $policy);
+        $summary = $accountingNotesData['account_classes_data']['summary'];
+        $sheet->setCellValue('A' . $row, 'Total Account Classes:');
+        $sheet->setCellValue('B' . $row, $summary['total_classes']);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Total Account Groups:');
+        $sheet->setCellValue('B' . $row, $summary['total_groups']);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Total Chart Accounts:');
+        $sheet->setCellValue('B' . $row, $summary['total_accounts']);
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Total Transactions:');
+        $sheet->setCellValue('B' . $row, number_format($summary['total_transactions']));
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Total Debit:');
+        $sheet->setCellValue('B' . $row, number_format($summary['total_debit'], 2));
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Total Credit:');
+        $sheet->setCellValue('B' . $row, number_format($summary['total_credit'], 2));
+        $row++;
+
+        $sheet->setCellValue('A' . $row, 'Net Amount:');
+        $sheet->setCellValue('B' . $row, number_format($summary['total_net'], 2));
+        $row += 2;
+
+        // Account Classes Hierarchical Data
+        $sheet->setCellValue('A' . $row, 'ACCOUNT CLASSES HIERARCHICAL DETAIL');
+        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+        $row++;
+
+        // Group data by account class
+        $groupedData = collect($accountingNotesData['account_classes_data']['data'])->groupBy('class_name');
+
+        foreach ($groupedData as $className => $classData) {
+            // Account Class Header
+            $sheet->setCellValue('A' . $row, $className . ':');
             $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+            $sheet->getStyle('A' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+            $sheet->getStyle('A' . $row)->getFill()->getStartColor()->setRGB('007BFF');
+            $sheet->getStyle('A' . $row)->getFont()->getColor()->setRGB('FFFFFF');
             $row++;
 
-            $sheet->setCellValue('A' . $row, $details['description']);
-            $row++;
+            // Group data by account group
+            $groupedByGroup = $classData->groupBy('group_name');
 
-            foreach ($details['details'] as $detail) {
-                $sheet->setCellValue('B' . $row, '• ' . $detail);
+            foreach ($groupedByGroup as $groupName => $groupData) {
+                // Account Group Header
+                $sheet->setCellValue('A' . $row, '  ' . $groupName);
+                $sheet->getStyle('A' . $row)->getFont()->setBold(true);
+                $sheet->getStyle('A' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+                $sheet->getStyle('A' . $row)->getFill()->getStartColor()->setRGB('F8F9FA');
+                $row++;
+
+                if ($accountingNotesData['account_classes_data']['level_of_detail'] === 'detailed') {
+                    // Detailed View - Show individual accounts
+                    // Set headers for detailed view
+                    $sheet->setCellValue('A' . $row, '    Account Code');
+                    $sheet->setCellValue('B' . $row, 'Account Name');
+                    $sheet->setCellValue('C' . $row, 'Total Debit');
+                    $sheet->setCellValue('D' . $row, 'Total Credit');
+                    $sheet->setCellValue('E' . $row, 'Net Amount');
+                    $sheet->setCellValue('F' . $row, 'Transaction Count');
+                    
+                    $headerRange = 'A' . $row . ':F' . $row;
+                    $sheet->getStyle($headerRange)->getFont()->setBold(true);
+                    $sheet->getStyle($headerRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+                    $sheet->getStyle($headerRange)->getFill()->getStartColor()->setRGB('E9ECEF');
+                    $row++;
+
+                    // Add individual account data
+                    foreach ($groupData as $item) {
+                        $sheet->setCellValue('A' . $row, '    ' . $item->account_code);
+                        $sheet->setCellValue('B' . $row, $item->account_name);
+                        $sheet->setCellValue('C' . $row, number_format($item->total_debit, 2));
+                        $sheet->setCellValue('D' . $row, number_format($item->total_credit, 2));
+                        $sheet->setCellValue('E' . $row, number_format($item->net_amount, 2));
+                        $sheet->setCellValue('F' . $row, $item->transaction_count);
+                        $row++;
+                    }
+                } else {
+                    // Summary View - Show group totals
+                    // Set headers for summary view
+                    $sheet->setCellValue('A' . $row, '    Total Debit');
+                    $sheet->setCellValue('B' . $row, 'Total Credit');
+                    $sheet->setCellValue('C' . $row, 'Net Amount');
+                    $sheet->setCellValue('D' . $row, 'Account Count');
+                    $sheet->setCellValue('E' . $row, 'Transaction Count');
+                    
+                    $headerRange = 'A' . $row . ':E' . $row;
+                    $sheet->getStyle($headerRange)->getFont()->setBold(true);
+                    $sheet->getStyle($headerRange)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
+                    $sheet->getStyle($headerRange)->getFill()->getStartColor()->setRGB('E9ECEF');
+                    $row++;
+
+                    // Calculate group totals
+                    $groupTotalDebit = $groupData->sum('total_debit');
+                    $groupTotalCredit = $groupData->sum('total_credit');
+                    $groupNetAmount = $groupTotalDebit - $groupTotalCredit;
+                    $groupAccountCount = $groupData->sum('account_count');
+                    $groupTransactionCount = $groupData->sum('transaction_count');
+
+                    $sheet->setCellValue('A' . $row, '    ' . number_format($groupTotalDebit, 2));
+                    $sheet->setCellValue('B' . $row, number_format($groupTotalCredit, 2));
+                    $sheet->setCellValue('C' . $row, number_format($groupNetAmount, 2));
+                    $sheet->setCellValue('D' . $row, $groupAccountCount);
+                    $sheet->setCellValue('E' . $row, $groupTransactionCount);
+                    $row++;
+                }
+
+                // Add spacing between groups
                 $row++;
             }
-            $row++;
-        }
 
-        // Significant Transactions
-        $sheet->setCellValue('A' . $row, '2. SIGNIFICANT TRANSACTIONS');
-        $sheet->getStyle('A' . $row)->getFont()->setBold(true);
-        $row++;
-
-        if (count($accountingNotesData['significant_transactions']) > 0) {
-            foreach ($accountingNotesData['significant_transactions'] as $transaction) {
-                $sheet->setCellValue('A' . $row, Carbon::parse($transaction->date)->format('d/m/Y'));
-                $sheet->setCellValue('B' . $row, $transaction->account_name);
-                $sheet->setCellValue('C' . $row, number_format($transaction->amount, 2));
-                $row++;
-            }
-        } else {
-            $sheet->setCellValue('A' . $row, 'No significant transactions during the period.');
+            // Add spacing between classes
             $row++;
         }
 
         // Auto-size columns
-        foreach (range('A', 'C') as $column) {
+        $maxColumn = $accountingNotesData['account_classes_data']['level_of_detail'] === 'summary' ? 'E' : 'F';
+        foreach (range('A', $maxColumn) as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
-        $filename = 'accounting_notes_' . $asOfDate . '_' . $reportingType . '.xlsx';
+        $filename = 'account_classes_report_' . $asOfDate . '_' . $reportingType . '.xlsx';
         
         $writer = new Xlsx($spreadsheet);
-        $tempFile = tempnam(sys_get_temp_dir(), 'accounting_notes');
+        $tempFile = tempnam(sys_get_temp_dir(), 'account_classes_report');
         $writer->save($tempFile);
 
         return response()->download($tempFile, $filename)->deleteFileAfterSend();
