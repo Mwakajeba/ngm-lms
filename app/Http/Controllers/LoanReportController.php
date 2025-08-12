@@ -51,6 +51,7 @@ class LoanReportController extends Controller
             'total_disbursed' => $disbursements->sum('amount'),
             'loan_count' => $disbursements->count(),
             'average_disbursed' => $disbursements->count() > 0 ? $disbursements->sum('amount') / $disbursements->count() : 0,
+            'total_interest_expected' => $disbursements->sum('interest_amount'),
         ];
 
         // Pata list ya branches na companies kwa ajili ya dropdown
@@ -135,9 +136,13 @@ class LoanReportController extends Controller
 
         $repayments = $repaymentsQuery->get();
 
-
+        // Calculate summary values correctly
+        $summary['total_principal'] = $repayments->sum('principal');
+        $summary['total_interest'] = $repayments->sum('interest');
+        $summary['total_fees'] = $repayments->sum('fee_amount');
+        $summary['total_penalty'] = $repayments->sum('penalt_amount');
         $summary['total_paid'] = $repayments->sum(function ($repayment) {
-            return $repayment->sum('principal') + $repayment->sum('interest') + $repayment->sum('fee_amount') + $repayment->sum('penalt_amount');
+            return ($repayment->principal ?? 0) + ($repayment->interest ?? 0) + ($repayment->fee_amount ?? 0) + ($repayment->penalt_amount ?? 0);
         });
         $summary['repayment_count'] = $repayments->count();
         $summary['average_paid'] = $repayments->count() > 0 ? $summary['total_paid'] / $repayments->count() : 0;

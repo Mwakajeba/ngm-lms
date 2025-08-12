@@ -21,7 +21,7 @@
                 </div>
                 <div>
                     <a href="{{ route('accounting.receipt-vouchers.create') }}" class="btn btn-primary">
-                        <i class="bx bx-plus me-2"></i>New Receipt Voucher
+                        <i class="bx bx-plus-circle me-2"></i>New Receipt Voucher
                     </a>
                 </div>
             </div>
@@ -36,12 +36,7 @@
                                 <p class="text-muted mb-1">Total Receipts</p>
                                 <h4 class="mb-0">{{ $stats['total'] ?? 0 }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-success text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-receipt font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-receipt'></i></div>
                         </div>
                     </div>
                 </div>
@@ -53,12 +48,7 @@
                                 <p class="text-muted mb-1">This Month</p>
                                 <h4 class="mb-0">{{ $stats['this_month'] ?? 0 }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-calendar font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-calendar'></i></div>
                         </div>
                     </div>
                 </div>
@@ -70,12 +60,7 @@
                                 <p class="text-muted mb-1">Total Amount</p>
                                 <h4 class="mb-0">{{ number_format($stats['total_amount'] ?? 0, 2) }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-dollar font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
                         </div>
                     </div>
                 </div>
@@ -87,12 +72,7 @@
                                 <p class="text-muted mb-1">This Month Amount</p>
                                 <h4 class="mb-0">{{ number_format($stats['this_month_amount'] ?? 0, 2) }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-money font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
                         </div>
                     </div>
                 </div>
@@ -107,7 +87,6 @@
                                     <thead>
                                         <tr>
                                             <th width="10%">Date</th>
-                                            <th width="15%">Reference</th>
                                             <th width="15%">Bank Account</th>
                                             <th width="15%">Payee</th>
                                             <th width="15%">Description</th>
@@ -120,11 +99,10 @@
                                         @foreach($receipts as $receipt)
                                             <tr>
                                                 <td>{{ $receipt->formatted_date }}</td>
-                                                <td>{{ $receipt->reference }}</td>
                                                 <td>{{ $receipt->bankAccount->name ?? 'N/A' }}</td>
                                                 <td>
                                                     @if($receipt->payee_type === 'customer' && $receipt->customer)
-                                                        <span class="badge bg-primary me-1">Customer</span>
+                                                        <span class="badge bg-info me-1">Customer</span>
                                                         {{ $receipt->customer->name }}
                                                     @elseif($receipt->payee_type === 'other')
                                                         <span class="badge bg-secondary me-1">Other</span>
@@ -139,18 +117,24 @@
                                                 <td>
                                                     <div class="d-flex gap-1">
                                                         <a href="{{ route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id)) }}"
-                                                            class="btn btn-sm btn-outline-primary" title="View">
-                                                            <i class="bx bx-show"></i>
+                                                            class="btn btn-sm btn-outline-success" title="View">
+                                                            <i class="bx bx-show"></i> View
                                                         </a>
-                                                        <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receipt->id)) }}"
-                                                            class="btn btn-sm btn-outline-warning" title="Edit">
-                                                            <i class="bx bx-edit"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
-                                                            data-id="{{ Hashids::encode($receipt->id) }}"
-                                                            data-reference="{{ $receipt->reference }}" title="Delete">
-                                                            <i class="bx bx-trash"></i>
-                                                        </button>
+                                                        @if($receipt->reference_type === 'manual')
+                                                            <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receipt->id)) }}"
+                                                                class="btn btn-sm btn-outline-info" title="Edit">
+                                                                <i class="bx bx-edit"></i> Edit
+                                                            </a>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
+                                                                data-id="{{ Hashids::encode($receipt->id) }}"
+                                                                data-reference="{{ $receipt->reference }}" title="Delete">
+                                                                <i class="bx bx-trash"></i> Delete
+                                                            </button>
+                                                        @else
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit/Delete locked: Source is {{ ucfirst($receipt->reference_type) }} transaction" disabled>
+                                                                <i class="bx bx-lock"></i> Locked
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>

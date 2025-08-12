@@ -93,19 +93,6 @@
                                     <button type="submit" class="btn btn-primary me-2">
                                         <i class="bx bx-search me-1"></i>Generate Report
                                     </button>
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bx bx-download me-1"></i>Export
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">
-                                                <i class="bx bx-file-pdf me-2"></i>Export PDF
-                                            </a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">
-                                                <i class="bx bx-file me-2"></i>Export Excel
-                                            </a></li>
-                                        </ul>
-                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -127,14 +114,6 @@
                                                     @endif
                                                     Bank Account: {{ $bankAccountId === 'all' ? 'All Accounts' : $bankAccounts->where('id', $bankAccountId)->first()->name ?? 'N/A' }}
                                                 </small>
-                                            </div>
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportReport('pdf')">
-                                                    <i class="bx bx-file-pdf me-1"></i>PDF
-                                                </button>
-                                                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportReport('excel')">
-                                                    <i class="bx bx-file me-1"></i>Excel
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -162,7 +141,7 @@
                                                                 @endif
                                                             </td>
                                                         </tr>
-                                                        <tr class="table-primary">
+                                                        <tr>
                                                             <th class="text-center">DATE</th>
                                                             <th class="text-center">DESCRIPTION</th>
                                                             <th class="text-center">BANK ACCOUNT</th>
@@ -174,7 +153,7 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr class="table-warning">
+                                                        <tr>
                                                             <td colspan="6" class="text-end fw-bold">Opening Balance</td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($cashBookData['opening_balance'], 2) }}</td>
@@ -209,25 +188,25 @@
                                                             </tr>
                                                         @endforeach
 
-                                                        <tr class="table-warning">
+                                                        <tr>
                                                             <td colspan="5" class="text-end fw-bold">Total Credit</td>
                                                             <td class="text-end fw-bold">{{ number_format($total_receipts, 2) }}</td>
                                                             <td></td>
                                                             <td></td>
                                                         </tr>
-                                                        <tr class="table-warning">
+                                                        <tr>
                                                             <td colspan="5" class="text-end fw-bold">Total Debit</td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($total_payments, 2) }}</td>
                                                             <td></td>
                                                         </tr>
-                                                        <tr class="table-warning">
+                                                        <tr>
                                                             <td colspan="5" class="text-end fw-bold">Final Balance</td>
                                                             <td></td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($running_balance, 2) }}</td>
                                                         </tr>
-                                                        <tr class="table-dark">
+                                                        <tr>
                                                             <td colspan="7" class="text-end fw-bold">Closing Balance</td>
                                                             <td class="text-end fw-bold">{{ number_format($running_balance, 2) }}</td>
                                                         </tr>
@@ -269,13 +248,31 @@ function exportReport(type) {
         title: 'Generating Report...',
         text: 'Please wait while we prepare your ' + type.toUpperCase() + ' report.',
         allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
         didOpen: () => {
             Swal.showLoading();
         }
     });
     
-    // Download the file
-    window.location.href = url;
+    // Create a hidden iframe to handle the download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    
+    // Add iframe to document
+    document.body.appendChild(iframe);
+    
+    // Set a timeout to close the loading dialog after a reasonable time
+    setTimeout(() => {
+        Swal.close();
+        // Remove the iframe after a delay
+        setTimeout(() => {
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        }, 1000);
+    }, 3000);
 }
 </script>
 @endsection 

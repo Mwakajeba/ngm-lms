@@ -385,7 +385,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loans.reports.loan-export');
     ////////REPAYMENT ROUTE///////
     Route::get('/loan-repayments', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.repayment');
-    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-repayment');
+    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-export');
 
 });
 

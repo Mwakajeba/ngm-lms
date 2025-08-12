@@ -18,7 +18,7 @@ use Vinkla\Hashids\Facades\Hashids;
             <div class="row">
                 <div class="col-12">
                     <div class="card radius-10">
-                        <div class="card-header bg-warning text-dark">
+                        <div class="card-header bg-secondary text-dark">
                             <div class="d-flex align-items-center">
                                 <div>
                                     <h5 class="mb-0 text-dark">
@@ -300,8 +300,8 @@ use Vinkla\Hashids\Facades\Hashids;
                                                     Total Amount: <span id="totalAmount">0.00</span>
                                                 </h4>
                                             </div>
-                                            <button type="submit" class="btn btn-warning" id="updateBtn">
-                                                <i class="bx bx-save me-2"></i>Update
+                                            <button type="submit" class="btn btn-primary" id="updateBtn">
+                                                <i class="bx bx-edit me-2"></i>Update
                                             </button>
                                         </div>
                                     </div>
