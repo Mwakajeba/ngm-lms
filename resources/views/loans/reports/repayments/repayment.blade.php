@@ -88,27 +88,51 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-2 mb-3">
                                 <div class="border-l-4 border-blue-500 rounded-lg p-4 bg-gray-50">
-                                    <p class="text-sm font-medium text-gray-500">Total Amount Paid</p>
+                                    <p class="text-sm font-medium text-gray-500">Total Repayments</p>
                                     <h3 class="text-2xl font-bold mt-1 text-blue-600">
-                                        {{ number_format($summary['total_paid'] ?? 0, 2) }}
-                                    </h3>
-                                </div>
-                            </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="border-l-4 border-emerald-500 rounded-lg p-4 bg-gray-50">
-                                    <p class="text-sm font-medium text-gray-500">Number of Repayments</p>
-                                    <h3 class="text-2xl font-bold mt-1 text-emerald-600">
                                         {{ number_format($summary['repayment_count'] ?? 0) }}
                                     </h3>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
-                                <div class="border-l-4 border-purple-500 rounded-lg p-4 bg-gray-50">
-                                    <p class="text-sm font-medium text-gray-500">Average Repayment Amount</p>
-                                    <h3 class="text-2xl font-bold mt-1 text-purple-600">
-                                        {{ number_format($summary['average_paid'] ?? 0, 2) }}
+                            <div class="col-md-2 mb-3">
+                                <div class="border-l-4 border-emerald-500 rounded-lg p-4 bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-500">Total Amount Paid</p>
+                                    <h3 class="text-2xl font-bold mt-1 text-emerald-600">
+                                        {{ number_format($summary['total_paid'] ?? 0, 2) }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="border-l-4 border-primary rounded-lg p-4 bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-500">Total Principal</p>
+                                    <h3 class="text-2xl font-bold mt-1 text-primary">
+                                        {{ number_format($summary['total_principal'] ?? 0, 2) }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="border-l-4 border-warning rounded-lg p-4 bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-500">Total Interest</p>
+                                    <h3 class="text-2xl font-bold mt-1 text-warning">
+                                        {{ number_format($summary['total_interest'] ?? 0, 2) }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="border-l-4 border-info rounded-lg p-4 bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-500">Total Fees</p>
+                                    <h3 class="text-2xl font-bold mt-1 text-info">
+                                        {{ number_format($summary['total_fees'] ?? 0, 2) }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <div class="col-md-2 mb-3">
+                                <div class="border-l-4 border-danger rounded-lg p-4 bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-500">Total Penalty</p>
+                                    <h3 class="text-2xl font-bold mt-1 text-danger">
+                                        {{ number_format($summary['total_penalty'] ?? 0, 2) }}
                                     </h3>
                                 </div>
                             </div>

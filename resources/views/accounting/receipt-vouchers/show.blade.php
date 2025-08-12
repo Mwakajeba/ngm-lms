@@ -64,7 +64,7 @@
                 <div class="col-lg-8">
                     <!-- Basic Information -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-primary text-white">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-info-circle me-2"></i>Basic Information</h5>
                         </div>
                         <div class="card-body">
@@ -87,7 +87,7 @@
                                     <label class="form-label fw-bold">Payee Type</label>
                                     <p class="form-control-plaintext">
                                         <span
-                                            class="badge bg-{{ $receiptVoucher->payee_type === 'customer' ? 'primary' : 'secondary' }}">
+                                            class="badge bg-{{ $receiptVoucher->payee_type === 'customer' ? 'info' : 'secondary' }}">
                                             {{ ucfirst($receiptVoucher->payee_type ?? 'N/A') }}
                                         </span>
                                     </p>
@@ -129,7 +129,7 @@
 
                     <!-- Line Items -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-list-ul me-2"></i>Line Items</h5>
                         </div>
                         <div class="card-body">
@@ -148,7 +148,7 @@
                                                 <td>{{ $item->chartAccount->account_name ?? 'N/A' }}
                                                     ({{ $item->chartAccount->account_code ?? 'N/A' }})</td>
                                                 <td>{{ $item->description ?: 'No description' }}</td>
-                                                <td class="text-end fw-bold">{{ $item->formatted_amount }}</td>
+                                                <td class="text-end">{{ $item->formatted_amount }}</td>
                                             </tr>
                                         @empty
                                             <tr>
@@ -158,8 +158,8 @@
                                     </tbody>
                                     <tfoot class="table-light">
                                         <tr>
-                                            <th>Total</th>
-                                            <th class="text-end fw-bold text-success">
+                                            <th colspan="2">Total</th>
+                                            <th class="text-end fw-bold">
                                                 {{ number_format($receiptVoucher->total_amount, 2) }}
                                             </th>
                                         </tr>
@@ -172,7 +172,7 @@
                     <!-- GL Transactions -->
                     @if($receiptVoucher->glTransactions->count() > 0)
                         <div class="card radius-10 mb-4">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-secondary text-white">
                                 <h5 class="mb-0"><i class="bx bx-book me-2"></i>General Ledger Entries</h5>
                             </div>
                             <div class="card-body">
@@ -181,28 +181,45 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th width="40%">Account</th>
-                                                <th width="20%">Nature</th>
-                                                <th width="20%">Amount</th>
-                                                <th width="20%">Date</th>
+                                                <th width="30%" class="text-end">Debit</th>
+                                                <th width="30%" class="text-end">Credit</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            @php
+                                                $totalDebit = 0;
+                                                $totalCredit = 0;
+                                            @endphp
                                             @foreach($receiptVoucher->glTransactions as $glTransaction)
                                                 <tr>
                                                     <td>{{ $glTransaction->chartAccount->account_name ?? 'N/A' }}
                                                         ({{ $glTransaction->chartAccount->account_code ?? 'N/A' }})</td>
-                                                    <td>
-                                                        <span
-                                                            class="badge bg-{{ $glTransaction->nature === 'debit' ? 'success' : 'warning' }}">
-                                                            {{ ucfirst($glTransaction->nature) }}
-                                                        </span>
+                                                    <td class="text-end">
+                                                        @if($glTransaction->nature === 'debit')
+                                                            @php $totalDebit += $glTransaction->amount; @endphp
+                                                            {{ number_format($glTransaction->amount, 2) }}
+                                                        @else
+                                                            -
+                                                        @endif
                                                     </td>
-                                                    <td class="text-end fw-bold">{{ number_format($glTransaction->amount, 2) }}</td>
-                                                    <td>{{ $glTransaction->date ? \Carbon\Carbon::parse($glTransaction->date)->format('M d, Y') : 'N/A' }}
+                                                    <td class="text-end">
+                                                        @if($glTransaction->nature === 'credit')
+                                                            @php $totalCredit += $glTransaction->amount; @endphp
+                                                            {{ number_format($glTransaction->amount, 2) }}
+                                                        @else
+                                                            -
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <th>Total</th>
+                                                <th class="text-end fw-bold">{{ number_format($totalDebit, 2) }}</th>
+                                                <th class="text-end fw-bold">{{ number_format($totalCredit, 2) }}</th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -214,7 +231,7 @@
                 <div class="col-lg-4">
                     <!-- Organization Information -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-warning text-dark">
+                        <div class="card-header bg-secondary text-dark">
                             <h5 class="mb-0"><i class="bx bx-building me-2"></i>Organization</h5>
                         </div>
                         <div class="card-body">
@@ -272,16 +289,23 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receiptVoucher->id)) }}"
-                                    class="btn btn-primary">
-                                    <i class="bx bx-edit me-1"></i>Edit
-                                </a>
-                                <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-secondary">
+                                 <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-outline-secondary">
                                     <i class="bx bx-arrow-back me-1"></i>Back
                                 </a>
-                                <button type="button" class="btn btn-outline-danger" onclick="deleteReceiptVoucher()">
-                                    <i class="bx bx-trash me-1"></i>Delete
-                                </button>
+
+                                @if($receiptVoucher->reference_type === 'manual')
+                                    <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receiptVoucher->id)) }}"
+                                        class="btn btn-outline-info">
+                                        <i class="bx bx-edit me-1"></i>Edit
+                                    </a>
+                                    <button type="button" class="btn btn-outline-danger" onclick="deleteReceiptVoucher()">
+                                        <i class="bx bx-trash me-1"></i>Delete
+                                    </button>
+                                @else
+                                    <button type="button" class="btn btn-outline-secondary" title="Edit/Delete locked: Source is {{ ucfirst($receiptVoucher->reference_type) }} transaction" disabled>
+                                        <i class="bx bx-lock"></i> Locked
+                                    </button>
+                                @endif
                             </div>
                         </div>
                     </div>

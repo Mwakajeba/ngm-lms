@@ -35,12 +35,7 @@
                                 <p class="text-muted mb-1">Total Payments</p>
                                 <h4 class="mb-0">{{ $stats['total'] ?? 0 }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-danger text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-receipt font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-receipt'></i></div>
                         </div>
                     </div>
                 </div>
@@ -52,12 +47,7 @@
                                 <p class="text-muted mb-1">This Month</p>
                                 <h4 class="mb-0">{{ $stats['this_month'] ?? 0 }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-info text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-calendar font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-calendar'></i></div>
                         </div>
                     </div>
                 </div>
@@ -69,12 +59,7 @@
                                 <p class="text-muted mb-1">Total Amount</p>
                                 <h4 class="mb-0">{{ number_format($stats['total_amount'] ?? 0, 2) }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-dollar font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-primary text-white"><i class='bx bx-dollar'></i></div>
                         </div>
                     </div>
                 </div>
@@ -86,12 +71,7 @@
                                 <p class="text-muted mb-1">This Month Amount</p>
                                 <h4 class="mb-0">{{ number_format($stats['this_month_amount'] ?? 0, 2) }}</h4>
                             </div>
-                            <div class="ms-3">
-                                <div
-                                    class="avatar-sm bg-primary text-white rounded-circle d-flex align-items-center justify-content-center">
-                                    <i class="bx bx-money font-size-24"></i>
-                                </div>
-                            </div>
+                            <div class="widgets-icons bg-gradient-success text-white"><i class='bx bx-money'></i></div>
                         </div>
                     </div>
                 </div>
@@ -139,17 +119,23 @@
                                                 <td>
                                                     <div class="d-flex gap-1">
                                                         <a href="{{ route('accounting.payment-vouchers.show', $payment->hash_id) }}"
-                                                            class="btn btn-sm btn-info">
-                                                            <i class="bx bx-show"></i>
+                                                            class="btn btn-sm btn-outline-success">
+                                                            <i class="bx bx-show"></i> View
                                                         </a>
-                                                        <a href="{{ route('accounting.payment-vouchers.edit', $payment->hash_id) }}"
-                                                            class="btn btn-sm btn-primary">
-                                                            <i class="bx bx-edit"></i>
-                                                        </a>
-                                                        <button type="button" class="btn btn-sm btn-danger"
-                                                            onclick="deletePaymentVoucher('{{ $payment->hash_id }}', '{{ $payment->reference }}')">
-                                                            <i class="bx bx-trash"></i>
-                                                        </button>
+                                                        @if($payment->reference_type === 'manual')
+                                                            <a href="{{ route('accounting.payment-vouchers.edit', $payment->hash_id) }}"
+                                                                class="btn btn-sm btn-outline-info">
+                                                                <i class="bx bx-edit"></i> Edit
+                                                            </a>
+                                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                onclick="deletePaymentVoucher('{{ $payment->hash_id }}', '{{ $payment->reference }}')">
+                                                                <i class="bx bx-trash"></i> Delete
+                                                            </button>
+                                                        @else
+                                                            <button type="button" class="btn btn-sm btn-outlined-secondary" title="Edit/Delete locked: Source is {{ ucfirst($payment->reference_type) }} transaction" disabled>
+                                                                <i class="bx bx-lock"></i> Locked
+                                                            </button>
+                                                        @endif
                                                     </div>
                                                 </td>
                                             </tr>

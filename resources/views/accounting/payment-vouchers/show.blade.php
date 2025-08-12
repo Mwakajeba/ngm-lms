@@ -11,7 +11,21 @@
                 ['label' => 'Payment Vouchers', 'url' => route('accounting.payment-vouchers.index'), 'icon' => 'bx bx-receipt'],
                 ['label' => 'Payment Voucher #' . $paymentVoucher->reference, 'url' => '#', 'icon' => 'bx bx-show']
             ]" />
-            <h6 class="mb-0 text-uppercase">PAYMENT VOUCHER DETAILS</h6>
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <div>
+                    <h6 class="mb-0 text-uppercase">PAYMENT VOUCHER DETAILS</h6>
+                    <p class="text-muted mb-0">View payment voucher information</p>
+                </div>
+                <div>
+                    <a href="{{ route('accounting.payment-vouchers.edit', Hashids::encode($paymentVoucher->id)) }}"
+                        class="btn btn-primary me-2">
+                        <i class="bx bx-edit me-2"></i>Edit Payment Voucher
+                    </a>
+                    <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
+                        <i class="bx bx-arrow-back me-2"></i>Back to Payment Vouchers
+                    </a>
+                </div>
+            </div>
             <hr />
 
             <!-- Prominent Header Card -->
@@ -46,7 +60,7 @@
                 <div class="col-lg-8">
                     <!-- Basic Information -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-danger text-white">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-info-circle me-2"></i>Basic Information</h5>
                         </div>
                         <div class="card-body">
@@ -102,7 +116,7 @@
 
                     <!-- Line Items -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-danger text-white">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-list-ul me-2"></i>Line Items</h5>
                         </div>
                         <div class="card-body">
@@ -121,7 +135,7 @@
                                                 <td>{{ $item->chartAccount->account_name ?? 'N/A' }}
                                                     ({{ $item->chartAccount->account_code ?? 'N/A' }})</td>
                                                 <td>{{ $item->description ?: 'No description' }}</td>
-                                                <td class="text-end fw-bold">{{ $item->formatted_amount }}</td>
+                                                <td class="text-end">{{ $item->formatted_amount }}</td>
                                             </tr>
                                         @empty
                                             <tr>
@@ -132,7 +146,8 @@
                                     <tfoot class="table-light">
                                         <tr>
                                             <th>Total</th>
-                                            <th class="text-end fw-bold text-danger">
+                                            <th></th>
+                                            <th class="text-end fw-bold">
                                                 {{ number_format($paymentVoucher->total_amount, 2) }}
                                             </th>
                                         </tr>
@@ -145,7 +160,7 @@
                     <!-- GL Transactions -->
                     @if($paymentVoucher->glTransactions->count() > 0)
                         <div class="card radius-10 mb-4">
-                            <div class="card-header bg-info text-white">
+                            <div class="card-header bg-secondary text-white">
                                 <h5 class="mb-0"><i class="bx bx-book me-2"></i>General Ledger Entries</h5>
                             </div>
                             <div class="card-body">
@@ -154,28 +169,46 @@
                                         <thead class="table-light">
                                             <tr>
                                                 <th width="40%">Account</th>
-                                                <th width="20%">Nature</th>
-                                                <th width="20%">Amount</th>
-                                                <th width="20%">Date</th>
+                                                <th width="30%" class="text-end">Debit</th>
+                                                <th width="30%" class="text-end">Credit</th>
                                             </tr>
                                         </thead>
                                         <tbody>
+                                            @php
+                                                $totalDebitGL = 0;
+                                                $totalCreditGL = 0;
+                                            @endphp
                                             @foreach($paymentVoucher->glTransactions as $glTransaction)
                                                 <tr>
                                                     <td>{{ $glTransaction->chartAccount->account_name ?? 'N/A' }}
                                                         ({{ $glTransaction->chartAccount->account_code ?? 'N/A' }})</td>
-                                                    <td>
-                                                        <span
-                                                            class="badge bg-{{ $glTransaction->nature === 'debit' ? 'danger' : 'warning' }}">
-                                                            {{ ucfirst($glTransaction->nature) }}
-                                                        </span>
+                                                    <td class="text-end">
+                                                        @if($glTransaction->nature === 'debit')
+                                                            @php $totalDebitGL += $glTransaction->amount; @endphp
+                                                            {{ number_format($glTransaction->amount, 2) }}
+                                                        @else
+                                                            -
+                                                        @endif
                                                     </td>
-                                                    <td class="text-end fw-bold">{{ number_format($glTransaction->amount, 2) }}</td>
-                                                    <td>{{ $glTransaction->date ? \Carbon\Carbon::parse($glTransaction->date)->format('M d, Y') : 'N/A' }}
+                                                    <td class="text-end">
+                                                        @if($glTransaction->nature === 'credit')
+                                                            @php $totalCreditGL += $glTransaction->amount; @endphp
+                                                            {{ number_format($glTransaction->amount, 2) }}
+                                                        @else
+                                                            -
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
+                                        <tfoot class="table-light">
+                                            <tr>
+                                                <th>Total</th>
+                                                <th class="text-end fw-bold">{{ number_format($totalDebitGL, 2) }}</th>
+                                                <th class="text-end fw-bold">{{ number_format($totalCreditGL, 2) }}</th>
+                                                <th></th>
+                                            </tr>
+                                        </tfoot>
                                     </table>
                                 </div>
                             </div>
@@ -187,7 +220,7 @@
                 <div class="col-lg-4">
                     <!-- Organization Information -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-warning text-dark">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-building me-2"></i>Organization</h5>
                         </div>
                         <div class="card-body">
@@ -245,27 +278,42 @@
 
                     <!-- Quick Actions -->
                     <div class="card radius-10">
-                        <div class="card-header bg-light">
+                        <div class="card-header bg-light text-white">
                             <h5 class="mb-0"><i class="bx bx-cog me-2"></i>Quick Actions</h5>
                         </div>
                         <div class="card-body">
                             <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
-                                    class="btn btn-primary">
-                                    <i class="bx bx-edit me-1"></i>Edit
-                                </a>
-                                <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
-                                    <i class="bx bx-arrow-back me-1"></i>Back
-                                </a>
-                                @if($paymentVoucher->attachment)
-                                    <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher->hash_id) }}"
-                                        class="btn btn-info">
-                                        <i class="bx bx-download me-1"></i>Download Attachment
+                                @if($paymentVoucher->reference_type === 'manual')
+                                    <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
+                                        class="btn btn-primary">
+                                        <i class="bx bx-edit me-1"></i>Edit
                                     </a>
+                                    <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
+                                        <i class="bx bx-arrow-back me-1"></i>Back
+                                    </a>
+                                    @if($paymentVoucher->attachment)
+                                        <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher->hash_id) }}"
+                                            class="btn btn-info">
+                                            <i class="bx bx-download me-1"></i>Download Attachment
+                                        </a>
+                                    @endif
+                                    <button type="button" class="btn btn-outline-danger" onclick="deletePaymentVoucher()">
+                                        <i class="bx bx-trash me-1"></i>Delete
+                                    </button>
+                                @else
+                                    <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
+                                        <i class="bx bx-arrow-back me-1"></i>Back
+                                    </a>
+                                    @if($paymentVoucher->attachment)
+                                        <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher->hash_id) }}"
+                                            class="btn btn-info">
+                                            <i class="bx bx-download me-1"></i>Download Attachment
+                                        </a>
+                                    @endif
+                                    <button type="button" class="btn btn-outline-secondary" title="Edit/Delete locked: Source is {{ ucfirst($paymentVoucher->reference_type) }} transaction" disabled>
+                                        <i class="bx bx-lock"></i> Locked
+                                    </button>
                                 @endif
-                                <button type="button" class="btn btn-outline-danger" onclick="deletePaymentVoucher()">
-                                    <i class="bx bx-trash me-1"></i>Delete
-                                </button>
                             </div>
                         </div>
                     </div>
@@ -299,7 +347,7 @@
                         </div>
                     @else
                         <div class="card radius-10 mt-4">
-                            <div class="card-header bg-light">
+                            <div class="card-header bg-light text-white">
                                 <h5 class="mb-0"><i class="bx bx-paperclip me-2"></i>Attachment</h5>
                             </div>
                             <div class="card-body text-center">
