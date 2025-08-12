@@ -116,7 +116,7 @@
                                     <div class="card-header">
                                         <div class="d-flex justify-content-between align-items-center">
                                             <div>
-                                                <h6 class="mb-0">ACCOUNTING NOTES</h6>
+                                                <h6 class="mb-0">ACCOUNT CLASSES REPORT</h6>
                                                 <small class="text-muted">
                                                     As at: {{ \Carbon\Carbon::parse($asOfDate)->format('M d, Y') }} | 
                                                     Basis: {{ ucfirst($reportingType) }} | 
@@ -134,127 +134,224 @@
                                         </div>
                                     </div>
                                     <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-bordered table-striped">
-                                                <thead class="table-light">
-                                                    <tr>
-                                                        <td colspan="2" class="text-center fw-bold fs-5">
-                                                            {{ $user->company->name ?? 'SmartFinance' }}
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td colspan="2" class="text-center fw-bold">
-                                                            ACCOUNTING NOTES
-                                                        </td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td colspan="2" class="text-center fw-bold">
-                                                            AS AT {{ \Carbon\Carbon::parse($asOfDate)->format('d-m-Y') }}
-                                                        </td>
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    <!-- 1. Significant Accounting Policies -->
-                                                    <tr class="table-primary">
-                                                        <td colspan="2" class="fw-bold">1. SIGNIFICANT ACCOUNTING POLICIES</td>
-                                                    </tr>
-                                                    
-                                                    @foreach($accountingNotesData['accounting_policies'] as $policy => $details)
-                                                        <tr class="table-secondary">
-                                                            <td colspan="2" class="fw-bold">{{ $policy }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td colspan="2">{{ $details['description'] }}</td>
-                                                        </tr>
-                                                        @foreach($details['details'] as $detail)
-                                                            <tr>
-                                                                <td width="5%"></td>
-                                                                <td>• {{ $detail }}</td>
-                                                            </tr>
-                                                        @endforeach
-                                                        <tr><td colspan="2"></td></tr>
-                                                    @endforeach
+                                        <!-- Summary Statistics -->
+                                        <div class="row mb-4">
+                                            <div class="col-md-3">
+                                                <div class="card bg-primary text-white">
+                                                    <div class="card-body text-center">
+                                                        <h4>{{ $accountingNotesData['account_classes_data']['summary']['total_classes'] }}</h4>
+                                                        <small>Account Classes</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="card bg-success text-white">
+                                                    <div class="card-body text-center">
+                                                        <h4>{{ $accountingNotesData['account_classes_data']['summary']['total_groups'] }}</h4>
+                                                        <small>Account Groups</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="card bg-info text-white">
+                                                    <div class="card-body text-center">
+                                                        <h4>{{ $accountingNotesData['account_classes_data']['summary']['total_accounts'] }}</h4>
+                                                        <small>Chart Accounts</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <div class="card bg-warning text-white">
+                                                    <div class="card-body text-center">
+                                                        <h4>{{ number_format($accountingNotesData['account_classes_data']['summary']['total_transactions']) }}</h4>
+                                                        <small>Transactions</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
 
-                                                    <!-- 2. Significant Transactions -->
-                                                    <tr class="table-primary">
-                                                        <td colspan="2" class="fw-bold">2. SIGNIFICANT TRANSACTIONS</td>
-                                                    </tr>
+                                        <!-- Account Classes Hierarchical View -->
+                                        <div class="account-classes-hierarchy">
+                                            @php
+                                                $groupedData = $accountingNotesData['account_classes_data']['data']->groupBy('class_name');
+                                            @endphp
+                                            
+                                            @forelse($groupedData as $className => $classData)
+                                                <!-- Account Class Section -->
+                                                <div class="account-class-section mb-4">
+                                                    <div class="card">
+                                                        <div class="card-header bg-primary text-white">
+                                                            <h6 class="mb-0">
+                                                                <i class="bx bx-category me-2"></i>{{ $className }}:
+                                                            </h6>
+                                                        </div>
+                                                        <div class="card-body p-0">
+                                                            @php
+                                                $groupedByGroup = $classData->groupBy('group_name');
+                                            @endphp
+                                            
+                                            @foreach($groupedByGroup as $groupName => $groupData)
+                                                <!-- Account Group Section -->
+                                                <div class="account-group-section">
+                                                    <div class="group-header bg-light p-3 border-bottom">
+                                                        <h6 class="mb-0 text-secondary">
+                                                            <i class="bx bx-folder me-2"></i>{{ $groupName }}
+                                                        </h6>
+                                                    </div>
                                                     
-                                                    @if(count($accountingNotesData['significant_transactions']) > 0)
-                                                        <tr class="table-secondary">
-                                                            <th>Date</th>
-                                                            <th>Account</th>
-                                                        </tr>
-                                                        @foreach($accountingNotesData['significant_transactions'] as $transaction)
-                                                            <tr>
-                                                                <td>{{ \Carbon\Carbon::parse($transaction->date)->format('d/m/Y') }}</td>
-                                                                <td>{{ $transaction->account_name }} - {{ number_format($transaction->amount, 2) }}</td>
-                                                            </tr>
-                                                        @endforeach
+                                                    @if($levelOfDetail === 'detailed')
+                                                        <!-- Detailed View - Show Chart Accounts -->
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-borderless mb-0">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th style="width: 15%">Account Code</th>
+                                                                        <th style="width: 35%">Account Name</th>
+                                                                        <th class="text-end" style="width: 12%">Total Debit</th>
+                                                                        <th class="text-end" style="width: 12%">Total Credit</th>
+                                                                        <th class="text-end" style="width: 12%">Net Amount</th>
+                                                                        <th class="text-center" style="width: 14%">Transactions</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @foreach($groupData as $item)
+                                                                        <tr>
+                                                                            <td><code>{{ $item->account_code }}</code></td>
+                                                                            <td>{{ $item->account_name }}</td>
+                                                                            <td class="text-end">{{ number_format($item->total_debit, 2) }}</td>
+                                                                            <td class="text-end">{{ number_format($item->total_credit, 2) }}</td>
+                                                                            <td class="text-end fw-bold">{{ number_format($item->net_amount, 2) }}</td>
+                                                                            <td class="text-center">
+                                                                                <span class="badge bg-info">{{ $item->transaction_count }}</span>
+                                                                            </td>
+                                                                        </tr>
+                                                                    @endforeach
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
                                                     @else
-                                                        <tr>
-                                                            <td colspan="2">No significant transactions during the period.</td>
-                                                        </tr>
+                                                        <!-- Summary View - Show Group Totals -->
+                                                        <div class="table-responsive">
+                                                            <table class="table table-sm table-borderless mb-0">
+                                                                <thead class="table-light">
+                                                                    <tr>
+                                                                        <th class="text-end" style="width: 25%">Total Debit</th>
+                                                                        <th class="text-end" style="width: 25%">Total Credit</th>
+                                                                        <th class="text-end" style="width: 25%">Net Amount</th>
+                                                                        <th class="text-center" style="width: 25%">Accounts | Transactions</th>
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    @php
+                                                                        $groupTotalDebit = $groupData->sum('total_debit');
+                                                                        $groupTotalCredit = $groupData->sum('total_credit');
+                                                                        $groupNetAmount = $groupTotalDebit - $groupTotalCredit;
+                                                                        $groupAccountCount = $groupData->sum('account_count');
+                                                                        $groupTransactionCount = $groupData->sum('transaction_count');
+                                                                    @endphp
+                                                                    <tr>
+                                                                        <td class="text-end">{{ number_format($groupTotalDebit, 2) }}</td>
+                                                                        <td class="text-end">{{ number_format($groupTotalCredit, 2) }}</td>
+                                                                        <td class="text-end fw-bold">{{ number_format($groupNetAmount, 2) }}</td>
+                                                                        <td class="text-center">
+                                                                            <span class="badge bg-primary me-1">{{ $groupAccountCount }}</span>
+                                                                            <span class="badge bg-info">{{ $groupTransactionCount }}</span>
+                                                                        </td>
+                                                                    </tr>
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
                                                     @endif
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                </div>
+                            @empty
+                                <div class="text-center text-muted py-4">
+                                    <i class="bx bx-info-circle me-2"></i>No account classes data found for the selected criteria
+                                </div>
+                            @endforelse
+                                        </div>
 
-                                                    <!-- 3. Contingent Liabilities -->
-                                                    <tr class="table-primary">
-                                                        <td colspan="2" class="fw-bold">3. CONTINGENT LIABILITIES</td>
-                                                    </tr>
-                                                    
-                                                    @foreach($accountingNotesData['contingent_liabilities'] as $liability)
-                                                        <tr class="table-secondary">
-                                                            <td colspan="2" class="fw-bold">{{ $liability['description'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td colspan="2">{{ $liability['notes'] }}</td>
-                                                        </tr>
-                                                        <tr><td colspan="2"></td></tr>
-                                                    @endforeach
-
-                                                    <!-- 4. Related Party Transactions -->
-                                                    <tr class="table-primary">
-                                                        <td colspan="2" class="fw-bold">4. RELATED PARTY TRANSACTIONS</td>
-                                                    </tr>
-                                                    
-                                                    @foreach($accountingNotesData['related_party_transactions'] as $transaction)
-                                                        <tr class="table-secondary">
-                                                            <td colspan="2" class="fw-bold">{{ $transaction['party_name'] }} - {{ $transaction['transaction_type'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td colspan="2">{{ $transaction['notes'] }}</td>
-                                                        </tr>
-                                                        <tr><td colspan="2"></td></tr>
-                                                    @endforeach
-
-                                                    <!-- 5. Post-Balance Sheet Events -->
-                                                    <tr class="table-primary">
-                                                        <td colspan="2" class="fw-bold">5. POST-BALANCE SHEET EVENTS</td>
-                                                    </tr>
-                                                    
-                                                    @foreach($accountingNotesData['post_balance_sheet_events'] as $event)
-                                                        <tr class="table-secondary">
-                                                            <td colspan="2" class="fw-bold">{{ $event['event_description'] }}</td>
-                                                        </tr>
-                                                        <tr>
-                                                            <td colspan="2">{{ $event['notes'] }}</td>
-                                                        </tr>
-                                                        <tr><td colspan="2"></td></tr>
-                                                    @endforeach
-                                                </tbody>
-                                            </table>
+                                        <!-- Summary Totals -->
+                                        <div class="row mt-4">
+                                            <div class="col-12">
+                                                <div class="card bg-light">
+                                                    <div class="card-body">
+                                                        <div class="row text-center">
+                                                            <div class="col-md-3">
+                                                <h6 class="text-muted">Total Debit</h6>
+                                                <h5 class="text-primary">{{ number_format($accountingNotesData['account_classes_data']['summary']['total_debit'], 2) }}</h5>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted">Total Credit</h6>
+                                                <h5 class="text-success">{{ number_format($accountingNotesData['account_classes_data']['summary']['total_credit'], 2) }}</h5>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted">Net Amount</h6>
+                                                <h5 class="text-info">{{ number_format($accountingNotesData['account_classes_data']['summary']['total_net'], 2) }}</h5>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <h6 class="text-muted">Average per Account</h6>
+                                                <h5 class="text-warning">{{ $accountingNotesData['account_classes_data']['summary']['total_accounts'] > 0 ? number_format($accountingNotesData['account_classes_data']['summary']['total_net'] / $accountingNotesData['account_classes_data']['summary']['total_accounts'], 2) : '0.00' }}</h5>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                        @endif
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
                     </div>
                 </div>
             </div>
         </div>
     </div>
 </div>
+
+<style>
+.account-classes-hierarchy .account-class-section {
+    margin-bottom: 2rem;
+}
+
+.account-classes-hierarchy .account-group-section {
+    border-left: 3px solid #e9ecef;
+    margin-left: 1rem;
+    margin-bottom: 1rem;
+}
+
+.account-classes-hierarchy .group-header {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border-left: 3px solid #007bff;
+}
+
+.account-classes-hierarchy .table-sm td,
+.account-classes-hierarchy .table-sm th {
+    padding: 0.5rem;
+    border: none;
+    border-bottom: 1px solid #f1f3f4;
+}
+
+.account-classes-hierarchy .table-sm tbody tr:hover {
+    background-color: #f8f9fa;
+}
+
+.account-classes-hierarchy code {
+    background-color: #f8f9fa;
+    color: #495057;
+    padding: 0.2rem 0.4rem;
+    border-radius: 0.25rem;
+    font-size: 0.875em;
+}
+
+.account-classes-hierarchy .badge {
+    font-size: 0.75em;
+}
+</style>
 
 <script>
 function generateReport() {
@@ -273,13 +370,31 @@ function exportReport(type) {
         title: 'Generating Report...',
         text: 'Please wait while we prepare your ' + type.toUpperCase() + ' report.',
         allowOutsideClick: false,
+        allowEscapeKey: false,
+        showConfirmButton: false,
         didOpen: () => {
             Swal.showLoading();
         }
     });
     
-    // Download the file
-    window.location.href = url;
+    // Create a hidden iframe to handle the download
+    const iframe = document.createElement('iframe');
+    iframe.style.display = 'none';
+    iframe.src = url;
+    
+    // Add iframe to document
+    document.body.appendChild(iframe);
+    
+    // Set a timeout to close the loading dialog after a reasonable time
+    setTimeout(() => {
+        Swal.close();
+        // Remove the iframe after a delay
+        setTimeout(() => {
+            if (document.body.contains(iframe)) {
+                document.body.removeChild(iframe);
+            }
+        }, 1000);
+    }, 3000);
 }
 </script>
 @endsection 
