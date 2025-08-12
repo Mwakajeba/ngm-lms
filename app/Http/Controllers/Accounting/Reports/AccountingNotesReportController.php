@@ -22,7 +22,7 @@ class AccountingNotesReportController extends Controller
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         $branchId = $request->get('branch_id', 'all');
-        $levelOfDetail = $request->get('level_of_detail', 'summary');
+        $levelOfDetail = $request->get('level_of_detail', 'detailed');
 
         // Get branches for filter
         $branches = $company->branches;
@@ -451,7 +451,7 @@ class AccountingNotesReportController extends Controller
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         $branchId = $request->get('branch_id', 'all');
-        $levelOfDetail = $request->get('level_of_detail', 'summary');
+        $levelOfDetail = $request->get('level_of_detail', 'detailed');
         $exportType = $request->get('export_type', 'pdf');
 
         // Get accounting notes data
@@ -550,7 +550,7 @@ class AccountingNotesReportController extends Controller
                 $sheet->getStyle('A' . $row)->getFont()->setBold(true);
                 $sheet->getStyle('A' . $row)->getFill()->setFillType(\PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID);
                 $sheet->getStyle('A' . $row)->getFill()->getStartColor()->setRGB('F8F9FA');
-                $row++;
+            $row++;
 
                 if ($accountingNotesData['account_classes_data']['level_of_detail'] === 'detailed') {
                     // Detailed View - Show individual accounts
@@ -576,8 +576,8 @@ class AccountingNotesReportController extends Controller
                         $sheet->setCellValue('D' . $row, number_format($item->total_credit, 2));
                         $sheet->setCellValue('E' . $row, number_format($item->net_amount, 2));
                         $sheet->setCellValue('F' . $row, $item->transaction_count);
-                        $row++;
-                    }
+                $row++;
+            }
                 } else {
                     // Summary View - Show group totals
                     // Set headers for summary view
@@ -605,8 +605,8 @@ class AccountingNotesReportController extends Controller
                     $sheet->setCellValue('C' . $row, number_format($groupNetAmount, 2));
                     $sheet->setCellValue('D' . $row, $groupAccountCount);
                     $sheet->setCellValue('E' . $row, $groupTransactionCount);
-                    $row++;
-                }
+            $row++;
+        }
 
                 // Add spacing between groups
                 $row++;

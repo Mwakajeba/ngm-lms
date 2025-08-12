@@ -264,7 +264,9 @@
                                         <td class="text-center">
                                             <div class="btn-group">
                                                 <a href="{{ route('accounting.budgets.show', $budget) }}" 
-                                                   class="btn btn-sm btn-primary" title="View Budget">
+                                                   class="btn btn-sm btn-primary view-budget-btn" 
+                                                   data-budget-id="{{ $budget->id }}"
+                                                   title="View Budget">
                                                     <i class="bx bx-show"></i>
                                                 </a>
                                                 <a href="{{ route('accounting.budgets.edit', $budget) }}" 
@@ -320,7 +322,7 @@
                                     </a>
                                 @endif
                                 <a href="{{ route('accounting.budgets.create') }}" class="btn btn-primary">
-                                                                            <i class="bx bx-plus me-1"></i> {{ __('app.budget_create_first') }}
+                                    <i class="bx bx-plus me-1"></i> {{ __('app.budget_create_first') }}
                                 </a>
                             </div>
                         </div>
@@ -342,26 +344,29 @@
                     <div class="card-body">
                         <div class="row g-3">
                             <div class="col-md-3">
-                                <a href="{{ route('accounting.budgets.create') }}" class="card border-0 shadow-sm text-decoration-none h-100">
+                                <a href="{{ route('accounting.budgets.import') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-plus-circle text-primary" style="font-size: 2rem;"></i>
+                                            <i class="bx bx-import text-primary" style="font-size: 2rem;"></i>
                                         </div>
-                                        <h6 class="card-title text-dark mb-2">{{ __('app.budget_new_budget') }}</h6>
-                                        <p class="card-text text-muted small">{{ __('app.budget_setup_organization') }}</p>
+                                        <h6 class="card-title text-dark mb-2">Import Budget</h6>
+                                        <p class="card-text text-muted small">Import budget data from Excel or CSV files</p>
                                     </div>
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="#" class="card border-0 shadow-sm text-decoration-none h-100" onclick="alert('Export feature coming soon!')">
+                                <div class="card border-0 shadow-sm h-100">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
                                             <i class="bx bx-export text-success" style="font-size: 2rem;"></i>
                                         </div>
-                                        <h6 class="card-title text-dark mb-2">{{ __('app.budget_export') }}</h6>
-                                        <p class="card-text text-muted small">{{ __('app.budget_export_excel_pdf') }}</p>
+                                        <h6 class="card-title text-dark mb-2">Export Budgets</h6>
+                                        <p class="card-text text-muted small mb-3">Export individual budgets to Excel or PDF</p>
+                                        <button class="btn btn-success btn-sm" id="exportBudgetBtn">
+                                            <i class="bx bx-export"></i> Export Budget
+                                        </button>
                                     </div>
-                                </a>
+                                </div>
                             </div>
                             <div class="col-md-3">
                                 <a href="#" class="card border-0 shadow-sm text-decoration-none h-100" onclick="alert('Budget templates feature coming soon!')">
@@ -375,13 +380,13 @@
                                 </a>
                             </div>
                             <div class="col-md-3">
-                                <a href="#" class="card border-0 shadow-sm text-decoration-none h-100" onclick="alert('Budget reports feature coming soon!')">
+                                <a href="{{ route('accounting.reports.budget-report') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
                                             <i class="bx bx-bar-chart-alt-2 text-warning" style="font-size: 2rem;"></i>
                                         </div>
-                                        <h6 class="card-title text-dark mb-2">{{ __('app.budget_reports') }}</h6>
-                                        <p class="card-text text-muted small">{{ __('app.budget_generate_reports') }}</p>
+                                        <h6 class="card-title text-dark mb-2">Budget Report</h6>
+                                        <p class="card-text text-muted small">Budget vs Actual Analysis</p>
                                     </div>
                                 </a>
                             </div>
@@ -524,6 +529,17 @@
 $(document).ready(function() {
     console.log('Document ready - initializing budget page');
     
+    // Fix Highcharts error #13 locally
+    if (typeof Highcharts !== 'undefined') {
+        Highcharts.error = function(code, stop) {
+            if (code === 13) {
+                console.warn('Highcharts error #13: Container not found, skipping chart rendering');
+                return;
+            }
+            console.error('Highcharts error #' + code);
+        };
+    }
+    
     // Test if jQuery is available
     if (typeof $ === 'undefined') {
         console.error('jQuery is not loaded!');
@@ -633,8 +649,120 @@ $(document).ready(function() {
         document.body.appendChild(form);
         form.submit();
     }
+    
+    // Export button click handler
+    $(document).on('click', '#exportBudgetBtn', function() {
+        showExportModal();
+    });
+    
+    // Function to show export modal
+    function showExportModal() {
+        // Get all budgets from the table
+        const budgets = [];
+        const tableRows = $('#example tbody tr');
+        
+        tableRows.each(function() {
+            const row = $(this);
+            // Get budget ID from the view button's data attribute
+            const budgetId = row.find('.view-budget-btn').data('budget-id');
+            
+            // Get budget name from column 1 (index 1)
+            const budgetNameElement = row.find('td:eq(1) a');
+            const budgetName = budgetNameElement.text().trim();
+            
+            // Get year from column 2 (index 2) - remove the badge wrapper
+            const budgetYearElement = row.find('td:eq(2) .badge');
+            const budgetYear = budgetYearElement.text().trim();
+            
+            if (budgetId && budgetName) {
+                budgets.push({
+                    id: budgetId,
+                    name: budgetName,
+                    year: budgetYear
+                });
+            }
+        });
+        
+        if (budgets.length === 0) {
+            Swal.fire({
+                title: 'No Budgets Found',
+                text: 'No budgets available for export.',
+                icon: 'warning',
+                confirmButtonText: 'OK',
+                confirmButtonColor: '#007bff'
+            });
+            return;
+        }
+        
+        // Create budget options HTML
+        let budgetOptions = '';
+        budgets.forEach(function(budget) {
+            budgetOptions += `
+                <div class="budget-option mb-2">
+                    <div class="d-flex justify-content-between align-items-center p-2 border rounded">
+                        <div>
+                            <strong>${budget.name}</strong>
+                            <br><small class="text-muted">Year: ${budget.year}</small>
+                        </div>
+                        <div class="btn-group btn-group-sm">
+                            <a href="/accounting/budgets/${budget.id}/export/excel" class="btn btn-success">
+                                <i class="bx bx-export"></i> Excel
+                            </a>
+                            <a href="/accounting/budgets/${budget.id}/export/pdf" class="btn btn-danger">
+                                <i class="bx bx-file-pdf"></i> PDF
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        
+        Swal.fire({
+            title: 'Export Budget',
+            html: `
+                <div class="text-start">
+                    <p class="mb-3">Select a budget to export:</p>
+                    <div class="budget-list">
+                        ${budgetOptions}
+                    </div>
+                </div>
+            `,
+            width: '600px',
+            showConfirmButton: false,
+            showCloseButton: true,
+            customClass: {
+                container: 'export-modal'
+            }
+        });
+    }
 });
 </script>
+
+<!-- Export Modal Styles -->
+<style>
+.export-modal .swal2-popup {
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.budget-option {
+    transition: all 0.2s ease;
+}
+
+.budget-option:hover {
+    background-color: #f8f9fa;
+    border-radius: 5px;
+}
+
+.budget-option .btn-group .btn {
+    font-size: 0.8rem;
+    padding: 0.25rem 0.5rem;
+}
+
+.budget-option .btn-group .btn i {
+    font-size: 0.9rem;
+}
+</style>
 @endpush
 @endsection
                                                 

@@ -252,14 +252,36 @@
 @push('scripts')
 <script>
 $(document).ready(function() {
-    // Initialize DataTable
-    $('#reconciliationsTable').DataTable({
+    // Fix Highcharts error #13
+    if (typeof Highcharts !== 'undefined') {
+        Highcharts.error = function(code, stop) {
+            if (code === 13) {
+                console.warn('Highcharts error #13: Container not found, skipping chart rendering');
+                return;
+            }
+            console.error('Highcharts error #' + code);
+        };
+    }
+    
+    // Initialize DataTable with error handling
+    if ($('#reconciliationsTable').length) {
+        try {
+            var table = $('#reconciliationsTable').DataTable({
         "pageLength": 25,
         "order": [[1, "desc"]], // Sort by reconciliation date descending
         "columnDefs": [
-            { "orderable": false, "targets": [8] } // Actions column not sortable
-        ]
-    });
+                    { "orderable": false, "targets": -1 } // Last column (Actions) not sortable
+                ],
+                "responsive": true,
+                "autoWidth": false,
+                "deferRender": true,
+                "processing": true,
+                "serverSide": false
+            });
+        } catch (error) {
+            console.warn('DataTable initialization error:', error);
+        }
+    }
 });
 </script>
 @endpush 
