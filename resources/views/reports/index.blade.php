@@ -41,22 +41,6 @@
                             @endif
 
                             <div class="row">
-                                <!-- Other Income Report -->
-                                <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-primary">
-                                        <div class="card-body text-center">
-                                            <div class="mb-3">
-                                                <i class="bx bx-trending-up fs-1 text-primary"></i>
-                                            </div>
-                                            <h5 class="card-title">Other Income Report</h5>
-                                            <p class="card-text">Generate comprehensive reports on other income sources and revenue streams.</p>
-                                            <a href="{{ route('accounting.reports.other-income') }}" class="btn btn-primary">
-                                                <i class="bx bx-file me-1"></i> Generate Report
-                                            </a>
-                                        </div>
-                                    </div>
-                                </div>
-
                                 <!-- Balance Sheet Report -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-warning">
@@ -130,7 +114,7 @@
                                             </div>
                                             <h5 class="card-title">Cash Flow Report</h5>
                                             <p class="card-text">Analyze cash inflows and outflows from operating, investing, and financing activities.</p>
-                                            <a href="{{ route('accounting.reports.cash-flow') }}" class="btn btn-purple">
+                                            <a href="{{ route('accounting.reports.cash-flow') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -162,7 +146,7 @@
                                             </div>
                                             <h5 class="card-title">Expenses Summary Report</h5>
                                             <p class="card-text">Analyze and categorize all expenses with detailed breakdowns.</p>
-                                            <a href="{{ route('accounting.reports.expenses-summary') }}" class="btn btn-teal">
+                                            <a href="{{ route('accounting.reports.expenses-summary') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -177,8 +161,8 @@
                                                 <i class="bx bx-note fs-1 text-indigo"></i>
                                             </div>
                                             <h5 class="card-title">Accounting Notes Report</h5>
-                                            <p class="card-text">Generate comprehensive accounting notes and disclosures.</p>
-                                            <a href="{{ route('accounting.reports.accounting-notes') }}" class="btn btn-indigo">
+                                            <p class="card-text">Generate comprehensive accounting notes.</p>
+                                            <a href="{{ route('accounting.reports.accounting-notes') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -194,7 +178,7 @@
                                             </div>
                                             <h5 class="card-title">Changes in Equity Report</h5>
                                             <p class="card-text">Track changes in shareholders' equity over time.</p>
-                                            <a href="{{ route('accounting.reports.changes-equity') }}" class="btn btn-orange">
+                                            <a href="{{ route('accounting.reports.changes-equity') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
