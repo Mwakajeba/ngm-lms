@@ -257,7 +257,7 @@ function exportReport(type) {
     const exportForm = document.createElement('form');
     exportForm.method = 'POST';
     exportForm.action = '{{ route("accounting.reports.changes-equity.export") }}';
-    exportForm.target = '_blank';
+    
     
     // Add CSRF token
     const csrfToken = document.createElement('input');

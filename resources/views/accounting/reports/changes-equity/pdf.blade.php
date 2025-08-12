@@ -235,17 +235,17 @@
             <div class="summary-item">
                 <div class="summary-label">Opening Balance</div>
                 <div class="summary-value">{{ number_format($changesEquityData['opening_balance'], 2) }}</div>
-            </div>
+        </div>
             <div class="summary-item">
                 <div class="summary-label">Net Change</div>
                 <div class="summary-value {{ $changesEquityData['overall_total'] >= 0 ? 'positive' : 'negative' }}">
-                    {{ $changesEquityData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['overall_total'], 2) }}
+                {{ $changesEquityData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['overall_total'], 2) }}
                 </div>
             </div>
             <div class="summary-item">
                 <div class="summary-label">Closing Balance</div>
                 <div class="summary-value">{{ number_format($changesEquityData['closing_balance'], 2) }}</div>
-            </div>
+        </div>
         </div>
     </div>
 
@@ -299,13 +299,13 @@
                             <td colspan="4"><strong>Total for {{ $categoryName }}</strong></td>
                             <td class="text-end">
                                 <strong>
-                                    {{ number_format($changesEquityData['category_totals'][$categoryName]['credit_total'], 2) }} /
-                                    {{ number_format($changesEquityData['category_totals'][$categoryName]['debit_total'], 2) }}
+                                {{ number_format($changesEquityData['category_totals'][$categoryName]['credit_total'], 2) }} /
+                                {{ number_format($changesEquityData['category_totals'][$categoryName]['debit_total'], 2) }}
                                 </strong>
                             </td>
                             <td class="text-end">
                                 <strong class="{{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? 'positive' : 'negative' }}">
-                                    {{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['category_totals'][$categoryName]['net_change'], 2) }}
+                                {{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['category_totals'][$categoryName]['net_change'], 2) }}
                                 </strong>
                             </td>
                         </tr>

@@ -343,7 +343,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row g-3">
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <a href="{{ route('accounting.budgets.import') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
@@ -354,7 +354,7 @@
                                     </div>
                                 </a>
                             </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <div class="card border-0 shadow-sm h-100">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
@@ -368,18 +368,7 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-3">
-                                <a href="#" class="card border-0 shadow-sm text-decoration-none h-100" onclick="alert('Budget templates feature coming soon!')">
-                                    <div class="card-body text-center">
-                                        <div class="mb-3">
-                                            <i class="bx bx-copy-alt text-info" style="font-size: 2rem;"></i>
-                                        </div>
-                                        <h6 class="card-title text-dark mb-2">{{ __('app.budget_templates') }}</h6>
-                                        <p class="card-text text-muted small">{{ __('app.budget_use_templates') }}</p>
-                                    </div>
-                                </a>
-                            </div>
-                            <div class="col-md-3">
+                            <div class="col-md-4">
                                 <a href="{{ route('accounting.reports.budget-report') }}" class="card border-0 shadow-sm text-decoration-none h-100">
                                     <div class="card-body text-center">
                                         <div class="mb-3">

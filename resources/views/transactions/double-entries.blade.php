@@ -257,21 +257,6 @@
                                     </div>
                                 </div>
                             </div>
-                            <div class="col-md-4">
-                                <div class="alert alert-{{ $balance == 0 ? 'success' : 'danger' }} mb-0">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bx {{ $balance == 0 ? 'bx-check-circle' : 'bx-error' }} me-2"></i>
-                                        <div>
-                                            <strong>Final Balance:</strong> {{ number_format($balance, 2) }}
-                                            @if($balance == 0)
-                                                <br><small>✅ Account is balanced</small>
-                                            @else
-                                                <br><small>⚠️ Account is not balanced</small>
-                                            @endif
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
                         </div>
                     </div>
                 </div>

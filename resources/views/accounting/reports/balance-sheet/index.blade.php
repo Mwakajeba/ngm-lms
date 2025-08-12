@@ -549,6 +549,11 @@ function exportReport(type) {
     
     // Download the file
     window.location.href = url;
+    
+    // close the loading state after a short delay
+    setTimeout(() => {
+        Swal.close();
+    }, 2000);
 }
 </script>
 @endsection 
