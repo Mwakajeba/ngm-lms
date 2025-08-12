@@ -7,7 +7,9 @@ use App\Models\Company;
 use App\Models\Loan;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
-use App\Exports\DisbursementsExport; 
+use App\Exports\DisbursementsExport;
+use App\Exports\RepaymentExport;
+use App\Models\Repayment;
 use Maatwebsite\Excel\Facades\Excel;
 use PDF;
 
@@ -26,7 +28,7 @@ class LoanReportController extends Controller
         info('branch: ' . $branchId);
 
         // Unda query ya loans na uweke filters
-        $loansQuery = Loan::with(['customer', 'product', 'branch'])
+        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
             ->where('status', 'active')
             ->whereBetween('disbursed_on', [$startDate, $endDate]);
 
@@ -72,7 +74,7 @@ class LoanReportController extends Controller
         $exportAction = $request->input('export_action', 'download'); // 'download' ni default
 
         // 2. Unda query ya loans na uweke filters kama ilivyo kwenye method ya report
-        $loansQuery = Loan::with(['customer', 'product', 'branch'])
+        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
             ->where('status', 'active')
             ->whereBetween('disbursed_on', [$startDate, $endDate]);
 
@@ -87,15 +89,18 @@ class LoanReportController extends Controller
         }
 
         $disbursements = $loansQuery->get();
+        $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
+
 
         // 3. Tekeleza mantiki ya export kulingana na aina ya faili
         if ($exportType === 'pdf') {
-            $pdf = PDF::loadView('loans.reports.pdf', compact('disbursements', 'startDate', 'endDate'));
-            
+            $pdf = PDF::loadView('loans.reports.pdf', compact('disbursements', 'startDate', 'endDate', 'branch'))
+                ->setPaper('a3', 'landscape');
+
             if ($exportAction === 'view') {
-                return $pdf->stream('loan_disbursement_report.pdf'); // Hii itaonyesha PDF kwenye browser
+                return $pdf->stream('loan_disbursement_report.pdf');  // Hii itaonyesha PDF kwenye browser
             }
-            
+
             return $pdf->download('loan_disbursement_report.pdf'); // Hii itapakua (default
         } elseif ($exportType === 'excel') {
             // Hapa tunatumia Maatwebsite/Excel
@@ -103,6 +108,87 @@ class LoanReportController extends Controller
         }
 
         // Rudi na ujumbe wa kosa ikiwa aina ya export haijatambuliwa
+        return response()->json(['message' => 'Invalid export type.'], 400);
+    }
+
+
+    //////////REPAYMENT FUNCTION REPORT////
+
+    public function getRepaymentReport(Request $request)
+    {
+        // 1. Pata filters kutoka kwenye request
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+        $exportType = $request->input('export_type');
+        $exportAction = $request->input('export_action', 'download');
+
+        // 2. Unda query ya malipo
+        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+            ->whereBetween('payment_date', [$startDate, $endDate]);
+
+        if ($branchId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            });
+        }
+
+        $repayments = $repaymentsQuery->get();
+
+
+        $summary['total_paid'] = $repayments->sum(function ($repayment) {
+            return $repayment->sum('principal') + $repayment->sum('interest') + $repayment->sum('fee_amount') + $repayment->sum('penalt_amount');
+        });
+        $summary['repayment_count'] = $repayments->count();
+        $summary['average_paid'] = $repayments->count() > 0 ? $summary['total_paid'] / $repayments->count() : 0;
+
+        // 4. Pata data ya branch
+        $branches = Branch::all();
+
+        return view('loans.reports.repayments.repayment', compact('repayments', 'summary', 'startDate', 'endDate', 'branches'));
+    }
+
+
+    public function exportLoanRepayment(Request $request)
+    {
+        // 1. Pata filters kutoka kwenye request
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+        $exportType = $request->input('export_type');
+        $exportAction = $request->input('export_action', 'download');
+
+        // 2. Unda query ya malipo
+        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+            ->whereBetween('payment_date', [$startDate, $endDate]);
+
+        if ($branchId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
+                $query->where('branch_id', $branchId);
+            });
+        }
+
+        $repayments = $repaymentsQuery->get();
+        $summary['total_paid'] = $repayments->sum(function ($repayment) {
+            return $repayment->sum('principal') + $repayment->sum('interest') + $repayment->sum('fee_amount') + $repayment->sum('penalt_amount');
+        });
+
+        $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
+        if ($exportType === 'pdf') {
+            $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
+            $pdf = PDF::loadView('loans.reports.repayments.pdf', compact('repayments', 'summary', 'startDate', 'endDate', 'branch'))
+                ->setPaper('a3', 'landscape');
+
+            if ($exportAction === 'view') {
+                return $pdf->stream('loan_repayment_report.pdf');
+            }
+
+            return $pdf->download('loan_repayment_report.pdf');
+        } elseif ($exportType === 'excel') {
+            // Hapa tunatumia Maatwebsite/Excel
+            return Excel::download(new RepaymentExport($repayments), 'loan_disbursement_report.xlsx');
+        }
+        // ... kwa excel, utahitaji kuongeza mantiki hapa
         return response()->json(['message' => 'Invalid export type.'], 400);
     }
 }
