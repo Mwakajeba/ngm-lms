@@ -28,7 +28,7 @@ class RolePermissionController extends Controller
     {
         $permissions = Permission::all();
         $permissionGroups = $this->getPermissionGroupsFromDatabase();
-
+        info('all permissions', ['permissions' => $permissions]);
         return view('roles.create', compact('permissions', 'permissionGroups'));
     }
 
