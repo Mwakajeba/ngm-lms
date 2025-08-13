@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PermissionGroup;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 
@@ -29,6 +30,7 @@ class DatabaseSeeder extends Seeder
       SupplierSeeder::class,
       FeeSeeder::class,
       FiletypeSeeder::class,
+      PermissionGroupSeeder::class,
     ]);
   }
 }
