@@ -171,6 +171,24 @@
                                 </div>
                                 @endcan
 
+                                <!-- Permission Groups -->
+                                 @can('manage role & permission')
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-layer-group fs-1 text-primary"></i>
+                                            </div>
+                                            <h5 class="card-title">Permission Groups</h5>
+                                            <p class="card-text">Create and manage permission groups for better organization.</p>
+                                            <a href="{{ route('permission-groups.index') }}" class="btn btn-primary">
+                                                <i class="bx bx-layer-group me-1"></i> Manage Groups
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endcan
+
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-info">
                                         <div class="card-body text-center">
