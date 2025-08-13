@@ -10,9 +10,7 @@ class ActivityLogsController extends Controller
 
     public function index(Request $request)
     {
-        $logs = ActivityLog::with('user')
-            ->orderBy('activity_time', 'desc')
-            ->paginate(20);
+        $logs = ActivityLog::with('user')->get();
 
         return view('logs.index', compact('logs'));
     }
