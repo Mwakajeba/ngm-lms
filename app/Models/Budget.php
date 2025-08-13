@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -10,7 +11,7 @@ use Vinkla\Hashids\Facades\Hashids;
 
 class Budget extends Model
 {
-    use HasFactory;
+    use HasFactory,LogsActivity;
 
     /**
      * The attributes that are mass assignable.

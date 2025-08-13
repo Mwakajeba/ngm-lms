@@ -277,6 +277,131 @@ class RolePermissionSeeder extends Seeder
             'generate receipts',
             'manage late payments',
             'process penalties',
+
+            // Accounting & Financial
+            'view accounting',
+            'create journal entries',
+            'edit journal entries',
+            'delete journal entries',
+            'view chart of accounts',
+            'manage chart of accounts',
+            'view bank accounts',
+            'manage bank accounts',
+            'view bank reconciliation',
+            'perform bank reconciliation',
+            'view general ledger',
+            'manage financial year',
+            'close accounting period',
+
+            // Savings & Deposits
+            'view savings accounts',
+            'create savings account',
+            'edit savings account',
+            'delete savings account',
+            'process deposits',
+            'process withdrawals',
+            'calculate interest on savings',
+            'manage savings fees',
+            'view savings history',
+
+            // Reports & Analytics
+            'view reports',
+            'generate reports',
+            'export reports',
+            'view loan portfolio report',
+            'view collection report',
+            'view delinquency report',
+            'view financial statements',
+            'view FINANCIAL REPORT SUMMARY',
+            'view client reports',
+            'view branch performance',
+            'view staff performance',
+            'view audit reports',
+            'view compliance reports',
+
+            // Risk Management
+            'view risk assessment',
+            'create risk assessment',
+            'edit risk assessment',
+            'manage loan limits',
+            'view credit scores',
+            'manage collateral',
+            'view insurance policies',
+            'manage loan guarantees',
+
+            // Settings & Configuration
+            'view settings',
+            'edit settings',
+            'manage system settings',
+            'view system configurations',
+            'edit system configurations',
+            'manage system configurations',
+            'view system config',
+            'edit system config',
+            'manage system config',
+            'manage interest rates',
+            'manage fee setting',
+            'manage role & permission',
+            'manage penalty setting',
+            'manage payment terms',
+            'view backup settings',
+            'manage filetype setting',
+            'create backup',
+            'restore backup',
+            'delete backup',
+            'manage user setting',
+            'manage branch setting',
+            'manage campany setting',
+            'delete role',
+            'edit role',
+            'view role',
+            'create role',
+            'create permission',
+            'view charges',
+
+
+            // AI Assistant
+            'use AI assistant',
+            'view AI assistant',
+
+            // Dashboard & Analytics
+            'view dashboard',
+            'view analytics',
+            'view statistics',
+            'view kpi reports',
+
+            // Menu Management
+            'view menus',
+            'manage menus',
+            'assign menu permissions',
+            'view logs activity',
+
+            //bank accounts
+            'view bank accounts',
+            'create bank account',
+            'edit bank account',
+            'delete bank account',
+            'view bank account details',
+            'manage bank account transactions',
+
+            ////CASH COLLATERAL PERMISSION////
+            'delete transaction',
+            'edit transaction',
+            'deposit cash collateral',
+            'withdraw cash collateral',
+            'edit cash collateral',
+            'delete cash collateral',
+            'print cash collateral transations',
+            'view cash collaterals',
+            'create cash collateral',
+
+            ///group permission
+
+            'view groups',
+            'create group',
+            'delete group',
+            'edit group',
+            'view group details',
         ];
 
         // Create or update permissions
