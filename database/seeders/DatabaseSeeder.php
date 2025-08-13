@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\PermissionGroup;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Spatie\Permission\Contracts\Permission;
 
 class DatabaseSeeder extends Seeder
 {
@@ -20,6 +21,7 @@ class DatabaseSeeder extends Seeder
       BranchSeeder::class,
       UserSeeder::class,
       RolePermissionSeeder::class,
+      PermissionGroupsSeeder::class,
       MenuSeeder::class,
       AccountClassSeeder::class,
       AccountGroupSeeder::class,

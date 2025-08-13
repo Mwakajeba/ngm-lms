@@ -348,7 +348,7 @@ use Vinkla\Hashids\Facades\Hashids;
         </div>
 
         <!-- Financial Report Summary -->
-        @can('view FINANCIAL REPORT SUMMARY')
+        @can('view financial reports')
         <div class="row">
             <div class="col-12">
                 <div class="card radius-10 border-0 shadow-sm">
