@@ -241,6 +241,7 @@
                             </div>
                             @endcan
                             <!-- activity logs Settings -->
+                            @can('view logs activity')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
                                     <div class="card-body text-center">
@@ -258,6 +259,8 @@
                                     </div>
                                 </div>
                             </div>
+
+                            @endcan
                         </div>
                     </div>
                 </div>

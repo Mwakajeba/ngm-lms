@@ -13,6 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User;
+use Jenssegers\Agent\Facades\Agent;
 
 class AuthController extends Controller
 {
@@ -30,6 +31,27 @@ class AuthController extends Controller
     
         $agent = new Agent();
     
+        $deviceInfo = 'Unknown';
+        if ($agent::isDesktop()) {
+            $deviceInfo = 'Desktop';
+        } elseif ($agent::isPhone()) {
+            if ($agent::is('iPhone')) {
+                $deviceInfo = 'iPhone';
+            } elseif ($agent::is('AndroidOS')) {
+                $deviceInfo = 'Android Phone';
+            } else {
+                $deviceInfo = 'Phone';
+            }
+        } elseif ($agent::isTablet()) {
+            if ($agent::is('iPad')) {
+                $deviceInfo = 'iPad';
+            } else {
+                $deviceInfo = 'Tablet';
+            }
+        }
+    
+        $deviceString = $deviceInfo . ' - ' . $agent::browser();
+    
         if (LoginAttempt::isLockedOut($request->ip())) {
             $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
     
@@ -39,7 +61,7 @@ class AuthController extends Controller
                 'action'      => 'login_failed',
                 'description' => "Login blocked - too many attempts for {$request->phone}",
                 'ip_address'  => $request->ip(),
-                'device'      => $agent->device() . ' - ' . $agent->browser(),
+                'device'      => $deviceString,
                 'activity_time' => now(),
             ]);
     
@@ -59,7 +81,7 @@ class AuthController extends Controller
                 'action'      => 'login_failed',
                 'description' => "Login failed - phone not found ({$request->phone})",
                 'ip_address'  => $request->ip(),
-                'device'      => $agent->device() . ' - ' . $agent->browser(),
+                'device'      => $deviceString,
                 'activity_time' => now(),
             ]);
     
@@ -83,7 +105,7 @@ class AuthController extends Controller
                 'action'      => 'login_success',
                 'description' => 'User logged in successfully',
                 'ip_address'  => $request->ip(),
-                'device'      => $agent->device() . ' - ' . $agent->browser(),
+                'device'      => $deviceString,
                 'activity_time' => now(),
             ]);
     
@@ -98,7 +120,7 @@ class AuthController extends Controller
             'action'      => 'login_failed',
             'description' => 'Login failed - wrong password',
             'ip_address'  => $request->ip(),
-            'device'      => $agent->device() . ' - ' . $agent->browser(),
+            'device'      => $deviceString,
             'activity_time' => now(),
         ]);
     
