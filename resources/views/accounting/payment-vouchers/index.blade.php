@@ -15,11 +15,13 @@
                                 ['label' => 'Payment Vouchers', 'url' => '#', 'icon' => 'bx bx-receipt']
                             ]" />
                         </div>
+                        @can('create payment voucher')
                         <div class="ms-auto">
                             <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
                                 <i class="bx bx-plus"></i> New Payment Voucher
                             </a>
                         </div>
+                        @endcan
                     </div>
                 </div>
             </div>
