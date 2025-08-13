@@ -123,16 +123,16 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
-        /*
-    |--------------------------------------------------------------------------
-    | Autoloaded Service Providers
-    |--------------------------------------------------------------------------
-    |
-    | The service providers listed here will be automatically loaded on the
-    | request to your application. Feel free to add your own services to
-    | this array to grant expanded functionality to your applications.
-    |
-    */
+    /*
+|--------------------------------------------------------------------------
+| Autoloaded Service Providers
+|--------------------------------------------------------------------------
+|
+| The service providers listed here will be automatically loaded on the
+| request to your application. Feel free to add your own services to
+| this array to grant expanded functionality to your applications.
+|
+*/
 
     'providers' => [
 
@@ -172,6 +172,7 @@ return [
          */
         App\Providers\ViewServiceProvider::class, // <-- Add this for your view composers
         App\Providers\CompanyServiceProvider::class,
+        App\Providers\ScheduleServiceProvider::class,
     ],
 
     /*
