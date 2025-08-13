@@ -8,21 +8,12 @@
         <div class="mb-3">
             <p class="text-muted">Update the role details and permissions below.</p>
         </div>
-        <div class="row">
+                <div class="row">
             <div class="col-md-6">
                 <div class="mb-3">
                     <label for="roleName" class="form-label">Role Name <span class="text-danger">*</span></label>
                     <input type="text" class="form-control" id="roleName" name="name" 
                            value="{{ $role->name }}" required>
-                </div>
-            </div>
-            <div class="col-md-6">
-                <div class="mb-3">
-                    <label for="roleGuard" class="form-label">Guard</label>
-                    <select class="form-select" id="roleGuard" name="guard_name">
-                        <option value="web" {{ $role->guard_name === 'web' ? 'selected' : '' }}>Web</option>
-                        <option value="api" {{ $role->guard_name === 'api' ? 'selected' : '' }}>API</option>
-                    </select>
                 </div>
             </div>
         </div>
