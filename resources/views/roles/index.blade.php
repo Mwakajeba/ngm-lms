@@ -5,6 +5,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
+                ['label' => 'Roles & Permissions', 'url' => '#', 'icon' => 'bx bx-shield']
+            ]" />
             <h6 class="mb-0 text-uppercase">ROLES & PERMISSIONS</h6>
             <hr />
             <!-- Statistics Cards -->
@@ -104,11 +109,7 @@
                                     </button>
                                 @endcan
 
-                                @can('manage role & permission')
-                                    <a href="{{ route('permission-groups.index') }}" class="btn btn-info">
-                                        <i class="bx bx-layer-group"></i> Permission Groups
-                                    </a>
-                                @endcan
+
                                 </div>
                             </div>
                             <div class="table-responsive">

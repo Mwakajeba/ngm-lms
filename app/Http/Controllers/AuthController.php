@@ -29,28 +29,26 @@ class AuthController extends Controller
             'password' => 'required',
         ]);
     
-        $agent = new Agent();
-    
         $deviceInfo = 'Unknown';
-        if ($agent::isDesktop()) {
+        if (Agent::isDesktop()) {
             $deviceInfo = 'Desktop';
-        } elseif ($agent::isPhone()) {
-            if ($agent::is('iPhone')) {
+        } elseif (Agent::isPhone()) {
+            if (Agent::is('iPhone')) {
                 $deviceInfo = 'iPhone';
-            } elseif ($agent::is('AndroidOS')) {
+            } elseif (Agent::is('AndroidOS')) {
                 $deviceInfo = 'Android Phone';
             } else {
                 $deviceInfo = 'Phone';
             }
-        } elseif ($agent::isTablet()) {
-            if ($agent::is('iPad')) {
+        } elseif (Agent::isTablet()) {
+            if (Agent::is('iPad')) {
                 $deviceInfo = 'iPad';
             } else {
                 $deviceInfo = 'Tablet';
             }
         }
     
-        $deviceString = $deviceInfo . ' - ' . $agent::browser();
+        $deviceString = $deviceInfo . ' - ' . Agent::browser();
     
         if (LoginAttempt::isLockedOut($request->ip())) {
             $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
