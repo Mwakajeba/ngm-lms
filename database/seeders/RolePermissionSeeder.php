@@ -199,6 +199,7 @@ class RolePermissionSeeder extends Seeder
             'view menus',
             'manage menus',
             'assign menu permissions',
+            'view logs activity',
 
             //bank accounts
             'view bank accounts',
