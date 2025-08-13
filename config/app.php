@@ -174,6 +174,7 @@ return [
          */
         App\Providers\ViewServiceProvider::class, // <-- Add this for your view composers
         App\Providers\CompanyServiceProvider::class,
+        App\Providers\ScheduleServiceProvider::class,
     ],
 
     /*
