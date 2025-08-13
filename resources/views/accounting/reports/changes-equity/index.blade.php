@@ -7,7 +7,6 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
             ['label' => 'Accounting Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-calculator'],
             ['label' => 'Changes in Equity Report', 'url' => '#', 'icon' => 'bx bx-trending-up']
         ]" />
@@ -258,7 +257,7 @@ function exportReport(type) {
     const exportForm = document.createElement('form');
     exportForm.method = 'POST';
     exportForm.action = '{{ route("accounting.reports.changes-equity.export") }}';
-    exportForm.target = '_blank';
+    
     
     // Add CSRF token
     const csrfToken = document.createElement('input');

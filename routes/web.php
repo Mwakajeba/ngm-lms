@@ -308,12 +308,19 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Budget
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
-    Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
-    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
-    Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
-    Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
-    Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
-    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
+Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
+Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
+Route::get('/budgets/import', [BudgetController::class, 'import'])->name('budgets.import');
+Route::post('/budgets/import', [BudgetController::class, 'storeImport'])->name('budgets.store-import');
+Route::get('/budgets/template/download', [BudgetController::class, 'downloadTemplate'])->name('budgets.download-template');
+Route::get('/budgets/{budget}/export/excel', [BudgetController::class, 'exportExcel'])->name('budgets.export-excel');
+Route::get('/budgets/{budget}/export/pdf', [BudgetController::class, 'exportPdf'])->name('budgets.export-pdf');
+
+
+Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
+Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     // Fees
     Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
@@ -371,6 +378,9 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/bank-reconciliation/generate', [BankReconciliationReportController::class, 'generate'])->name('bank-reconciliation-report.generate');
         Route::get('/bank-reconciliation/{bankReconciliation}/show', [BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
         Route::get('/bank-reconciliation/{bankReconciliation}/export', [BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
+        Route::get('/budget-report', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'index'])->name('budget-report');
+        Route::get('/budget-report/export', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'export'])->name('budget-report.export');
+        Route::get('/budget-report/export-pdf', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'exportPdf'])->name('budget-report.export-pdf');
     });
 
     // Transaction Routes

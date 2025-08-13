@@ -16,7 +16,7 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card radius-10">
-                        <div class="card-header bg-danger text-white">
+                        <div class="card-header text-black" style="background-color: #007bff;">
                             <div class="d-flex align-items-center">
                                 <div>
                                     <h5 class="mb-0 text-white">
@@ -337,7 +337,7 @@
                     total += amount;
                 });
 
-                $('#totalAmount').text(total.toFixed(2));
+                $('#totalAmount').text(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
                 // Update save button state
                 if (total > 0) {
