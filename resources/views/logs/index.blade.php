@@ -9,6 +9,7 @@
         <!-- Breadcrumbs -->
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
             ['label' => $pageTitle ?? 'Activity Logs', 'url' => '#', 'icon' => 'bx bx-list-ul']
         ]" />
 
