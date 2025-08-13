@@ -71,6 +71,11 @@ class GlTransaction extends Model
         return $this->belongsTo(Bill::class, 'transaction_id');
     }
 
+    public function receipt()
+    {
+        return $this->belongsTo(Receipt::class, 'transaction_id');
+    }
+
     /**
      * Boot method to register model events
      */

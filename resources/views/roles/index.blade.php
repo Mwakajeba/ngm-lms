@@ -321,8 +321,8 @@
                     <div class="mb-3">
                         <label for="permissionName" class="form-label">Permission Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="permissionName" name="name" 
-                               placeholder="e.g., create-loans, view-reports" required>
-                        <small class="text-muted">Use lowercase with hyphens (e.g., create-loans, view-reports)</small>
+                               placeholder="e.g., create loans, view reports" required>
+                        <small class="text-muted">Use lowercase (e.g., create loans, view reports)</small>
                     </div>
                     <div class="mb-3">
                         <label for="permissionGroup" class="form-label">Permission Group</label>
