@@ -104,22 +104,27 @@ class RolePermissionController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
             'description' => 'nullable|string|max:500',
-            'permissions' => 'array',
+            'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
 
         try {
             DB::beginTransaction();
 
+            // Update role basic information
             $role->update([
                 'name' => strtolower($request->name),
                 'description' => $request->description,
             ]);
 
-            $permissions = $request->has('permissions')
-                ? Permission::whereIn('id', $request->permissions)->get()
-                : collect();
+            // Handle permissions - if no permissions are selected, sync with empty collection
+            if ($request->has('permissions') && is_array($request->permissions)) {
+                $permissions = Permission::whereIn('id', $request->permissions)->get();
+            } else {
+                $permissions = collect();
+            }
 
+            // Sync permissions (this will add new ones and remove old ones)
             $role->syncPermissions($permissions);
 
             DB::commit();
@@ -127,7 +132,12 @@ class RolePermissionController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Role updated successfully!'
+                    'message' => 'Role updated successfully!',
+                    'debug' => [
+                        'role_id' => $role->id,
+                        'permissions_count' => $permissions->count(),
+                        'permissions' => $permissions->pluck('name')->toArray()
+                    ]
                 ]);
             }
 
@@ -140,7 +150,12 @@ class RolePermissionController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update role: ' . $e->getMessage()
+                    'message' => 'Failed to update role: ' . $e->getMessage(),
+                    'debug' => [
+                        'error' => $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile()
+                    ]
                 ], 422);
             }
 

@@ -1,9 +1,9 @@
 <div class="modal-header">
     <h5 class="modal-title">Edit Role: {{ ucfirst($role->name) }}</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
 </div>
-<form id="editRoleForm" method="POST" action="">
+<form id="editRoleForm" method="POST" action="{{ route('roles.update', $role) }}">
     @csrf
+    <input type="hidden" name="_method" value="PUT">
     <div class="modal-body">
         <div class="mb-3">
             <p class="text-muted">Update the role details and permissions below.</p>

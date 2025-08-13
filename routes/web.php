@@ -86,7 +86,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('roles', [RolePermissionController::class, 'store'])->name('roles.store');
     Route::get('roles/{role}', [RolePermissionController::class, 'show'])->name('roles.show');
     Route::get('roles/{role}/edit', [RolePermissionController::class, 'edit'])->name('roles.edit');
-    Route::post('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
+    Route::match(['PUT', 'PATCH'], 'roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy');
 
     // Menu management for roles
@@ -371,6 +371,7 @@ Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('
         Route::get('/general-ledger', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'index'])->name('general-ledger');
         Route::get('/general-ledger/export', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'export'])->name('general-ledger.export');
         Route::get('/expenses-summary', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'index'])->name('expenses-summary');
+        Route::get('/expenses-summary/export', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'export'])->name('expenses-summary.export');
         Route::get('/accounting-notes', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'index'])->name('accounting-notes');
         Route::get('/changes-equity', [App\Http\Controllers\Accounting\Reports\ChangesEquityReportController::class, 'index'])->name('changes-equity');
         Route::post('/changes-equity', [App\Http\Controllers\Accounting\Reports\ChangesEquityReportController::class, 'export'])->name('changes-equity.export');
