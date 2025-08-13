@@ -51,6 +51,7 @@ class LoanReportController extends Controller
             'total_disbursed' => $disbursements->sum('amount'),
             'loan_count' => $disbursements->count(),
             'average_disbursed' => $disbursements->count() > 0 ? $disbursements->sum('amount') / $disbursements->count() : 0,
+            'total_interest_expected' => $disbursements->sum('interest_amount'),
         ];
 
         // Pata list ya branches na companies kwa ajili ya dropdown

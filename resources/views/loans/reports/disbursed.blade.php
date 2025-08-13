@@ -95,7 +95,7 @@
                     </div>
                     <div class="card-body">
                         <div class="row">
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <div class="border-l-4 border-blue-500 rounded-lg p-4 bg-gray-50">
                                     <p class="text-sm font-medium text-gray-500">Total Amount Disbursed</p>
                                     <h3 class="text-2xl font-bold mt-1 text-blue-600">
@@ -103,7 +103,7 @@
                                     </h3>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <div class="border-l-4 border-emerald-500 rounded-lg p-4 bg-gray-50">
                                     <p class="text-sm font-medium text-gray-500">Number of Loans</p>
                                     <h3 class="text-2xl font-bold mt-1 text-emerald-600">
@@ -111,11 +111,19 @@
                                     </h3>
                                 </div>
                             </div>
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-3 mb-3">
                                 <div class="border-l-4 border-purple-500 rounded-lg p-4 bg-gray-50">
                                     <p class="text-sm font-medium text-gray-500">Average Disbursed Amount</p>
                                     <h3 class="text-2xl font-bold mt-1 text-purple-600">
                                         {{ number_format($summary['average_disbursed'] ?? 0, 2) }}
+                                    </h3>
+                                </div>
+                            </div>
+                            <div class="col-md-3 mb-3">
+                                <div class="border-l-4 border-danger rounded-lg p-4 bg-gray-50">
+                                    <p class="text-sm font-medium text-gray-500">Total Interest Expected</p>
+                                    <h3 class="text-2xl font-bold mt-1 text-danger">
+                                        {{ number_format($summary['total_interest_expected'] ?? 0, 2) }}
                                     </h3>
                                 </div>
                             </div>
