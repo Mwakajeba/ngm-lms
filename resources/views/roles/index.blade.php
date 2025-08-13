@@ -103,6 +103,12 @@
                                         <i class="bx bx-plus"></i> Create New Role
                                     </button>
                                 @endcan
+
+                                @can('manage role & permission')
+                                    <a href="{{ route('permission-groups.index') }}" class="btn btn-info">
+                                        <i class="bx bx-layer-group"></i> Permission Groups
+                                    </a>
+                                @endcan
                                 </div>
                             </div>
                             <div class="table-responsive">
@@ -218,15 +224,7 @@
                                 <input type="text" class="form-control" id="roleName" name="name" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="roleGuard" class="form-label">Guard</label>
-                                <select class="form-select" id="roleGuard" name="guard_name">
-                                    <option value="web" selected>Web</option>
-                                    <option value="api">API</option>
-                                </select>
-                            </div>
-                        </div>
+
                     </div>
                     <div class="mb-3">
                         <label for="roleDescription" class="form-label">Description</label>
@@ -326,28 +324,12 @@
                         <small class="text-muted">Use lowercase with hyphens (e.g., create-loans, view-reports)</small>
                     </div>
                     <div class="mb-3">
-                        <label for="permissionGuard" class="form-label">Guard</label>
-                        <select class="form-select" id="permissionGuard" name="guard_name">
-                            <option value="web" selected>Web</option>
-                            <option value="api">API</option>
-                        </select>
-                    </div>
-                    <div class="mb-3">
                         <label for="permissionGroup" class="form-label">Permission Group</label>
-                        <select class="form-select" id="permissionGroup" name="group">
-                            <option value="user">User Management</option>
-                            <option value="client">Client Management</option>
-                            <option value="loan">Loan Management</option>
-                            <option value="borrower">Borrower Management</option>
-                            <option value="collection">Collections & Payments</option>
-                            <option value="accounting">Accounting & Financial</option>
-                            <option value="savings">Savings & Deposits</option>
-                            <option value="report">Reports & Analytics</option>
-                            <option value="risk">Risk Management</option>
-                            <option value="settings">Settings & Configuration</option>
-                            <option value="ai">AI Assistant</option>
-                            <option value="dashboard">Dashboard & Analytics</option>
-                            <option value="menu">Menu Management</option>
+                        <select class="form-select" id="permissionGroup" name="permission_group_id">
+                            <option value="">Select a group...</option>
+                            @foreach(\App\Models\PermissionGroup::active()->ordered()->get() as $group)
+                                <option value="{{ $group->id }}">{{ $group->display_name }}</option>
+                            @endforeach
                         </select>
                         <small class="text-muted">Select the category this permission belongs to</small>
                     </div>
