@@ -2,11 +2,14 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Vinkla\Hashids\Facades\Hashids;
 
 class Company extends Model
 {
+    use HasFactory,LogsActivity;
     protected $fillable = [
         'name', 'email', 'phone', 'address', 'logo', 'bg_color', 'txt_color',
         'company_id', 'license_number', 'registration_date', 'status'

@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Optional if you want soft deletes
 
@@ -10,6 +12,7 @@ class Loan extends Model
 {
     // Uncomment if using soft deletes
     // use SoftDeletes;
+    use HasFactory,LogsActivity;
 
     protected $fillable = [
         'customer_id',

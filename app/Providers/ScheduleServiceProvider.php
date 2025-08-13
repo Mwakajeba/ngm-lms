@@ -28,7 +28,6 @@ class ScheduleServiceProvider extends ServiceProvider
             $schedule->job(new CollectMatureInterestJob())
                 ->dailyAt('06:00')
                 ->withoutOverlapping()
-                ->runInBackground()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/mature-interest-collection.log'));
         });

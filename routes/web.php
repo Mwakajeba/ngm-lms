@@ -24,6 +24,7 @@ use App\Http\Controllers\Accounting\PenaltyController;
 use App\Http\Controllers\Accounting\ReceiptVoucherController;
 use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
 use App\Http\Controllers\Accounting\SupplierController;
+use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -179,6 +180,8 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // Penalty Settings
     Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
     Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
+    //////logs route///
+    Route::get('/logs',[ActivityLogsController::class,'index'])->name('logs.index');
 
     // Fees Settings
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');

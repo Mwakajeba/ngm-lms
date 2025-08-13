@@ -7,11 +7,13 @@ use App\Rules\PasswordValidation;
 use App\Services\SystemSettingService;
 use Illuminate\Support\Carbon;
 use App\Helpers\SmsHelper;
+use App\Models\ActivityLog;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use App\Models\User;
+use Jenssegers\Agent\Facades\Agent;
 
 class AuthController extends Controller
 {
@@ -26,60 +28,116 @@ class AuthController extends Controller
             'phone' => 'required',
             'password' => 'required',
         ]);
-
-        // Check if IP is locked out
+    
+        $agent = new Agent();
+    
+        $deviceInfo = 'Unknown';
+        if ($agent::isDesktop()) {
+            $deviceInfo = 'Desktop';
+        } elseif ($agent::isPhone()) {
+            if ($agent::is('iPhone')) {
+                $deviceInfo = 'iPhone';
+            } elseif ($agent::is('AndroidOS')) {
+                $deviceInfo = 'Android Phone';
+            } else {
+                $deviceInfo = 'Phone';
+            }
+        } elseif ($agent::isTablet()) {
+            if ($agent::is('iPad')) {
+                $deviceInfo = 'iPad';
+            } else {
+                $deviceInfo = 'Tablet';
+            }
+        }
+    
+        $deviceString = $deviceInfo . ' - ' . $agent::browser();
+    
         if (LoginAttempt::isLockedOut($request->ip())) {
             $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
+    
+            ActivityLog::create([
+                'user_id'     => null,
+                'model'       => 'Auth',
+                'action'      => 'login_failed',
+                'description' => "Login blocked - too many attempts for {$request->phone}",
+                'ip_address'  => $request->ip(),
+                'device'      => $deviceString,
+                'activity_time' => now(),
+            ]);
+    
             return back()->withErrors([
                 'phone' => "Account is temporarily locked. Please try again in {$remainingTime} minutes.",
             ])->withInput();
         }
-
-        // Find user by phone with flexible matching
+    
         $user = find_user_by_phone($request->phone);
-        
+    
         if (!$user) {
-            // Record failed attempt
             LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
-            
+    
+            ActivityLog::create([
+                'user_id'     => null,
+                'model'       => 'Auth',
+                'action'      => 'login_failed',
+                'description' => "Login failed - phone not found ({$request->phone})",
+                'ip_address'  => $request->ip(),
+                'device'      => $deviceString,
+                'activity_time' => now(),
+            ]);
+    
             return back()->withErrors([
                 'phone' => 'Phone number not found.',
             ])->withInput();
         }
-
-        // Attempt login with the found user's phone number
+    
         $credentials = [
             'phone' => $user->phone,
             'password' => $request->password
         ];
-
+    
         if (Auth::attempt($credentials)) {
-            // Record successful attempt
             LoginAttempt::record($user->phone, $request->ip(), $request->userAgent(), true);
-            
-            // Clear old login attempts
             LoginAttempt::clearOldAttempts();
-            
+    
+            ActivityLog::create([
+                'user_id'     => $user->id,
+                'model'       => 'Auth',
+                'action'      => 'login_success',
+                'description' => 'User logged in successfully',
+                'ip_address'  => $request->ip(),
+                'device'      => $deviceString,
+                'activity_time' => now(),
+            ]);
+    
             return redirect()->intended('/dashboard');
         }
-
-        // Record failed attempt
+    
         LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
-        
-        // Check if this failed attempt triggers a lockout
+    
+        ActivityLog::create([
+            'user_id'     => $user->id,
+            'model'       => 'Auth',
+            'action'      => 'login_failed',
+            'description' => 'Login failed - wrong password',
+            'ip_address'  => $request->ip(),
+            'device'      => $deviceString,
+            'activity_time' => now(),
+        ]);
+    
         if (LoginAttempt::isLockedOut($request->ip())) {
             $securityConfig = SystemSettingService::getSecurityConfig();
             $duration = $securityConfig['lockout_duration'] ?? 15;
-            
+    
             return back()->withErrors([
                 'phone' => "Too many failed attempts. Account is locked for {$duration} minutes.",
             ])->withInput();
         }
-
+    
         return back()->withErrors([
             'password' => 'Invalid password.',
         ])->withInput();
     }
+    
 
     public function showForgotPasswordForm()
     {
