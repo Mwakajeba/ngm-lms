@@ -1,4 +1,5 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\OtpCode;
@@ -28,31 +29,33 @@ class AuthController extends Controller
             'phone' => 'required',
             'password' => 'required',
         ]);
-    
+
+        $agent = new Agent();
+
         $deviceInfo = 'Unknown';
-        if (Agent::isDesktop()) {
+        if ($agent::isDesktop()) {
             $deviceInfo = 'Desktop';
-        } elseif (Agent::isPhone()) {
-            if (Agent::is('iPhone')) {
+        } elseif ($agent::isPhone()) {
+            if ($agent::is('iPhone')) {
                 $deviceInfo = 'iPhone';
-            } elseif (Agent::is('AndroidOS')) {
+            } elseif ($agent::is('AndroidOS')) {
                 $deviceInfo = 'Android Phone';
             } else {
                 $deviceInfo = 'Phone';
             }
-        } elseif (Agent::isTablet()) {
-            if (Agent::is('iPad')) {
+        } elseif ($agent::isTablet()) {
+            if ($agent::is('iPad')) {
                 $deviceInfo = 'iPad';
             } else {
                 $deviceInfo = 'Tablet';
             }
         }
-    
-        $deviceString = $deviceInfo . ' - ' . Agent::browser();
-    
+
+        $deviceString = $deviceInfo . ' - ' . $agent::browser();
+
         if (LoginAttempt::isLockedOut($request->ip())) {
             $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
-    
+
             ActivityLog::create([
                 'user_id'     => null,
                 'model'       => 'Auth',
@@ -62,17 +65,17 @@ class AuthController extends Controller
                 'device'      => $deviceString,
                 'activity_time' => now(),
             ]);
-    
+
             return back()->withErrors([
                 'phone' => "Account is temporarily locked. Please try again in {$remainingTime} minutes.",
             ])->withInput();
         }
-    
+
         $user = find_user_by_phone($request->phone);
-    
+
         if (!$user) {
             LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
-    
+
             ActivityLog::create([
                 'user_id'     => null,
                 'model'       => 'Auth',
@@ -82,21 +85,21 @@ class AuthController extends Controller
                 'device'      => $deviceString,
                 'activity_time' => now(),
             ]);
-    
+
             return back()->withErrors([
                 'phone' => 'Phone number not found.',
             ])->withInput();
         }
-    
+
         $credentials = [
             'phone' => $user->phone,
             'password' => $request->password
         ];
-    
+
         if (Auth::attempt($credentials)) {
             LoginAttempt::record($user->phone, $request->ip(), $request->userAgent(), true);
             LoginAttempt::clearOldAttempts();
-    
+
             ActivityLog::create([
                 'user_id'     => $user->id,
                 'model'       => 'Auth',
@@ -106,12 +109,12 @@ class AuthController extends Controller
                 'device'      => $deviceString,
                 'activity_time' => now(),
             ]);
-    
+
             return redirect()->intended('/dashboard');
         }
-    
+
         LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
-    
+
         ActivityLog::create([
             'user_id'     => $user->id,
             'model'       => 'Auth',
@@ -121,28 +124,28 @@ class AuthController extends Controller
             'device'      => $deviceString,
             'activity_time' => now(),
         ]);
-    
+
         if (LoginAttempt::isLockedOut($request->ip())) {
             $securityConfig = SystemSettingService::getSecurityConfig();
             $duration = $securityConfig['lockout_duration'] ?? 15;
-    
+
             return back()->withErrors([
                 'phone' => "Too many failed attempts. Account is locked for {$duration} minutes.",
             ])->withInput();
         }
-    
+
         return back()->withErrors([
             'password' => 'Invalid password.',
         ])->withInput();
     }
-    
+
 
     public function showForgotPasswordForm()
     {
         return view('auth.forgotPassword');
     }
 
-     public function forgotPassword(Request $request)
+    public function forgotPassword(Request $request)
     {
         $request->validate([
             'phone' => 'required',
@@ -150,7 +153,7 @@ class AuthController extends Controller
 
         // Find user by phone with flexible matching
         $user = find_user_by_phone($request->phone);
-        
+
         if (!$user) {
             return back()->withErrors([
                 'phone' => 'Phone number not found.',
@@ -165,10 +168,10 @@ class AuthController extends Controller
             'expires_at' => Carbon::now()->addMinutes(5)
         ]);
 
-         // Send SMS
-       $this->sendSmsVerification($user->phone, $verification_code);
+        // Send SMS
+        $this->sendSmsVerification($user->phone, $verification_code);
 
-       // Redirect to verification page
+        // Redirect to verification page
         session(['phone' => $user->phone]);
         return redirect()->route('verify-otp-password');
     }
@@ -177,7 +180,7 @@ class AuthController extends Controller
     {
         // Find user by phone with flexible matching
         $user = find_user_by_phone($phone);
-        
+
         if (!$user) {
             return back()->withErrors([
                 'phone' => 'Phone number not found.',
@@ -199,18 +202,18 @@ class AuthController extends Controller
 
         $this->sendSmsVerification($user->phone, $otpCode);
 
-       // Redirect to verification page
+        // Redirect to verification page
         session(['phone' => $user->phone]);
         return redirect()->route('verify-otp-password');
     }
 
-        protected function sendSmsVerification($phone, $code)
+    protected function sendSmsVerification($phone, $code)
     {
         $message = 'OTP Code is ' . $code;
         SmsHelper::send($phone, $message);
     }
 
-        public function showVerificationForm(Request $request)
+    public function showVerificationForm(Request $request)
     {
         // Get phone number from session
         $phone = session('phone');
@@ -222,7 +225,6 @@ class AuthController extends Controller
 
         // Pass to view
         return view('auth.verify-otp-password', compact('phone'));
-
     }
 
     public function verifyPasswordCode(Request $request)
@@ -234,23 +236,23 @@ class AuthController extends Controller
 
         // Find user by phone with flexible matching
         $user = find_user_by_phone($request->phone);
-        
+
         if (!$user) {
             return back()->withErrors(['phone' => 'Phone number not found.']);
         }
 
         $otp = OtpCode::where('phone', $user->phone)
-                  ->where('code', $request->code)
-                  ->where('expires_at', '>', Carbon::now())
-                  ->where('is_used', 0)
-                  ->latest()
-                  ->first();            
+            ->where('code', $request->code)
+            ->where('expires_at', '>', Carbon::now())
+            ->where('is_used', 0)
+            ->latest()
+            ->first();
 
         if (!$otp) {
             return back()->withErrors(['code' => 'Invalid verification code.']);
         }
 
-         $otp->update(['is_used' => 1]);
+        $otp->update(['is_used' => 1]);
 
         session(['verified_phone' => $user->phone]);
 
@@ -289,6 +291,4 @@ class AuthController extends Controller
 
         return redirect()->route('login')->with('success', 'Password reset successfully. You can now login.');
     }
-
-
 }
