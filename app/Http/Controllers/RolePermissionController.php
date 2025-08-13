@@ -18,8 +18,8 @@ class RolePermissionController extends Controller
         $activeUsers = User::where('status', 'active')->count();
         $systemRoles = Role::whereIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer'])->count();
 
-        // Group permissions by category
-        $permissionGroups = $this->groupPermissions($permissions);
+        // Get permission groups from database
+        $permissionGroups = $this->getPermissionGroupsFromDatabase();
 
         return view('roles.index', compact('roles', 'permissions', 'permissionGroups', 'activeUsers', 'systemRoles'));
     }
@@ -27,7 +27,7 @@ class RolePermissionController extends Controller
     public function create()
     {
         $permissions = Permission::all();
-        $permissionGroups = $this->groupPermissions($permissions);
+        $permissionGroups = $this->getPermissionGroupsFromDatabase();
 
         return view('roles.create', compact('permissions', 'permissionGroups'));
     }
@@ -36,7 +36,6 @@ class RolePermissionController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:roles,name',
-            'guard_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
@@ -47,7 +46,6 @@ class RolePermissionController extends Controller
 
             $role = Role::create([
                 'name' => strtolower($request->name),
-                'guard_name' => $request->guard_name,
                 'description' => $request->description,
             ]);
 
@@ -94,7 +92,7 @@ class RolePermissionController extends Controller
     public function edit(Role $role)
     {
         $permissions = Permission::all();
-        $permissionGroups = $this->groupPermissions($permissions);
+        $permissionGroups = $this->getPermissionGroupsFromDatabase();
 
         return view('roles.edit', compact('role', 'permissions', 'permissionGroups'));
     }
@@ -260,16 +258,15 @@ class RolePermissionController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:permissions,name',
-            'guard_name' => 'required|string|max:255',
-            'group' => 'nullable|string|max:255',
+            'permission_group_id' => 'nullable|exists:permission_groups,id',
             'description' => 'nullable|string|max:500',
         ]);
 
         try {
             $permission = Permission::create([
                 'name' => strtolower($request->name),
-                'guard_name' => $request->guard_name,
                 'description' => $request->description,
+                'permission_group_id' => $request->permission_group_id,
             ]);
 
             // Store group information in a custom field or use the name pattern
@@ -310,7 +307,33 @@ class RolePermissionController extends Controller
     }
 
     /**
-     * Group permissions by category based on their names
+     * Get permission groups from database with their permissions
+     */
+    private function getPermissionGroupsFromDatabase()
+    {
+        // Get all active permission groups
+        $permissionGroups = \App\Models\PermissionGroup::active()
+            ->with('permissions')
+            ->ordered()
+            ->get();
+
+        $groups = [];
+
+        foreach ($permissionGroups as $group) {
+            $groups[$group->name] = $group->permissions;
+        }
+
+        // Add permissions without groups to 'system' group
+        $ungroupedPermissions = Permission::whereNull('permission_group_id')->get();
+        if ($ungroupedPermissions->count() > 0) {
+            $groups['system'] = $ungroupedPermissions;
+        }
+
+        return $groups;
+    }
+
+    /**
+     * Group permissions by category based on their stored group or names (fallback method)
      */
     private function groupPermissions($permissions)
     {
@@ -334,6 +357,13 @@ class RolePermissionController extends Controller
         ];
 
         foreach ($permissions as $permission) {
+            // First, try to use the stored group field
+            if ($permission->group && isset($groups[$permission->group])) {
+                $groups[$permission->group][] = $permission;
+                continue;
+            }
+
+            // Fallback to name-based grouping for existing permissions without group
             $name = strtolower($permission->name);
 
             if (str_contains($name, 'user') || str_contains($name, 'staff')) {
