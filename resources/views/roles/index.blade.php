@@ -104,11 +104,7 @@
                                     </button>
                                 @endcan
 
-                                @can('manage role & permission')
-                                    <a href="{{ route('permission-groups.index') }}" class="btn btn-info">
-                                        <i class="bx bx-layer-group"></i> Permission Groups
-                                    </a>
-                                @endcan
+
                                 </div>
                             </div>
                             <div class="table-responsive">

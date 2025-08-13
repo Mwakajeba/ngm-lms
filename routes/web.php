@@ -99,9 +99,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('permissions', [RolePermissionController::class, 'createPermission'])->name('permissions.store');
     Route::delete('permissions/{permission}', [RolePermissionController::class, 'deletePermission'])->name('permissions.destroy');
 
-    // Permission Groups management
-    Route::resource('permission-groups', \App\Http\Controllers\PermissionGroupController::class);
-    Route::get('permission-groups/{permissionGroup}/permissions', [\App\Http\Controllers\PermissionGroupController::class, 'show'])->name('permission-groups.permissions');
+
 
     // User role assignment
     Route::post('users/{user}/assign-roles', [RolePermissionController::class, 'assignToUser'])->name('users.assign-roles');

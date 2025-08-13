@@ -311,25 +311,31 @@ class RolePermissionController extends Controller
      */
     private function getPermissionGroupsFromDatabase()
     {
-        // Get all active permission groups
-        $permissionGroups = \App\Models\PermissionGroup::active()
-            ->with('permissions')
-            ->ordered()
-            ->get();
+        // Get all permissions and group them by the 'group' field
+        $permissions = Permission::all();
+        
+        $groups = [
+            'dashboard' => [],
+            'settings' => [],
+            'customers' => [],
+            'loan_management' => [],
+            'cash_collaterals' => [],
+            'accounting' => [],
+            'reports' => [],
+            'chat' => [],
+        ];
 
-        $groups = [];
-
-        foreach ($permissionGroups as $group) {
-            $groups[$group->name] = $group->permissions;
+        foreach ($permissions as $permission) {
+            if ($permission->group && isset($groups[$permission->group])) {
+                $groups[$permission->group][] = $permission;
+            } else {
+                // Default to settings for any unmatched permissions
+                $groups['settings'][] = $permission;
+            }
         }
 
-        // Add permissions without groups to 'system' group
-        $ungroupedPermissions = Permission::whereNull('permission_group_id')->get();
-        if ($ungroupedPermissions->count() > 0) {
-            $groups['system'] = $ungroupedPermissions;
-        }
-
-        return $groups;
+        // Remove empty groups
+        return array_filter($groups);
     }
 
     /**
@@ -338,22 +344,14 @@ class RolePermissionController extends Controller
     private function groupPermissions($permissions)
     {
         $groups = [
-            'user' => [],
-            'client' => [],
-            'loan' => [],
-            'borrower' => [],
-            'collection' => [],
-            'accounting' => [],
-            'savings' => [],
-            'report' => [],
-            'risk' => [],
-            'settings' => [],
-            'ai' => [],
             'dashboard' => [],
-            'menu' => [],
-            'company' => [],
-            'branch' => [],
-            'system' => [],
+            'settings' => [],
+            'customers' => [],
+            'loan_management' => [],
+            'cash_collaterals' => [],
+            'accounting' => [],
+            'reports' => [],
+            'chat' => [],
         ];
 
         foreach ($permissions as $permission) {
@@ -366,60 +364,52 @@ class RolePermissionController extends Controller
             // Fallback to name-based grouping for existing permissions without group
             $name = strtolower($permission->name);
 
-            if (str_contains($name, 'user') || str_contains($name, 'staff')) {
-                $groups['user'][] = $permission;
-            } elseif (str_contains($name, 'client')) {
-                $groups['client'][] = $permission;
-            } elseif (str_contains($name, 'loan')) {
-                $groups['loan'][] = $permission;
-            } elseif (str_contains($name, 'borrower')) {
-                $groups['borrower'][] = $permission;
+            if (str_contains($name, 'dashboard') || str_contains($name, 'statistic') || str_contains($name, 'kpi') || str_contains($name, 'analytics')) {
+                $groups['dashboard'][] = $permission;
             } elseif (
-                str_contains($name, 'collection') || str_contains($name, 'payment') ||
-                str_contains($name, 'receipt') || str_contains($name, 'penalty')
+                str_contains($name, 'setting') || str_contains($name, 'backup') ||
+                str_contains($name, 'configuration') || str_contains($name, 'role') ||
+                str_contains($name, 'permission') || str_contains($name, 'user') ||
+                str_contains($name, 'staff') || str_contains($name, 'company') ||
+                str_contains($name, 'branch')
             ) {
-                $groups['collection'][] = $permission;
+                $groups['settings'][] = $permission;
+            } elseif (str_contains($name, 'customer')) {
+                $groups['customers'][] = $permission;
+            } elseif (
+                str_contains($name, 'loan') || str_contains($name, 'group') ||
+                str_contains($name, 'guarantor') || str_contains($name, 'disburse')
+            ) {
+                $groups['loan_management'][] = $permission;
+            } elseif (str_contains($name, 'cash collateral')) {
+                $groups['cash_collaterals'][] = $permission;
             } elseif (
                 str_contains($name, 'accounting') || str_contains($name, 'journal') ||
                 str_contains($name, 'bank') || str_contains($name, 'ledger') ||
-                str_contains($name, 'financial')
+                str_contains($name, 'financial') || str_contains($name, 'chart account') ||
+                str_contains($name, 'supplier') || str_contains($name, 'voucher') ||
+                str_contains($name, 'reconciliation') || str_contains($name, 'bill purchase') ||
+                str_contains($name, 'budget') || str_contains($name, 'fee') ||
+                str_contains($name, 'penalty') || str_contains($name, 'transaction')
             ) {
                 $groups['accounting'][] = $permission;
             } elseif (
-                str_contains($name, 'saving') || str_contains($name, 'deposit') ||
-                str_contains($name, 'withdrawal')
-            ) {
-                $groups['savings'][] = $permission;
-            } elseif (
                 str_contains($name, 'report') || str_contains($name, 'audit') ||
-                str_contains($name, 'compliance') || str_contains($name, 'analytics')
+                str_contains($name, 'compliance') || str_contains($name, 'portfolio') ||
+                str_contains($name, 'delinquency') || str_contains($name, 'statement')
             ) {
-                $groups['report'][] = $permission;
-            } elseif (
-                str_contains($name, 'risk') || str_contains($name, 'credit') ||
-                str_contains($name, 'collateral') || str_contains($name, 'insurance')
-            ) {
-                $groups['risk'][] = $permission;
-            } elseif (
-                str_contains($name, 'setting') || str_contains($name, 'backup') ||
-                str_contains($name, 'configuration')
-            ) {
-                $groups['settings'][] = $permission;
+                $groups['reports'][] = $permission;
+            } elseif (str_contains($name, 'chat') || str_contains($name, 'message')) {
+                $groups['chat'][] = $permission;
             } elseif (str_contains($name, 'ai') || str_contains($name, 'assistant')) {
-                $groups['ai'][] = $permission;
-            } elseif (
-                str_contains($name, 'dashboard') || str_contains($name, 'statistic') ||
-                str_contains($name, 'kpi')
-            ) {
-                $groups['dashboard'][] = $permission;
+                $groups['settings'][] = $permission; // AI assistant is part of settings
+            } elseif (str_contains($name, 'collection') || str_contains($name, 'payment') || str_contains($name, 'receipt')) {
+                $groups['accounting'][] = $permission; // Collections are part of accounting
             } elseif (str_contains($name, 'menu')) {
-                $groups['menu'][] = $permission;
-            } elseif (str_contains($name, 'company')) {
-                $groups['company'][] = $permission;
-            } elseif (str_contains($name, 'branch')) {
-                $groups['branch'][] = $permission;
+                $groups['settings'][] = $permission; // Menu management is part of settings
             } else {
-                $groups['system'][] = $permission;
+                // Default to settings for any unmatched permissions
+                $groups['settings'][] = $permission;
             }
         }
 
