@@ -264,7 +264,7 @@
 
                         <!-- Action Buttons -->
                         <div class="mt-4 d-flex flex-wrap gap-2">
-                            @can(edit customer)
+                            @can('edit customer')
                             <a href="{{ route('customers.edit', Hashids::encode($customer->id)) }}" class="btn btn-sm btn-warning flex-fill">
                                 <i class="bx bx-edit"></i> Edit
                             </a>
