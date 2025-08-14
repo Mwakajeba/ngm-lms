@@ -53,7 +53,7 @@ $isEdit = isset($loan);
                 class="form-select  select2-single @error('loan_officer') is-invalid @enderror" required>
                 <option value="">-- Select Loan Officer --</option>
                 @foreach($loanOfficers as $officer)
-                <option value="{{ $officer->id }}" {{ old('loan_officer') == $officer->id ? 'selected' : '' }}>
+                <option value="{{ $officer->id }}" {{ old('loan_officer_id') == $officer->loan_officer_id ? 'selected' : '' }}>
                     {{ $officer->name }} ({{ $officer->email }})
                 </option>
                 @endforeach
@@ -130,7 +130,7 @@ $isEdit = isset($loan);
             <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
                 <option value="">-- Select Interest Cycle --</option>
                 @foreach($interestCycles as $key => $value)
-                <option value="{{ $key }}" {{ old('interest_cycle', $loanProduct->interest_cycle ?? '') == $key ? 'selected' : '' }}>
+                <option value="{{ $key }}" {{ old('interest_cycle', $value->interest_cycle ?? '') == $key ? 'selected' : '' }}>
                     {{ $value }}
                 </option>
                 @endforeach
