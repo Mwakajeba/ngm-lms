@@ -114,30 +114,30 @@
                                                                 <option value="other" {{ old('payee_type', $paymentVoucher->payee_type) == 'other' ? 'selected' : '' }}>Other</option>
                                                             </select>
                                                             @error('payee_type')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                        </div>
-                                                    </div>
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
 
                                                     <!-- Customer Selection (shown when payee_type is customer) -->
                                                     <div class="col-lg-8" id="customerSection" style="display: none;">
-                                                        <div class="mb-3">
-                                                            <label for="customer_id" class="form-label fw-bold">
+                                        <div class="mb-3">
+                                            <label for="customer_id" class="form-label fw-bold">
                                                                 Select Customer <span class="text-danger">*</span>
-                                                            </label>
-                                                            <select
-                                                                class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
-                                                                id="customer_id" name="customer_id">
+                                            </label>
+                                            <select
+                                                class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
+                                                id="customer_id" name="customer_id">
                                                                 <option value="">-- Select Customer --</option>
-                                                                @foreach($customers as $customer)
-                                                                    <option value="{{ $customer->id }}" {{ old('customer_id', $paymentVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
-                                                                        {{ $customer->name }} ({{ $customer->customerNo }})
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-                                                            @error('customer_id')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
+                                                    @foreach($customers as $customer)
+                                                        <option value="{{ $customer->id }}" {{ old('customer_id', $paymentVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
+                                                            {{ $customer->name }} ({{ $customer->customerNo }})
+                                                        </option>
+                                                    @endforeach
+                                            </select>
+                                            @error('customer_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
                                                         </div>
                                                     </div>
 
