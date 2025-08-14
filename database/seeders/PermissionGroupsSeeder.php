@@ -3,7 +3,7 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 use App\Models\PermissionGroup;
 
 class PermissionGroupsSeeder extends Seeder
@@ -97,7 +97,8 @@ class PermissionGroupsSeeder extends Seeder
         // Define permission groups mapping based on menu structure
         $groupMapping = [
             'dashboard' => [
-                'view dashboard'
+                'view dashboard',
+                'view financial report'
             ],
             
             'settings' => [
@@ -192,20 +193,25 @@ class PermissionGroupsSeeder extends Seeder
         // Update permissions with their groups
         $updatedCount = 0;
         foreach ($groupMapping as $group => $permissionNames) {
+            $permissionGroup = PermissionGroup::where('name', $group)->first();
+            
             foreach ($permissionNames as $permissionName) {
                 $permission = Permission::where('name', $permissionName)->first();
-                if ($permission) {
-                    $permission->update(['group' => $group]);
+                if ($permission && $permissionGroup) {
+                    $permission->update(['permission_group_id' => $permissionGroup->id]);
                     $updatedCount++;
                 }
             }
         }
 
         // Set remaining permissions to 'settings' group
-        $remainingPermissions = Permission::whereNull('group')->orWhere('group', '')->get();
-        foreach ($remainingPermissions as $permission) {
-            $permission->update(['group' => 'settings']);
-            $updatedCount++;
+        $settingsGroup = PermissionGroup::where('name', 'settings')->first();
+        if ($settingsGroup) {
+            $remainingPermissions = Permission::whereNull('permission_group_id')->get();
+            foreach ($remainingPermissions as $permission) {
+                $permission->update(['permission_group_id' => $settingsGroup->id]);
+                $updatedCount++;
+            }
         }
 
         $this->command->info("Permission groups created and {$updatedCount} permissions assigned to groups.");

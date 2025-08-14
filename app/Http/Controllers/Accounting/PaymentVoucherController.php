@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\ChartAccount;
 use App\Models\Customer;
+use App\Models\Supplier;
 use App\Models\GlTransaction;
 use App\Models\Payment;
 use App\Models\PaymentItem;
@@ -76,6 +77,11 @@ class PaymentVoucherController extends Controller
             ->orderBy('name')
             ->get();
 
+        // Get suppliers for the current company
+        $suppliers = Supplier::where('company_id', $user->company_id)
+            ->orderBy('name')
+            ->get();
+
         // Get chart accounts for the current company - only expense accounts
         $chartAccounts = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
             $query->where('company_id', $user->company_id);
@@ -88,7 +94,7 @@ class PaymentVoucherController extends Controller
             ->orderBy('account_name')
             ->get();
 
-        return view('accounting.payment-vouchers.create', compact('bankAccounts', 'customers', 'chartAccounts'));
+        return view('accounting.payment-vouchers.create', compact('bankAccounts', 'customers', 'suppliers', 'chartAccounts'));
     }
 
     /**
@@ -100,7 +106,10 @@ class PaymentVoucherController extends Controller
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'customer_id' => 'nullable|exists:customers,id',
+            'payee_type' => 'required|in:customer,supplier,other',
+            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'supplier_id' => 'required_if:payee_type,supplier|exists:suppliers,id',
+            'payee_name' => 'required_if:payee_type,other|nullable|string|max:255',
             'description' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf|max:2048',
             'line_items' => 'required|array|min:1',
@@ -128,6 +137,19 @@ class PaymentVoucherController extends Controller
                     $attachmentPath = $file->storeAs('payment-attachments', $fileName, 'public');
                 }
 
+                // Handle payee information
+                $payeeType = $request->payee_type;
+                $payeeId = null;
+                $payeeName = null;
+
+                if ($request->payee_type === 'customer') {
+                    $payeeId = $request->customer_id;
+                } elseif ($request->payee_type === 'supplier') {
+                    $payeeId = $request->supplier_id;
+                } elseif ($request->payee_type === 'other') {
+                    $payeeName = $request->payee_name;
+                }
+
                 // Create payment
                 $payment = Payment::create([
                     'reference' => $request->reference ?: 'PV-' . strtoupper(uniqid()),
@@ -139,7 +161,11 @@ class PaymentVoucherController extends Controller
                     'attachment' => $attachmentPath,
                     'user_id' => $user->id,
                     'bank_account_id' => $request->bank_account_id,
+                    'payee_type' => $payeeType,
+                    'payee_id' => $payeeId,
+                    'payee_name' => $payeeName,
                     'customer_id' => $request->customer_id,
+                    'supplier_id' => $request->supplier_id,
                     'branch_id' => $user->branch_id,
                     'approved' => true, // Auto-approve for now
                     'approved_by' => $user->id,
@@ -168,6 +194,7 @@ class PaymentVoucherController extends Controller
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
                     'customer_id' => $request->customer_id,
+                    'supplier_id' => $request->supplier_id,
                     'amount' => $totalAmount,
                     'nature' => 'credit',
                     'transaction_id' => $payment->id,
@@ -183,6 +210,7 @@ class PaymentVoucherController extends Controller
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
                         'customer_id' => $request->customer_id,
+                        'supplier_id' => $request->supplier_id,
                         'amount' => $lineItem['amount'],
                         'nature' => 'debit',
                         'transaction_id' => $payment->id,
@@ -237,11 +265,10 @@ class PaymentVoucherController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get suppliers for bill payments
-        $suppliers = null;
-        if ($paymentVoucher->reference_type == 'Bill') {
-            $suppliers = \App\Models\Supplier::where('status', 'active')->orderBy('name')->get();
-        }
+        // Get suppliers for the current company
+        $suppliers = Supplier::where('company_id', $user->company_id)
+            ->orderBy('name')
+            ->get();
 
         // Get chart accounts for the current company - only expense accounts
         $chartAccounts = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
@@ -269,7 +296,10 @@ class PaymentVoucherController extends Controller
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
-            'customer_id' => 'nullable|exists:customers,id',
+            'payee_type' => 'required|in:customer,supplier,other',
+            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'supplier_id' => 'required_if:payee_type,supplier|exists:suppliers,id',
+            'payee_name' => 'required_if:payee_type,other|nullable|string|max:255',
             'description' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf|max:2048',
             'line_items' => 'required|array|min:1',
@@ -310,6 +340,19 @@ class PaymentVoucherController extends Controller
                     $attachmentPath = $file->storeAs('payment-attachments', $fileName, 'public');
                 }
 
+                // Handle payee information
+                $payeeType = $request->payee_type;
+                $payeeId = null;
+                $payeeName = null;
+
+                if ($request->payee_type === 'customer') {
+                    $payeeId = $request->customer_id;
+                } elseif ($request->payee_type === 'supplier') {
+                    $payeeId = $request->supplier_id;
+                } elseif ($request->payee_type === 'other') {
+                    $payeeName = $request->payee_name;
+                }
+
                 // Update payment
                 $updateData = [
                     'reference' => $request->reference ?: $paymentVoucher->reference,
@@ -318,16 +361,12 @@ class PaymentVoucherController extends Controller
                     'description' => $request->description,
                     'attachment' => $attachmentPath,
                     'bank_account_id' => $request->bank_account_id,
+                    'payee_type' => $payeeType,
+                    'payee_id' => $payeeId,
+                    'payee_name' => $payeeName,
+                    'customer_id' => $request->customer_id,
+                    'supplier_id' => $request->supplier_id,
                 ];
-
-                // Handle customer/supplier based on payment type
-                if ($paymentVoucher->reference_type == 'Bill') {
-                    $updateData['supplier_id'] = $request->customer_id; // customer_id field is used for supplier_id in form
-                    $updateData['customer_id'] = null;
-                } else {
-                    $updateData['customer_id'] = $request->customer_id;
-                    $updateData['supplier_id'] = null;
-                }
 
                 $paymentVoucher->update($updateData);
 
@@ -356,8 +395,8 @@ class PaymentVoucherController extends Controller
                 // Credit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
-                    'customer_id' => $paymentVoucher->reference_type == 'Bill' ? null : $request->customer_id,
-                    'supplier_id' => $paymentVoucher->reference_type == 'Bill' ? $request->customer_id : null,
+                    'customer_id' => $request->customer_id,
+                    'supplier_id' => $request->supplier_id,
                     'amount' => $totalAmount,
                     'nature' => 'credit',
                     'transaction_id' => $paymentVoucher->id,
@@ -372,8 +411,8 @@ class PaymentVoucherController extends Controller
                 foreach ($request->line_items as $lineItem) {
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
-                        'customer_id' => $paymentVoucher->reference_type == 'Bill' ? null : $request->customer_id,
-                        'supplier_id' => $paymentVoucher->reference_type == 'Bill' ? $request->customer_id : null,
+                        'customer_id' => $request->customer_id,
+                        'supplier_id' => $request->supplier_id,
                         'amount' => $lineItem['amount'],
                         'nature' => 'debit',
                         'transaction_id' => $paymentVoucher->id,
