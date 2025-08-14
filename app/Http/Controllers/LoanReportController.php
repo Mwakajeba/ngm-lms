@@ -196,4 +196,189 @@ class LoanReportController extends Controller
         // ... kwa excel, utahitaji kuongeza mantiki hapa
         return response()->json(['message' => 'Invalid export type.'], 400);
     }
+    /**
+     * Display the Loan Aging Report view and data.
+     */
+    public function loanAgingReport(Request $request)
+    {
+        $asOfDate = $request->input('as_of_date', date('Y-m-d'));
+        $branchId = $request->input('branch_id');
+
+        // Get all branches for filter dropdown
+        $branches = Branch::all();
+
+        $agingData = [];
+        $loansQuery = Loan::with(['customer', 'branch'])
+            ->where('status', 'active');
+        if ($branchId) {
+            $loansQuery->where('branch_id', $branchId);
+        }
+        $loans = $loansQuery->get();
+
+        foreach ($loans as $loan) {
+            // Calculate overdue buckets for each loan
+            $current = $bucket_1_30 = $bucket_31_60 = $bucket_61_90 = $bucket_91_plus = $total_overdue = 0;
+            // Get schedules if available
+            $schedules = $loan->schedules ?? [];
+            if (method_exists($loan, 'schedules')) {
+                $schedules = $loan->schedules()->get();
+            }
+
+            // Calculate total principal paid
+            $totalPrincipalPaid = 0;
+            if (method_exists($loan, 'repayments')) {
+                $totalPrincipalPaid = $loan->repayments()->sum('principal');
+            }
+            $outstandingBalance = ($loan->amount ?? 0) - $totalPrincipalPaid;
+
+            if (count($schedules) > 0) {
+                foreach ($schedules as $schedule) {
+                    $due = $schedule->due_date;
+                    $dueAmount = $schedule->due_amount ?? ($schedule->principal_due + $schedule->interest_due + $schedule->fee_due + $schedule->penalty_due);
+                    $paid = $schedule->paid_amount ?? 0;
+                    $outstanding = max(0, $dueAmount - $paid);
+                    if ($outstanding <= 0) continue;
+                    $days = \Carbon\Carbon::parse($due)->diffInDays($asOfDate, false);
+                    if ($days < 0) {
+                        $current += $outstanding;
+                    } elseif ($days <= 30) {
+                        $bucket_1_30 += $outstanding;
+                    } elseif ($days <= 60) {
+                        $bucket_31_60 += $outstanding;
+                    } elseif ($days <= 90) {
+                        $bucket_61_90 += $outstanding;
+                    } else {
+                        $bucket_91_plus += $outstanding;
+                    }
+                    if ($days > 0) {
+                        $total_overdue += $outstanding;
+                    }
+                }
+            } else {
+                // No schedules: bucket by days since disbursement if unpaid
+                if ($outstandingBalance > 0 && !empty($loan->disbursed_on)) {
+                    $days = \Carbon\Carbon::parse($loan->disbursed_on)->diffInDays($asOfDate, false);
+                    if ($days < 0) {
+                        $current = $outstandingBalance;
+                    } elseif ($days <= 30) {
+                        $bucket_1_30 = $outstandingBalance;
+                        $total_overdue = $outstandingBalance;
+                    } elseif ($days <= 60) {
+                        $bucket_31_60 = $outstandingBalance;
+                        $total_overdue = $outstandingBalance;
+                    } elseif ($days <= 90) {
+                        $bucket_61_90 = $outstandingBalance;
+                        $total_overdue = $outstandingBalance;
+                    } else {
+                        $bucket_91_plus = $outstandingBalance;
+                        $total_overdue = $outstandingBalance;
+                    }
+                }
+            }
+            $agingData[] = [
+                'customer' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                'phone' => $loan->customer->phone1 ?? 'N/A',
+                'loan_no' => $loan->loanNo ?? 'N/A',
+                'amount' => $loan->amount ?? 'N/A',
+                'outstanding_balance' => $outstandingBalance,
+                'disbursed_no' => $loan->disbursed_on ?? 'N/A',
+                'expiry' => $loan->last_repayment_date ?? 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'current' => $current,
+                'bucket_1_30' => $bucket_1_30,
+                'bucket_31_60' => $bucket_31_60,
+                'bucket_61_90' => $bucket_61_90,
+                'bucket_91_plus' => $bucket_91_plus,
+                'total_overdue' => $total_overdue,
+            ];
+        }
+
+        // Only show data if filter applied
+        $showData = $request->has('as_of_date') || $request->has('branch_id');
+        return view('loans.reports.loan_aging', [
+            'branches' => $branches,
+            'agingData' => $showData ? $agingData : null,
+        ]);
+    }
+
+        /**
+     * Display the Loan Outstanding Balance Report view and data.
+     */
+    public function loanOutstandingReport(Request $request)
+    {
+        $asOfDate = $request->input('as_of_date', date('Y-m-d'));
+        $branchId = $request->input('branch_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
+        // Get all branches and loan officers for filter dropdowns
+        $branches = \App\Models\Branch::all();
+        $loanOfficers = \App\Models\User::whereHas('roles', function($q) {
+            $q->where('name', 'Loan Officer');
+        })->get();
+
+        $loansQuery = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer'])
+            ->where('status', 'active');
+        if ($branchId) {
+            $loansQuery->where('branch_id', $branchId);
+        }
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+        $loans = $loansQuery->get();
+
+        $outstandingData = [];
+        $totalPrincipalDisbursed = 0;
+        $totalExpectedInterest = 0;
+        $totalPaidInterest = 0;
+        $totalPrincipalPaid = 0;
+        foreach ($loans as $loan) {
+            // Calculate repayments breakdown
+            $principalPaid = $interestPaid = $feesPaid = $penaltyPaid = 0;
+            if (method_exists($loan, 'repayments')) {
+                $principalPaid = $loan->repayments()->sum('principal');
+                $interestPaid = $loan->repayments()->sum('interest');
+                $feesPaid = $loan->repayments()->sum('fee_amount');
+                $penaltyPaid = $loan->repayments()->sum('penalt_amount');
+            }
+            $outstandingBalance = ($loan->amount ?? 0) - $principalPaid;
+
+            $outstandingData[] = [
+                'customer' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                'phone' => $loan->customer->phone1 ?? 'N/A',
+                'loan_no' => $loan->loanNo ?? 'N/A',
+                'amount' => $loan->amount ?? 0,
+                'interest' => $loan->interest_amount ?? 0,
+                'outstanding_balance' => $outstandingBalance,
+                'disbursed_no' => $loan->disbursed_on ?? 'N/A',
+                'expiry' => $loan->last_repayment_date ?? 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'principal_paid' => $principalPaid,
+                'interest_paid' => $interestPaid,
+                'fees_paid' => $feesPaid,
+                'penalty_paid' => $penaltyPaid,
+            ];
+            $totalPrincipalDisbursed += ($loan->amount ?? 0);
+            $totalExpectedInterest += ($loan->interest_amount ?? 0);
+            $totalPaidInterest += $interestPaid;
+            $totalPrincipalPaid += $principalPaid;
+        }
+
+        $summary = [
+            'total_principal_disbursed' => $totalPrincipalDisbursed,
+            'total_expected_interest' => $totalExpectedInterest,
+            'total_paid_interest' => $totalPaidInterest,
+            'total_principal_paid' => $totalPrincipalPaid,
+        ];
+
+        // Only show data if filter applied
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('loan_officer_id');
+        return view('loans.reports.loan_outstanding', [
+            'branches' => $branches,
+            'loanOfficers' => $loanOfficers,
+            'outstandingData' => $showData ? $outstandingData : null,
+        ]);
+    }
 }
