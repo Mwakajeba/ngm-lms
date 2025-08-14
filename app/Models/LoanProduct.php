@@ -36,6 +36,7 @@ class LoanProduct extends Model
         'penalty_ids',
         'repayment_order',
         'is_active',
+        'penalt_deduction_criteria',
     ];
 
     protected $casts = [
