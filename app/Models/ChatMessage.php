@@ -14,6 +14,10 @@ class ChatMessage extends Model
         'sender_id',
         'receiver_id',
         'message',
+        'file_path',
+        'file_name',
+        'file_size',
+        'file_type',
         'is_read',
     ];
 

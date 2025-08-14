@@ -23,7 +23,7 @@ class TransactionController extends Controller
             
         // Fetch transactions where this account is either Debited or Credited
         $transactions = GlTransaction::where('chart_account_id', $account_id)
-            ->with(['journal', 'paymentVoucher', 'bill'])
+            ->with(['journal', 'paymentVoucher', 'bill', 'receipt'])
             ->orderBy('date', 'asc')
             ->orderBy('created_at', 'asc')
             ->get();
@@ -60,36 +60,7 @@ class TransactionController extends Controller
         ]);
     }
 
-    public function getDoubleEntry($category_id, $category, $category_type, $category_key)
-    {
-        $id = Hashids::decode($category_id)[0] ?? null;
 
-        $transactions = GlTransaction::where('category_id', $id)
-            ->where('category', $category)
-            ->when(true, function ($query) use ($category_key, $category_type) {
-                if ($category_key === 'Loan' && $category_type !== 'Repayment') {
-                    // Only apply category_key (exclude category_type)
-                    return $query->where('category_key', 'Loan');
-                } else {
-                    // Apply both category_type and category_key
-                    return $query->where('category_type', $category_type)
-                        ->where('category_key', $category_key);
-                }
-            })
-            ->orderBy('date', 'asc')
-            ->with('chartAccount')
-            ->get();
-
-        $totalDebit = $transactions->where('nature', 'debit')->sum('amount');
-        $totalCredit = $transactions->where('nature', 'credit')->sum('amount');
-
-        return view('transactions.double-entry', [
-            'transactions' => $transactions,
-            'category' => $category,
-            'totalDebit' => $totalDebit,
-            'totalCredit' => $totalCredit,
-        ]);
-    }
 
     public function showTransactionDetails($transactionId, $transactionType = null)
     {
@@ -102,7 +73,7 @@ class TransactionController extends Controller
         $transactionId = $decodedId[0];
         
         // Get the specific transaction
-        $transaction = GlTransaction::with(['chartAccount', 'journal', 'paymentVoucher', 'bill'])
+        $transaction = GlTransaction::with(['chartAccount', 'journal', 'paymentVoucher', 'bill', 'receipt'])
             ->findOrFail($transactionId);
             
         // Get all transactions with the same transaction_id and transaction_type

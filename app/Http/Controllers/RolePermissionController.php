@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 use App\Models\User;
 use App\Models\Menu;
 use Illuminate\Support\Facades\DB;
@@ -311,8 +311,8 @@ class RolePermissionController extends Controller
      */
     private function getPermissionGroupsFromDatabase()
     {
-        // Get all permissions and group them by the 'group' field
-        $permissions = Permission::all();
+        // Get all permissions with their permission groups
+        $permissions = Permission::with('permissionGroup')->get();
         
         $groups = [
             'dashboard' => [],
@@ -326,8 +326,10 @@ class RolePermissionController extends Controller
         ];
 
         foreach ($permissions as $permission) {
-            if ($permission->group && isset($groups[$permission->group])) {
-                $groups[$permission->group][] = $permission;
+            $groupName = $permission->permissionGroup ? $permission->permissionGroup->name : null;
+            
+            if ($groupName && isset($groups[$groupName])) {
+                $groups[$groupName][] = $permission;
             } else {
                 // Default to settings for any unmatched permissions
                 $groups['settings'][] = $permission;
