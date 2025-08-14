@@ -130,7 +130,7 @@ class CollectMatureInterestJob implements ShouldQueue
             'date' => Carbon::today(),
             'description' => "Mature interest for loan {$loan->loanNo}, schedule {$schedule->id}",
             'branch_id' => $loan->branch_id,
-            'user_id' => null,
+            'user_id' => 1,
         ]);
 
         // Credit Revenue
@@ -144,7 +144,7 @@ class CollectMatureInterestJob implements ShouldQueue
             'date' => Carbon::today(),
             'description' => "Mature interest income for loan {$loan->loanNo}, schedule {$schedule->id}",
             'branch_id' => $loan->branch_id,
-            'user_id' => null,
+            'user_id' => 1,
         ]);
 
         return $unpaidInterest;
@@ -156,14 +156,19 @@ class CollectMatureInterestJob implements ShouldQueue
     private function processLoanPenalty(Loan $loan): bool
     {
         $product = $loan->product;
+
+        if (!$product || !$product->penalty) {
+            return false;
+        }
+
         $penaltyConfig = $product->penalty;
-    
+
         $graceDays = $product->grace_period ?? 0;
         $deductionType = $product->penalt_deduction_criteria; // 'daily bases' or 'full amount'
         $penaltyRateType = $penaltyConfig->penalty_type ?? 'percentage'; // 'percentage' or 'fixed amount'
         $penaltyAmountSetting = $penaltyConfig->amount ?? 0;
         $criteria = $penaltyConfig->deduction_type;
-    
+
         // Preload all schedules with repayments & also next schedule date
         $schedules = $loan->schedule()
             ->with(['repayments:id,loan_schedule_id,penalty_amount,fee_amount,interest,principal'])
@@ -171,49 +176,50 @@ class CollectMatureInterestJob implements ShouldQueue
             ->orderBy('due_date')
             ->get()
             ->values();
-    
+
         if ($schedules->isEmpty()) {
             return false;
         }
-    
+
         // Precompute next schedule dates for each schedule
         $dueDates = $schedules->pluck('due_date')->map(fn($d) => Carbon::parse($d))->values();
         $nextScheduleDates = [];
         foreach ($dueDates as $i => $date) {
             $nextScheduleDates[$i] = $dueDates->get($i + 1) ?? null;
         }
-    
+
         foreach ($schedules as $i => $schedule) {
             // Check full paid
             $paidAmount = $schedule->repayments->sum(
                 fn($rep) => $rep->penalt_amount + $rep->fee_amount + $rep->interest + $rep->principal
             );
-    
+
             $installmentAmount = $schedule->interest + $schedule->principal + $schedule->fee_amount + $schedule->penalty_amount;
             if ($paidAmount >= $installmentAmount) {
                 continue;
             }
-    
+
             // Penalty end date (day before next schedule)
             $penaltyEndDate = isset($nextScheduleDates[$i])
                 ? Carbon::parse($nextScheduleDates[$i])->subDay()
                 : null;
-    
+
             if ($penaltyEndDate && Carbon::today()->gt($penaltyEndDate)) {
                 continue;
             }
-    
+
             // Skip if penalty already exists
-            $exists = GlTransaction::where('transaction_type', 'penalty')
+            $exists = GlTransaction::where('chart_acccount_id', $penaltyConfig->penalty_receivables_account_id)
+                ->where('transaction_type', 'penalty')
                 ->where('transaction_id', $schedule->id)
-                ->where('customer_id',$loan->customer_id)
+                ->where('customer_id', $loan->customer_id)
                 ->when($deductionType === 'daily bases', fn($q) => $q->whereDate('date', Carbon::today()))
                 ->exists();
-    
+
             if ($exists) {
                 continue;
             }
-    
+
             // Determine base amount for penalty calculation
             $base = match ($criteria) {
                 'over_due_principal_amount' => $schedule->principal,
@@ -222,7 +228,7 @@ class CollectMatureInterestJob implements ShouldQueue
                 'total_principal_amount_released' => $loan->amount,
                 default => $loan->amount,
             };
-    
+
             // Calculate penalty
             if ($deductionType === 'daily bases') {
                 $daysOverdue = max(1, Carbon::today()->diffInDays(
@@ -237,11 +243,11 @@ class CollectMatureInterestJob implements ShouldQueue
                     ? round($base * $penaltyAmountSetting / 100, 2)
                     : round($penaltyAmountSetting, 2);
             }
-    
+
             if ($penaltyAmount <= 0) {
                 continue;
             }
-    
+
             // Insert transactions in one go
             $glData = [
                 [
@@ -254,7 +260,7 @@ class CollectMatureInterestJob implements ShouldQueue
                     'date' => Carbon::today(),
                     'description' => "Penalty for overdue schedule {$schedule->id} - loan {$loan->loanNo}",
                     'branch_id' => $loan->branch_id,
-                    'user_id' => null,
+                    'user_id' => 1,
                 ],
                 [
                     'chart_account_id' => $penaltyConfig->penalty_income_account_id,
@@ -266,18 +272,18 @@ class CollectMatureInterestJob implements ShouldQueue
                     'date' => Carbon::today(),
                     'description' => "Penalty income for overdue schedule {$schedule->id} - loan {$loan->loanNo}",
                     'branch_id' => $loan->branch_id,
-                    'user_id' => null,
+                    'user_id' => 1,
                 ]
             ];
             GlTransaction::insert($glData);
-    
+
             // Update schedule penalty_amount
             $schedule->increment('penalty_amount', $penaltyAmount);
         }
-    
+
         return true;
     }
-    
+
 
     public function failed(\Throwable $exception)
     {
