@@ -285,6 +285,10 @@ class LoanProductController extends Controller
             'reducing_balance_with_equal_installment' => 'Reducing Balance with Equal Installment',
             'reducing_balance_with_equal_principal' => 'Reducing Balance with Equal Principal',
         ];
+        $penaltycriteriaDeductions = [
+            'daily_bases' => 'daily bases',
+            'full_amount' => 'full amount',
+        ];
 
         $topUpTypes = [
             'percentage' => 'Percentage',
@@ -308,7 +312,8 @@ class LoanProductController extends Controller
             'interestCycles',
             'interestMethods',
             'topUpTypes',
-            'cashCollateralValueTypes'
+            'cashCollateralValueTypes',
+            'penaltycriteriaDeductions'
         ));
     }
 
