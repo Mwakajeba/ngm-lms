@@ -40,16 +40,14 @@ class CustomerController extends Controller
     {
         $customerPenalties = LoanPenaltyService::getCustomerPenaltyBalances();
         $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
-        return view('customers.penalty', compact('customerPenalties','penaltyBalance'));
+        return view('customers.penalty', compact('customerPenalties', 'penaltyBalance'));
     }
 
     // Show form to create a new customer
     public function create()
     {
         $branchId = auth()->user()->branch_id;
-        $loanOfficers = collect(); // empty by default
-
-        $loanOfficers = User::all();
+        $loanOfficers = User::where('branch_id', $branchId)->get();
         $filetypes = Filetype::orderBy('name')->get();
 
         $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
@@ -199,7 +197,7 @@ class CustomerController extends Controller
         }
         $customer = Customer::findOrFail($id);
         $branchId = auth()->user()->branch_id;
-        $loanOfficers = \App\Models\User::all();
+        $loanOfficers = User::where('branch_id', $branchId)->get();
         $collateralTypes = \App\Models\CashCollateralType::where('is_active', 1)->get();
         $branches = \App\Models\Branch::all();
         $companies = \App\Models\Company::all();

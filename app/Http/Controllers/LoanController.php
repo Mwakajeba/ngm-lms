@@ -628,8 +628,12 @@ class LoanController extends Controller
 
     public function applicationCreate()
     {
-        $customers = Customer::where('category', 'borrower')->get();
-        $groups = Group::all();
+        $branchId = auth()->user()->branch_id;
+        $customers = Customer::where('category', 'borrower')
+            ->where('branch_id', $branchId)
+            ->with('groups')
+            ->get();
+        $groups = Group::where('branch_id', $branchId)->get();
         $products = LoanProduct::all();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other'];
@@ -809,8 +813,12 @@ class LoanController extends Controller
             return redirect()->route('loans.application.index')->withErrors(['Only pending applications can be edited.']);
         }
 
-        $customers = Customer::all();
-        $groups = Group::all();
+        $branchId = auth()->user()->branch_id;
+        $customers = Customer::where('category', 'borrower')
+            ->where('branch_id', $branchId)
+            ->with('groups')
+            ->get();
+        $groups = Group::where('branch_id', $branchId)->get();
         $products = LoanProduct::all();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other'];
