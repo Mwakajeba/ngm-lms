@@ -2,12 +2,13 @@
 
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class GlTransaction extends Model
 {
-    use HasFactory;
+    use HasFactory,LogsActivity;
 
     protected $table = 'gl_transactions';
 
@@ -68,6 +69,11 @@ class GlTransaction extends Model
     public function bill()
     {
         return $this->belongsTo(Bill::class, 'transaction_id');
+    }
+
+    public function receipt()
+    {
+        return $this->belongsTo(Receipt::class, 'transaction_id');
     }
 
     /**

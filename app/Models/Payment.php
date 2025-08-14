@@ -3,12 +3,13 @@
 namespace App\Models;
 
 use App\Helpers\HashIdHelper;
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
 class Payment extends Model
 {
-    use HasFactory;
+    use HasFactory,LogsActivity;
 
     protected $fillable = [
         'reference',
@@ -19,6 +20,9 @@ class Payment extends Model
         'description',
         'attachment',
         'bank_account_id',
+        'payee_type',
+        'payee_id',
+        'payee_name',
         'customer_id',
         'supplier_id',
         'branch_id',
@@ -63,6 +67,34 @@ class Payment extends Model
     public function branch()
     {
         return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get the payee based on payee_type and payee_id
+     */
+    public function payee()
+    {
+        if ($this->payee_type === 'customer') {
+            return $this->belongsTo(Customer::class, 'payee_id');
+        } elseif ($this->payee_type === 'supplier') {
+            return $this->belongsTo(Supplier::class, 'payee_id');
+        }
+        return null;
+    }
+
+    /**
+     * Get the payee display name
+     */
+    public function getPayeeDisplayNameAttribute()
+    {
+        if ($this->payee_type === 'customer' && $this->customer) {
+            return $this->customer->name;
+        } elseif ($this->payee_type === 'supplier' && $this->supplier) {
+            return $this->supplier->name;
+        } elseif ($this->payee_type === 'other') {
+            return $this->payee_name ?? 'N/A';
+        }
+        return 'N/A';
     }
 
 

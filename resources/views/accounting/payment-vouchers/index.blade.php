@@ -15,11 +15,13 @@
                                 ['label' => 'Payment Vouchers', 'url' => '#', 'icon' => 'bx bx-receipt']
                             ]" />
                         </div>
+                        @can('create payment voucher')
                         <div class="ms-auto">
                             <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
                                 <i class="bx bx-plus"></i> New Payment Voucher
                             </a>
                         </div>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -88,10 +90,10 @@
                                             <th width="10%">Date</th>
                                             <th width="15%">Reference</th>
                                             <th width="15%">Bank Account</th>
-                                            <th width="15%">Customer</th>
+                                            <th width="15%">Payee</th>
                                             <th width="15%">Description</th>
                                             <th width="10%">Amount</th>
-                                            <th width="10%">Created By</th>
+                                            <th width="10%">Status</th>
                                             <th width="10%">Actions</th>
                                         </tr>
                                     </thead>
@@ -107,10 +109,17 @@
                                                 </td>
                                                 <td>{{ $payment->bankAccount->name ?? 'N/A' }}</td>
                                                 <td>
-                                                    @if($payment->customer)
+                                                    @if($payment->payee_type == 'customer' && $payment->customer)
+                                                        <span class="badge bg-primary me-1">Customer</span>
                                                         {{ $payment->customer->name ?? 'N/A' }}
+                                                    @elseif($payment->payee_type == 'supplier' && $payment->supplier)
+                                                        <span class="badge bg-success me-1">Supplier</span>
+                                                        {{ $payment->supplier->name ?? 'N/A' }}
+                                                    @elseif($payment->payee_type == 'other')
+                                                        <span class="badge bg-warning me-1">Other</span>
+                                                        {{ $payment->payee_name ?? 'N/A' }}
                                                     @else
-                                                        <span class="text-muted">No customer</span>
+                                                        <span class="text-muted">No payee</span>
                                                     @endif
                                                 </td>
                                                 <td>{{ Str::limit($payment->description, 50) ?: 'No description' }}</td>

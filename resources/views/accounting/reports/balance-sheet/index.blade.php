@@ -7,7 +7,6 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
             ['label' => 'Accounting Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-calculator'],
             ['label' => 'Balance Sheet Report', 'url' => '#', 'icon' => 'bx bx-bar-chart']
         ]" />
@@ -550,6 +549,11 @@ function exportReport(type) {
     
     // Download the file
     window.location.href = url;
+    
+    // close the loading state after a short delay
+    setTimeout(() => {
+        Swal.close();
+    }, 2000);
 }
 </script>
 @endsection 

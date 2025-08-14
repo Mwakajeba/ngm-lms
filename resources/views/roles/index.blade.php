@@ -5,6 +5,11 @@
 @section('content')
     <div class="page-wrapper">
         <div class="page-content">
+            <x-breadcrumbs-with-icons :links="[
+                ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+                ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
+                ['label' => 'Roles & Permissions', 'url' => '#', 'icon' => 'bx bx-shield']
+            ]" />
             <h6 class="mb-0 text-uppercase">ROLES & PERMISSIONS</h6>
             <hr />
             <!-- Statistics Cards -->
@@ -103,6 +108,8 @@
                                         <i class="bx bx-plus"></i> Create New Role
                                     </button>
                                 @endcan
+
+
                                 </div>
                             </div>
                             <div class="table-responsive">
@@ -218,15 +225,7 @@
                                 <input type="text" class="form-control" id="roleName" name="name" required>
                             </div>
                         </div>
-                        <div class="col-md-6">
-                            <div class="mb-3">
-                                <label for="roleGuard" class="form-label">Guard</label>
-                                <select class="form-select" id="roleGuard" name="guard_name">
-                                    <option value="web" selected>Web</option>
-                                    <option value="api">API</option>
-                                </select>
-                            </div>
-                        </div>
+
                     </div>
                     <div class="mb-3">
                         <label for="roleDescription" class="form-label">Description</label>
@@ -239,15 +238,28 @@
                             <div class="col-md-4 mb-3">
                                 <div class="card border">
                                     <div class="card-header bg-light py-2">
-                                        <h6 class="mb-0">{{ ucfirst($group) }}</h6>
+                                        <div class="form-check">
+                                            <input class="form-check-input select-all-permissions-create" 
+                                                   type="checkbox" 
+                                                   data-group="{{ $group }}"
+                                                   id="selectAllCreate{{ ucfirst($group) }}"
+                                                   onclick="toggleAllPermissions('{{ $group }}', this)">
+                                            <label class="form-check-label fw-bold mb-0" for="selectAllCreate{{ ucfirst($group) }}">
+                                                {{ ucfirst($group) }}
+                                            </label>
+                                        </div>
                                     </div>
                                     <div class="card-body py-2" style="max-height: 200px; overflow-y: auto;">
                                         @foreach($permissions as $permission)
                                         <div class="form-check">
-                                            <input class="form-check-input" type="checkbox" 
-                                                   name="permissions[]" value="{{ $permission->id }}" 
-                                                   id="perm_{{ $permission->id }}">
-                                            <label class="form-check-label small" for="perm_{{ $permission->id }}">
+                                            <input class="form-check-input permission-checkbox-create" 
+                                                   type="checkbox" 
+                                                   name="permissions[]" 
+                                                   value="{{ $permission->id }}" 
+                                                   id="perm_create_{{ $permission->id }}"
+                                                   data-group="{{ $group }}"
+                                                   onclick="updateSelectAllState('{{ $group }}')">
+                                            <label class="form-check-label small" for="perm_create_{{ $permission->id }}">
                                                 {{ ucwords(str_replace(['-', '_'], ' ', $permission->name)) }}
                                             </label>
                                         </div>
@@ -280,7 +292,7 @@
             @endcan
             <form id="editRoleForm" method="POST">
                 @csrf
-                @method('PUT')
+                <input type="hidden" name="_method" value="PUT">
                 <div class="modal-body" id="editRoleModalBody">
                     <!-- Content will be loaded dynamically -->
                 </div>
@@ -309,32 +321,16 @@
                     <div class="mb-3">
                         <label for="permissionName" class="form-label">Permission Name <span class="text-danger">*</span></label>
                         <input type="text" class="form-control" id="permissionName" name="name" 
-                               placeholder="e.g., create-loans, view-reports" required>
-                        <small class="text-muted">Use lowercase with hyphens (e.g., create-loans, view-reports)</small>
-                    </div>
-                    <div class="mb-3">
-                        <label for="permissionGuard" class="form-label">Guard</label>
-                        <select class="form-select" id="permissionGuard" name="guard_name">
-                            <option value="web" selected>Web</option>
-                            <option value="api">API</option>
-                        </select>
+                               placeholder="e.g., create loans, view reports" required>
+                        <small class="text-muted">Use lowercase (e.g., create loans, view reports)</small>
                     </div>
                     <div class="mb-3">
                         <label for="permissionGroup" class="form-label">Permission Group</label>
-                        <select class="form-select" id="permissionGroup" name="group">
-                            <option value="user">User Management</option>
-                            <option value="client">Client Management</option>
-                            <option value="loan">Loan Management</option>
-                            <option value="borrower">Borrower Management</option>
-                            <option value="collection">Collections & Payments</option>
-                            <option value="accounting">Accounting & Financial</option>
-                            <option value="savings">Savings & Deposits</option>
-                            <option value="report">Reports & Analytics</option>
-                            <option value="risk">Risk Management</option>
-                            <option value="settings">Settings & Configuration</option>
-                            <option value="ai">AI Assistant</option>
-                            <option value="dashboard">Dashboard & Analytics</option>
-                            <option value="menu">Menu Management</option>
+                        <select class="form-select" id="permissionGroup" name="permission_group_id">
+                            <option value="">Select a group...</option>
+                            @foreach(\App\Models\PermissionGroup::active()->ordered()->get() as $group)
+                                <option value="{{ $group->id }}">{{ $group->display_name }}</option>
+                            @endforeach
                         </select>
                         <small class="text-muted">Select the category this permission belongs to</small>
                     </div>
@@ -509,7 +505,130 @@
                     }
                 });
             });
+
+            // Initialize create role form check all functionality
+            initializeCreateRoleCheckAll();
+
+            // Reinitialize check all functionality when create role modal is shown
+            $('#createRoleModal').on('shown.bs.modal', function() {
+                console.log('Create role modal shown, initializing check all functionality');
+                setTimeout(function() {
+                    initializeCreateRoleCheckAll();
+                    console.log('Check all functionality initialized');
+                    console.log('Select all checkboxes found:', $('.select-all-permissions-create').length);
+                    console.log('Permission checkboxes found:', $('.permission-checkbox-create').length);
+                }, 100);
+            });
+
+            // Also bind events directly to the modal content
+            $('#createRoleModal').on('click', '.select-all-permissions-create', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const group = $(this).data('group');
+                const isChecked = $(this).is(':checked');
+                
+                console.log('Direct click on select all for group:', group, 'checked:', isChecked);
+                
+                // Toggle the checkbox state
+                $(this).prop('checked', !isChecked);
+                
+                // Update all permission checkboxes in this group
+                const permissionCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]`);
+                permissionCheckboxes.prop('checked', !isChecked);
+                
+                console.log('Updated', permissionCheckboxes.length, 'permission checkboxes');
+                
+                // Update the select all checkbox state
+                updateSelectAllState(group);
+            });
         });
+
+        function initializeCreateRoleCheckAll() {
+            console.log('Initializing create role check all functionality...');
+            
+            // Remove existing event handlers to prevent duplicates
+            $(document).off('change', '.select-all-permissions-create');
+            $(document).off('change', '.permission-checkbox-create');
+            
+            // Select all permissions for a group in create form using event delegation
+            $(document).on('change', '.select-all-permissions-create', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const group = $(this).data('group');
+                const isChecked = $(this).is(':checked');
+                
+                console.log('Select all clicked for group:', group, 'checked:', isChecked);
+                
+                // Find all permission checkboxes in this group and check/uncheck them
+                const permissionCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]`);
+                permissionCheckboxes.prop('checked', isChecked);
+                
+                console.log('Updated', permissionCheckboxes.length, 'permission checkboxes');
+            });
+
+            // Update select all checkbox when individual permissions change in create form using event delegation
+            $(document).on('change', '.permission-checkbox-create', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                
+                const group = $(this).data('group');
+                updateSelectAllState(group);
+            });
+
+            // Initialize select all checkboxes for create form
+            $('.select-all-permissions-create').each(function() {
+                const group = $(this).data('group');
+                const totalCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]`).length;
+                const checkedCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]:checked`).length;
+                
+                console.log('Initializing group:', group, 'total:', totalCheckboxes, 'checked:', checkedCheckboxes);
+                
+                if (checkedCheckboxes === totalCheckboxes && totalCheckboxes > 0) {
+                    $(this).prop('checked', true);
+                } else if (checkedCheckboxes > 0) {
+                    $(this).prop('indeterminate', true);
+                }
+            });
+            
+            console.log('Create role check all functionality initialized');
+        }
+
+
+        
+
+        function toggleAllPermissions(group, element) {
+            console.log('toggleAllPermissions called for group:', group);
+            
+            const isChecked = $(element).is(':checked');
+            console.log('Checkbox is checked:', isChecked);
+            
+            // Find all permission checkboxes in this group and check/uncheck them
+            const permissionCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]`);
+            permissionCheckboxes.prop('checked', isChecked);
+            
+            console.log('Updated', permissionCheckboxes.length, 'permission checkboxes for group:', group);
+            
+            // Update the select all checkbox state
+            updateSelectAllState(group);
+        }
+
+        function updateSelectAllState(group) {
+            const totalCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]`).length;
+            const checkedCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]:checked`).length;
+            const selectAllCheckbox = $(`.select-all-permissions-create[data-group="${group}"]`);
+            
+            console.log('Updating select all state for group:', group, 'checked:', checkedCheckboxes, 'total:', totalCheckboxes);
+            
+            if (checkedCheckboxes === 0) {
+                selectAllCheckbox.prop('indeterminate', false).prop('checked', false);
+            } else if (checkedCheckboxes === totalCheckboxes) {
+                selectAllCheckbox.prop('indeterminate', false).prop('checked', true);
+            } else {
+                selectAllCheckbox.prop('indeterminate', true);
+            }
+        }
 
         function editRole(roleId) {
             $.get(`/roles/${roleId}/edit`, function (data) {
@@ -539,6 +658,9 @@
                         formData.append('_token', csrfToken.value);
                     }
 
+                    // Add method override for PUT request
+                    formData.append('_method', 'PUT');
+
                     // Add name field
                     const nameField = form.querySelector('input[name="name"]');
                     if (nameField) {
@@ -557,10 +679,12 @@
                         formData.append('guard_name', guardField.value);
                     }
 
-                    // Add permissions
-                    const permissionCheckboxes = form.querySelectorAll('input[name="permissions[]"]:checked');
-                    permissionCheckboxes.forEach(checkbox => {
-                        formData.append('permissions[]', checkbox.value);
+                    // Add permissions - include all checkboxes (checked and unchecked)
+                    const allPermissionCheckboxes = form.querySelectorAll('input[name="permissions[]"]');
+                    allPermissionCheckboxes.forEach(checkbox => {
+                        if (checkbox.checked) {
+                            formData.append('permissions[]', checkbox.value);
+                        }
                     });
 
                     $.ajax({
@@ -575,6 +699,7 @@
                             'Accept': 'application/json'
                         },
                         success: function (response) {
+                            console.log('Success response:', response);
                             if (response.success) {
                                 Swal.fire('{{ __("app.success") }}!', response.message || '{{ __("app.role_updated_successfully") }}', 'success')
                                     .then(() => {
@@ -586,6 +711,10 @@
                             }
                         },
                         error: function (xhr, status, error) {
+                            console.log('Error response:', xhr.responseText);
+                            console.log('Status:', status);
+                            console.log('Error:', error);
+                            
                             let errorMessage = '{{ __("app.failed_to_update_role") }}';
 
                             try {

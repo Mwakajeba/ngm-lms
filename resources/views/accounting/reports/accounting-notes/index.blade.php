@@ -7,7 +7,6 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
             ['label' => 'Accounting Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-calculator'],
             ['label' => 'Accounting Notes Report', 'url' => '#', 'icon' => 'bx bx-note']
         ]" />
@@ -80,8 +79,8 @@
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="level_of_detail" class="form-label">Level of Detail</label>
                                     <select class="form-select" id="level_of_detail" name="level_of_detail">
-                                        <option value="summary" {{ $levelOfDetail === 'summary' ? 'selected' : '' }}>Summary</option>
                                         <option value="detailed" {{ $levelOfDetail === 'detailed' ? 'selected' : '' }}>Detailed</option>
+                                        <option value="summary" {{ $levelOfDetail === 'summary' ? 'selected' : '' }}>Summary</option>
                                     </select>
                                 </div>
                             </div>
@@ -91,19 +90,6 @@
                                     <button type="submit" class="btn btn-primary me-2">
                                         <i class="bx bx-search me-1"></i>Generate Report
                                     </button>
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bx bx-download me-1"></i>Export
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">
-                                                <i class="bx bx-file-pdf me-2"></i>Export PDF
-                                            </a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">
-                                                <i class="bx bx-file me-2"></i>Export Excel
-                                            </a></li>
-                                        </ul>
-                                    </div>
                                 </div>
                             </div>
                         </form>
@@ -122,14 +108,6 @@
                                                     Basis: {{ ucfirst($reportingType) }} | 
                                                     Detail: {{ ucfirst($levelOfDetail) }}
                                                 </small>
-                                            </div>
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportReport('pdf')">
-                                                    <i class="bx bx-file-pdf me-1"></i>PDF
-                                                </button>
-                                                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportReport('excel')">
-                                                    <i class="bx bx-file me-1"></i>Excel
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -194,9 +172,24 @@
                                                 <!-- Account Group Section -->
                                                 <div class="account-group-section">
                                                     <div class="group-header bg-light p-3 border-bottom">
-                                                        <h6 class="mb-0 text-secondary">
-                                                            <i class="bx bx-folder me-2"></i>{{ $groupName }}
-                                                        </h6>
+                                                        <div class="d-flex justify-content-between align-items-center">
+                                                            <h6 class="mb-0 text-secondary">
+                                                                <i class="bx bx-folder me-2"></i>{{ $groupName }}
+                                                            </h6>
+                                                            @php
+                                                                $groupTotalDebit = $groupData->sum('total_debit');
+                                                                $groupTotalCredit = $groupData->sum('total_credit');
+                                                                $groupNetAmount = $groupTotalDebit - $groupTotalCredit;
+                                                                $groupAccountCount = $groupData->sum('account_count');
+                                                                $groupTransactionCount = $groupData->sum('transaction_count');
+                                                            @endphp
+                                                            <div class="group-totals" style="font-size: 12px;">
+                                                                <span style="font-weight: bold;">D: {{ number_format($groupTotalDebit, 2) }}</span> | 
+                                                                <span style="font-weight: bold;">C: {{ number_format($groupTotalCredit, 2) }}</span> | 
+                                                                <span style="font-weight: bold; color: #28a745;">Net: {{ number_format($groupNetAmount, 2) }}</span> | 
+                                                                <span style="font-weight: bold;"> {{ $groupTransactionCount }} Transactions</span>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                     
                                                     @if($levelOfDetail === 'detailed')
@@ -350,6 +343,17 @@
 
 .account-classes-hierarchy .badge {
     font-size: 0.75em;
+}
+
+.account-classes-hierarchy .group-totals {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.account-classes-hierarchy .group-totals .badge {
+    font-size: 0.7em;
+    padding: 0.25rem 0.5rem;
 }
 </style>
 

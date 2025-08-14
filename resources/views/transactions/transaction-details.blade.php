@@ -231,7 +231,7 @@
         </div>
 
         <!-- Related Transaction Details -->
-        @if($transaction->journal || $transaction->paymentVoucher || $transaction->bill)
+        @if($transaction->journal || $transaction->paymentVoucher || $transaction->bill || $transaction->receipt)
         <div class="row">
             <div class="col-12">
                 <div class="card radius-10 border-0 shadow-sm">
@@ -258,6 +258,13 @@
                                 <strong>Bill:</strong> 
                                 <a href="{{ route('accounting.bill-purchases.show', $transaction->bill) }}" class="text-decoration-none">
                                     {{ $transaction->bill->reference }}
+                                </a>
+                            </div>
+                        @elseif($transaction->receipt)
+                            <div class="alert alert-info mb-0">
+                                <strong>Receipt:</strong> 
+                                <a href="{{ route('accounting.receipt-vouchers.show', $transaction->receipt) }}" class="text-decoration-none">
+                                    {{ $transaction->receipt->reference }}
                                 </a>
                             </div>
                         @endif

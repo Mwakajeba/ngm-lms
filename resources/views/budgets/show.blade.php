@@ -22,6 +22,12 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <h5 class="card-title mb-0">{{ __('app.budget') }} {{ __('app.info') }}</h5>
                             <div class="btn-group">
+                                <a href="{{ route('accounting.budgets.export-excel', $budget) }}" class="btn btn-success btn-sm">
+                                    <i class="bx bx-export"></i> Excel
+                                </a>
+                                <a href="{{ route('accounting.budgets.export-pdf', $budget) }}" class="btn btn-danger btn-sm">
+                                    <i class="bx bx-file-pdf"></i> PDF
+                                </a>
                                 <a href="{{ route('accounting.budgets.edit', $budget) }}" class="btn btn-warning btn-sm">
                                     <i class="bx bx-edit"></i> {{ __('app.edit') }}
                                 </a>
@@ -165,6 +171,12 @@
                         <div class="d-grid gap-2">
                             <a href="{{ route('accounting.budgets.edit', $budget) }}" class="btn btn-warning">
                                 <i class="bx bx-edit"></i> {{ __('app.edit_budget') }}
+                            </a>
+                            <a href="{{ route('accounting.budgets.export-excel', $budget) }}" class="btn btn-success">
+                                <i class="bx bx-export"></i> Export to Excel
+                            </a>
+                            <a href="{{ route('accounting.budgets.export-pdf', $budget) }}" class="btn btn-danger">
+                                <i class="bx bx-file-pdf"></i> Export to PDF
                             </a>
                             <a href="{{ route('accounting.budgets.index') }}" class="btn btn-secondary">
                                 <i class="bx bx-list-ul"></i> {{ __('app.view_all_budgets') }}

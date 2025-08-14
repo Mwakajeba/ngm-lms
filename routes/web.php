@@ -24,6 +24,7 @@ use App\Http\Controllers\Accounting\PenaltyController;
 use App\Http\Controllers\Accounting\ReceiptVoucherController;
 use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
 use App\Http\Controllers\Accounting\SupplierController;
+use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -86,7 +87,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('roles', [RolePermissionController::class, 'store'])->name('roles.store');
     Route::get('roles/{role}', [RolePermissionController::class, 'show'])->name('roles.show');
     Route::get('roles/{role}/edit', [RolePermissionController::class, 'edit'])->name('roles.edit');
-    Route::post('roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
+    Route::match(['PUT', 'PATCH'], 'roles/{role}', [RolePermissionController::class, 'update'])->name('roles.update');
     Route::delete('roles/{role}', [RolePermissionController::class, 'destroy'])->name('roles.destroy');
 
     // Menu management for roles
@@ -98,6 +99,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('permissions', [RolePermissionController::class, 'permissions'])->name('permissions.index');
     Route::post('permissions', [RolePermissionController::class, 'createPermission'])->name('permissions.store');
     Route::delete('permissions/{permission}', [RolePermissionController::class, 'deletePermission'])->name('permissions.destroy');
+
+
 
     // User role assignment
     Route::post('users/{user}/assign-roles', [RolePermissionController::class, 'assignToUser'])->name('users.assign-roles');
@@ -175,6 +178,8 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // Penalty Settings
     Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
     Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
+    //////logs route///
+    Route::get('/logs',[ActivityLogsController::class,'index'])->name('logs.index');
 
     // Fees Settings
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
@@ -308,12 +313,19 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Budget
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
-    Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
-    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
-    Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
-    Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
-    Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
-    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
+Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
+Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
+Route::get('/budgets/import', [BudgetController::class, 'import'])->name('budgets.import');
+Route::post('/budgets/import', [BudgetController::class, 'storeImport'])->name('budgets.store-import');
+Route::get('/budgets/template/download', [BudgetController::class, 'downloadTemplate'])->name('budgets.download-template');
+Route::get('/budgets/{budget}/export/excel', [BudgetController::class, 'exportExcel'])->name('budgets.export-excel');
+Route::get('/budgets/{budget}/export/pdf', [BudgetController::class, 'exportPdf'])->name('budgets.export-pdf');
+
+
+Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
+Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     // Fees
     Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
@@ -364,6 +376,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/general-ledger', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'index'])->name('general-ledger');
         Route::get('/general-ledger/export', [App\Http\Controllers\Accounting\Reports\GeneralLedgerReportController::class, 'export'])->name('general-ledger.export');
         Route::get('/expenses-summary', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'index'])->name('expenses-summary');
+        Route::get('/expenses-summary/export', [App\Http\Controllers\Accounting\Reports\ExpensesSummaryReportController::class, 'export'])->name('expenses-summary.export');
         Route::get('/accounting-notes', [App\Http\Controllers\Accounting\Reports\AccountingNotesReportController::class, 'index'])->name('accounting-notes');
         Route::get('/changes-equity', [App\Http\Controllers\Accounting\Reports\ChangesEquityReportController::class, 'index'])->name('changes-equity');
         Route::post('/changes-equity', [App\Http\Controllers\Accounting\Reports\ChangesEquityReportController::class, 'export'])->name('changes-equity.export');
@@ -371,6 +384,9 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/bank-reconciliation/generate', [BankReconciliationReportController::class, 'generate'])->name('bank-reconciliation-report.generate');
         Route::get('/bank-reconciliation/{bankReconciliation}/show', [BankReconciliationReportController::class, 'show'])->name('bank-reconciliation-report.show');
         Route::get('/bank-reconciliation/{bankReconciliation}/export', [BankReconciliationReportController::class, 'exportReconciliation'])->name('bank-reconciliation-report.export');
+        Route::get('/budget-report', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'index'])->name('budget-report');
+        Route::get('/budget-report/export', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'export'])->name('budget-report.export');
+        Route::get('/budget-report/export-pdf', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'exportPdf'])->name('budget-report.export-pdf');
     });
 
     // Transaction Routes
@@ -558,6 +574,11 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat', [App\Http\Controllers\ChatController::class, 'index'])->name('chat.index');
     Route::get('/chat/messages/{user}', [App\Http\Controllers\ChatController::class, 'fetchMessages'])->name('chat.messages');
     Route::post('/chat/send', [App\Http\Controllers\ChatController::class, 'sendMessage'])->name('chat.send');
+    Route::post('/chat/mark-read', [App\Http\Controllers\ChatController::class, 'markAsRead'])->name('chat.mark-read');
+    Route::get('/chat/unread-count', [App\Http\Controllers\ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
+    Route::post('/chat/clear', [App\Http\Controllers\ChatController::class, 'clearChat'])->name('chat.clear');
+    Route::get('/chat/online-users', [App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('chat.online-users');
+    Route::get('/chat/download/{messageId}', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.download');
 });
 
 

@@ -84,13 +84,13 @@
             <td>{{ $accountingNotesData['account_classes_data']['summary']['total_classes'] }}</td>
             <td><strong>Total Account Groups:</strong></td>
             <td>{{ $accountingNotesData['account_classes_data']['summary']['total_groups'] }}</td>
-        </tr>
-        <tr>
+            </tr>
+            <tr>
             <td><strong>Total Chart Accounts:</strong></td>
             <td>{{ $accountingNotesData['account_classes_data']['summary']['total_accounts'] }}</td>
             <td><strong>Total Transactions:</strong></td>
             <td>{{ number_format($accountingNotesData['account_classes_data']['summary']['total_transactions']) }}</td>
-        </tr>
+            </tr>
         <tr>
             <td><strong>Total Debit:</strong></td>
             <td>{{ number_format($accountingNotesData['account_classes_data']['summary']['total_debit'], 2) }}</td>
@@ -123,9 +123,22 @@
         @foreach($groupedByGroup as $groupName => $groupData)
             <!-- Account Group Section -->
             <table>
-                <tr class="subsection-header">
-                    <td colspan="6" style="padding-left: 20px;">{{ $groupName }}</td>
-                </tr>
+                @php
+                    $groupTotalDebit = $groupData->sum('total_debit');
+                    $groupTotalCredit = $groupData->sum('total_credit');
+                    $groupNetAmount = $groupTotalDebit - $groupTotalCredit;
+                    $groupAccountCount = $groupData->sum('account_count');
+                    $groupTransactionCount = $groupData->sum('transaction_count');
+                @endphp
+            <tr class="subsection-header">
+                    <td style="padding-left: 20px; width: 60%;">{{ $groupName }}</td>
+                    <td style="text-align: right; width: 40%; font-size: 10px;">
+                        D: {{ number_format($groupTotalDebit, 2) }} | 
+                        C: {{ number_format($groupTotalCredit, 2) }} | 
+                        <span style="color: #28a745; font-weight: bold;">Net: {{ number_format($groupNetAmount, 2) }}</span> | 
+                        {{ $groupTransactionCount }} Transactions
+                    </td>
+            </tr>
                 
                 @if($accountingNotesData['account_classes_data']['level_of_detail'] === 'detailed')
                     <!-- Detailed View - Show individual accounts -->
@@ -136,8 +149,8 @@
                         <th style="width: 12%; text-align: center;">Total Credit</th>
                         <th style="width: 12%; text-align: center;">Net Amount</th>
                         <th style="width: 14%; text-align: center;">Transactions</th>
-                    </tr>
-                    
+        </tr>
+        
                     @foreach($groupData as $item)
                         <tr>
                             <td style="padding-left: 40px;"><code>{{ $item->account_code }}</code></td>
@@ -146,31 +159,15 @@
                             <td class="text-center">{{ number_format($item->total_credit, 2) }}</td>
                             <td class="text-center"><strong>{{ number_format($item->net_amount, 2) }}</strong></td>
                             <td class="text-center">{{ $item->transaction_count }}</td>
-                        </tr>
+            </tr>
                     @endforeach
                 @else
-                    <!-- Summary View - Show group totals -->
-                    <tr class="subsection-header">
-                        <th style="width: 25%; padding-left: 40px; text-align: center;">Total Debit</th>
-                        <th style="width: 25%; text-align: center;">Total Credit</th>
-                        <th style="width: 25%; text-align: center;">Net Amount</th>
-                        <th style="width: 25%; text-align: center;">Accounts | Transactions</th>
-                    </tr>
-                    
-                    @php
-                        $groupTotalDebit = $groupData->sum('total_debit');
-                        $groupTotalCredit = $groupData->sum('total_credit');
-                        $groupNetAmount = $groupTotalDebit - $groupTotalCredit;
-                        $groupAccountCount = $groupData->sum('account_count');
-                        $groupTransactionCount = $groupData->sum('transaction_count');
-                    @endphp
-                    
-                    <tr>
-                        <td style="padding-left: 40px; text-align: center;">{{ number_format($groupTotalDebit, 2) }}</td>
-                        <td class="text-center">{{ number_format($groupTotalCredit, 2) }}</td>
-                        <td class="text-center"><strong>{{ number_format($groupNetAmount, 2) }}</strong></td>
-                        <td class="text-center">{{ $groupAccountCount }} | {{ $groupTransactionCount }}</td>
-                    </tr>
+                    <!-- Summary View - No additional data needed since totals are in header -->
+            <tr>
+                        <td colspan="6" style="padding-left: 40px; text-align: center; color: #666; font-style: italic;">
+                            Group totals shown in header above
+                        </td>
+            </tr>
                 @endif
             </table>
             
@@ -183,7 +180,7 @@
         <!-- Add spacing between classes -->
         <table>
             <tr><td colspan="6" style="border: none; height: 20px;"></td></tr>
-        </table>
+    </table>
     @endforeach
 
     <div style="margin-top: 30px; font-size: 9px; color: #666;">

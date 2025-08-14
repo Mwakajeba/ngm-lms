@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 use App\Models\User;
 use App\Models\Menu;
 use Illuminate\Support\Facades\DB;
@@ -18,8 +18,8 @@ class RolePermissionController extends Controller
         $activeUsers = User::where('status', 'active')->count();
         $systemRoles = Role::whereIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer'])->count();
 
-        // Group permissions by category
-        $permissionGroups = $this->groupPermissions($permissions);
+        // Get permission groups from database
+        $permissionGroups = $this->getPermissionGroupsFromDatabase();
 
         return view('roles.index', compact('roles', 'permissions', 'permissionGroups', 'activeUsers', 'systemRoles'));
     }
@@ -27,8 +27,8 @@ class RolePermissionController extends Controller
     public function create()
     {
         $permissions = Permission::all();
-        $permissionGroups = $this->groupPermissions($permissions);
-
+        $permissionGroups = $this->getPermissionGroupsFromDatabase();
+        info('all permissions', ['permissions' => $permissions]);
         return view('roles.create', compact('permissions', 'permissionGroups'));
     }
 
@@ -36,7 +36,6 @@ class RolePermissionController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:roles,name',
-            'guard_name' => 'required|string|max:255',
             'description' => 'nullable|string|max:500',
             'permissions' => 'array',
             'permissions.*' => 'exists:permissions,id',
@@ -47,7 +46,6 @@ class RolePermissionController extends Controller
 
             $role = Role::create([
                 'name' => strtolower($request->name),
-                'guard_name' => $request->guard_name,
                 'description' => $request->description,
             ]);
 
@@ -94,7 +92,7 @@ class RolePermissionController extends Controller
     public function edit(Role $role)
     {
         $permissions = Permission::all();
-        $permissionGroups = $this->groupPermissions($permissions);
+        $permissionGroups = $this->getPermissionGroupsFromDatabase();
 
         return view('roles.edit', compact('role', 'permissions', 'permissionGroups'));
     }
@@ -104,22 +102,27 @@ class RolePermissionController extends Controller
         $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
             'description' => 'nullable|string|max:500',
-            'permissions' => 'array',
+            'permissions' => 'nullable|array',
             'permissions.*' => 'exists:permissions,id',
         ]);
 
         try {
             DB::beginTransaction();
 
+            // Update role basic information
             $role->update([
                 'name' => strtolower($request->name),
                 'description' => $request->description,
             ]);
 
-            $permissions = $request->has('permissions')
-                ? Permission::whereIn('id', $request->permissions)->get()
-                : collect();
+            // Handle permissions - if no permissions are selected, sync with empty collection
+            if ($request->has('permissions') && is_array($request->permissions)) {
+                $permissions = Permission::whereIn('id', $request->permissions)->get();
+            } else {
+                $permissions = collect();
+            }
 
+            // Sync permissions (this will add new ones and remove old ones)
             $role->syncPermissions($permissions);
 
             DB::commit();
@@ -127,7 +130,12 @@ class RolePermissionController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => true,
-                    'message' => 'Role updated successfully!'
+                    'message' => 'Role updated successfully!',
+                    'debug' => [
+                        'role_id' => $role->id,
+                        'permissions_count' => $permissions->count(),
+                        'permissions' => $permissions->pluck('name')->toArray()
+                    ]
                 ]);
             }
 
@@ -140,7 +148,12 @@ class RolePermissionController extends Controller
             if ($request->wantsJson()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Failed to update role: ' . $e->getMessage()
+                    'message' => 'Failed to update role: ' . $e->getMessage(),
+                    'debug' => [
+                        'error' => $e->getMessage(),
+                        'line' => $e->getLine(),
+                        'file' => $e->getFile()
+                    ]
                 ], 422);
             }
 
@@ -245,16 +258,15 @@ class RolePermissionController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255|unique:permissions,name',
-            'guard_name' => 'required|string|max:255',
-            'group' => 'nullable|string|max:255',
+            'permission_group_id' => 'nullable|exists:permission_groups,id',
             'description' => 'nullable|string|max:500',
         ]);
 
         try {
             $permission = Permission::create([
                 'name' => strtolower($request->name),
-                'guard_name' => $request->guard_name,
                 'description' => $request->description,
+                'permission_group_id' => $request->permission_group_id,
             ]);
 
             // Store group information in a custom field or use the name pattern
@@ -295,86 +307,111 @@ class RolePermissionController extends Controller
     }
 
     /**
-     * Group permissions by category based on their names
+     * Get permission groups from database with their permissions
+     */
+    private function getPermissionGroupsFromDatabase()
+    {
+        // Get all permissions with their permission groups
+        $permissions = Permission::with('permissionGroup')->get();
+        
+        $groups = [
+            'dashboard' => [],
+            'settings' => [],
+            'customers' => [],
+            'loan_management' => [],
+            'cash_collaterals' => [],
+            'accounting' => [],
+            'reports' => [],
+            'chat' => [],
+        ];
+
+        foreach ($permissions as $permission) {
+            $groupName = $permission->permissionGroup ? $permission->permissionGroup->name : null;
+            
+            if ($groupName && isset($groups[$groupName])) {
+                $groups[$groupName][] = $permission;
+            } else {
+                // Default to settings for any unmatched permissions
+                $groups['settings'][] = $permission;
+            }
+        }
+
+        // Remove empty groups
+        return array_filter($groups);
+    }
+
+    /**
+     * Group permissions by category based on their stored group or names (fallback method)
      */
     private function groupPermissions($permissions)
     {
         $groups = [
-            'user' => [],
-            'client' => [],
-            'loan' => [],
-            'borrower' => [],
-            'collection' => [],
-            'accounting' => [],
-            'savings' => [],
-            'report' => [],
-            'risk' => [],
-            'settings' => [],
-            'ai' => [],
             'dashboard' => [],
-            'menu' => [],
-            'company' => [],
-            'branch' => [],
-            'system' => [],
+            'settings' => [],
+            'customers' => [],
+            'loan_management' => [],
+            'cash_collaterals' => [],
+            'accounting' => [],
+            'reports' => [],
+            'chat' => [],
         ];
 
         foreach ($permissions as $permission) {
+            // First, try to use the stored group field
+            if ($permission->group && isset($groups[$permission->group])) {
+                $groups[$permission->group][] = $permission;
+                continue;
+            }
+
+            // Fallback to name-based grouping for existing permissions without group
             $name = strtolower($permission->name);
 
-            if (str_contains($name, 'user') || str_contains($name, 'staff')) {
-                $groups['user'][] = $permission;
-            } elseif (str_contains($name, 'client')) {
-                $groups['client'][] = $permission;
-            } elseif (str_contains($name, 'loan')) {
-                $groups['loan'][] = $permission;
-            } elseif (str_contains($name, 'borrower')) {
-                $groups['borrower'][] = $permission;
+            if (str_contains($name, 'dashboard') || str_contains($name, 'statistic') || str_contains($name, 'kpi') || str_contains($name, 'analytics')) {
+                $groups['dashboard'][] = $permission;
             } elseif (
-                str_contains($name, 'collection') || str_contains($name, 'payment') ||
-                str_contains($name, 'receipt') || str_contains($name, 'penalty')
+                str_contains($name, 'setting') || str_contains($name, 'backup') ||
+                str_contains($name, 'configuration') || str_contains($name, 'role') ||
+                str_contains($name, 'permission') || str_contains($name, 'user') ||
+                str_contains($name, 'staff') || str_contains($name, 'company') ||
+                str_contains($name, 'branch')
             ) {
-                $groups['collection'][] = $permission;
+                $groups['settings'][] = $permission;
+            } elseif (str_contains($name, 'customer')) {
+                $groups['customers'][] = $permission;
+            } elseif (
+                str_contains($name, 'loan') || str_contains($name, 'group') ||
+                str_contains($name, 'guarantor') || str_contains($name, 'disburse')
+            ) {
+                $groups['loan_management'][] = $permission;
+            } elseif (str_contains($name, 'cash collateral')) {
+                $groups['cash_collaterals'][] = $permission;
             } elseif (
                 str_contains($name, 'accounting') || str_contains($name, 'journal') ||
                 str_contains($name, 'bank') || str_contains($name, 'ledger') ||
-                str_contains($name, 'financial')
+                str_contains($name, 'financial') || str_contains($name, 'chart account') ||
+                str_contains($name, 'supplier') || str_contains($name, 'voucher') ||
+                str_contains($name, 'reconciliation') || str_contains($name, 'bill purchase') ||
+                str_contains($name, 'budget') || str_contains($name, 'fee') ||
+                str_contains($name, 'penalty') || str_contains($name, 'transaction')
             ) {
                 $groups['accounting'][] = $permission;
             } elseif (
-                str_contains($name, 'saving') || str_contains($name, 'deposit') ||
-                str_contains($name, 'withdrawal')
-            ) {
-                $groups['savings'][] = $permission;
-            } elseif (
                 str_contains($name, 'report') || str_contains($name, 'audit') ||
-                str_contains($name, 'compliance') || str_contains($name, 'analytics')
+                str_contains($name, 'compliance') || str_contains($name, 'portfolio') ||
+                str_contains($name, 'delinquency') || str_contains($name, 'statement')
             ) {
-                $groups['report'][] = $permission;
-            } elseif (
-                str_contains($name, 'risk') || str_contains($name, 'credit') ||
-                str_contains($name, 'collateral') || str_contains($name, 'insurance')
-            ) {
-                $groups['risk'][] = $permission;
-            } elseif (
-                str_contains($name, 'setting') || str_contains($name, 'backup') ||
-                str_contains($name, 'configuration')
-            ) {
-                $groups['settings'][] = $permission;
+                $groups['reports'][] = $permission;
+            } elseif (str_contains($name, 'chat') || str_contains($name, 'message')) {
+                $groups['chat'][] = $permission;
             } elseif (str_contains($name, 'ai') || str_contains($name, 'assistant')) {
-                $groups['ai'][] = $permission;
-            } elseif (
-                str_contains($name, 'dashboard') || str_contains($name, 'statistic') ||
-                str_contains($name, 'kpi')
-            ) {
-                $groups['dashboard'][] = $permission;
+                $groups['settings'][] = $permission; // AI assistant is part of settings
+            } elseif (str_contains($name, 'collection') || str_contains($name, 'payment') || str_contains($name, 'receipt')) {
+                $groups['accounting'][] = $permission; // Collections are part of accounting
             } elseif (str_contains($name, 'menu')) {
-                $groups['menu'][] = $permission;
-            } elseif (str_contains($name, 'company')) {
-                $groups['company'][] = $permission;
-            } elseif (str_contains($name, 'branch')) {
-                $groups['branch'][] = $permission;
+                $groups['settings'][] = $permission; // Menu management is part of settings
             } else {
-                $groups['system'][] = $permission;
+                // Default to settings for any unmatched permissions
+                $groups['settings'][] = $permission;
             }
         }
 

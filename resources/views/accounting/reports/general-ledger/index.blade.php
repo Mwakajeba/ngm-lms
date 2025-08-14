@@ -7,7 +7,6 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
             ['label' => 'Accounting Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-calculator'],
             ['label' => 'General Ledger Report', 'url' => '#', 'icon' => 'bx bx-book-open']
         ]" />
@@ -117,27 +116,6 @@
                                     </select>
                                 </div>
                             </div>
-
-                            <div class="row">
-                                <div class="col-12">
-                                    <button type="submit" class="btn btn-primary me-2">
-                                        <i class="bx bx-search me-1"></i>Generate Report
-                                    </button>
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-success dropdown-toggle" data-bs-toggle="dropdown" aria-expanded="false">
-                                            <i class="bx bx-download me-1"></i>Export
-                                        </button>
-                                        <ul class="dropdown-menu">
-                                            <li><a class="dropdown-item" href="#" onclick="exportReport('pdf')">
-                                                <i class="bx bx-file-pdf me-2"></i>Export PDF
-                                            </a></li>
-                                            <li><a class="dropdown-item" href="#" onclick="exportReport('excel')">
-                                                <i class="bx bx-file me-2"></i>Export Excel
-                                            </a></li>
-                                        </ul>
-                                    </div>
-                                </div>
-                            </div>
                         </form>
 
                         @if(isset($generalLedgerData))
@@ -198,14 +176,6 @@
                                                     @endif
                                                     Basis: {{ ucfirst($reportType) }}
                                                 </small>
-                                            </div>
-                                            <div class="btn-group" role="group">
-                                                <button type="button" class="btn btn-outline-primary btn-sm" onclick="exportReport('pdf')">
-                                                    <i class="bx bx-file-pdf me-1"></i>PDF
-                                                </button>
-                                                <button type="button" class="btn btn-outline-success btn-sm" onclick="exportReport('excel')">
-                                                    <i class="bx bx-file me-1"></i>Excel
-                                                </button>
                                             </div>
                                         </div>
                                     </div>
@@ -348,6 +318,11 @@ function exportReport(type) {
     
     // Download the file
     window.location.href = url;
+
+    // close the loading state after a short delay
+    setTimeout(() => {
+        Swal.close();
+    }, 2000);
 }
 
 // Initialize DataTable

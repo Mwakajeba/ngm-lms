@@ -8,8 +8,7 @@
         <!-- Breadcrumb -->
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Accounting', 'url' => '#', 'icon' => 'bx bx-calculator'],
-            ['label' => 'Reports', 'url' => '#', 'icon' => 'bx bx-chart'],
+            ['label' => 'Accounting Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-calculator'],
             ['label' => 'Expenses Summary', 'url' => '#', 'icon' => 'bx bx-dollar-circle']
         ]" />
 

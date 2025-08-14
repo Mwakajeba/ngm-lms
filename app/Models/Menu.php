@@ -1,10 +1,12 @@
 <?php
 namespace App\Models;
 
+use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 
 class Menu extends Model
 {
+    use LogsActivity;
     protected $fillable = ['name', 'route', 'parent_id', 'icon'];
 
     // Role relationship (many-to-many)

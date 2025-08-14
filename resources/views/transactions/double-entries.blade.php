@@ -176,13 +176,17 @@
                                                 <a href="{{ route('accounting.bill-purchases.show', $transaction->bill) }}" class="text-decoration-none">
                                                     {{ $transaction->bill->reference }}
                                                 </a>
+                                            @elseif($transaction->receipt)
+                                                <a href="{{ route('accounting.receipt-vouchers.show', $transaction->receipt) }}" class="text-decoration-none">
+                                                    {{ $transaction->receipt->reference }}
+                                                </a>
                                             @else
                                                 {{ $transaction->transaction_id }}
                                             @endif
                                         </td>
                                         <td>{{ Str::limit($transaction->description, 50) }}</td>
                                         <td>
-                                            <span class="badge bg-{{ $transaction->transaction_type == 'journal' ? 'primary' : ($transaction->transaction_type == 'payment' ? 'success' : 'warning') }}">
+                                            <span class="badge bg-{{ $transaction->transaction_type == 'journal' ? 'primary' : ($transaction->transaction_type == 'payment' ? 'success' : ($transaction->transaction_type == 'receipt' ? 'info' : 'warning')) }}">
                                                 {{ ucfirst($transaction->transaction_type) }}
                                             </span>
                                         </td>
@@ -253,21 +257,6 @@
                                         <i class="bx bx-trending-down me-2"></i>
                                         <div>
                                             <strong>Total Credits:</strong> {{ number_format($totalCredit, 2) }}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-md-4">
-                                <div class="alert alert-{{ $balance == 0 ? 'success' : 'danger' }} mb-0">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bx {{ $balance == 0 ? 'bx-check-circle' : 'bx-error' }} me-2"></i>
-                                        <div>
-                                            <strong>Final Balance:</strong> {{ number_format($balance, 2) }}
-                                            @if($balance == 0)
-                                                <br><small>✅ Account is balanced</small>
-                                            @else
-                                                <br><small>⚠️ Account is not balanced</small>
-                                            @endif
                                         </div>
                                     </div>
                                 </div>
