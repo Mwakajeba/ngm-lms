@@ -80,27 +80,25 @@
                                     </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">
-                                        @if($paymentVoucher->reference_type == 'Bill')
-                                            Supplier
-                                        @else
-                                            Customer
-                                        @endif
-                                    </label>
+                                    <label class="form-label fw-bold">Payee Type</label>
                                     <p class="form-control-plaintext">
-                                        @if($paymentVoucher->reference_type == 'Bill' && $paymentVoucher->supplier)
-                                            {{ $paymentVoucher->supplier->name ?? 'N/A' }}
-                                        @elseif($paymentVoucher->customer)
+                                        <span class="badge bg-{{ $paymentVoucher->payee_type == 'customer' ? 'primary' : ($paymentVoucher->payee_type == 'supplier' ? 'success' : 'warning') }}">
+                                            {{ ucfirst($paymentVoucher->payee_type ?? 'N/A') }}
+                                        </span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Payee</label>
+                                    <p class="form-control-plaintext">
+                                        @if($paymentVoucher->payee_type == 'customer' && $paymentVoucher->customer)
                                             {{ $paymentVoucher->customer->name ?? 'N/A' }}
                                             ({{ $paymentVoucher->customer->customerNo ?? 'N/A' }})
+                                        @elseif($paymentVoucher->payee_type == 'supplier' && $paymentVoucher->supplier)
+                                            {{ $paymentVoucher->supplier->name ?? 'N/A' }}
+                                        @elseif($paymentVoucher->payee_type == 'other')
+                                            {{ $paymentVoucher->payee_name ?? 'N/A' }}
                                         @else
-                                            <span class="text-muted">
-                                                @if($paymentVoucher->reference_type == 'Bill')
-                                                    No supplier selected
-                                                @else
-                                                    No customer selected
-                                                @endif
-                                            </span>
+                                            <span class="text-muted">No payee selected</span>
                                         @endif
                                     </p>
                                 </div>

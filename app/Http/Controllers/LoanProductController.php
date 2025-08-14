@@ -66,6 +66,11 @@ class LoanProductController extends Controller
             'annually' => 'Annually'
         ];
 
+        $penaltycriteriaDeductions = [
+            'daily_bases' => 'daily bases',
+            'full_amount' => 'full amount',
+        ];
+
         $interestMethods = [
             'flat_rate' => 'Flat Rate',
             'reducing_balance_with_equal_installment' => 'Reducing Balance with Equal Installment',
@@ -94,7 +99,8 @@ class LoanProductController extends Controller
             'interestCycles',
             'interestMethods',
             'topUpTypes',
-            'cashCollateralValueTypes'
+            'cashCollateralValueTypes',
+            'penaltycriteriaDeductions'
         ));
     }
 
@@ -115,6 +121,7 @@ class LoanProductController extends Controller
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
             'grace_period' => 'nullable|integer|min:0', // Add grace period validation
+            'penalt_deduction_criteria' => 'nullable|string',
             'has_top_up' => 'boolean',
             'top_up_type' => 'required_if:has_top_up,1|string|max:50',
             'top_up_type_value' => 'required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
@@ -278,6 +285,10 @@ class LoanProductController extends Controller
             'reducing_balance_with_equal_installment' => 'Reducing Balance with Equal Installment',
             'reducing_balance_with_equal_principal' => 'Reducing Balance with Equal Principal',
         ];
+        $penaltycriteriaDeductions = [
+            'daily_bases' => 'daily bases',
+            'full_amount' => 'full amount',
+        ];
 
         $topUpTypes = [
             'percentage' => 'Percentage',
@@ -301,7 +312,8 @@ class LoanProductController extends Controller
             'interestCycles',
             'interestMethods',
             'topUpTypes',
-            'cashCollateralValueTypes'
+            'cashCollateralValueTypes',
+            'penaltycriteriaDeductions'
         ));
     }
 

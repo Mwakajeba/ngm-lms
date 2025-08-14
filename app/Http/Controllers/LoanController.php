@@ -305,6 +305,18 @@ class LoanController extends Controller
         }
 
         $loan = Loan::findOrFail($decoded[0]);
+        $loanOfficers = User::whereHas('roles', function ($query) {
+            $query->whereIn('name', ['loan-officer', 'admin']);
+        })->get();
+
+        $interestCycles = [
+            'daily' => 'Daily',
+            'weekly' => 'Weekly',
+            'monthly' => 'Monthly',
+            'quarterly' => 'Quarterly',
+            'semi_annually' => 'Semi Annually',
+            'annually' => 'Annually'
+        ];
 
         // Fetch supporting data
         $customers = Customer::all();
@@ -320,6 +332,8 @@ class LoanController extends Controller
             'products' => $products,
             'bankAccounts' => $bankAccounts,
             'sectors' => $sectors,
+            'interestCycles' => $interestCycles,
+            'loanOfficers'  => $loanOfficers,
         ]);
     }
 

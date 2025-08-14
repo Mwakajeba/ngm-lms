@@ -80,7 +80,7 @@
 					->get();
 			@endphp
 			<li class="nav-item dropdown dropdown-large">
-				<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span class="alert-count">{{$dueSchedules->count()}}</span>
+				<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span class="alert-count" id="navbarNotificationCount">{{$dueSchedules->count()}}</span>
 					<i class='bx bx-bell'></i>
 				</a>
 				<div class="dropdown-menu dropdown-menu-end">
@@ -113,9 +113,21 @@
 							</a>
 						@endif
 						
+						<!-- Chat Notifications Section -->
+						<div class="dropdown-divider"></div>
+						<div class="dropdown-header">
+							<small class="text-muted">Chat Notifications</small>
+						</div>
+						<div id="navbarChatNotifications">
+							<!-- Chat notifications will be populated here -->
+						</div>
+						
 					</div>
 					<a href="javascript:;">
 						<div class="text-center msg-footer">View All Notifications</div>
+					</a>
+					<a href="/chat" id="viewChatNotifications">
+						<div class="text-center msg-footer">View Chat Notifications</div>
 					</a>
 				</div>
 			</li>
@@ -281,8 +293,8 @@
 		<a class="d-flex align-items-center nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
 			<img src="{{ asset('assets/images/avatars/avatar-2.png') }}" class="user-img" alt="user avatar">
 			<div class="user-info ps-3">
-				<p class="user-name mb-0">{{ auth()->user()->name }}</p>
-				<p class="designattion mb-0">{{ ucfirst(auth()->user()->role) }}</p>
+				<p class="user-name mb-0">{{ Auth::user()->name }}</p>
+				<p class="designattion mb-0">{{ ucfirst(Auth::user()->role) }}</p>
 			</div>
 		</a>
 		<ul class="dropdown-menu dropdown-menu-end">

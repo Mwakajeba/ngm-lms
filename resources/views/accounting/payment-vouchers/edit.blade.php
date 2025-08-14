@@ -65,12 +65,12 @@
                                     </div>
                                 </div>
 
-                                <!-- Bank Account and Customer Section -->
+                                <!-- Bank Account Section -->
                                 <div class="row mb-4">
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">
-                                                <i class="bx bx-wallet me-1"></i>Bank Account
+                                                <i class="bx bx-wallet me-1"></i>Bank Account <span class="text-danger">*</span>
                                             </label>
                                             <select
                                                 class="form-select form-select-lg mt-2 @error('bank_account_id') is-invalid @enderror"
@@ -87,38 +87,101 @@
                                             @enderror
                                         </div>
                                     </div>
+                                </div>
 
-                                    <div class="col-lg-6">
+                                <!-- Payee Section -->
+                                <div class="row mb-4">
+                                    <div class="col-lg-12">
+                                        <div class="card border-warning">
+                                            <div class="card-header bg-light">
+                                                <h6 class="mb-0 fw-bold">
+                                                    <i class="bx bx-user me-2"></i>Payee Information
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div class="row">
+                                                    <div class="col-lg-4">
+                                                        <div class="mb-3">
+                                                            <label for="payee_type" class="form-label fw-bold">
+                                                                Payee Type <span class="text-danger">*</span>
+                                                            </label>
+                                                            <select
+                                                                class="form-select form-select-lg @error('payee_type') is-invalid @enderror"
+                                                                id="payee_type" name="payee_type" required>
+                                                                <option value="">-- Select Payee Type --</option>
+                                                                <option value="customer" {{ old('payee_type', $paymentVoucher->payee_type) == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                                <option value="supplier" {{ old('payee_type', $paymentVoucher->payee_type) == 'supplier' ? 'selected' : '' }}>Supplier</option>
+                                                                <option value="other" {{ old('payee_type', $paymentVoucher->payee_type) == 'other' ? 'selected' : '' }}>Other</option>
+                                                            </select>
+                                                            @error('payee_type')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
+
+                                                    <!-- Customer Selection (shown when payee_type is customer) -->
+                                                    <div class="col-lg-8" id="customerSection" style="display: none;">
                                         <div class="mb-3">
                                             <label for="customer_id" class="form-label fw-bold">
-                                                <i class="bx bx-user me-1"></i>
-                                                @if($paymentVoucher->reference_type == 'Bill')
-                                                    Supplier
-                                                @else
-                                                    Customer
-                                                @endif
+                                                                Select Customer <span class="text-danger">*</span>
                                             </label>
                                             <select
                                                 class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
                                                 id="customer_id" name="customer_id">
-                                                <option value="">-- Select {{ $paymentVoucher->reference_type == 'Bill' ? 'Supplier' : 'Customer' }} (Optional) --</option>
-                                                @if($paymentVoucher->reference_type == 'Bill')
-                                                    @foreach($suppliers ?? [] as $supplier)
-                                                        <option value="{{ $supplier->id }}" {{ old('customer_id', $paymentVoucher->supplier_id) == $supplier->id ? 'selected' : '' }}>
-                                                            {{ $supplier->name }}
-                                                        </option>
-                                                    @endforeach
-                                                @else
+                                                                <option value="">-- Select Customer --</option>
                                                     @foreach($customers as $customer)
                                                         <option value="{{ $customer->id }}" {{ old('customer_id', $paymentVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
                                                             {{ $customer->name }} ({{ $customer->customerNo }})
                                                         </option>
                                                     @endforeach
-                                                @endif
                                             </select>
                                             @error('customer_id')
                                                 <div class="invalid-feedback">{{ $message }}</div>
                                             @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Supplier Selection (shown when payee_type is supplier) -->
+                                                    <div class="col-lg-8" id="supplierSection" style="display: none;">
+                                                        <div class="mb-3">
+                                                            <label for="supplier_id" class="form-label fw-bold">
+                                                                Select Supplier <span class="text-danger">*</span>
+                                                            </label>
+                                                            <select
+                                                                class="form-select form-select-lg @error('supplier_id') is-invalid @enderror"
+                                                                id="supplier_id" name="supplier_id">
+                                                                <option value="">-- Select Supplier --</option>
+                                                                @foreach($suppliers as $supplier)
+                                                                    <option value="{{ $supplier->id }}" {{ old('supplier_id', $paymentVoucher->supplier_id) == $supplier->id ? 'selected' : '' }}>
+                                                                        {{ $supplier->name }}
+                                                                    </option>
+                                                                @endforeach
+                                                            </select>
+                                                            @error('supplier_id')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Other Payee Name (shown when payee_type is other) -->
+                                                    <div class="col-lg-8" id="otherPayeeSection" style="display: none;">
+                                                        <div class="mb-3">
+                                                            <label for="payee_name" class="form-label fw-bold">
+                                                                Payee Name <span class="text-danger">*</span>
+                                                            </label>
+                                                            <input type="text"
+                                                                class="form-control form-control-lg @error('payee_name') is-invalid @enderror"
+                                                                id="payee_name" name="payee_name"
+                                                                value="{{ old('payee_name', $paymentVoucher->payee_name) }}"
+                                                                placeholder="Enter payee name"
+                                                                required>
+                                                            @error('payee_name')
+                                                                <div class="invalid-feedback">{{ $message }}</div>
+                                                            @enderror
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -228,7 +291,7 @@
                                                     @endforeach
                                                 </div>
 
-                                                <div class="text-center mt-3">
+                                                <div class="text-left mt-3">
                                                     <button type="button" class="btn btn-success" id="addLineBtn">
                                                         <i class="bx bx-plus me-2"></i>Add Line
                                                     </button>
@@ -331,6 +394,34 @@
         $(document).ready(function () {
             let lineItemCount = {{ $paymentVoucher->paymentItems->count() }};
 
+            // Handle payee type selection
+            $('#payee_type').on('change', function() {
+                const payeeType = $(this).val();
+                
+                // Hide all sections first
+                $('#customerSection, #supplierSection, #otherPayeeSection').hide();
+                
+                // Reset required attributes and disable all fields
+                $('#customer_id, #supplier_id, #payee_name').prop('required', false).prop('disabled', true);
+                
+                // Show relevant section based on selection and set required fields
+                if (payeeType === 'customer') {
+                    $('#customerSection').show();
+                    $('#customer_id').prop('required', true).prop('disabled', false);
+                } else if (payeeType === 'supplier') {
+                    $('#supplierSection').show();
+                    $('#supplier_id').prop('required', true).prop('disabled', false);
+                } else if (payeeType === 'other') {
+                    $('#otherPayeeSection').show();
+                    $('#payee_name').prop('required', true).prop('disabled', false);
+                }
+            });
+
+            // Trigger change event on page load if payee_type has a value
+            if ($('#payee_type').val()) {
+                $('#payee_type').trigger('change');
+            }
+
             // Initialize with existing line items (already rendered in HTML)
             // No need to add sample items since they're already in the DOM
 
@@ -416,7 +507,7 @@
                     total += amount;
                 });
 
-                $('#totalAmount').text(total.toFixed(2));
+                $('#totalAmount').text(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
                 // Update update button state
                 if (total > 0) {
@@ -428,6 +519,52 @@
 
             function validateForm() {
                 let isValid = true;
+
+                // Validate payee information
+                const payeeType = $('#payee_type').val();
+                if (!payeeType) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please select a payee type.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    isValid = false;
+                    return isValid;
+                }
+
+                if (payeeType === 'customer' && !$('#customer_id').val()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please select a customer.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    isValid = false;
+                    return isValid;
+                }
+
+                if (payeeType === 'supplier' && !$('#supplier_id').val()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please select a supplier.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    isValid = false;
+                    return isValid;
+                }
+
+                if (payeeType === 'other' && !$('#payee_name').val().trim()) {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Validation Error',
+                        text: 'Please enter a payee name.',
+                        confirmButtonColor: '#dc3545'
+                    });
+                    isValid = false;
+                    return isValid;
+                }
 
                 // Check if at least one line item has both account and amount
                 let hasValidLineItem = false;

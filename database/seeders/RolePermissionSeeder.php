@@ -5,7 +5,7 @@ namespace Database\Seeders;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+use App\Models\Permission;
 
 class RolePermissionSeeder extends Seeder
 {
@@ -409,6 +409,8 @@ class RolePermissionSeeder extends Seeder
             Permission::firstOrCreate([
                 'name' => $permissionName,
                 'guard_name' => 'web'
+            ], [
+                'permission_group_id' => null // Will be set by PermissionGroupsSeeder
             ]);
         }
 

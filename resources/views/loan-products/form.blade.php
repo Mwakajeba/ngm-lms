@@ -137,6 +137,20 @@
             @error('grace_period') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Penalty Criteria Deduction <span class="text-danger">*</span></label>
+            <select name="penalt_deduction_criteria" id="penalt_deduction_criteria" class="form-select @error('penalt_deduction_criteria') is-invalid @enderror">
+                <option value="">-- Select Deduction Type --</option>
+                @foreach($penaltycriteriaDeductions as $key => $value)
+                    <option value="{{ $key }}" {{ old('penalt_deduction_criteria', $loanProduct->penalt_deduction_criteria ?? '') == $key ? 'selected' : '' }}>
+                        {{ $value }}
+                    </option>
+                @endforeach
+            </select>
+            @error('penalt_deduction_criteria') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
         <!-- Top Up Configuration -->
         <div class="col-12">
             <h5 class="mb-3 text-primary mt-4">Top Up Configuration</h5>
