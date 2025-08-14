@@ -120,16 +120,16 @@ use Vinkla\Hashids\Facades\Hashids;
                                             </a>
                                             @endcan
                                             @can('edit loan')
-                                            @if(!in_array($loan->status, ['active', 'authorized', 'defaulted']))
+
                                             <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}"
                                                 class="btn btn-sm btn-outline-primary">
                                                 Edit
                                             </a>
-                                            @endif
+
                                             @endcan
 
                                             @can('delete loan')
-                                            @if(!in_array($loan->status, ['active', 'authorized']))
+
                                             <form action="{{ route('loans.destroy', Hashids::encode($loan->id)) }}"
                                                 method="POST" class="d-inline-block delete-form">
                                                 @csrf @method('DELETE')
@@ -137,7 +137,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                     <i class="bx bx-trash me-1"></i>Delete
                                                 </button>
                                             </form>
-                                            @endif
+
                                             @endcan
 
                                         </td>
