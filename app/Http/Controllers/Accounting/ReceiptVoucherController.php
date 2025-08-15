@@ -62,6 +62,16 @@ class ReceiptVoucherController extends Controller
             ]);
         }
 
+        // Load loan relationships for receipts with reference_type = 'loan'
+        $loanReceiptIds = $receipts->where('reference_type', 'loan')->pluck('reference')->filter();
+        if ($loanReceiptIds->isNotEmpty()) {
+            $receipts->load([
+                'loan' => function ($query) use ($loanReceiptIds) {
+                    $query->whereIn('id', $loanReceiptIds);
+                }
+            ]);
+        }
+
         // Calculate stats
         $stats = [
             'total' => $receipts->count(),
@@ -111,17 +121,7 @@ class ReceiptVoucherController extends Controller
      */
     public function store(Request $request)
     {
-        // Debug: Log the incoming request data
-        \Log::info('Receipt voucher store request started');
-        \Log::info('Request method:', ['method' => $request->method()]);
-        \Log::info('Request URL:', ['url' => $request->url()]);
-        \Log::info('Request headers:', $request->headers->all());
-        \Log::info('Request all data:', $request->all());
-        \Log::info('Request input:', $request->input());
-        \Log::info('Request has file attachment:', ['has_file' => $request->hasFile('attachment')]);
 
-        // Check if line_items are present
-        \Log::info('Line items data:', ['line_items' => $request->input('line_items')]);
 
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
@@ -288,6 +288,11 @@ class ReceiptVoucherController extends Controller
             'glTransactions.chartAccount',
             'branch'
         ]);
+
+        // Only load loan relationship if this receipt is linked to a loan
+        if ($receiptVoucher->reference_type === 'loan') {
+            $receiptVoucher->load('loan.customer', 'loan.product');
+        }
 
         return view('accounting.receipt-vouchers.show', compact('receiptVoucher'));
     }
@@ -569,6 +574,201 @@ class ReceiptVoucherController extends Controller
             return redirect()->back()->with('success', 'Attachment removed successfully.');
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to remove attachment: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Show the form for creating a receipt from a loan.
+     */
+    public function createFromLoan($encodedLoanId)
+    {
+        // Decode the loan ID
+        $decoded = Hashids::decode($encodedLoanId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $loan = \App\Models\Loan::with(['customer', 'product', 'bankAccount'])->findOrFail($decoded[0]);
+        $user = Auth::user();
+
+        // Get bank accounts for the current company
+        $bankAccounts = BankAccount::with('chartAccount')
+            ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Get customers for the current company/branch
+        $customers = Customer::where('company_id', $user->company_id)
+            ->when($user->branch_id, function ($query) use ($user) {
+                return $query->where('branch_id', $user->branch_id);
+            })
+            ->orderBy('name')
+            ->get();
+
+        // Get chart accounts for the current company
+        $chartAccounts = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
+            $query->where('company_id', $user->company_id);
+        })
+            ->orderBy('account_name')
+            ->get();
+
+        return view('accounting.receipt-vouchers.create-from-loan', compact('loan', 'bankAccounts', 'customers', 'chartAccounts'));
+    }
+
+    /**
+     * Store a receipt created from a loan.
+     */
+    public function storeFromLoan(Request $request, $encodedLoanId)
+    {
+        // Decode the loan ID
+        $decoded = Hashids::decode($encodedLoanId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $loan = \App\Models\Loan::findOrFail($decoded[0]);
+
+        $validator = Validator::make($request->all(), [
+            'date' => 'required|date',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'payee_type' => 'required|in:customer,other',
+            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
+            'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf|max:2048',
+            'line_items' => 'required|array|min:1',
+            'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
+            'line_items.*.amount' => 'required|numeric|min:0.01',
+            'line_items.*.description' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            \Log::error('Receipt voucher validation failed:', $validator->errors()->toArray());
+            return redirect()->back()
+                ->withErrors($validator)
+                ->withInput();
+        }
+
+        \Log::info('Validation passed, proceeding with creation from loan');
+
+        try {
+            return $this->runTransaction(function () use ($request, $loan) {
+                $user = Auth::user();
+                $totalAmount = collect($request->line_items)->sum('amount');
+
+                \Log::info('Creating receipt voucher from loan with total amount:', ['total' => $totalAmount, 'loan_id' => $loan->id]);
+
+                // Handle file upload
+                $attachmentPath = null;
+                if ($request->hasFile('attachment')) {
+                    $file = $request->file('attachment');
+                    $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+                    $attachmentPath = $file->storeAs('receipt-attachments', $fileName, 'public');
+                }
+
+                // Set payee information
+                if ($request->payee_type === 'customer') {
+                    $payeeType = 'customer';
+                    $payeeId = $request->customer_id;
+                    $payeeName = null;
+                } else {
+                    $payeeType = 'other';
+                    $payeeId = null;
+                    $payeeName = $request->payee_name;
+                }
+
+                \Log::info('Payee information:', [
+                    'type' => $payeeType,
+                    'id' => $payeeId,
+                    'name' => $payeeName
+                ]);
+
+                // Create receipt with loan reference
+                $receipt = Receipt::create([
+                    'reference' => $loan->id,
+                    'reference_type' => 'loan',
+                    'reference_number' => null,// Store loan ID as reference number
+                    'amount' => $totalAmount,
+                    'date' => $request->date,
+                    'description' => $request->description,
+                    'attachment' => $attachmentPath,
+                    'user_id' => $user->id,
+                    'bank_account_id' => $request->bank_account_id,
+                    'payee_type' => $payeeType,
+                    'payee_id' => $payeeId,
+                    'payee_name' => $payeeName,
+                    'branch_id' => $user->branch_id,
+                    'approved' => true, // Auto-approve for now
+                    'approved_by' => $user->id,
+                    'approved_at' => now(),
+                ]);
+
+                \Log::info('Receipt created successfully from loan:', ['receipt_id' => $receipt->id, 'loan_id' => $loan->id]);
+
+                // Create receipt items
+                $receiptItems = [];
+                foreach ($request->line_items as $lineItem) {
+                    $receiptItems[] = [
+                        'receipt_id' => $receipt->id,
+                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'amount' => $lineItem['amount'],
+                        'description' => $lineItem['description'] ?? null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
+
+                ReceiptItem::insert($receiptItems);
+                \Log::info('Receipt items created:', ['count' => count($receiptItems)]);
+
+                // Create GL transactions
+                $bankAccount = BankAccount::find($request->bank_account_id);
+
+                // Debit bank account
+                GlTransaction::create([
+                    'chart_account_id' => $bankAccount->chart_account_id,
+                    'customer_id' => $payeeType === 'customer' ? $payeeId : null,
+                    'amount' => $totalAmount,
+                    'nature' => 'debit',
+                    'transaction_id' => $receipt->id,
+                    'transaction_type' => 'receipt',
+                    'date' => $request->date,
+                    'description' => $request->description ?: "Receipt voucher {$receipt->reference} for loan {$loan->loanNo}",
+                    'branch_id' => $user->branch_id,
+                    'user_id' => $user->id,
+                ]);
+
+                // Credit each chart account
+                foreach ($request->line_items as $lineItem) {
+                    GlTransaction::create([
+                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'customer_id' => $payeeType === 'customer' ? $payeeId : null,
+                        'amount' => $lineItem['amount'],
+                        'nature' => 'credit',
+                        'transaction_id' => $receipt->id,
+                        'transaction_type' => 'receipt',
+                        'date' => $request->date,
+                        'description' => $lineItem['description'] ?: "Receipt voucher {$receipt->reference} for loan {$loan->loanNo}",
+                        'branch_id' => $user->branch_id,
+                        'user_id' => $user->id,
+                    ]);
+                }
+
+                \Log::info('GL transactions created successfully for loan receipt');
+
+                return redirect()->route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id))
+                    ->with('success', 'Receipt voucher created successfully from loan.');
+            });
+        } catch (\Exception $e) {
+            \Log::error('Receipt voucher creation from loan failed:', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to create receipt voucher: ' . $e->getMessage()])
+                ->withInput();
         }
     }
 }

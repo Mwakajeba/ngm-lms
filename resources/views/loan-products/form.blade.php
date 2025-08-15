@@ -16,7 +16,9 @@
     </div>
 @endif
 
-<form action="{{ $isEdit ? route('loan-products.update', Hashids::encode($loanProduct->id)) : route('loan-products.store') }}" method="POST">
+<form
+    action="{{ $isEdit ? route('loan-products.update', Hashids::encode($loanProduct->id)) : route('loan-products.store') }}"
+    method="POST">
     @csrf
     @if($isEdit) @method('PUT') @endif
 
@@ -140,7 +142,8 @@
 
         <div class="col-md-6 mb-3">
             <label class="form-label">Penalty Criteria Deduction <span class="text-danger">*</span></label>
-            <select name="penalt_deduction_criteria" id="penalt_deduction_criteria" class="form-select @error('penalt_deduction_criteria') is-invalid @enderror">
+            <select name="penalt_deduction_criteria" id="penalt_deduction_criteria"
+                class="form-select @error('penalt_deduction_criteria') is-invalid @enderror">
                 <option value="">-- Select Deduction Type --</option>
                 @foreach($penaltycriteriaDeductions as $key => $value)
                     <option value="{{ $key }}" {{ old('penalt_deduction_criteria', $loanProduct->penalt_deduction_criteria ?? '') == $key ? 'selected' : '' }}>
@@ -158,8 +161,7 @@
 
         <div class="col-md-6 mb-3">
             <div class="form-check">
-                <input class="form-check-input" type="checkbox" name="has_top_up" id="has_top_up" 
-                       value="1" {{ old('has_top_up', isset($loanProduct) && $loanProduct->top_up_type != 'none') ? 'checked' : '' }}>
+                <input class="form-check-input" type="checkbox" name="has_top_up" id="has_top_up" value="1" {{ old('has_top_up', isset($loanProduct) && !empty($loanProduct->top_up_type)) ? 'checked' : '' }}>
                 <label class="form-check-label" for="has_top_up">
                     Has Top Up
                 </label>
@@ -180,11 +182,10 @@
         </div>
 
         <div class="col-md-6 mb-3" id="top_up_value_div" style="display: none;">
-            <label class="form-label">Top Up Value <span class="text-danger">*</span></label>
-            <input type="number" name="top_up_type_value" step="0.01" min="0" 
-                   class="form-control @error('top_up_type_value') is-invalid @enderror"
-                   value="{{ old('top_up_type_value', $loanProduct->top_up_type_value ?? '') }}" 
-                   placeholder="0.00">
+            <label class="form-label">Top Up Value <span></span></label>
+            <input type="number" name="top_up_type_value"
+                class="form-control @error('top_up_type_value') is-invalid @enderror"
+                value="{{ old('top_up_type_value', $loanProduct->top_up_type_value ?? '') }}" placeholder="0.00">
             @error('top_up_type_value') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -258,8 +259,10 @@
             <div class="card border">
                 <div class="card-body">
                     <h6 class="card-title mb-3">Approval Levels Configuration</h6>
-                    <p class="text-muted small mb-3">Select roles from the left and move them to the right to define the approval hierarchy. The first role selected will be the first to approve (First In, Last Out).</p>
-                    
+                    <p class="text-muted small mb-3">Select roles from the left and move them to the right to define the
+                        approval hierarchy. The first role selected will be the first to approve (First In, Last Out).
+                    </p>
+
                     <div class="row">
                         <!-- Available Roles (Left) -->
                         <div class="col-md-5">
@@ -272,7 +275,7 @@
                                         foreach ($selectedRoles as $roleIdentifier) {
                                             $roleIdentifier = trim($roleIdentifier);
                                             if (is_numeric($roleIdentifier)) {
-                                                $selectedRoleIds[] = (int)$roleIdentifier;
+                                                $selectedRoleIds[] = (int) $roleIdentifier;
                                             } else {
                                                 $role = $roles->where('name', $roleIdentifier)->first();
                                                 if ($role) {
@@ -312,7 +315,8 @@
                         <!-- Selected Roles (Right) -->
                         <div class="col-md-5">
                             <label class="form-label">Approval Hierarchy</label>
-                            <select id="selected_roles" name="approval_levels" class="form-select @error('approval_levels') is-invalid @enderror" size="8" multiple>
+                            <select id="selected_roles" name="approval_levels"
+                                class="form-select @error('approval_levels') is-invalid @enderror" size="8" multiple>
                                 @if(isset($loanProduct) && $loanProduct->approval_levels)
                                     @php
                                         $selectedRoles = explode(',', $loanProduct->approval_levels);
@@ -410,14 +414,16 @@
             <div class="card border">
                 <div class="card-body">
                     <h6 class="card-title mb-3">Default Fees</h6>
-                    <p class="text-muted small mb-3">Add multiple fees that will be applied to loans using this product.</p>
-                    
+                    <p class="text-muted small mb-3">Add multiple fees that will be applied to loans using this product.
+                    </p>
+
                     <div id="fees_container">
                         @if(isset($loanProduct) && $loanProduct->fees_ids)
                             @foreach($loanProduct->fees_ids as $index => $feeId)
                                 <div class="row fee-row mb-2">
                                     <div class="col-md-10">
-                                        <select name="fees_id[]" class="form-select fee-select @error('fees_id') is-invalid @enderror">
+                                        <select name="fees_id[]"
+                                            class="form-select fee-select @error('fees_id') is-invalid @enderror">
                                             <option value="">-- Select Fee --</option>
                                             @foreach($fees as $fee)
                                                 <option value="{{ $fee->id }}" {{ $feeId == $fee->id ? 'selected' : '' }}>
@@ -436,7 +442,8 @@
                         @else
                             <div class="row fee-row mb-2">
                                 <div class="col-md-10">
-                                    <select name="fees_id[]" class="form-select fee-select @error('fees_id') is-invalid @enderror">
+                                    <select name="fees_id[]"
+                                        class="form-select fee-select @error('fees_id') is-invalid @enderror">
                                         <option value="">-- Select Fee --</option>
                                         @foreach($fees as $fee)
                                             <option value="{{ $fee->id }}">
@@ -453,7 +460,7 @@
                             </div>
                         @endif
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-12">
                             <button type="button" id="add_fee" class="btn btn-sm btn-success">
@@ -461,7 +468,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     @error('fees_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -472,14 +479,16 @@
             <div class="card border">
                 <div class="card-body">
                     <h6 class="card-title mb-3">Default Penalties</h6>
-                    <p class="text-muted small mb-3">Add multiple penalties that will be applied to loans using this product.</p>
-                    
+                    <p class="text-muted small mb-3">Add multiple penalties that will be applied to loans using this
+                        product.</p>
+
                     <div id="penalties_container">
                         @if(isset($loanProduct) && $loanProduct->penalty_ids)
                             @foreach($loanProduct->penalty_ids as $index => $penaltyId)
                                 <div class="row penalty-row mb-2">
                                     <div class="col-md-10">
-                                        <select name="penalty_id[]" class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
+                                        <select name="penalty_id[]"
+                                            class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
                                             <option value="">-- Select Penalty --</option>
                                             @foreach($penalties as $penalty)
                                                 <option value="{{ $penalty->id }}" {{ $penaltyId == $penalty->id ? 'selected' : '' }}>
@@ -498,7 +507,8 @@
                         @else
                             <div class="row penalty-row mb-2">
                                 <div class="col-md-10">
-                                    <select name="penalty_id[]" class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
+                                    <select name="penalty_id[]"
+                                        class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
                                         <option value="">-- Select Penalty --</option>
                                         @foreach($penalties as $penalty)
                                             <option value="{{ $penalty->id }}">
@@ -508,14 +518,15 @@
                                     </select>
                                 </div>
                                 <div class="col-md-2">
-                                    <button type="button" class="btn btn-sm btn-danger remove-penalty" style="display: none;">
+                                    <button type="button" class="btn btn-sm btn-danger remove-penalty"
+                                        style="display: none;">
                                         <i class="bx bx-trash"></i> Remove
                                     </button>
                                 </div>
                             </div>
                         @endif
                     </div>
-                    
+
                     <div class="row">
                         <div class="col-12">
                             <button type="button" id="add_penalty" class="btn btn-sm btn-success">
@@ -523,7 +534,7 @@
                             </button>
                         </div>
                     </div>
-                    
+
                     @error('penalty_id') <div class="invalid-feedback d-block">{{ $message }}</div> @enderror
                 </div>
             </div>
@@ -538,8 +549,9 @@
             <div class="card border">
                 <div class="card-body">
                     <h6 class="card-title mb-3">Repayment Order Configuration</h6>
-                    <p class="text-muted small mb-3">Select repayment components from the left and move them to the right to define the order of payment allocation. The first component will be paid first.</p>
-                    
+                    <p class="text-muted small mb-3">Select repayment components from the left and move them to the
+                        right to define the order of payment allocation. The first component will be paid first.</p>
+
                     <div class="row">
                         <!-- Available Components (Left) -->
                         <div class="col-md-5">
@@ -601,7 +613,8 @@
                         <!-- Selected Components (Right) -->
                         <div class="col-md-5">
                             <label class="form-label">Repayment Order</label>
-                            <select id="selected_repayment_components" name="repayment_order" class="form-select @error('repayment_order') is-invalid @enderror" size="6" multiple>
+                            <select id="selected_repayment_components" name="repayment_order"
+                                class="form-select @error('repayment_order') is-invalid @enderror" size="6" multiple>
                                 @if(isset($loanProduct) && $loanProduct->repayment_order)
                                     @php
                                         $selectedComponents = explode(',', $loanProduct->repayment_order);
@@ -623,7 +636,8 @@
                                             ];
                                         @endphp
                                         @if(isset($componentLabels[$component]))
-                                            <option value="{{ $component }}" data-description="{{ $componentDescriptions[$component] }}">
+                                            <option value="{{ $component }}"
+                                                data-description="{{ $componentDescriptions[$component] }}">
                                                 {{ $componentLabels[$component] }}
                                             </option>
                                         @endif
@@ -670,26 +684,36 @@
             opacity: 0.5;
             background-color: #e3f2fd !important;
         }
-        
-        #available_roles, #selected_roles, #available_repayment_components, #selected_repayment_components {
+
+        #available_roles,
+        #selected_roles,
+        #available_repayment_components,
+        #selected_repayment_components {
             border: 1px solid #dee2e6;
             border-radius: 0.375rem;
         }
-        
-        #available_roles option, #selected_roles option, #available_repayment_components option, #selected_repayment_components option {
+
+        #available_roles option,
+        #selected_roles option,
+        #available_repayment_components option,
+        #selected_repayment_components option {
             padding: 8px 12px;
             border-bottom: 1px solid #f8f9fa;
             cursor: pointer;
         }
-        
-        #available_roles option:hover, #selected_roles option:hover, #available_repayment_components option:hover, #selected_repayment_components option:hover {
+
+        #available_roles option:hover,
+        #selected_roles option:hover,
+        #available_repayment_components option:hover,
+        #selected_repayment_components option:hover {
             background-color: #f8f9fa;
         }
-        
-        #selected_roles option, #selected_repayment_components option {
+
+        #selected_roles option,
+        #selected_repayment_components option {
             background-color: #e3f2fd;
         }
-        
+
         .approval-levels-card {
             border: 1px solid #dee2e6;
             border-radius: 0.5rem;
@@ -699,31 +723,50 @@
 
 @push('scripts')
     <script>
-        $(document).ready(function() {
+        $(document).ready(function () {
+            // Initialize top up fields on page load
+            if (!$('#has_top_up').is(':checked')) {
+                $('#top_up_type').prop('disabled', true);
+                $('#top_up_type_value').prop('disabled', true);
+            } else {
+                // If checkbox is checked, show the type div
+                $('#top_up_type_div').show();
+                $('#top_up_type').prop('disabled', false);
+
+                // Check if top up type requires value field
+                var selectedType = $('#top_up_type').val();
+                if (selectedType === 'percentage' || selectedType === 'fixed_amount') {
+                    $('#top_up_value_div').show();
+                    $('#top_up_type_value').prop('disabled', false);
+                }
+            }
+
             // Top Up Toggle
-            $('#has_top_up').change(function() {
+            $('#has_top_up').change(function () {
                 if ($(this).is(':checked')) {
                     $('#top_up_type_div').show();
+                    $('#top_up_type').prop('disabled', false);
                 } else {
                     $('#top_up_type_div, #top_up_value_div').hide();
-                    $('#top_up_type').val('none');
-                    $('#top_up_type_value').val('');
+                    $('#top_up_type').val('').prop('disabled', true);
+                    $('#top_up_type_value').val('').prop('disabled', true);
                 }
             });
 
             // Top Up Type Toggle
-            $('#top_up_type').change(function() {
+            $('#top_up_type').change(function () {
                 var selectedValue = $(this).val();
                 if (selectedValue === 'percentage' || selectedValue === 'fixed_amount') {
                     $('#top_up_value_div').show();
+                    $('#top_up_type_value').prop('disabled', false);
                 } else {
                     $('#top_up_value_div').hide();
-                    $('#top_up_type_value').val('');
+                    $('#top_up_type_value').val('').prop('disabled', true);
                 }
             });
 
             // Cash Collateral Toggle
-            $('#has_cash_collateral').change(function() {
+            $('#has_cash_collateral').change(function () {
                 if ($(this).is(':checked')) {
                     $('#cash_collateral_type_div, #cash_collateral_value_type_div, #cash_collateral_value_div').show();
                 } else {
@@ -732,7 +775,7 @@
             });
 
             // Approval Levels Toggle
-            $('#has_approval_levels').change(function() {
+            $('#has_approval_levels').change(function () {
                 if ($(this).is(':checked')) {
                     $('#approval_levels_div').show();
                 } else {
@@ -741,69 +784,69 @@
             });
 
             // Fees and Penalties Dynamic Add/Remove
-            $('#add_fee').click(function() {
+            $('#add_fee').click(function () {
                 var feesContainer = $('#fees_container');
                 var feeRow = `
-                    <div class="row fee-row mb-2">
-                        <div class="col-md-10">
-                            <select name="fees_id[]" class="form-select fee-select @error('fees_id') is-invalid @enderror">
-                                <option value="">-- Select Fee --</option>
-                                @foreach($fees as $fee)
-                                    <option value="{{ $fee->id }}">
-                                        {{ $fee->name }} ({{ $fee->fee_type }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="button" class="btn btn-sm btn-danger remove-fee">
-                                <i class="bx bx-trash"></i> Remove
-                            </button>
-                        </div>
-                    </div>
-                `;
+                                                                <div class="row fee-row mb-2">
+                                                                    <div class="col-md-10">
+                                                                        <select name="fees_id[]" class="form-select fee-select @error('fees_id') is-invalid @enderror">
+                                                                            <option value="">-- Select Fee --</option>
+                                                                            @foreach($fees as $fee)
+                                                                                <option value="{{ $fee->id }}">
+                                                                                    {{ $fee->name }} ({{ $fee->fee_type }})
+                                                                                </option>
+                                                                            @endforeach
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <button type="button" class="btn btn-sm btn-danger remove-fee">
+                                                                            <i class="bx bx-trash"></i> Remove
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            `;
                 feesContainer.append(feeRow);
                 updateFeeRemoveButtons();
             });
 
-            $('#fees_container').on('click', '.remove-fee', function() {
+            $('#fees_container').on('click', '.remove-fee', function () {
                 $(this).closest('.fee-row').remove();
                 updateFeeRemoveButtons();
             });
 
-            $('#add_penalty').click(function() {
+            $('#add_penalty').click(function () {
                 var penaltiesContainer = $('#penalties_container');
                 var penaltyRow = `
-                    <div class="row penalty-row mb-2">
-                        <div class="col-md-10">
-                            <select name="penalty_id[]" class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
-                                <option value="">-- Select Penalty --</option>
-                                @foreach($penalties as $penalty)
-                                    <option value="{{ $penalty->id }}">
-                                        {{ $penalty->name }} ({{ $penalty->penalty_type }})
-                                    </option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-2">
-                            <button type="button" class="btn btn-sm btn-danger remove-penalty">
-                                <i class="bx bx-trash"></i> Remove
-                            </button>
-                        </div>
-                    </div>
-                `;
+                                                                <div class="row penalty-row mb-2">
+                                                                    <div class="col-md-10">
+                                                                        <select name="penalty_id[]" class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
+                                                                            <option value="">-- Select Penalty --</option>
+                                                                            @foreach($penalties as $penalty)
+                                                                                <option value="{{ $penalty->id }}">
+                                                                                    {{ $penalty->name }} ({{ $penalty->penalty_type }})
+                                                                                </option>
+                                                                            @endforeach
+                                                                        </select>
+                                                                    </div>
+                                                                    <div class="col-md-2">
+                                                                        <button type="button" class="btn btn-sm btn-danger remove-penalty">
+                                                                            <i class="bx bx-trash"></i> Remove
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+                                                            `;
                 penaltiesContainer.append(penaltyRow);
                 updatePenaltyRemoveButtons();
             });
 
-            $('#penalties_container').on('click', '.remove-penalty', function() {
+            $('#penalties_container').on('click', '.remove-penalty', function () {
                 $(this).closest('.penalty-row').remove();
                 updatePenaltyRemoveButtons();
             });
 
             // Approval Levels Dual-List Functionality
-            $('#move_right').click(function() {
-                $('#available_roles option:selected').each(function() {
+            $('#move_right').click(function () {
+                $('#available_roles option:selected').each(function () {
                     var option = $(this).clone();
                     $('#selected_roles').append(option);
                     $(this).remove();
@@ -811,8 +854,8 @@
                 updateApprovalLevelsInput();
             });
 
-            $('#move_left').click(function() {
-                $('#selected_roles option:selected').each(function() {
+            $('#move_left').click(function () {
+                $('#selected_roles option:selected').each(function () {
                     var option = $(this).clone();
                     $('#available_roles').append(option);
                     $(this).remove();
@@ -821,8 +864,8 @@
             });
 
             // Repayment Order Dual-List Functionality
-            $('#move_repayment_right').click(function() {
-                $('#available_repayment_components option:selected').each(function() {
+            $('#move_repayment_right').click(function () {
+                $('#available_repayment_components option:selected').each(function () {
                     var option = $(this).clone();
                     $('#selected_repayment_components').append(option);
                     $(this).remove();
@@ -830,8 +873,8 @@
                 updateRepaymentOrderInput();
             });
 
-            $('#move_repayment_left').click(function() {
-                $('#selected_repayment_components option:selected').each(function() {
+            $('#move_repayment_left').click(function () {
+                $('#selected_repayment_components option:selected').each(function () {
                     var option = $(this).clone();
                     $('#available_repayment_components').append(option);
                     $(this).remove();
@@ -840,7 +883,7 @@
             });
 
             // Role Description Display
-            $('#available_roles, #selected_roles').change(function() {
+            $('#available_roles, #selected_roles').change(function () {
                 var selectedOption = $(this).find('option:selected');
                 if (selectedOption.length > 0) {
                     var description = selectedOption.data('description');
@@ -856,7 +899,7 @@
             });
 
             // Repayment Component Description Display
-            $('#available_repayment_components, #selected_repayment_components').change(function() {
+            $('#available_repayment_components, #selected_repayment_components').change(function () {
                 var selectedOption = $(this).find('option:selected');
                 if (selectedOption.length > 0) {
                     var description = selectedOption.data('description');
@@ -872,20 +915,20 @@
             });
 
             // Drag and Drop Reordering for Selected Roles
-            $('#selected_roles').on('mousedown', 'option', function(e) {
+            $('#selected_roles').on('mousedown', 'option', function (e) {
                 if (e.which === 1) { // Left mouse button
                     var $this = $(this);
                     var $select = $('#selected_roles');
                     var startY = e.pageY;
                     var startIndex = $this.index();
-                    
+
                     $this.addClass('dragging');
-                    
-                    $(document).on('mousemove.drag', function(e) {
+
+                    $(document).on('mousemove.drag', function (e) {
                         var currentY = e.pageY;
                         var $options = $select.find('option');
                         var currentIndex = Math.floor((currentY - $select.offset().top) / $this.outerHeight());
-                        
+
                         if (currentIndex >= 0 && currentIndex < $options.length && currentIndex !== startIndex) {
                             if (currentIndex > startIndex) {
                                 $this.insertAfter($options.eq(currentIndex));
@@ -896,8 +939,8 @@
                             updateApprovalLevelsInput();
                         }
                     });
-                    
-                    $(document).on('mouseup.drag', function() {
+
+                    $(document).on('mouseup.drag', function () {
                         $this.removeClass('dragging');
                         $(document).off('mousemove.drag mouseup.drag');
                     });
@@ -905,20 +948,20 @@
             });
 
             // Drag and Drop Reordering for Selected Repayment Components
-            $('#selected_repayment_components').on('mousedown', 'option', function(e) {
+            $('#selected_repayment_components').on('mousedown', 'option', function (e) {
                 if (e.which === 1) { // Left mouse button
                     var $this = $(this);
                     var $select = $('#selected_repayment_components');
                     var startY = e.pageY;
                     var startIndex = $this.index();
-                    
+
                     $this.addClass('dragging');
-                    
-                    $(document).on('mousemove.drag', function(e) {
+
+                    $(document).on('mousemove.drag', function (e) {
                         var currentY = e.pageY;
                         var $options = $select.find('option');
                         var currentIndex = Math.floor((currentY - $select.offset().top) / $this.outerHeight());
-                        
+
                         if (currentIndex >= 0 && currentIndex < $options.length && currentIndex !== startIndex) {
                             if (currentIndex > startIndex) {
                                 $this.insertAfter($options.eq(currentIndex));
@@ -929,8 +972,8 @@
                             updateRepaymentOrderInput();
                         }
                     });
-                    
-                    $(document).on('mouseup.drag', function() {
+
+                    $(document).on('mouseup.drag', function () {
                         $this.removeClass('dragging');
                         $(document).off('mousemove.drag mouseup.drag');
                     });
@@ -940,10 +983,10 @@
             // Update hidden input with selected roles
             function updateApprovalLevelsInput() {
                 var selectedRoles = [];
-                $('#selected_roles option').each(function() {
+                $('#selected_roles option').each(function () {
                     selectedRoles.push($(this).val());
                 });
-                
+
                 // Update the hidden input or create one if it doesn't exist
                 var $hiddenInput = $('input[name="approval_levels"]');
                 if ($hiddenInput.length === 0) {
@@ -956,10 +999,10 @@
             // Update hidden input with selected repayment order
             function updateRepaymentOrderInput() {
                 var selectedComponents = [];
-                $('#selected_repayment_components option').each(function() {
+                $('#selected_repayment_components option').each(function () {
                     selectedComponents.push($(this).val());
                 });
-                
+
                 var $hiddenInput = $('input[name="repayment_order"]');
                 if ($hiddenInput.length === 0) {
                     $hiddenInput = $('<input type="hidden" name="repayment_order">');
