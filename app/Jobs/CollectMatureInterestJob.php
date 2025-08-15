@@ -171,7 +171,7 @@ class CollectMatureInterestJob implements ShouldQueue
 
         // Preload all schedules with repayments & also next schedule date
         $schedules = $loan->schedule()
-            ->with(['repayments:id,loan_schedule_id,penalty_amount,fee_amount,interest,principal'])
+            ->with(['repayments:id,loan_schedule_id,penalt_amount,fee_amount,interest,principal'])
             ->where('due_date', '<', Carbon::today()->subDays($graceDays))
             ->orderBy('due_date')
             ->get()
