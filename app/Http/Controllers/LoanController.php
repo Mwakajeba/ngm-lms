@@ -159,7 +159,6 @@ class LoanController extends Controller
                     'interest' => $validated['interest'],
                     'amount' => $validated['amount'],
                     'customer_id' => $validated['customer_id'],
-                    'interest' => $validated['interest'],
                     'group_id' => $validated['group_id'],
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
@@ -167,7 +166,7 @@ class LoanController extends Controller
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
                     'status' => 'active',
-                    'interest_cycle' => $validated['interest_cycle'],
+                    'interest_cycle' => $product->interest_cycle, // Get from product
                     'loan_officer_id' => $validated['loan_officer'],
                 ]);
                 info('loaan-->' . $loan);
@@ -333,7 +332,7 @@ class LoanController extends Controller
             'bankAccounts' => $bankAccounts,
             'sectors' => $sectors,
             'interestCycles' => $interestCycles,
-            'loanOfficers'  => $loanOfficers,
+            'loanOfficers' => $loanOfficers,
         ]);
     }
 
@@ -389,12 +388,11 @@ class LoanController extends Controller
                     'interest' => $validated['interest'],
                     'amount' => $validated['amount'],
                     'customer_id' => $validated['customer_id'],
-                    'interest' => $validated['interest'],
                     'group_id' => $validated['group_id'],
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
                     'disbursed_on' => $validated['date_applied'],
-                    'interest_cycle' => $validated['interest_cycle'],
+                    'interest_cycle' => $product->interest_cycle, // Get from product
                     'loan_officer_id' => $validated['loan_officer'],
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
@@ -735,9 +733,11 @@ class LoanController extends Controller
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
-                'bank_account_id' => '',
+                'bank_account_id' => null, // Set to null for loan applications
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
+                'interest_cycle' => $product->interest_cycle, // Get from product
+                'loan_officer_id' => $userId, // Set to current user for loan applications
                 'branch_id' => $branchId,
                 'status' => $initialStatus,
                 'interest_amount' => 0, // Will be calculated below
@@ -862,7 +862,6 @@ class LoanController extends Controller
             'date_applied' => 'required|date|before_or_equal:today',
             'customer_id' => 'required|exists:customers,id',
             'group_id' => 'nullable|exists:groups,id',
-            'account_id' => 'required|exists:bank_accounts,id',
             'sector' => 'required|string',
         ]);
 
@@ -877,7 +876,7 @@ class LoanController extends Controller
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
-                'bank_account_id' => $validated['account_id'],
+                'interest_cycle' => $product->interest_cycle, // Get from product
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
             ]);
@@ -993,6 +992,11 @@ class LoanController extends Controller
                         $actionForRecord = 'authorized';
                         break;
                     case 'disburse':
+                        // Check if bank account is set for disbursement
+                        if (!$loan->bank_account_id) {
+                            throw new \Exception('Bank account must be selected before disbursement. Please update the loan with a bank account first.');
+                        }
+
                         // Process disbursement
                         $loan->update([
                             'status' => Loan::STATUS_ACTIVE,
@@ -1194,6 +1198,12 @@ class LoanController extends Controller
         $userId = auth()->id();
         $branchId = auth()->user()->branch_id;
         $product = $loan->product;
+
+        // Check if bank account is set
+        if (!$loan->bank_account_id) {
+            throw new \Exception('Bank account must be selected before disbursement.');
+        }
+
         $bankAccount = $loan->bankAccount;
 
         $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$loan->amount}";

@@ -128,6 +128,15 @@ use Vinkla\Hashids\Facades\Hashids;
 
                                             @endcan
 
+                                            @if($loan->status === 'applied')
+                                            @can('create receipt voucher')
+                                            <a href="{{ route('accounting.loans.create-receipt', Hashids::encode($loan->id)) }}"
+                                                class="btn btn-sm btn-outline-success" title="Create Receipt">
+                                                <i class="bx bx-receipt"></i> Receipt
+                                            </a>
+                                            @endcan
+                                            @endif
+
                                             @can('delete loan')
 
                                             <form action="{{ route('loans.destroy', Hashids::encode($loan->id)) }}"

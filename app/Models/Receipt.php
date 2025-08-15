@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Receipt extends Model
 {
-    use HasFactory,LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'reference',
@@ -73,6 +73,11 @@ class Receipt extends Model
     {
         return $this->hasMany(GlTransaction::class, 'transaction_id')
             ->where('transaction_type', 'receipt');
+    }
+
+    public function loan()
+    {
+        return $this->belongsTo(Loan::class, 'reference');
     }
 
     // Scopes
