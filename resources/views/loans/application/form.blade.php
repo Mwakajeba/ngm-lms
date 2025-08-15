@@ -24,11 +24,13 @@
         <!-- Customer -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Customer <span class="text-danger">*</span></label>
-            <select name="customer_id" class="form-select @error('customer_id') is-invalid @enderror" required>
+            <select name="customer_id" id="customerSelect" class="form-select @error('customer_id') is-invalid @enderror" required>
                 <option value="">Select Customer</option>
                 @foreach($customers as $customer)
-                    <option value="{{ $customer->id }}" {{ old('customer_id', $loanApplication->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
-                        {{ $customer->name }} - {{ $customer->phone ?? 'No phone' }}
+                    <option value="{{ $customer->id }}" 
+                        data-groups="{{ $customer->groups->pluck('id')->toJson() }}"
+                        {{ old('customer_id', $loanApplication->customer_id ?? '') == $customer->id ? 'selected' : '' }}>
+                        {{ $customer->name }} - {{ $customer->phone1 ?? 'No phone' }}
                     </option>
                 @endforeach
             </select>
@@ -38,7 +40,7 @@
         <!-- Group -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Group</label>
-            <select name="group_id" class="form-select @error('group_id') is-invalid @enderror">
+            <select name="group_id" id="groupSelect" class="form-select @error('group_id') is-invalid @enderror">
                 <option value="">Select Group</option>
                 @foreach($groups as $group)
                     <option value="{{ $group->id }}" {{ old('group_id', $loanApplication->group_id ?? '') == $group->id ? 'selected' : '' }}>
@@ -168,8 +170,11 @@
 
 <script>
     const products = @json($products);
+    const groups = @json($groups);
 
     document.addEventListener("DOMContentLoaded", function () {
+        const customerSelect = document.getElementById("customerSelect");
+        const groupSelect = document.getElementById("groupSelect");
         const productSelect = document.getElementById("productSelect");
         const periodInput = document.getElementById("periodInput");
         const interestInput = document.getElementById("interestInput");
@@ -178,6 +183,27 @@
         const amountRangeLabel = document.getElementById("amountRangeLabel");
         const interestRangeLabel = document.getElementById("interestRangeLabel");
         const productInfo = document.getElementById("productInfo");
+
+        // Handle customer selection to auto-populate group
+        customerSelect.addEventListener("change", function () {
+            const selectedOption = this.options[this.selectedIndex];
+            const customerGroups = selectedOption.getAttribute('data-groups');
+            
+            // Reset group selection
+            groupSelect.value = '';
+            
+            if (customerGroups) {
+                try {
+                    const groupIds = JSON.parse(customerGroups);
+                    if (groupIds.length > 0) {
+                        // Auto-select the first group if customer has groups
+                        groupSelect.value = groupIds[0];
+                    }
+                } catch (e) {
+                    console.error('Error parsing customer groups:', e);
+                }
+            }
+        });
 
         productSelect.addEventListener("change", function () {
             const selectedId = parseInt(this.value);
@@ -226,7 +252,10 @@
             }
         });
 
-        // Trigger change event if product is pre-selected (for edit mode)
+        // Trigger change events if values are pre-selected (for edit mode)
+        if (customerSelect.value) {
+            customerSelect.dispatchEvent(new Event('change'));
+        }
         if (productSelect.value) {
             productSelect.dispatchEvent(new Event('change'));
         }
