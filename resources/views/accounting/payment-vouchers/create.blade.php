@@ -16,7 +16,7 @@
             <div class="row">
                 <div class="col-12">
                     <div class="card radius-10">
-                        <div class="card-header text-black" style="background-color: #007bff;">
+                        <div class="card-header bg-secondary text-white">
                             <div class="d-flex align-items-center">
                                 <div>
                                     <h5 class="mb-0 text-white">
@@ -252,8 +252,8 @@
                                                     Total Amount: <span id="totalAmount">0.00</span>
                                                 </h4>
                                             </div>
-                                            <button type="submit" class="btn btn-success" id="saveBtn">
-                                                <i class="bx bx-save me-2"></i>Save
+                                            <button type="submit" class="btn btn-primary" id="saveBtn">
+                                                <i class="bx bx-plus-circle me-2"></i> Create Payment
                                             </button>
                                         </div>
                                     </div>
