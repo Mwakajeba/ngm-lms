@@ -66,6 +66,11 @@ class LoanProductController extends Controller
             'annually' => 'Annually'
         ];
 
+        $penaltycriteriaDeductions = [
+            'daily_bases' => 'daily bases',
+            'full_amount' => 'full amount',
+        ];
+
         $interestMethods = [
             'flat_rate' => 'Flat Rate',
             'reducing_balance_with_equal_installment' => 'Reducing Balance with Equal Installment',
@@ -94,7 +99,8 @@ class LoanProductController extends Controller
             'interestCycles',
             'interestMethods',
             'topUpTypes',
-            'cashCollateralValueTypes'
+            'cashCollateralValueTypes',
+            'penaltycriteriaDeductions'
         ));
     }
 
@@ -115,9 +121,10 @@ class LoanProductController extends Controller
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
             'grace_period' => 'nullable|integer|min:0', // Add grace period validation
+            'penalt_deduction_criteria' => 'nullable|string',
             'has_top_up' => 'boolean',
-            'top_up_type' => 'required_if:has_top_up,1|string|max:50',
-            'top_up_type_value' => 'required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
+            'top_up_type' => 'nullable|required_if:has_top_up,1|string|max:50',
+            'top_up_type_value' => 'nullable|required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
             'has_cash_collateral' => 'boolean',
             'cash_collateral_type' => 'nullable|string|max:100',
             'cash_collateral_value_type' => 'nullable|string|max:50',
@@ -180,8 +187,14 @@ class LoanProductController extends Controller
 
             // Handle top up configuration
             if (!$request->has('has_top_up')) {
-                $data['top_up_type'] = 'none';
+                $data['top_up_type'] = null;
                 $data['top_up_type_value'] = null;
+            } else {
+                // If has_top_up is checked but top_up_type is not provided, set it to null
+                if (!$request->filled('top_up_type')) {
+                    $data['top_up_type'] = null;
+                    $data['top_up_type_value'] = null;
+                }
             }
 
             // Handle fees and penalties arrays
@@ -278,6 +291,10 @@ class LoanProductController extends Controller
             'reducing_balance_with_equal_installment' => 'Reducing Balance with Equal Installment',
             'reducing_balance_with_equal_principal' => 'Reducing Balance with Equal Principal',
         ];
+        $penaltycriteriaDeductions = [
+            'daily_bases' => 'daily bases',
+            'full_amount' => 'full amount',
+        ];
 
         $topUpTypes = [
             'percentage' => 'Percentage',
@@ -301,7 +318,8 @@ class LoanProductController extends Controller
             'interestCycles',
             'interestMethods',
             'topUpTypes',
-            'cashCollateralValueTypes'
+            'cashCollateralValueTypes',
+            'penaltycriteriaDeductions'
         ));
     }
 
@@ -331,8 +349,8 @@ class LoanProductController extends Controller
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
             'grace_period' => 'nullable|integer|min:0', // Add grace period validation
             'has_top_up' => 'boolean',
-            'top_up_type' => 'required_if:has_top_up,1|string|max:50',
-            'top_up_type_value' => 'required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
+            'top_up_type' => 'nullable|required_if:has_top_up,1|string|max:50',
+            'top_up_type_value' => 'nullable|required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
             'has_cash_collateral' => 'boolean',
             'cash_collateral_type' => 'nullable|string|max:100',
             'cash_collateral_value_type' => 'nullable|string|max:50',
@@ -395,8 +413,14 @@ class LoanProductController extends Controller
 
             // Handle top up configuration
             if (!$request->has('has_top_up')) {
-                $data['top_up_type'] = 'none';
+                $data['top_up_type'] = null;
                 $data['top_up_type_value'] = null;
+            } else {
+                // If has_top_up is checked but top_up_type is not provided, set it to null
+                if (!$request->filled('top_up_type')) {
+                    $data['top_up_type'] = null;
+                    $data['top_up_type_value'] = null;
+                }
             }
 
             // Handle fees and penalties arrays

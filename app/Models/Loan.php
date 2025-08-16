@@ -12,7 +12,7 @@ class Loan extends Model
 {
     // Uncomment if using soft deletes
     // use SoftDeletes;
-    use HasFactory,LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'customer_id',
@@ -122,7 +122,8 @@ class Loan extends Model
             ->withTimestamps();
     }
 
-    public function loanOfficer(){
+    public function loanOfficer()
+    {
         return $this->belongsTo(User::class);
     }
 
@@ -468,7 +469,8 @@ class Loan extends Model
     public function generateRepaymentSchedule(float $rate)
     {
         $product = $this->product;
-        if (!$product) return;
+        if (!$product)
+            return;
 
         $principal = $this->amount;
         $interestAmount = $this->interest_amount;
@@ -546,14 +548,14 @@ class Loan extends Model
             }
 
             LoanSchedule::create([
-                'loan_id'        => $this->id,
-                'customer_id'    => $this->customer_id,
-                'due_date'       => $dueDate,
-                'end_date'       => $endDate,
+                'loan_id' => $this->id,
+                'customer_id' => $this->customer_id,
+                'due_date' => $dueDate,
+                'end_date' => $endDate,
                 'end_grace_date' => $endGraceDate,
-                'principal'      => $row['principal'],
-                'interest'       => $row['interest'],
-                'fee_amount'     => $loanFee,
+                'principal' => $row['principal'],
+                'interest' => $row['interest'],
+                'fee_amount' => $loanFee,
                 'penalty_amount' => $penaltyAmount,
             ]);
         }
@@ -561,5 +563,11 @@ class Loan extends Model
     public function company()
     {
         return $this->belongsTo(Company::class);
+    }
+
+    public function receipts()
+    {
+        return $this->hasMany(Receipt::class, 'reference')
+            ->where('reference_type', 'loan');
     }
 }

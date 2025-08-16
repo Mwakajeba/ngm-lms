@@ -26,6 +26,26 @@ trait LogsActivity
     protected function storeActivityLog($action)
     {
         $agent = new Agent();
+        $deviceInfo = 'Unknown';
+        if ($agent->isDesktop()) {
+            $deviceInfo = 'Desktop';
+        } elseif ($agent->isPhone()) {
+            if ($agent->is('iPhone')) {
+                $deviceInfo = 'iPhone';
+            } elseif ($agent->is('AndroidOS')) {
+                $deviceInfo = 'Android Phone';
+            } else {
+                $deviceInfo = 'Phone';
+            }
+        } elseif ($agent->isTablet()) {
+            if ($agent->is('iPad')) {
+                $deviceInfo = 'iPad';
+            } else {
+                $deviceInfo = 'Tablet';
+            }
+        }
+
+        $deviceString = $deviceInfo . ' - ' . $agent->browser();
 
         ActivityLog::create([
             'user_id'     => Auth::id(),
@@ -33,7 +53,7 @@ trait LogsActivity
             'action'      => $action,
             'description' => "{$action}d " . class_basename($this) . " (ID: {$this->id})",
             'ip_address'  => request()->ip(),
-            'device'      => $agent->device() . ' - ' . $agent->browser(),
+            'device'      => $deviceString,
             'activity_time' => now(),
         ]);
     }

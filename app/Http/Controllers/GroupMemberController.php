@@ -27,8 +27,10 @@ class GroupMemberController extends Controller
 
         // Get customers who are not already members of this group
         $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
+        $branchId = auth()->user()->branch_id;
         $availableCustomers = Customer::with(['region', 'district'])
             ->where('category', 'borrower')
+            ->where('branch_id', $branchId)
             ->whereNotIn('id', $existingMemberIds)
             ->orderBy('name')
             ->get();
@@ -134,23 +136,23 @@ class GroupMemberController extends Controller
         if (empty($decoded)) {
             return redirect()->route('groups.index')->withErrors(['Group not found.']);
         }
-    
+
         $group = Group::findOrFail($decoded[0]);
-    
+
         // Ensure the member belongs to this group
         if ($member->group_id !== $group->id) {
             return redirect()->back()->with('error', 'Invalid member.');
         }
-    
+
         // ✅ Check kama ana mkopo
         $hasLoan = Loan::where('customer_id', $member->customer_id)
-            ->where('status', 'active') 
+            ->where('status', 'active')
             ->exists();
-    
+
         if ($hasLoan) {
             return redirect()->back()->with('error', 'Cannot remove member with active loan.');
         }
-    
+
         try {
             $member->delete();
             return redirect()->route('groups.show', Hashids::encode($group->id))
@@ -159,5 +161,5 @@ class GroupMemberController extends Controller
             return redirect()->back()->with('error', 'Failed to remove member. Please try again.');
         }
     }
-    
+
 }
