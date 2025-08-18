@@ -238,7 +238,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                                     <label for="line_items_{{ $lineItemCount }}_chart_account_id" class="form-label fw-bold">
                                                                         Account <span class="text-danger">*</span>
                                                                     </label>
-                                                                    <select class="form-select chart-account-select" name="line_items[{{ $lineItemCount }}][chart_account_id]" data-live-search="true" required>
+                                                                    <select class="form-select chart-account-select select2-single" name="line_items[{{ $lineItemCount }}][chart_account_id]" required>
                                                                         <option value="">--- Select Account ---</option>
                                                                         @foreach($chartAccounts as $chartAccount)
                                                                             <option value="{{ $chartAccount->id }}" {{ $lineItem->chart_account_id == $chartAccount->id ? 'selected' : '' }}>
@@ -300,9 +300,11 @@ use Vinkla\Hashids\Facades\Hashids;
                                                     Total Amount: <span id="totalAmount">0.00</span>
                                                 </h4>
                                             </div>
+                                            @can('edit receipt voucher')
                                             <button type="submit" class="btn btn-primary" id="updateBtn">
                                                 <i class="bx bx-edit me-2"></i>Update
                                             </button>
+                                            @endcan
                                         </div>
                                     </div>
                                 </div>
@@ -413,6 +415,14 @@ use Vinkla\Hashids\Facades\Hashids;
             if ($('#payee_type').val()) {
                 $('#payee_type').trigger('change');
             }
+            
+            // Initialize Select2 for existing chart account selects
+            $('.chart-account-select').select2({
+                placeholder: 'Select Account',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
 
             // Attachment removal function
             window.removeAttachment = function() {
@@ -460,7 +470,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 <label for="line_items_${lineItemCount}_chart_account_id" class="form-label fw-bold">
                                                     Account <span class="text-danger">*</span>
                                                 </label>
-                                                <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" data-live-search="true" required>
+                                                <select class="form-select chart-account-select select2-single" name="line_items[${lineItemCount}][chart_account_id]" required>
                                                     <option value="">--- Select Account ---</option>
                                                     @foreach($chartAccounts as $chartAccount)
                                                         <option value="{{ $chartAccount->id }}" ${accountName.includes('{{ $chartAccount->account_name }}') ? 'selected' : ''}>
@@ -495,6 +505,16 @@ use Vinkla\Hashids\Facades\Hashids;
                                 `;
 
                 $('#lineItemsContainer').append(lineItemHtml);
+                
+                // Initialize Select2 for the new chart account select
+                setTimeout(function() {
+                    $('#lineItemsContainer .chart-account-select').last().select2({
+                        placeholder: 'Select Account',
+                        allowClear: true,
+                        width: '100%',
+                        theme: 'bootstrap-5'
+                    });
+                }, 100);
             }
 
             function calculateTotal() {

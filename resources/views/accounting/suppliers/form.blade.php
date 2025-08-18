@@ -196,12 +196,24 @@
     <hr class="my-4">
 
     <div class="d-flex justify-content-between">
+        @can('view suppliers')
         <a href="{{ route('accounting.suppliers.index') }}" class="btn btn-secondary">
             Back to Suppliers
         </a>
-        <button type="submit" class="btn btn-primary">
-            {{ $isEdit ? 'Update Supplier' : 'Create Supplier' }}
-        </button>
+        @endcan
+        @if($isEdit)
+            @can('edit supplier')
+            <button type="submit" class="btn btn-primary">
+                Update Supplier
+            </button>
+            @endcan
+        @else
+            @can('create supplier')
+            <button type="submit" class="btn btn-primary">
+                Create Supplier
+            </button>
+            @endcan
+        @endif
     </div>
 </form>
 

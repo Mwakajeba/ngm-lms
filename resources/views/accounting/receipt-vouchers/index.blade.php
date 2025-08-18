@@ -20,9 +20,11 @@
                     <p class="text-muted mb-0">Manage receipt voucher entries</p>
                 </div>
                 <div>
+                    @can('create receipt voucher')
                     <a href="{{ route('accounting.receipt-vouchers.create') }}" class="btn btn-primary">
                         <i class="bx bx-plus-circle me-2"></i>New Receipt Voucher
                     </a>
+                    @endcan
                 </div>
             </div>
             <hr />
@@ -137,20 +139,26 @@
                                                 <td>{{ $receipt->user->name ?? 'N/A' }}</td>
                                                 <td>
                                                     <div class="d-flex gap-1">
+                                                        @can('view receipt voucher details')
                                                         <a href="{{ route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id)) }}"
                                                             class="btn btn-sm btn-outline-success" title="View">
                                                             <i class="bx bx-show"></i> View
                                                         </a>
+                                                        @endcan
                                                         @if($receipt->reference_type === 'manual')
+                                                            @can('edit receipt voucher')
                                                             <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receipt->id)) }}"
                                                                 class="btn btn-sm btn-outline-info" title="Edit">
                                                                 <i class="bx bx-edit"></i> Edit
                                                             </a>
+                                                            @endcan
+                                                            @can('delete receipt voucher')
                                                             <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                                 data-id="{{ Hashids::encode($receipt->id) }}"
                                                                 data-reference="{{ $receipt->reference }}" title="Delete">
                                                                 <i class="bx bx-trash"></i> Delete
                                                             </button>
+                                                            @endcan
                                                         @else
                                                             <button type="button" class="btn btn-sm btn-outline-secondary"
                                                                 title="Edit/Delete locked: Source is {{ ucfirst($receipt->reference_type) }} transaction"

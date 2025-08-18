@@ -127,19 +127,25 @@
                                                 <td>{!! $payment->status_badge !!}</td>
                                                 <td>
                                                     <div class="d-flex gap-1">
+                                                        @can('view payment voucher details')
                                                         <a href="{{ route('accounting.payment-vouchers.show', $payment->hash_id) }}"
                                                             class="btn btn-sm btn-outline-success">
                                                             <i class="bx bx-show"></i> View
                                                         </a>
+                                                        @endcan
                                                         @if($payment->reference_type === 'manual')
+                                                            @can('edit payment voucher')
                                                             <a href="{{ route('accounting.payment-vouchers.edit', $payment->hash_id) }}"
                                                                 class="btn btn-sm btn-outline-info">
                                                                 <i class="bx bx-edit"></i> Edit
                                                             </a>
+                                                            @endcan
+                                                            @can('delete payment voucher')
                                                             <button type="button" class="btn btn-sm btn-outline-danger"
                                                                 onclick="deletePaymentVoucher('{{ $payment->hash_id }}', '{{ $payment->reference }}')">
                                                                 <i class="bx bx-trash"></i> Delete
                                                             </button>
+                                                            @endcan
                                                         @else
                                                             <button type="button" class="btn btn-sm btn-outlined-secondary" title="Edit/Delete locked: Source is {{ ucfirst($payment->reference_type) }} transaction" disabled>
                                                                 <i class="bx bx-lock"></i> Locked

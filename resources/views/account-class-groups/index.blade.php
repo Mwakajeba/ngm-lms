@@ -37,11 +37,13 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Chart of Accounts - Account Class Groups</h5>
+                        @can('create account class groups')
                         <div>
                             <a href="{{ route('accounting.account-class-groups.create') }}" class="btn btn-primary ms-2">
                                 <i class="bx bx-plus"></i> Add New Group
                             </a>
                         </div>
+                        @endcan
                     </div>
                     <div class="table-responsive">
                         <table id="accountClassGroupsTable" class="table table-striped table-bordered" style="width:100%">
@@ -64,11 +66,15 @@
                                         <td>{{ $group->name }}</td>
                                         <td>{{ $group->created_at->format('M d, Y') }}</td>
                                         <td>
+                                            @can('view account class group details')
                                             <a href="{{ route('accounting.account-class-groups.show', Hashids::encode($group->id)) }}"
                                                 class="btn btn-sm btn-outline-primary">View</a>
+                                            @endcan
+                                            @can('edit account class group')
                                             <a href="{{ route('accounting.account-class-groups.edit', Hashids::encode($group->id)) }}"
                                                 class="btn btn-sm btn-outline-warning">Edit</a>
-
+                                            @endcan
+                                            @can('delete account class group')
                                             <form
                                                 action="{{ route('accounting.account-class-groups.destroy', Hashids::encode($group->id)) }}"
                                                 method="POST" class="d-inline delete-form">
@@ -77,6 +83,7 @@
                                                 <button type="submit" class="btn btn-sm btn-outline-danger"
                                                     data-name="{{ $group->name }}">Delete</button>
                                             </form>
+                                            @endcan
                                         </td>
                                     </tr>
                                 @endforeach

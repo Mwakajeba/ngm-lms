@@ -230,9 +230,11 @@
                                                     Total Amount: <span id="totalAmount">0.00</span>
                                                 </h4>
                                             </div>
+                                            @can('create receipt voucher')
                                             <button type="submit" class="btn btn-primary" id="saveBtn">
                                                 <i class="bx bx-plus-circle me-2"></i>Create Voucher
                                             </button>
+                                            @endcan
                                         </div>
                                     </div>
                                 </div>
@@ -337,6 +339,14 @@
 
             // Add initial line item
             addLineItem();
+            
+            // Initialize Select2 for existing chart account selects
+            $('.chart-account-select').select2({
+                placeholder: 'Select Chart Account',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
 
             function addLineItem() {
                 lineItemCount++;
@@ -346,7 +356,7 @@
                                                             <div class="col-lg-5">
                                                                 <div class="mb-3">
                                                                     <label class="form-label fw-bold">Chart Account <span class="text-danger">*</span></label>
-                                                                    <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
+                                                                    <select class="form-select chart-account-select select2-single" name="line_items[${lineItemCount}][chart_account_id]" required>
                                                                         <option value="">-- Select Chart Account --</option>
                                                                         @foreach($chartAccounts as $chartAccount)
                                                                             <option value="{{ $chartAccount->id }}">{{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})</option>
@@ -380,6 +390,16 @@
                                                     </div>
                                                 `;
                 $('#lineItemsContainer').append(lineItemHtml);
+                
+                // Initialize Select2 for the new chart account select
+                setTimeout(function() {
+                    $('#lineItemsContainer .chart-account-select').last().select2({
+                        placeholder: 'Select Chart Account',
+                        allowClear: true,
+                        width: '100%',
+                        theme: 'bootstrap-5'
+                    });
+                }, 100);
             }
 
             // Remove line item

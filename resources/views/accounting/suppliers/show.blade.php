@@ -21,13 +21,17 @@
                     <p class="text-muted mb-0">View supplier information</p>
                 </div>
                 <div>
+                    @can('edit supplier')
                     <a href="{{ route('accounting.suppliers.edit', Hashids::encode($supplier->id)) }}"
                         class="btn btn-primary me-2">
                         Edit Supplier
                     </a>
+                    @endcan
+                    @can('view suppliers')
                     <a href="{{ route('accounting.suppliers.index') }}" class="btn btn-secondary">
                         Back to Suppliers
                     </a>
+                    @endcan
                 </div>
             </div>
             <hr />
@@ -271,6 +275,7 @@
                                         Edit Supplier
                                     </a>
 
+                                    @can('change supplier status')
                                     <!-- Status Change Dropdown -->
                                     <div class="btn-group" role="group">
                                         <button type="button" class="btn btn-outline-secondary dropdown-toggle"
@@ -289,11 +294,14 @@
                                                 </a></li>
                                         </ul>
                                     </div>
+                                    @endcan
 
+                                    @can('delete supplier')
                                     <button type="button" class="btn btn-outline-danger ms-2 delete-supplier-btn"
                                         data-supplier-id="{{ $supplier->id }}" data-supplier-name="{{ $supplier->name }}">
                                         Delete
                                     </button>
+                                    @endcan
                                 </div>
                             </div>
                         </div>

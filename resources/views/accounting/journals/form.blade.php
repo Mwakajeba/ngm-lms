@@ -219,17 +219,29 @@
     <!-- Submit Buttons -->
     <div class="d-flex justify-content-between align-items-center">
         <div>
+            @can('view journals')
             <a href="{{ route('accounting.journals.index') }}" class="btn btn-outline-secondary">
                 <i class="bx bx-arrow-back me-1"></i>Cancel
             </a>
+            @endcan
         </div>
         <div class="d-flex gap-2">
             <button type="button" class="btn btn-outline-primary" onclick="validateAndSubmit()">
                 <i class="bx bx-check me-1"></i>Validate Entry
             </button>
-            <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
-                <i class="bx bx-save me-1"></i>{{ isset($journal) ? 'Update' : 'Create' }} Journal Entry
-        </button>
+            @if(isset($journal))
+                @can('edit journal')
+                <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
+                    <i class="bx bx-save me-1"></i>Update Journal Entry
+                </button>
+                @endcan
+            @else
+                @can('create journal')
+                <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
+                    <i class="bx bx-save me-1"></i>Create Journal Entry
+                </button>
+                @endcan
+            @endif
         </div>
     </div>
 </form>
