@@ -15,9 +15,11 @@
                         ]" />
                     </div>
                     <div class="ms-auto">
+                        @can('create journal')
                         <a href="{{ route('accounting.journals.create') }}" class="btn btn-primary">
                             <i class="bx bx-plus"></i> New Journal Entry
                         </a>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -170,22 +172,28 @@
                                     </td>
                                     <td class="text-center">
                                         <div class="btn-group">
+                                            @can('view journal details')
                                             <a href="{{ route('accounting.journals.show', $journal) }}" 
                                                class="btn btn-sm btn-primary" 
                                                title="View Details">
                                             <i class="bx bx-show"></i>
                                         </a>
+                                            @endcan
+                                            @can('edit journal')
                                             <a href="{{ route('accounting.journals.edit', $journal) }}" 
                                                class="btn btn-sm btn-warning" 
                                                title="Edit">
                                             <i class="bx bx-edit"></i>
                                         </a>
+                                            @endcan
+                                            @can('delete journal')
                                             <button type="button" 
                                                     class="btn btn-sm btn-danger" 
                                                     title="Delete"
                                                     onclick="confirmDelete('{{ route('accounting.journals.destroy', $journal) }}')">
                                                 <i class="bx bx-trash"></i>
                                             </button>
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>
@@ -196,9 +204,11 @@
                                             <i class="bx bx-book-open font-48 text-muted mb-3"></i>
                                             <h6 class="text-muted">No Journal Entries Found</h6>
                                             <p class="text-muted mb-3">Start by creating your first journal entry</p>
+                                            @can('create journal')
                                             <a href="{{ route('accounting.journals.create') }}" class="btn btn-primary">
                                                 <i class="bx bx-plus me-1"></i> Create First Entry
                                             </a>
+                                            @endcan
                                         </div>
                                     </td>
                                 </tr>

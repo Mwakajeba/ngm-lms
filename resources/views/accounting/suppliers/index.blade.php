@@ -93,9 +93,11 @@
                             <div class="d-flex justify-content-between align-items-center mb-4">
                                 <h4 class="card-title mb-0">Suppliers List</h4>
                                 <div>
+                                    @can('create supplier')
                                     <a href="{{ route('accounting.suppliers.create') }}" class="btn btn-primary">
                                         Add Supplier
                                     </a>
+                                    @endcan
                                 </div>
                             </div>
 
@@ -173,14 +175,19 @@
                                                 </td>
                                                 <td class="text-center">
                                                     <div class="d-flex gap-2">
+                                                        @can('view supplier details')
                                                         <a href="{{ route('accounting.suppliers.show', Hashids::encode($supplier->id)) }}"
                                                             class="btn btn-sm btn-outline-primary" title="View Details">
                                                             View
                                                         </a>
+                                                        @endcan
+                                                        @can('edit supplier')
                                                         <a href="{{ route('accounting.suppliers.edit', Hashids::encode($supplier->id)) }}"
                                                             class="btn btn-sm btn-outline-warning" title="Edit">
                                                             Edit
                                                         </a>
+                                                        @endcan
+                                                        @can('delete supplier')
                                                         <button type="button"
                                                             class="btn btn-sm btn-outline-danger delete-supplier-btn"
                                                             title="Delete"
@@ -188,6 +195,7 @@
                                                             data-supplier-name="{{ $supplier->name }}">
                                                             Delete
                                                         </button>
+                                                        @endcan
                                                     </div>
                                                 </td>
                                             </tr>

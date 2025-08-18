@@ -17,10 +17,6 @@
                     <p class="text-muted mb-0">View payment voucher information</p>
                 </div>
                 <div>
-                    <a href="{{ route('accounting.payment-vouchers.edit', Hashids::encode($paymentVoucher->id)) }}"
-                        class="btn btn-primary me-2">
-                        <i class="bx bx-edit me-2"></i>Edit Payment Voucher
-                    </a>
                     <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
                         <i class="bx bx-arrow-back me-2"></i>Back to Payment Vouchers
                     </a>
@@ -282,22 +278,28 @@
                         <div class="card-body">
                             <div class="d-flex gap-2 flex-wrap">
                                 @if($paymentVoucher->reference_type === 'manual')
+                                    @can('edit payment voucher')
                                     <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
                                         class="btn btn-primary">
                                         <i class="bx bx-edit me-1"></i>Edit
                                     </a>
+                                    @endcan
+                                    @can('view payment vouchers')
                                     <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
                                         <i class="bx bx-arrow-back me-1"></i>Back
                                     </a>
+                                    @endcan
                                     @if($paymentVoucher->attachment)
                                         <a href="{{ route('accounting.payment-vouchers.download-attachment', $paymentVoucher->hash_id) }}"
                                             class="btn btn-info">
                                             <i class="bx bx-download me-1"></i>Download Attachment
                                         </a>
                                     @endif
+                                    @can('delete payment voucher')
                                     <button type="button" class="btn btn-outline-danger" onclick="deletePaymentVoucher()">
                                         <i class="bx bx-trash me-1"></i>Delete
                                     </button>
+                                    @endcan
                                 @else
                                     <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
                                         <i class="bx bx-arrow-back me-1"></i>Back

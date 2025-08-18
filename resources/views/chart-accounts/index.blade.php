@@ -39,9 +39,11 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Chart of Accounts</h5>
+                        @can('create chart account')
                         <a href="{{ route('accounting.chart-accounts.create') }}" class="btn btn-primary">
                             <i class="bx bx-plus"></i> Add New Account
                         </a>
+                        @endcan
                     </div>
                     <div class="table-responsive">
                         <table id="example" class="table table-striped table-bordered" style="width:100%">
@@ -122,10 +124,14 @@
                                         @endif
                                         <td>{{ $account->created_at->format('M d, Y') }}</td>
                                         <td>
+                                            @can('view chart account details')
                                             <a href="{{ route('accounting.chart-accounts.show', Hashids::encode($account->id)) }}"
                                                 class="btn btn-sm btn-outline-primary">View</a>
+                                            @endcan
+                                            @can('edit chart account')
                                             <a href="{{ route('accounting.chart-accounts.edit', Hashids::encode($account->id)) }}"
                                                 class="btn btn-sm btn-outline-warning">Edit</a>
+                                            @endcan
 
                                             @php
                                                 $isLocked = $account->glTransactions()->exists();
@@ -135,6 +141,7 @@
                                                     <i class="bx bx-lock"></i> Locked
                                                 </button>
                                             @else
+                                                @can('delete chart account')
                                                 <form
                                                     action="{{ route('accounting.chart-accounts.destroy', Hashids::encode($account->id)) }}"
                                                     method="POST" class="d-inline delete-form">
@@ -143,6 +150,7 @@
                                                     <button type="submit" class="btn btn-sm btn-outline-danger"
                                                         data-name="{{ $account->account_name }}">Delete</button>
                                                 </form>
+                                                @endcan
                                             @endif
                                         </td>
                                     </tr>
