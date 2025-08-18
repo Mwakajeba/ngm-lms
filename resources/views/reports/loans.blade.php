@@ -94,6 +94,35 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-danger">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-timer fs-1 text-danger"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Aging Report</h5>
+                                        <p class="card-text">Analyze overdue loans and aging buckets for receivables within a specific period</p>
+                                        <a href="{{ route('accounting.loans.reports.loan_aging') }}" class="btn btn-danger">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-calculator fs-1 text-info"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Outstanding Balance Report</h5>
+                                        <p class="card-text">View all loans with their current outstanding balances and details.</p>
+                                        <a href="{{ route('accounting.loans.reports.loan_outstanding') }}" class="btn btn-info">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

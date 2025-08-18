@@ -179,7 +179,7 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
     Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
     //////logs route///
-    Route::get('/logs',[ActivityLogsController::class,'index'])->name('logs.index');
+    Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
 
     // Fees Settings
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
@@ -274,6 +274,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/receipt-vouchers/{encodedId}/remove-attachment', [ReceiptVoucherController::class, 'removeAttachment'])->name('receipt-vouchers.remove-attachment');
     Route::get('/receipt-vouchers-debug', [ReceiptVoucherController::class, 'debug'])->name('receipt-vouchers.debug');
 
+    // Receipt Vouchers from Loans
+    Route::get('/loans/{encodedLoanId}/create-receipt', [ReceiptVoucherController::class, 'createFromLoan'])->name('loans.create-receipt');
+    Route::post('/loans/{encodedLoanId}/store-receipt', [ReceiptVoucherController::class, 'storeFromLoan'])->name('loans.store-receipt');
+
     // Bank Accounts
     Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
     Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
@@ -313,19 +317,19 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Budget
     Route::get('/budgets', [BudgetController::class, 'index'])->name('budgets.index');
-Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
-Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
-Route::get('/budgets/import', [BudgetController::class, 'import'])->name('budgets.import');
-Route::post('/budgets/import', [BudgetController::class, 'storeImport'])->name('budgets.store-import');
-Route::get('/budgets/template/download', [BudgetController::class, 'downloadTemplate'])->name('budgets.download-template');
-Route::get('/budgets/{budget}/export/excel', [BudgetController::class, 'exportExcel'])->name('budgets.export-excel');
-Route::get('/budgets/{budget}/export/pdf', [BudgetController::class, 'exportPdf'])->name('budgets.export-pdf');
+    Route::get('/budgets/create', [BudgetController::class, 'create'])->name('budgets.create');
+    Route::post('/budgets', [BudgetController::class, 'store'])->name('budgets.store');
+    Route::get('/budgets/import', [BudgetController::class, 'import'])->name('budgets.import');
+    Route::post('/budgets/import', [BudgetController::class, 'storeImport'])->name('budgets.store-import');
+    Route::get('/budgets/template/download', [BudgetController::class, 'downloadTemplate'])->name('budgets.download-template');
+    Route::get('/budgets/{budget}/export/excel', [BudgetController::class, 'exportExcel'])->name('budgets.export-excel');
+    Route::get('/budgets/{budget}/export/pdf', [BudgetController::class, 'exportPdf'])->name('budgets.export-pdf');
 
 
-Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
-Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
-Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
-Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
+    Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
+    Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
+    Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
+    Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('budgets.destroy');
 
     // Fees
     Route::get('/fees', [FeeController::class, 'index'])->name('fees.index');
@@ -401,7 +405,13 @@ Route::delete('/budgets/{budget}', [BudgetController::class, 'destroy'])->name('
     Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loans.reports.loan-export');
     ////////REPAYMENT ROUTE///////
     Route::get('/loan-repayments', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.repayment');
-    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-repayment');
+    Route::get('/loan-repayment', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.loan-repayment');
+    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-export');
+    // Loan Aging Report
+    Route::get('/loan-aging', [LoanReportController::class, 'loanAgingReport'])->name('loans.reports.loan_aging');
+
+    // Loan Outstanding Report
+    Route::get('/loan-outstanding', [LoanReportController::class, 'loanOutstandingReport'])->name('loans.reports.loan_outstanding');
 
 });
 

@@ -94,30 +94,30 @@
                                 <p class="mb-0 font-13 text-warning">
                                     <i class="bx bxs-info-circle align-middle"></i>
                                     @php
-                                        $today = now()->toDateString();
-                                        $daysInArrears = \DB::table('loan_schedules as s')
-                                            ->leftJoin('repayments as r', 's.id', '=', 'r.loan_schedule_id')
-                                            ->where('s.customer_id', $customer->id)
-                                            ->selectRaw('
-                                                s.id,
-                                                s.due_date,
-                                                (s.principal + s.interest) as amount_due,
-                                                IFNULL(SUM(r.principal + r.interest), 0) as total_paid,
-                                                CASE
-                                                    WHEN SUM(r.principal + r.interest) < (s.principal + s.interest)
-                                                         AND ? > s.due_date
-                                                    THEN DATEDIFF(?, s.due_date)
-                                                    WHEN SUM(r.principal + r.interest) >= (s.principal + s.interest)
-                                                         AND MAX(r.payment_date) > s.due_date
-                                                    THEN DATEDIFF(MAX(r.payment_date), s.due_date)
-                                                    ELSE 0
-                                                END as days_in_arrears', [$today, $today])
-                                            ->groupBy('s.id', 's.due_date', 's.principal', 's.interest')
-                                            ->orderBy('s.due_date')
-                                            ->get();
+                                    $today = now()->toDateString();
+                                    $daysInArrears = \DB::table('loan_schedules as s')
+                                    ->leftJoin('repayments as r', 's.id', '=', 'r.loan_schedule_id')
+                                    ->where('s.customer_id', $customer->id)
+                                    ->selectRaw('
+                                    s.id,
+                                    s.due_date,
+                                    (s.principal + s.interest) as amount_due,
+                                    IFNULL(SUM(r.principal + r.interest), 0) as total_paid,
+                                    CASE
+                                    WHEN SUM(r.principal + r.interest) < (s.principal + s.interest)
+                                        AND ?> s.due_date
+                                        THEN DATEDIFF(?, s.due_date)
+                                        WHEN SUM(r.principal + r.interest) >= (s.principal + s.interest)
+                                        AND MAX(r.payment_date) > s.due_date
+                                        THEN DATEDIFF(MAX(r.payment_date), s.due_date)
+                                        ELSE 0
+                                        END as days_in_arrears', [$today, $today])
+                                        ->groupBy('s.id', 's.due_date', 's.principal', 's.interest')
+                                        ->orderBy('s.due_date')
+                                        ->get();
                                         $maxDays = $daysInArrears->max('days_in_arrears');
-                                    @endphp
-                                    {{ $maxDays > 0 ? $maxDays . ' days in Arrears' : 'Up to date' }}
+                                        @endphp
+                                        {{ $maxDays > 0 ? $maxDays . ' days in Arrears' : 'Up to date' }}
                                 </p>
                             </div>
                             <div class="widgets-icons bg-light-warning text-warning ms-auto">
@@ -264,9 +264,12 @@
 
                         <!-- Action Buttons -->
                         <div class="mt-4 d-flex flex-wrap gap-2">
+                            @can('edit customer')
                             <a href="{{ route('customers.edit', Hashids::encode($customer->id)) }}" class="btn btn-sm btn-warning flex-fill">
                                 <i class="bx bx-edit"></i> Edit
                             </a>
+                            @endcan
+                            @can('delete customer')
                             <form action="{{ route('customers.destroy', Hashids::encode($customer->id)) }}" method="POST" class="flex-fill delete-form" style="display:inline;">
                                 @csrf
                                 @method('DELETE')
@@ -274,6 +277,7 @@
                                     <i class="bx bx-trash"></i> Delete
                                 </button>
                             </form>
+                            @endcan
                         </div>
 
                     </div>
@@ -365,15 +369,15 @@
                                             </td>
                                             <td>
                                                 @if($loan->status === 'active')
-                                                    <span class="badge bg-success">{{ ucfirst($loan->status) }}</span>
+                                                <span class="badge bg-success">{{ ucfirst($loan->status) }}</span>
                                                 @elseif($loan->status === 'pending')
-                                                    <span class="badge bg-warning">{{ ucfirst($loan->status) }}</span>
+                                                <span class="badge bg-warning">{{ ucfirst($loan->status) }}</span>
                                                 @elseif($loan->status === 'closed')
-                                                    <span class="badge bg-secondary">{{ ucfirst($loan->status) }}</span>
+                                                <span class="badge bg-secondary">{{ ucfirst($loan->status) }}</span>
                                                 @elseif($loan->status === 'defaulted')
-                                                    <span class="badge bg-danger">{{ ucfirst($loan->status) }}</span>
+                                                <span class="badge bg-danger">{{ ucfirst($loan->status) }}</span>
                                                 @else
-                                                    <span class="badge bg-info">{{ ucfirst($loan->status) }}</span>
+                                                <span class="badge bg-info">{{ ucfirst($loan->status) }}</span>
                                                 @endif
                                             </td>
                                             <td>{{ $loan->disbursed_on }}</td>

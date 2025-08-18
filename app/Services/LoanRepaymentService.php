@@ -331,8 +331,8 @@ class LoanRepaymentService
             $chartAccounts = [
                 'principal' => $loan->product->principal_receivable_account_id,
                 'interest' => $loan->product->interest_receivable_account_id,
-                'fee_amount' => $loan->product->interest_receivable_account_id, // Use interest account for fees
-                'penalty_amount' => $loan->product->interest_receivable_account_id, // Use interest account for penalties
+                'fee_amount' => $loan->product->fee->chart_account_id, // Use interest account for fees
+                'penalty_amount' => $loan->product->penalty->penalty_receivables_account_id // Use interest account for penalties
             ];
         }
 

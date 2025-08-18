@@ -127,6 +127,57 @@
                         </div>
                     </div>
 
+                    @if($receiptVoucher->reference_type === 'loan' && $receiptVoucher->loan)
+                        <!-- Loan Information -->
+                        <div class="card radius-10 mb-4">
+                            <div class="card-header bg-primary text-white">
+                                <h5 class="mb-0"><i class="bx bx-credit-card me-2"></i>Related Loan Information</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Loan Number</label>
+                                        <p class="form-control-plaintext">
+                                            <a href="{{ route('loans.show', Hashids::encode($receiptVoucher->loan->id)) }}"
+                                                class="text-primary text-decoration-none">
+                                                {{ $receiptVoucher->loan->loanNo }}
+                                            </a>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Customer</label>
+                                        <p class="form-control-plaintext">{{ $receiptVoucher->loan->customer->name ?? 'N/A' }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Loan Product</label>
+                                        <p class="form-control-plaintext">{{ $receiptVoucher->loan->product->name ?? 'N/A' }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Loan Amount</label>
+                                        <p class="form-control-plaintext text-success">
+                                            {{ number_format($receiptVoucher->loan->amount, 2) }}
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Loan Status</label>
+                                        <p class="form-control-plaintext">
+                                            <span
+                                                class="badge bg-{{ $receiptVoucher->loan->status === 'active' ? 'success' : 'warning' }}">
+                                                {{ ucfirst($receiptVoucher->loan->status) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label fw-bold">Date Applied</label>
+                                        <p class="form-control-plaintext">{{ $receiptVoucher->loan->date_applied }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
                     <!-- Line Items -->
                     <div class="card radius-10 mb-4">
                         <div class="card-header bg-secondary text-white">
@@ -308,7 +359,9 @@
                                     </button>
                                     @endcan
                                 @else
-                                    <button type="button" class="btn btn-outline-secondary" title="Edit/Delete locked: Source is {{ ucfirst($receiptVoucher->reference_type) }} transaction" disabled>
+                                    <button type="button" class="btn btn-outline-secondary"
+                                        title="Edit/Delete locked: Source is {{ ucfirst($receiptVoucher->reference_type) }} transaction"
+                                        disabled>
                                         <i class="bx bx-lock"></i> Locked
                                     </button>
                                 @endif

@@ -42,7 +42,6 @@ class GroupController extends Controller
             $query->whereIn('name', ['loan-officer', 'admin']);
         })->get();
 
-
         $branchId = auth()->user()->branch_id;
         // Only customers in 'Borrower' category can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
@@ -277,10 +276,12 @@ class GroupController extends Controller
 
         // Pata wateja wote walio kwenye kundi kupitia uhusiano wa `GroupMember`.
         // Kisha pakia (eager load) uhusiano wa customer, mikopo, schedules, na repayments.
-        $customers = $group->members()->with(['customer.loans' => function ($query) {
-            $query->where('status', 'Active') // Chagua mikopo iliyo "Active" tu
-                ->with(['schedule.repayments']); // Pakia schedules na repayments zake
-        }])->get()->pluck('customer'); // Chukua tu objects za customers
+        $customers = $group->members()->with([
+            'customer.loans' => function ($query) {
+                $query->where('status', 'Active') // Chagua mikopo iliyo "Active" tu
+                    ->with(['schedule.repayments']); // Pakia schedules na repayments zake
+            }
+        ])->get()->pluck('customer'); // Chukua tu objects za customers
 
         $repaymentData = [];
         $totalAmountToPay = 0;
@@ -435,7 +436,7 @@ class GroupController extends Controller
                     }
 
                     // Hifadhi malipo kwenye `repayments` table
-                    $repayment =   Repayment::create([
+                    $repayment = Repayment::create([
                         'customer_id' => $customerId,
                         'loan_id' => $loanId,
                         'loan_schedule_id' => $schedule->id,
@@ -450,7 +451,7 @@ class GroupController extends Controller
                     ]);
 
 
-                    
+
                     // *** 3. Kuhifadhi Receipt na ReceiptItem ***
                     $notes = "Being Repayment for {$loanProduct->name} Loan from {$customer->name}, of TSHS {$amountPaid}";
 

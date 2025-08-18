@@ -89,7 +89,8 @@
                                     <thead>
                                         <tr>
                                             <th width="10%">Date</th>
-                                            <th width="15%">Bank Account</th>
+                                            <th width="12%">Reference</th>
+                                            <th width="13%">Bank Account</th>
                                             <th width="15%">Payee</th>
                                             <th width="15%">Description</th>
                                             <th width="10%">Amount</th>
@@ -101,6 +102,26 @@
                                         @foreach($receipts as $receipt)
                                             <tr>
                                                 <td>{{ $receipt->formatted_date }}</td>
+                                                <td>
+                                                    <div>
+                                                        <strong>{{ $receipt->reference }}</strong>
+                                                        @if($receipt->reference_type === 'loan' && $receipt->loan)
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                <i class="bx bx-credit-card me-1"></i>
+                                                                <a href="{{ route('loans.show', Hashids::encode($receipt->loan->id)) }}"
+                                                                    class="text-primary text-decoration-none">
+                                                                    {{ $receipt->loan->loanNo }}
+                                                                </a>
+                                                            </small>
+                                                        @elseif($receipt->reference_type === 'manual')
+                                                            <br>
+                                                            <small class="text-muted">
+                                                                <i class="bx bx-edit me-1"></i>Manual Entry
+                                                            </small>
+                                                        @endif
+                                                    </div>
+                                                </td>
                                                 <td>{{ $receipt->bankAccount->name ?? 'N/A' }}</td>
                                                 <td>
                                                     @if($receipt->payee_type === 'customer' && $receipt->customer)
@@ -139,7 +160,9 @@
                                                             </button>
                                                             @endcan
                                                         @else
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary" title="Edit/Delete locked: Source is {{ ucfirst($receipt->reference_type) }} transaction" disabled>
+                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                                title="Edit/Delete locked: Source is {{ ucfirst($receipt->reference_type) }} transaction"
+                                                                disabled>
                                                                 <i class="bx bx-lock"></i> Locked
                                                             </button>
                                                         @endif
@@ -174,7 +197,7 @@
                         searchable: false
                     },
                     {
-                        targets: 5, // Amount column
+                        targets: 6, // Amount column (updated index)
                         className: 'text-end'
                     }
                 ],

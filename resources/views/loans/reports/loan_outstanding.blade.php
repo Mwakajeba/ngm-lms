@@ -1,0 +1,157 @@
+@extends('layouts.main')
+
+@section('title', 'Loan Outstanding Balance Report')
+
+@section('content')
+<div class="page-wrapper">
+    <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
+            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
+            ['label' => 'Loan Outstanding Balance Report', 'url' => '#', 'icon' => 'bx bx-calculator']
+        ]" />
+        <h6 class="mb-0 text-uppercase">LOAN OUTSTANDING BALANCE REPORT</h6>
+        <hr />
+
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bx bx-calculator me-2"></i>Loan Outstanding Balance Report</h5>
+            </div>
+            <div class="card-body">
+                <form method="GET" action="{{ route('accounting.loans.reports.loan_outstanding') }}">
+                    <div class="row">
+                        <div class="col-md-3 mb-3">
+                            <label for="as_of_date" class="form-label">As of Date</label>
+                            <input type="date" class="form-control" id="as_of_date" name="as_of_date" value="{{ request('as_of_date', date('Y-m-d')) }}">
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="loan_officer_id" class="form-label">Loan Officer</label>
+                            <select class="form-select" id="loan_officer_id" name="loan_officer_id">
+                                <option value="">All Officers</option>
+                                @foreach($loanOfficers as $officer)
+                                    <option value="{{ $officer->id }}" {{ request('loan_officer_id') == $officer->id ? 'selected' : '' }}>{{ $officer->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3">
+                            <label for="branch_id" class="form-label">Branch</label>
+                            <select class="form-select" id="branch_id" name="branch_id">
+                                <option value="">All Branches</option>
+                                @foreach($branches as $branch)
+                                    <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bx bx-search me-1"></i> Apply Filters
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        
+        <div class="row mb-4">
+            <div class="col-md-3 mb-3">
+                <div class="border-l-4 border-primary rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-500">Total Principal Disbursed</p>
+                    <h3 class="text-2xl font-bold mt-1 text-primary">
+                        {{ number_format($summary['total_principal_disbursed'] ?? 0, 2) }}
+                    </h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="border-l-4 border-info rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-500">Total Expected Interest</p>
+                    <h3 class="text-2xl font-bold mt-1 text-info">
+                        {{ number_format($summary['total_expected_interest'] ?? 0, 2) }}
+                    </h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="border-l-4 border-warning rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-500">Total Paid Interest</p>
+                    <h3 class="text-2xl font-bold mt-1 text-warning">
+                        {{ number_format($summary['total_paid_interest'] ?? 0, 2) }}
+                    </h3>
+                </div>
+            </div>
+            <div class="col-md-3 mb-3">
+                <div class="border-l-4 border-success rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-500">Total Principal Paid</p>
+                    <h3 class="text-2xl font-bold mt-1 text-success">
+                        {{ number_format($summary['total_principal_paid'] ?? 0, 2) }}
+                    </h3>
+                </div>
+            </div>
+        </div>
+        
+
+        @if(isset($outstandingData))
+        <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="bx bx-list-ul me-2"></i>Outstanding Summary</h5>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-bordered table-striped">
+                        <thead class="table-light">
+                            <tr>
+                                <th colspan="10" class="text-center">DISBURSEMENT</th>
+                                <th colspan="2" class="text-center">REPAYMENT</th>
+                                <th colspan="3" class="text-center">OUTSTANDING</th>
+                            </tr>
+                            <tr>
+                                <th>Customer</th>
+                                <th>Customer No</th>
+                                <th>Phone</th>
+                                <th>Loan No</th>
+                                <th>Disbursed Amount</th>
+                                <th>Expected Interest</th>
+                                <th>Disbursed Date</th>
+                                <th>Expiry</th>
+                                <th>Branch</th>
+                                <th>Loan Officer</th>
+                                <th class="text-end">Principal Paid</th>
+                                <th class="text-end">Interest Paid</th>
+                                <th class="text-end">Outstanding Principal</th>
+                                <th class="text-end">Outstanding Interest</th>
+                                <th class="text-end">Outstanding Balance</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse($outstandingData as $row)
+                                <tr>
+                                    <td>{{ $row['customer'] }}</td>
+                                    <td>{{ $row['customer_no'] }}</td>
+                                    <td>{{ $row['phone'] }}</td>
+                                    <td>{{ $row['loan_no'] }}</td>
+                                    <td class="text-end">{{ number_format($row['amount'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['interest'], 2) }}</td>
+                                    <td>{{ $row['disbursed_no'] }}</td>
+                                    <td>{{ $row['expiry'] }}</td>
+                                    <td>{{ $row['branch'] }}</td>
+                                    <td>{{ $row['loan_officer'] }}</td>
+                                    <td class="text-end">{{ number_format($row['principal_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['interest_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['amount']-$row['principal_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['interest']-$row['interest_paid'], 2) }}</td>
+                                    <td class="text-end fw-bold">{{ number_format($row['outstanding_balance'], 2) }}</td>
+
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="10" class="text-center text-muted">No outstanding data found for the selected criteria.</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+        @endif
+    </div>
+</div>
+@endsection
