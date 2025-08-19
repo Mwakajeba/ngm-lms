@@ -1,40 +1,50 @@
 name: Deploy Laravel to Server
 
+# Trigger workflow on push to dev branch (merge included)
 on:
   push:
     branches:
-      - dev
+      - dev  # hii inamaanisha kila push au merge kwenye dev
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
+      # 1. Checkout repo using Deploy Key
       - name: Checkout repo
         uses: actions/checkout@v3
+        with:
+          ssh-key: ${{ secrets.DEPLOY_KEY }}
 
-      - name: Setup SSH
+      # 2. Setup SSH agent for connecting to server
+      - name: Setup SSH for server
         uses: webfactory/ssh-agent@v0.9.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
+      # 3. Add server to known_hosts
       - name: Add server to known_hosts
         run: |
           mkdir -p ~/.ssh
           ssh-keyscan -H 161.97.75.172 >> ~/.ssh/known_hosts
 
+      # 4. Sync files to server using rsync
       - name: Sync files to server
         run: |
           rsync -avz --delete --exclude='.git*' --exclude='node_modules' --exclude='.env' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/smartfinance
 
+      # 5. Run composer install on server
       - name: Run composer install on server
         run: |
           ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
 
+      # 6. Run migrations on server
       - name: Run migrations on server
         run: |
           ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
 
+      # 7. Fix permissions on server
       - name: Fix permissions on server
         run: |
           ssh -o StrictHostKeyChecking=no root@161.97.75.172 "
@@ -42,6 +52,7 @@ jobs:
             sudo chmod -R 775 /var/www/smartfinance/storage /var/www/smartfinance/bootstrap/cache
           "
 
+      # 8. Clear and cache Laravel configs on server
       - name: Clear and cache configs on server
         run: |
           ssh -o StrictHostKeyChecking=no root@161.97.75.172 "
