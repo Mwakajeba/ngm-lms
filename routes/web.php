@@ -421,6 +421,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
 Route::middleware(['auth'])->group(function () {
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
+    Route::get('customers/data', [CustomerController::class, 'getCustomersData'])->name('customers.data');
     Route::get('customers/penalty', [CustomerController::class, 'penaltList'])->name('customers.penalty');
     Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
     Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
@@ -482,6 +483,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
+    Route::get('loans/data', [LoanController::class, 'getLoansData'])->name('loans.data');
     Route::get('loans/status/{status}', [LoanController::class, 'loansByStatus'])->name('loans.by-status');
 
     // New Loan Application Routes (must come BEFORE general loan routes)

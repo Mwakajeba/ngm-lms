@@ -20,6 +20,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
 
 class LoanController extends Controller
 {
@@ -36,7 +37,128 @@ class LoanController extends Controller
             ->where('status', 'active')
             ->latest()->get();
 
-        return view('loans.list', compact('loans'));
+        // Get data for import modal
+        $branches = \App\Models\Branch::all();
+        $loanProducts = \App\Models\LoanProduct::all();
+
+        return view('loans.list', compact('loans', 'branches', 'loanProducts'));
+    }
+
+    // Ajax endpoint for DataTables
+    public function getLoansData(Request $request)
+    {
+        if ($request->ajax()) {
+            $branchId = auth()->user()->branch_id;
+            $status = $request->get('status', 'active'); // Default to active loans
+            
+            $loans = Loan::with(['customer', 'product', 'branch'])
+                ->where('branch_id', $branchId)
+                ->where('status', $status)
+                ->select('loans.*');
+
+            return DataTables::eloquent($loans)
+                ->addColumn('customer_name', function ($loan) {
+                    $customerName = optional($loan->customer)->name ?? 'N/A';
+                    $initial = strtoupper(substr($customerName, 0, 1));
+                    
+                    return '<div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                    <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">' . $initial . '</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">' . e($customerName) . '</div>
+                                </div>
+                            </div>';
+                })
+                ->addColumn('product_name', function ($loan) {
+                    return optional($loan->product)->name ?? 'N/A';
+                })
+                ->addColumn('formatted_amount', function ($loan) {
+                    return 'TZS ' . number_format($loan->amount, 2);
+                })
+                ->addColumn('formatted_total', function ($loan) {
+                    return 'TZS ' . number_format($loan->amount_total, 2);
+                })
+                ->addColumn('interest_display', function ($loan) {
+                    return $loan->interest . '%';
+                })
+                ->addColumn('status_badge', function ($loan) {
+                    $badgeClass = '';
+                    $statusText = ucfirst($loan->status);
+                    
+                    switch ($loan->status) {
+                        case 'applied':
+                            $badgeClass = 'bg-warning';
+                            $statusText = 'Applied';
+                            break;
+                        case 'checked':
+                            $badgeClass = 'bg-info';
+                            $statusText = 'Checked';
+                            break;
+                        case 'approved':
+                            $badgeClass = 'bg-primary';
+                            $statusText = 'Approved';
+                            break;
+                        case 'authorized':
+                            $badgeClass = 'bg-success';
+                            $statusText = 'Authorized';
+                            break;
+                        case 'active':
+                            $badgeClass = 'bg-success';
+                            $statusText = 'Active';
+                            break;
+                        case 'defaulted':
+                            $badgeClass = 'bg-danger';
+                            $statusText = 'Defaulted';
+                            break;
+                        case 'rejected':
+                            $badgeClass = 'bg-danger';
+                            $statusText = 'Rejected';
+                            break;
+                        default:
+                            $badgeClass = 'bg-secondary';
+                            break;
+                    }
+                    
+                    return '<span class="badge ' . $badgeClass . '">' . $statusText . '</span>';
+                })
+                ->addColumn('branch_name', function ($loan) {
+                    return optional($loan->branch)->name ?? 'N/A';
+                })
+                ->addColumn('formatted_date', function ($loan) {
+                    return $loan->date_applied ? \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y') : 'N/A';
+                })
+                ->addColumn('actions', function ($loan) {
+                    $actions = '';
+                    $encodedId = \Vinkla\Hashids\Facades\Hashids::encode($loan->id);
+                    
+                    // View action
+                    if (auth()->user()->can('view loan details')) {
+                        $actions .= '<a href="' . route('loans.show', $encodedId) . '" class="btn btn-sm btn-outline-info me-1" title="View"><i class="bx bx-show"></i></a>';
+                    }
+                    
+                    // Edit action
+                    if (auth()->user()->can('edit loan')) {
+                        $actions .= '<a href="' . route('loans.edit', $encodedId) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
+                    }
+                    
+                    // Receipt action for applied loans
+                    if ($loan->status === 'applied' && auth()->user()->can('create receipt voucher')) {
+                        $actions .= '<a href="' . route('accounting.loans.create-receipt', $encodedId) . '" class="btn btn-sm btn-outline-success me-1" title="Create Receipt"><i class="bx bx-receipt"></i></a>';
+                    }
+                    
+                    // Delete action
+                    if (auth()->user()->can('delete loan')) {
+                        $actions .= '<button class="btn btn-sm btn-outline-danger delete-btn" data-id="' . $encodedId . '" data-name="' . e(optional($loan->customer)->name ?? 'Unknown') . '" title="Delete"><i class="bx bx-trash"></i></button>';
+                    }
+                    
+                    return '<div class="text-center">' . $actions . '</div>';
+                })
+                ->rawColumns(['customer_name', 'status_badge', 'actions'])
+                ->make(true);
+        }
+        
+        return response()->json(['error' => 'Invalid request'], 400);
     }
 
     public function loansByStatus($status)
@@ -67,7 +189,11 @@ class LoanController extends Controller
 
         $pageTitle = $statusNames[$status] ?? ucfirst($status) . ' Loans';
 
-        return view('loans.list', compact('loans', 'pageTitle', 'status'));
+        // Get data for import modal
+        $branches = \App\Models\Branch::all();
+        $loanProducts = \App\Models\LoanProduct::all();
+
+        return view('loans.list', compact('loans', 'pageTitle', 'status', 'branches', 'loanProducts'));
     }
 
     public function create()
