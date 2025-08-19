@@ -397,7 +397,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
 
-
+  //route
 
 
     //////LOANS REPORT ROUTE////////
