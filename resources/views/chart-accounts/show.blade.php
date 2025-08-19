@@ -26,10 +26,12 @@
                             </h4>
                         </div>
                         <div class="d-flex gap-2">
+                            @can('edit chart account')
                             <a href="{{ route('accounting.chart-accounts.edit', Hashids::encode($chartAccount->id)) }}"
                                 class="btn btn-primary">
                                 <i class="bx bx-edit me-1"></i> Edit Account
                             </a>
+                            @endcan
                             <a href="{{ route('accounting.chart-accounts.index') }}" class="btn btn-outline-secondary">
                                 <i class="bx bx-arrow-back me-1"></i> Back to List
                             </a>
@@ -212,10 +214,13 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="d-grid gap-2">
+                                @can('edit chart account')
                                 <a href="{{ route('accounting.chart-accounts.edit', Hashids::encode($chartAccount->id)) }}"
                                     class="btn btn-outline-primary btn-sm">
                                     <i class="bx bx-edit me-1"></i> Edit Account
                                 </a>
+                                @endcan
+                                @can('delete chart account')
                                 <form
                                     action="{{ route('accounting.chart-accounts.destroy', Hashids::encode($chartAccount->id)) }}"
                                     method="POST" class="d-inline delete-form">
@@ -226,6 +231,7 @@
                                         <i class="bx bx-trash me-1"></i> Delete Account
                                     </button>
                                 </form>
+                                @endcan
                             </div>
                         </div>
                     </div>

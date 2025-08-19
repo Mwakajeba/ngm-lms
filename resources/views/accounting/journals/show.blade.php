@@ -31,12 +31,16 @@
                                     <a href="{{ route('accounting.journals.export-pdf', $journal) }}" class="btn btn-danger">
                                         <i class="bx bx-file-pdf me-1"></i> Export PDF
                                     </a>
+                                    @can('edit journal')
                                     <a href="{{ route('accounting.journals.edit', $journal) }}" class="btn btn-warning">
                                         <i class="bx bx-edit me-1"></i> Edit
                                     </a>
+                                    @endcan
+                                    @can('view journals')
                                     <a href="{{ route('accounting.journals.index') }}" class="btn btn-outline-secondary">
                                         <i class="bx bx-arrow-back me-1"></i> Back
                                     </a>
+                                    @endcan
                                 </div>
                             </div>
                         </div>
@@ -214,12 +218,16 @@
                     </div>
                     <div class="card-body">
                         <div class="d-grid gap-2">
+                            @can('edit journal')
                             <a href="{{ route('accounting.journals.edit', $journal) }}" class="btn btn-warning">
                                 <i class="bx bx-edit me-1"></i> Edit Entry
                             </a>
+                            @endcan
+                            @can('delete journal')
                             <button type="button" class="btn btn-outline-danger" onclick="confirmDelete()">
                                 <i class="bx bx-trash me-1"></i> Delete Entry
                             </button>
+                            @endcan
                         </div>
                     </div>
                 </div>

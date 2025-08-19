@@ -397,7 +397,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
 
-
+  //route
 
 
     //////LOANS REPORT ROUTE////////
@@ -406,7 +406,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     ////////REPAYMENT ROUTE///////
     Route::get('/loan-repayments', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.repayment');
     Route::get('/loan-repayment', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.loan-repayment');
-    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-export');
+    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-export-repayment');
     // Loan Aging Report
     Route::get('/loan-aging', [LoanReportController::class, 'loanAgingReport'])->name('loans.reports.loan_aging');
 

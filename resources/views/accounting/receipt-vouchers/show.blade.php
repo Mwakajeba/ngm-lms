@@ -340,19 +340,24 @@
                         </div>
                         <div class="card-body">
                             <div class="d-flex gap-2 flex-wrap">
-                                <a href="{{ route('accounting.receipt-vouchers.index') }}"
-                                    class="btn btn-outline-secondary">
+                                @can('view receipt vouchers')
+                                 <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-outline-secondary">
                                     <i class="bx bx-arrow-back me-1"></i>Back
                                 </a>
+                                @endcan
 
                                 @if($receiptVoucher->reference_type === 'manual')
+                                    @can('edit receipt voucher')
                                     <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receiptVoucher->id)) }}"
                                         class="btn btn-outline-info">
                                         <i class="bx bx-edit me-1"></i>Edit
                                     </a>
+                                    @endcan
+                                    @can('delete receipt voucher')
                                     <button type="button" class="btn btn-outline-danger" onclick="deleteReceiptVoucher()">
                                         <i class="bx bx-trash me-1"></i>Delete
                                     </button>
+                                    @endcan
                                 @else
                                     <button type="button" class="btn btn-outline-secondary"
                                         title="Edit/Delete locked: Source is {{ ucfirst($receiptVoucher->reference_type) }} transaction"

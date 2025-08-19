@@ -25,10 +25,12 @@
                             </h4>
                         </div>
                         <div class="d-flex gap-2">
+                            @can('edit account class group')
                             <a href="{{ route('accounting.account-class-groups.edit', Hashids::encode($accountClassGroup->id)) }}"
                                 class="btn btn-primary">
                                 <i class="bx bx-edit me-1"></i> Edit Group
                             </a>
+                            @endcan
                             <a href="{{ route('accounting.account-class-groups.index') }}"
                                 class="btn btn-outline-secondary">
                                 <i class="bx bx-arrow-back me-1"></i> Back to List
@@ -116,10 +118,13 @@
                         </div>
                         <div class="card-body p-3">
                             <div class="d-grid gap-2">
+                                @can('edit account class group')
                                 <a href="{{ route('accounting.account-class-groups.edit', Hashids::encode($accountClassGroup->id)) }}"
                                     class="btn btn-outline-primary btn-sm">
                                     <i class="bx bx-edit me-1"></i> Edit Group
                                 </a>
+                                @endcan
+                                @can('delete account class group')
                                 <form
                                     action="{{ route('accounting.account-class-groups.destroy', Hashids::encode($accountClassGroup->id)) }}"
                                     method="POST" class="d-inline delete-form">
@@ -130,6 +135,7 @@
                                         <i class="bx bx-trash me-1"></i> Delete Group
                                     </button>
                                 </form>
+                                @endcan
                             </div>
                         </div>
                     </div>
