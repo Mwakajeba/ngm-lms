@@ -17,7 +17,8 @@
         "maatwebsite/excel": "^3.1",
         "phpoffice/phpspreadsheet": "^1.29.12",
         "spatie/laravel-permission": "^6.20",
-        "vinkla/hashids": "^13.0"
+        "vinkla/hashids": "^13.0",
+        "yajra/laravel-datatables-oracle": "^12.4"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

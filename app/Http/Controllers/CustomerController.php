@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Hash;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
 
 class CustomerController extends Controller
 {
@@ -26,11 +27,71 @@ class CustomerController extends Controller
         $branchId = auth()->user()->branch_id;
         $borrowerCount = Customer::where('category', 'Borrower')->where('branch_id', $branchId)->count();
         $guarantorCount = Customer::where('category', 'Guarantor')->where('branch_id', $branchId)->count();
-        $customers = Customer::with(['branch', 'company', 'user', 'region', 'district'])
-            ->where('branch_id', $branchId)
-            ->latest()
-            ->get();
-        return view('customers.index', compact('customers', 'borrowerCount', 'guarantorCount'));
+        $customerCount = Customer::where('branch_id', $branchId)->count();
+        
+        return view('customers.index', compact('borrowerCount', 'guarantorCount', 'customerCount'));
+    }
+
+    // Ajax endpoint for DataTables
+    public function getCustomersData(Request $request)
+    {
+        if ($request->ajax()) {
+            $branchId = auth()->user()->branch_id;
+            
+            $customers = Customer::with(['branch', 'company', 'user', 'region', 'district'])
+                ->where('branch_id', $branchId)
+                ->select('customers.*');
+
+            return DataTables::eloquent($customers)
+                ->addColumn('avatar_name', function ($customer) {
+                    $isGuarantor = isset($customer->category) && strtolower($customer->category) === 'guarantor';
+                    $avatarClass = $isGuarantor ? 'bg-success' : 'bg-primary';
+                    $initial = strtoupper(substr($customer->name, 0, 1));
+                    
+                    return '<div class="d-flex align-items-center">
+                                <div class="avatar avatar-sm ' . $avatarClass . ' rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                    <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">' . $initial . '</span>
+                                </div>
+                                <div>
+                                    <div class="fw-bold">' . e($customer->name) . '</div>
+                                </div>
+                            </div>';
+                })
+                ->addColumn('region_name', function ($customer) {
+                    return $customer->region->name ?? '';
+                })
+                ->addColumn('district_name', function ($customer) {
+                    return $customer->district->name ?? '';
+                })
+                ->addColumn('branch_name', function ($customer) {
+                    return optional($customer->branch)->name ?? '';
+                })
+                ->addColumn('actions', function ($customer) {
+                    $actions = '';
+                    $encodedId = \Vinkla\Hashids\Facades\Hashids::encode($customer->id);
+                    
+                    // View action
+                    if (auth()->user()->can('view customer profile')) {
+                        $actions .= '<a href="' . route('customers.show', $encodedId) . '" class="btn btn-sm btn-outline-info me-1" title="View"><i class="bx bx-show"></i> Show</a>';
+                    }
+                    
+                    // Edit action
+                    if (auth()->user()->can('edit customer')) {
+                        $actions .= '<a href="' . route('customers.edit', $encodedId) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i> Edit</a>';
+                    }
+                    
+                    // Delete action
+                    if (auth()->user()->can('delete customer')) {
+                        $actions .= '<button class="btn btn-sm btn-outline-danger delete-btn" data-id="' . $encodedId . '" data-name="' . e($customer->name) . '" title="Delete"><i class="bx bx-trash"></i> Delete</button>';
+                    }
+                    
+                    return '<div class="text-center">' . $actions . '</div>';
+                })
+                ->rawColumns(['avatar_name', 'actions'])
+                ->make(true);
+        }
+        
+        return response()->json(['error' => 'Invalid request'], 400);
     }
 
 
