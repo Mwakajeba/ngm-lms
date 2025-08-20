@@ -9,12 +9,11 @@
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Customers', 'url' => route('customers.index'), 'icon' => 'bx bx-group'],
             ['label' => 'Customer', 'url' => route('customers.show', Hashids::encode($collateral->customer_id)), 'icon' => 'bx bx-user'],
-            ['label' => 'Cash Collateral', 'url' => route('cash_collaterals.show', Hashids::encode($collateral->id)), 'icon' => 'bx bx-money'],
+            ['label' => 'Deposit Accounts', 'url' => route('cash_collaterals.show', Hashids::encode($collateral->id)), 'icon' => 'bx bx-money'],
             ['label' => 'Edit Withdrawal', 'url' => '#', 'icon' => 'bx bx-edit']
         ]" />
         
-        <h5 class="mb-0 text-primary">Edit Cash Collateral Withdrawal</h5>
-
+        <h5 class="mb-0 text-primary">Edit Deposit account Withdrawal</h5>
         <hr>
 
         <div class="card">

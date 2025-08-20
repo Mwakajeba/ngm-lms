@@ -17,6 +17,44 @@ use Vinkla\Hashids\Facades\Hashids;
         <h6 class="mb-0 text-uppercase">{{ $pageTitle ?? 'LOAN LIST' }}</h6>
         <hr />
 
+        <!-- Flash Messages -->
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bx bx-check-circle me-2"></i>{{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if(session('warning'))
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bx bx-error-circle me-2"></i>{{ session('warning') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                @if(session('import_errors'))
+                    <details class="mt-2">
+                        <summary class="text-decoration-underline" style="cursor: pointer;">View Error Details</summary>
+                        <ul class="mt-2 mb-0">
+                            @foreach(session('import_errors') as $error)
+                                <li>{{ $error }}</li>
+                            @endforeach
+                        </ul>
+                    </details>
+                @endif
+            </div>
+        @endif
+
+        @if($errors->any())
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bx bx-error-circle me-2"></i>
+                <strong>Error:</strong>
+                <ul class="mb-0">
+                    @foreach($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         <!-- Dashboard Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
             <div class="col mb-4">
@@ -90,7 +128,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         <h5 class="modal-title" id="importModalLabel">Import Loans</h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
-                    <form action="#" method="POST" enctype="multipart/form-data" id="importForm">
+                    <form action="{{ route('loans.import') }}" method="POST" enctype="multipart/form-data" id="importForm">
                         @csrf
                         <div class="modal-body">
                             <div class="row">
@@ -103,6 +141,8 @@ use Vinkla\Hashids\Facades\Hashids;
                                             <li>Select loan type to determine chart account source</li>
                                             <li>Configure default settings for the import</li>
                                             <li>Maximum file size: 5MB</li>
+                                            <li>Required CSV columns: customer_no, amount, period, interest, date_applied, interest_cycle, loan_officer, group_id, sector</li>
+                                            <li><strong>Customer Number:</strong> Use the customer number (not ID). Invalid customer numbers will be skipped.</li>
                                         </ul>
                                     </div>
                                 </div>
@@ -119,16 +159,16 @@ use Vinkla\Hashids\Facades\Hashids;
                                     <div class="form-text">Determines chart account type (Old = Equity, New = Bank)</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="csv_file" class="form-label">Select CSV File <span class="text-danger">*</span></label>
-                                    <input type="file" class="form-control" id="csv_file" name="csv_file" accept=".csv,.txt" required>
+                                    <label for="import_file" class="form-label">Select CSV File <span class="text-danger">*</span></label>
+                                    <input type="file" class="form-control" id="import_file" name="import_file" accept=".csv,.txt" required>
                                     <div class="form-text">Supported: CSV, TXT (Max: 5MB)</div>
                                 </div>
                             </div>
 
                             <div class="row">
                                 <div class="col-md-6 mb-3">
-                                    <label for="default_branch" class="form-label">Branch <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="default_branch" name="default_branch_id" required>
+                                    <label for="branch_id" class="form-label">Branch <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="branch_id" name="branch_id" required>
                                         <option value="">Select Branch</option>
                                         @if(isset($branches))
                                             @foreach($branches as $branch)
@@ -141,8 +181,8 @@ use Vinkla\Hashids\Facades\Hashids;
                                     <div class="form-text">Branch for imported loans</div>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label for="loan_product" class="form-label">Loan Product <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="loan_product" name="loan_product_id" required>
+                                    <label for="product_id" class="form-label">Loan Product <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="product_id" name="product_id" required>
                                         <option value="">Select Loan Product</option>
                                         @if(isset($loanProducts))
                                             @foreach($loanProducts as $product)
@@ -155,25 +195,12 @@ use Vinkla\Hashids\Facades\Hashids;
                             </div>
 
                             <div class="row">
-                                <div class="col-md-6 mb-3">
-                                    <label for="loan_status" class="form-label">Loan Status <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="loan_status" name="loan_status" required>
-                                        <option value="">Select Status</option>
-                                        <option value="applied">Applied</option>
-                                        <option value="checked">Checked</option>
-                                        <option value="approved">Approved</option>
-                                        <option value="authorized">Authorized</option>
-                                        <option value="active" selected>Active</option>
-                                        <option value="defaulted">Defaulted</option>
-                                    </select>
-                                    <div class="form-text">Status for imported loans</div>
-                                </div>
-                                <div class="col-md-6 mb-3">
-                                    <label for="chart_account" class="form-label">Chart Account <span class="text-danger">*</span></label>
-                                    <select class="form-select" id="chart_account" name="chart_account_id" required disabled>
+                                <div class="col-md-12 mb-3">
+                                    <label for="account_id" class="form-label">Chart Account <span class="text-danger">*</span></label>
+                                    <select class="form-select" id="account_id" name="account_id" required disabled>
                                         <option value="">Select loan type first</option>
                                     </select>
-                                    <div class="form-text" id="chart_account_help">Select loan type to see accounts</div>
+                                    <div class="form-text" id="chart_account_help">Select loan type to see available accounts</div>
                                 </div>
                             </div>
 
@@ -190,7 +217,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         </div>
                         <div class="modal-footer">
                             <div class="me-auto">
-                                <a href="#" class="btn btn-outline-secondary btn-sm" id="downloadTemplate">
+                                <a href="{{ route('loans.import-template') }}" class="btn btn-outline-secondary btn-sm" id="downloadTemplate">
                                     <i class="bx bx-download"></i> Download Sample Template
                                 </a>
                             </div>
@@ -287,8 +314,8 @@ use Vinkla\Hashids\Facades\Hashids;
             const originalText = submitBtn.html();
             
             // Validate required fields
-            if (!$('#loan_type').val() || !$('#csv_file').val() || !$('#default_branch').val() || 
-                !$('#loan_product').val() || !$('#loan_status').val() || !$('#chart_account').val()) {
+            if (!$('#loan_type').val() || !$('#import_file').val() || !$('#branch_id').val() || 
+                !$('#product_id').val() || !$('#account_id').val()) {
                 Swal.fire({
                     title: 'Validation Error',
                     text: 'Please fill in all required fields before importing.',
@@ -301,34 +328,56 @@ use Vinkla\Hashids\Facades\Hashids;
             // Disable submit button and show loading
             submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin"></i> Importing...');
             
-            // For now, just show a placeholder message
-            Swal.fire({
-                title: 'Import Configuration',
-                html: `
-                    <div class="text-start">
-                        <p><strong>Loan Type:</strong> ${$('#loan_type option:selected').text()}</p>
-                        <p><strong>Branch:</strong> ${$('#default_branch option:selected').text()}</p>
-                        <p><strong>Product:</strong> ${$('#loan_product option:selected').text()}</p>
-                        <p><strong>Status:</strong> ${$('#loan_status option:selected').text()}</p>
-                        <p><strong>Chart Account:</strong> ${$('#chart_account option:selected').text()}</p>
-                        <p><strong>File:</strong> ${$('#csv_file')[0].files[0].name}</p>
-                    </div>
-                    <br>
-                    <p>Import functionality will be implemented based on these settings.</p>
-                `,
-                icon: 'info',
-                confirmButtonText: 'OK'
-            }).then(() => {
-                // Re-enable submit button
-                submitBtn.prop('disabled', false).html(originalText);
-                $('#importModal').modal('hide');
+            // Submit form via Ajax
+            $.ajax({
+                url: $(this).attr('action'),
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                success: function(response) {
+                    Swal.fire({
+                        title: 'Import Successful',
+                        text: 'Loans have been imported successfully.',
+                        icon: 'success',
+                        confirmButtonText: 'OK'
+                    }).then(() => {
+                        $('#importModal').modal('hide');
+                        // Reload the DataTable
+                        $('#loansTable').DataTable().ajax.reload();
+                        // Reset form
+                        $('#importForm')[0].reset();
+                        $('#account_id').prop('disabled', true).html('<option value="">Select loan type first</option>');
+                    });
+                },
+                error: function(xhr) {
+                    let errorMessage = 'An error occurred during import.';
+                    
+                    if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = xhr.responseJSON.errors;
+                        errorMessage = Object.values(errors).flat().join('\n');
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    }
+                    
+                    Swal.fire({
+                        title: 'Import Failed',
+                        text: errorMessage,
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
             });
         });
 
         // Handle loan type change to load appropriate chart accounts
         $('#loan_type').on('change', function() {
             const loanType = $(this).val();
-            const chartAccountSelect = $('#chart_account');
+            const chartAccountSelect = $('#account_id');
             const helpText = $('#chart_account_help');
             
             if (!loanType) {
@@ -339,41 +388,43 @@ use Vinkla\Hashids\Facades\Hashids;
             
             // Enable the select and show loading
             chartAccountSelect.prop('disabled', false).html('<option value="">Loading accounts...</option>');
+            helpText.text('Loading chart accounts...');
             
-            // Simulate loading chart accounts based on type
-            setTimeout(() => {
-                if (loanType === 'old') {
-                    chartAccountSelect.html(`
-                        <option value="">Select Equity Account</option>
-                        <option value="eq1">Retained Earnings</option>
-                        <option value="eq2">Share Capital</option>
-                        <option value="eq3">Equity Reserve</option>
-                        <option value="eq4">Other Equity Accounts</option>
-                    `);
-                    helpText.text('Equity accounts for old loans');
-                } else if (loanType === 'new') {
-                    chartAccountSelect.html(`
-                        <option value="">Select Bank Account</option>
-                        <option value="ba1">Main Bank Account</option>
-                        <option value="ba2">Savings Account</option>
-                        <option value="ba3">Current Account</option>
-                        <option value="ba4">Loan Disbursement Account</option>
-                    `);
-                    helpText.text('Bank accounts for new loans');
+            // Fetch chart accounts via Ajax
+            $.ajax({
+                url: '{{ route("loans.chart-accounts", ":type") }}'.replace(':type', loanType),
+                method: 'GET',
+                success: function(response) {
+                    if (response.success && response.accounts) {
+                        let options = '<option value="">Select Chart Account</option>';
+                        
+                        response.accounts.forEach(function(account) {
+                            const displayName = account.account_number ? 
+                                `${account.account_number} - ${account.name}` : 
+                                account.name;
+                            options += `<option value="${account.id}">${displayName}</option>`;
+                        });
+                        
+                        chartAccountSelect.html(options);
+                        helpText.text(`${response.type} available for selection`);
+                    } else {
+                        chartAccountSelect.html('<option value="">No accounts found</option>');
+                        helpText.text('No chart accounts found for this loan type');
+                    }
+                },
+                error: function(xhr, status, error) {
+                    console.error('Error fetching chart accounts:', error);
+                    chartAccountSelect.html('<option value="">Error loading accounts</option>');
+                    helpText.text('Error loading chart accounts. Please try again.');
+                    
+                    // Show error message
+                    Swal.fire({
+                        title: 'Error',
+                        text: 'Failed to load chart accounts. Please check your connection and try again.',
+                        icon: 'error',
+                        confirmButtonText: 'OK'
+                    });
                 }
-            }, 500);
-        });
-
-        // Handle download template
-        $('#downloadTemplate').on('click', function(e) {
-            e.preventDefault();
-            
-            // For now, show info about template
-            Swal.fire({
-                title: 'Sample Template',
-                text: 'The sample CSV template will be generated with the required columns: customer_id, product_id, amount, interest, period, date_applied, sector, etc.',
-                icon: 'info',
-                confirmButtonText: 'OK'
             });
         });
     });

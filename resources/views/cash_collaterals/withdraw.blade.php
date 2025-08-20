@@ -12,7 +12,7 @@
     ['label' => 'Withdrawal', 'url' => '#', 'icon' => 'bx bx-user']
 ]" />
         
-        <h5 class="mb-0 text-primary">Cash Collateral Withdrawal</h5>
+        <h5 class="mb-0 text-primary">Deposit Account Withdrawal</h5>
 
         <hr>
 
