@@ -13,7 +13,7 @@
             ['label' => 'Edit Deposit', 'url' => '#', 'icon' => 'bx bx-edit']
         ]" />
         
-        <h5 class="mb-0 text-primary">Edit Cash Collateral Deposit</h5>
+        <h5 class="mb-0 text-primary">Edit Deposit</h5>
 
         <hr>
 

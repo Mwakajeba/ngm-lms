@@ -12,7 +12,7 @@
     ['label' => 'Deposit', 'url' => '#', 'icon' => 'bx bx-user']
 ]" />
         
-        <h5 class="mb-0 text-primary">Cash Collateral Deposit</h5>
+        <h5 class="mb-0 text-primary">Deposit</h5>
 
         <hr>
 

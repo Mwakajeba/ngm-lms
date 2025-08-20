@@ -50,11 +50,11 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
-            'Cash Collaterals' => [
+            'Deposit Accounts' => [
                 'icon' => 'bx bx-outline',
                 'visibleRoutes' => [
-                    ['name' => 'Cash Collateral Types', 'route' => 'cash_collateral_types.index'],
-                    ['name' => 'Cash Collaterals', 'route' => 'cash_collaterals.index'],
+                    ['name' => 'Deposit Accounts Types', 'route' => 'cash_collateral_types.index'],
+                    ['name' => 'Deposit Accounts', 'route' => 'cash_collaterals.index'],
                 ],
                 'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show', 'cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
             ],

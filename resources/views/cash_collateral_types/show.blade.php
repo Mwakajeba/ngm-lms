@@ -7,7 +7,7 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Cash Collateral Types', 'url' => route('cash_collateral_types.index'), 'icon' => 'bx bx-credit-card'],
+            ['label' => 'Deposit Accounts Types', 'url' => route('cash_collateral_types.index'), 'icon' => 'bx bx-credit-card'],
             ['label' => $cashCollateral->name, 'url' => '#', 'icon' => 'bx bx-info-circle']
         ]" />
         <!-- Header Section -->
@@ -16,7 +16,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 text-dark fw-bold">
                         <i class="bx bx-bookmark me-2 text-primary"></i>
-                        Cash Collateral Type Details
+                        Deposit Accounts Type Details
                     </h4>
                     <div class="d-flex gap-2">
                         <a href="{{ route('cash_collateral_types.edit', $cashCollateral->id) }}" class="btn btn-primary">
