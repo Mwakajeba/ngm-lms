@@ -488,6 +488,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
     Route::get('loans/data', [LoanController::class, 'getLoansData'])->name('loans.data');
+    Route::get('loans/chart-accounts/{type}', [LoanController::class, 'getChartAccountsByType'])->name('loans.chart-accounts');
+    Route::post('loans/import', [LoanController::class, 'importLoans'])->name('loans.import');
+    Route::get('loans/import-template', [LoanController::class, 'downloadTemplate'])->name('loans.import-template');
     Route::get('loans/status/{status}', [LoanController::class, 'loansByStatus'])->name('loans.by-status');
 
     // New Loan Application Routes (must come BEFORE general loan routes)

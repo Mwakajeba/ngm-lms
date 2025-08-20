@@ -9,7 +9,7 @@
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Customers', 'url' => route('customers.index'), 'icon' => 'bx bx-group'],
             ['label' => 'Customer', 'url' => route('customers.show', Hashids::encode($cashCollateral->customer_id)), 'icon' => 'bx bx-user'],
-            ['label' => 'Cash Collateral', 'url' => '#', 'icon' => 'bx bx-money']
+            ['label' => 'Deposit', 'url' => '#', 'icon' => 'bx bx-money']
         ]" />
 
         <!-- Header Section -->
@@ -19,7 +19,7 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-8">
-                                <h4 class="text-primary mb-2">Cash Collateral Details</h4>
+                                <h4 class="text-primary mb-2">Deposit Account Details</h4>
                                 <div class="row">
                                     <div class="col-md-6">
                                         <p class="mb-1"><strong>Customer:</strong> {{ $cashCollateral->customer->name }}</p>

@@ -161,6 +161,391 @@ class LoanController extends Controller
         return response()->json(['error' => 'Invalid request'], 400);
     }
 
+    // Get chart accounts by loan type
+    public function getChartAccountsByType($type)
+    {
+        try {
+            if ($type === 'new') {
+                // For new loans, get cash and bank accounts (assets)
+                $accounts = \App\Models\ChartAccount::whereHas('accountClassGroup', function ($query) {
+                    $query->where('name', 'LIKE', '%cash%')
+                          ->orWhere('name', 'LIKE', '%bank%')
+                          ->orWhere('name', 'LIKE', '%Cash%')
+                          ->orWhere('name', 'LIKE', '%Bank%')
+                          ->orWhere('name', 'LIKE', '%Asset%')
+                          ->orWhere('name', 'LIKE', '%asset%');
+                })
+                ->select('id', 'account_name as name', 'account_code as account_number')
+                ->orderBy('account_name')
+                ->get();
+                
+                return response()->json([
+                    'success' => true,
+                    'accounts' => $accounts,
+                    'type' => 'Bank Accounts (Cash & Bank)'
+                ]);
+                
+            } elseif ($type === 'old') {
+                // For old loans, get equity accounts
+                $accounts = \App\Models\ChartAccount::whereHas('accountClassGroup', function ($query) {
+                    $query->where('name', 'LIKE', '%equity%')
+                          ->orWhere('name', 'LIKE', '%Equity%');
+                })
+                ->select('id', 'account_name as name', 'account_code as account_number')
+                ->orderBy('account_name')
+                ->get();
+                
+                return response()->json([
+                    'success' => true,
+                    'accounts' => $accounts,
+                    'type' => 'Equity Accounts'
+                ]);
+            }
+            
+            return response()->json(['success' => false, 'message' => 'Invalid loan type']);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Error fetching accounts: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function importLoans(Request $request)
+    {
+        $request->validate([
+            'import_file' => 'required|file|mimes:csv,txt',
+            'loan_type' => 'required|in:new,old',
+            'branch_id' => 'required|exists:branches,id',
+            'product_id' => 'required|exists:loan_products,id',
+            'account_id' => 'required|exists:bank_accounts,id',
+        ]);
+
+        try {
+            $file = $request->file('import_file');
+            $path = $file->getRealPath();
+            
+            // Validate file content exists
+            if (!file_exists($path)) {
+                return redirect()->back()->withErrors([
+                    'import_file' => 'Unable to read the uploaded file.'
+                ]);
+            }
+            
+            $data = array_map('str_getcsv', file($path));
+            
+            if (empty($data)) {
+                return redirect()->back()->withErrors([
+                    'import_file' => 'The CSV file is empty.'
+                ]);
+            }
+            
+            $header = array_shift($data);
+
+            // Validate CSV header
+            $expectedHeaders = [
+                'customer_no', 'amount', 'period', 'interest', 'date_applied', 
+                'interest_cycle', 'loan_officer', 'group_id', 'sector'
+            ];
+            
+            $missingHeaders = array_diff($expectedHeaders, $header);
+            if (!empty($missingHeaders)) {
+                return redirect()->back()->withErrors([
+                    'import_file' => 'CSV file is missing required columns: ' . implode(', ', $missingHeaders)
+                ]);
+            }
+
+            if (empty($data)) {
+                return redirect()->back()->withErrors([
+                    'import_file' => 'No data rows found in the CSV file after header.'
+                ]);
+            }
+
+            $product = LoanProduct::with('principalReceivableAccount')->findOrFail($request->product_id);
+            $userId = auth()->id();
+            $branchId = $request->branch_id;
+            
+            $successCount = 0;
+            $errorCount = 0;
+            $skippedCount = 0;
+            $errors = [];
+
+            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, &$successCount, &$errorCount, &$skippedCount, &$errors) {
+                foreach ($data as $rowIndex => $row) {
+                    try {
+                        $rowData = array_combine($header, $row);
+                        
+                        // Validate each row
+                        $validated = $this->validateLoanRow($rowData, $rowIndex + 2); // +2 for header and 0-based index
+                        
+                        if (isset($validated['error'])) {
+                            // Check if it's a customer not found error (skip silently)
+                            if (strpos($validated['error'], 'Customer number') !== false && strpos($validated['error'], 'not found') !== false) {
+                                $skippedCount++;
+                                // Log the skip but don't add to errors list for display
+                                error_log("Skipped row " . ($rowIndex + 2) . ": Customer number not found");
+                            } else {
+                                $errors[] = $validated['error'];
+                                $errorCount++;
+                            }
+                            continue;
+                        }
+
+                        // Check product limits
+                        $this->validateProductLimits($validated, $product);
+
+                        // Check collateral if required
+                        if ($product->requiresCollateral()) {
+                            $requiredCollateral = $product->calculateRequiredCollateral($validated['amount']);
+                            $availableCollateral = CashCollateral::getCashCollateralBalance($validated['customer_id']);
+
+                            if ($availableCollateral < $requiredCollateral) {
+                                $errors[] = "Row " . ($rowIndex + 2) . ": Insufficient collateral. Required: " . number_format($requiredCollateral, 2) . ", Available: " . number_format($availableCollateral, 2);
+                                $errorCount++;
+                                continue;
+                            }
+                        }
+
+                        // Check for existing active loan
+                        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
+                            ->where('product_id', $request->product_id)
+                            ->where('status', 'active')
+                            ->first();
+
+                        if ($existingLoan) {
+                            $errors[] = "Row " . ($rowIndex + 2) . ": Customer already has an active loan for this product";
+                            $errorCount++;
+                            continue;
+                        }
+
+                        // Create loan using the same logic as store method
+                        $this->createLoanFromImport($validated, $product, $request->account_id, $userId, $branchId);
+                        $successCount++;
+
+                    } catch (\Exception $e) {
+                        $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                        $errorCount++;
+                    }
+                }
+            });
+
+            $message = "Import completed. Successfully imported: $successCount loans.";
+            if ($skippedCount > 0) {
+                $message .= " Skipped: $skippedCount loans (customer not found).";
+            }
+            if ($errorCount > 0) {
+                $message .= " Failed: $errorCount loans.";
+            }
+
+            if (!empty($errors)) {
+                return redirect()->back()->with('warning', $message)->with('import_errors', $errors);
+            }
+
+            return redirect()->route('loans.list')->with('success', $message);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors([
+                'import_file' => 'Error processing import: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    private function validateLoanRow($rowData, $rowNumber)
+    {
+        try {
+            // Check required fields
+            $required = ['customer_no', 'amount', 'period', 'interest', 'date_applied', 'interest_cycle', 'loan_officer', 'group_id', 'sector'];
+            foreach ($required as $field) {
+                if (empty($rowData[$field])) {
+                    return ['error' => "Row $rowNumber: Missing required field '$field'"];
+                }
+            }
+
+            // Validate customer number exists
+            $customer = Customer::where('customerNo', $rowData['customer_no'])->first();
+            if (!$customer) {
+                return ['error' => "Row $rowNumber: Customer number '{$rowData['customer_no']}' not found"];
+            }
+
+            if (!is_numeric($rowData['amount']) || $rowData['amount'] <= 0) {
+                return ['error' => "Row $rowNumber: Invalid amount"];
+            }
+
+            if (!is_numeric($rowData['period']) || $rowData['period'] <= 0) {
+                return ['error' => "Row $rowNumber: Invalid period"];
+            }
+
+            if (!is_numeric($rowData['interest']) || $rowData['interest'] < 0) {
+                return ['error' => "Row $rowNumber: Invalid interest"];
+            }
+
+            if (!strtotime($rowData['date_applied']) || strtotime($rowData['date_applied']) > time()) {
+                return ['error' => "Row $rowNumber: Invalid date_applied"];
+            }
+
+            if (!is_numeric($rowData['loan_officer']) || !User::find($rowData['loan_officer'])) {
+                return ['error' => "Row $rowNumber: Invalid loan_officer"];
+            }
+
+            if (!is_numeric($rowData['group_id']) || !Group::find($rowData['group_id'])) {
+                return ['error' => "Row $rowNumber: Invalid group_id"];
+            }
+
+            return [
+                'customer_id' => $customer->id, // Return the actual customer ID
+                'customer_no' => $rowData['customer_no'], // Keep customer number for reference
+                'amount' => (float) $rowData['amount'],
+                'period' => (int) $rowData['period'],
+                'interest' => (float) $rowData['interest'],
+                'date_applied' => $rowData['date_applied'],
+                'interest_cycle' => $rowData['interest_cycle'],
+                'loan_officer' => $rowData['loan_officer'],
+                'group_id' => $rowData['group_id'],
+                'sector' => $rowData['sector'],
+            ];
+
+        } catch (\Exception $e) {
+            return ['error' => "Row $rowNumber: Validation error - " . $e->getMessage()];
+        }
+    }
+
+    private function createLoanFromImport($validated, $product, $accountId, $userId, $branchId)
+    {
+        // Create Loan
+        $loan = Loan::create([
+            'product_id' => $product->id,
+            'period' => $validated['period'],
+            'interest' => $validated['interest'],
+            'amount' => $validated['amount'],
+            'customer_id' => $validated['customer_id'],
+            'group_id' => $validated['group_id'],
+            'bank_account_id' => $accountId,
+            'date_applied' => $validated['date_applied'],
+            'disbursed_on' => $validated['date_applied'],
+            'sector' => $validated['sector'],
+            'branch_id' => $branchId,
+            'status' => 'active',
+            'interest_cycle' => $product->interest_cycle,
+            'loan_officer_id' => $validated['loan_officer'],
+        ]);
+
+        // Calculate interest and repayment dates
+        $interestAmount = $loan->calculateInterestAmount($validated['interest']);
+        $repaymentDates = $loan->getRepaymentDates();
+
+        // Update Loan with totals and schedule
+        $loan->update([
+            'interest_amount' => $interestAmount,
+            'amount_total' => $loan->amount + $interestAmount,
+            'first_repayment_date' => $repaymentDates['first_repayment_date'],
+            'last_repayment_date' => $repaymentDates['last_repayment_date'],
+        ]);
+
+        // Generate repayment schedule
+        $loan->generateRepaymentSchedule($validated['interest']);
+
+        // Record Payment
+        $bankAccount = BankAccount::findOrFail($accountId);
+        $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
+        $principalReceivable = optional($product->principalReceivableAccount)->id;
+        
+        if (!$principalReceivable) {
+            throw new \Exception('Principal receivable account not set for this loan product.');
+        }
+
+        $payment = Payment::create([
+            'reference' => $loan->id,
+            'reference_type' => 'Loan Payment',
+            'reference_number' => null,
+            'date' => $validated['date_applied'],
+            'amount' => $validated['amount'],
+            'description' => $notes,
+            'user_id' => $userId,
+            'customer_id' => $validated['customer_id'],
+            'bank_account_id' => $accountId,
+            'branch_id' => $branchId,
+            'approved' => true,
+            'approved_by' => $userId,
+            'approved_at' => now(),
+        ]);
+
+        PaymentItem::create([
+            'payment_id' => $payment->id,
+            'chart_account_id' => $principalReceivable,
+            'amount' => $validated['amount'],
+            'description' => $notes,
+        ]);
+
+        // GL Transactions
+        GlTransaction::insert([
+            [
+                'chart_account_id' => $bankAccount->chart_account_id,
+                'customer_id' => $loan->customer_id,
+                'amount' => $validated['amount'],
+                'nature' => 'credit',
+                'transaction_id' => $loan->id,
+                'transaction_type' => 'Loan Disbursement',
+                'date' => $validated['date_applied'],
+                'description' => $notes,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ],
+            [
+                'chart_account_id' => $principalReceivable,
+                'customer_id' => $loan->customer_id,
+                'amount' => $validated['amount'],
+                'nature' => 'debit',
+                'transaction_id' => $loan->id,
+                'transaction_type' => 'Loan Disbursement',
+                'date' => $validated['date_applied'],
+                'description' => $notes,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]
+        ]);
+
+        // Post Penalty Amount to GL (if exists)
+        $penalty = $product->penalty;
+        $penaltyAmount = LoanSchedule::where('loan_id', $loan->id)->sum('penalty_amount');
+
+        if ($penaltyAmount > 0) {
+            $receivableId = $penalty->penalty_receivables_account_id;
+            $incomeId = $penalty->penalty_income_account_id;
+
+            if (!$receivableId || !$incomeId) {
+                throw new \Exception('Penalty chart accounts not configured.');
+            }
+
+            GlTransaction::insert([
+                [
+                    'chart_account_id' => $receivableId,
+                    'customer_id' => $loan->customer_id,
+                    'amount' => $penaltyAmount,
+                    'nature' => 'debit',
+                    'transaction_id' => $loan->id,
+                    'transaction_type' => 'Loan Penalty',
+                    'date' => $validated['date_applied'],
+                    'description' => $notes,
+                    'branch_id' => $branchId,
+                    'user_id' => $userId,
+                ],
+                [
+                    'chart_account_id' => $incomeId,
+                    'customer_id' => $loan->customer_id,
+                    'amount' => $penaltyAmount,
+                    'nature' => 'credit',
+                    'transaction_id' => $loan->id,
+                    'transaction_type' => 'Loan Penalty',
+                    'date' => $validated['date_applied'],
+                    'description' => $notes,
+                    'branch_id' => $branchId,
+                    'user_id' => $userId,
+                ]
+            ]);
+        }
+    }
+
     public function loansByStatus($status)
     {
         $branchId = auth()->user()->branch_id;
@@ -1436,5 +1821,63 @@ class LoanController extends Controller
         } catch (\Throwable $th) {
             return redirect()->route('loans.list')->withErrors(['Failed to mark loan as defaulted: ' . $th->getMessage()]);
         }
+    }
+
+    public function downloadTemplate()
+    {
+        $headers = [
+            'customer_no',
+            'amount', 
+            'period',
+            'interest',
+            'date_applied',
+            'interest_cycle',
+            'loan_officer',
+            'group_id',
+            'sector'
+        ];
+
+        $sampleData = [
+            [
+                '100001', // customer_no (existing customer)
+                '1000000', // amount
+                '12', // period
+                '5.5', // interest
+                '2024-01-15', // date_applied
+                'monthly', // interest_cycle
+                '2', // loan_officer (user_id)
+                '1', // group_id
+                'Agriculture' // sector
+            ],
+            [
+                '100355', // customer_no (existing customer)
+                '500000',
+                '6',
+                '4.0',
+                '2024-01-16',
+                'monthly',
+                '3',
+                '2',
+                'Business'
+            ]
+        ];
+
+        $fileName = 'loan_import_template.csv';
+        $handle = fopen('php://output', 'w');
+
+        // Set headers for download
+        header('Content-Type: text/csv');
+        header('Content-Disposition: attachment; filename="' . $fileName . '"');
+
+        // Write CSV header
+        fputcsv($handle, $headers);
+
+        // Write sample data
+        foreach ($sampleData as $row) {
+            fputcsv($handle, $row);
+        }
+
+        fclose($handle);
+        exit;
     }
 }

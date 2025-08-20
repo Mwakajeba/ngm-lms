@@ -290,7 +290,7 @@
             <div class="col-xl-8">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title mb-4">Cash Collateral Records</h5>
+                        <h5 class="card-title mb-4">Deposits Accounts Records</h5>
                         <hr class="my-4">
 
                         <div class="table-responsive">
