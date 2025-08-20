@@ -103,7 +103,7 @@
                                     </div>
                                 </div>
 
-                                <div class="col-12">
+                                <div class="col-6">
                                     <div class="d-flex align-items-center mb-3">
                                         <div class="bg-light rounded-circle p-2 me-3">
                                             <i class="bx bx-bookmark text-danger fs-5"></i>
@@ -111,6 +111,22 @@
                                         <div>
                                             <small class="text-muted d-block">Account Name</small>
                                             <span class="fw-bold text-dark fs-5">{{ $chartAccount->account_name }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+
+
+                                <div class="col-md-6">
+                                    <div class="d-flex align-items-center mb-3">
+                                        <div class="bg-light rounded-circle p-2 me-3">
+                                            <i class="bx bx-money text-success fs-5"></i>
+                                        </div>
+                                        <div>
+                                            <small class="text-muted d-block">Account Balance</small>
+                                            <span class="fw-bold text-dark fs-6 {{ $accountBalance >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format($accountBalance, 2) }}
+                                                <small class="text-muted ms-1">TZS</small>
+                                            </span>
                                         </div>
                                     </div>
                                 </div>
