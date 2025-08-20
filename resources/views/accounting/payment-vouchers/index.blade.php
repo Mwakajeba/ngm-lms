@@ -98,71 +98,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @forelse($paymentVouchers as $payment)
-                                            <tr>
-                                                <td>{{ $payment->formatted_date }}</td>
-                                                <td>
-                                                    <a href="{{ route('accounting.payment-vouchers.show', $payment->hash_id) }}"
-                                                        class="text-primary fw-bold">
-                                                        {{ $payment->reference }}
-                                                    </a>
-                                                </td>
-                                                <td>{{ $payment->bankAccount->name ?? 'N/A' }}</td>
-                                                <td>
-                                                    @if($payment->payee_type == 'customer' && $payment->customer)
-                                                        <span class="badge bg-primary me-1">Customer</span>
-                                                        {{ $payment->customer->name ?? 'N/A' }}
-                                                    @elseif($payment->payee_type == 'supplier' && $payment->supplier)
-                                                        <span class="badge bg-success me-1">Supplier</span>
-                                                        {{ $payment->supplier->name ?? 'N/A' }}
-                                                    @elseif($payment->payee_type == 'other')
-                                                        <span class="badge bg-warning me-1">Other</span>
-                                                        {{ $payment->payee_name ?? 'N/A' }}
-                                                    @else
-                                                        <span class="text-muted">No payee</span>
-                                                    @endif
-                                                </td>
-                                                <td>{{ Str::limit($payment->description, 50) ?: 'No description' }}</td>
-                                                <td class="text-end fw-bold">{{ $payment->formatted_amount }}</td>
-                                                <td>{!! $payment->status_badge !!}</td>
-                                                <td>
-                                                    <div class="d-flex gap-1">
-                                                        @can('view payment voucher details')
-                                                        <a href="{{ route('accounting.payment-vouchers.show', $payment->hash_id) }}"
-                                                            class="btn btn-sm btn-outline-success">
-                                                            <i class="bx bx-show"></i> View
-                                                        </a>
-                                                        @endcan
-                                                        @if($payment->reference_type === 'manual')
-                                                            @can('edit payment voucher')
-                                                            <a href="{{ route('accounting.payment-vouchers.edit', $payment->hash_id) }}"
-                                                                class="btn btn-sm btn-outline-info">
-                                                                <i class="bx bx-edit"></i> Edit
-                                                            </a>
-                                                            @endcan
-                                                            @can('delete payment voucher')
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                onclick="deletePaymentVoucher('{{ $payment->hash_id }}', '{{ $payment->reference }}')">
-                                                                <i class="bx bx-trash"></i> Delete
-                                                            </button>
-                                                            @endcan
-                                                        @else
-                                                            <button type="button" class="btn btn-sm btn-outlined-secondary" title="Edit/Delete locked: Source is {{ ucfirst($payment->reference_type) }} transaction" disabled>
-                                                                <i class="bx bx-lock"></i> Locked
-                                                            </button>
-                                                        @endif
-                                                    </div>
-                                                </td>
-                                            </tr>
-                                        @empty
-                                            <tr>
-                                                <td colspan="8" class="text-center text-muted py-4">
-                                                    <i class="bx bx-receipt font-size-48 mb-3"></i>
-                                                    <h6>No payment vouchers found</h6>
-                                                    <p class="mb-0">Create your first payment voucher to get started.</p>
-                                                </td>
-                                            </tr>
-                                        @endforelse
+                                        <!-- Data will be loaded via Ajax -->
                                     </tbody>
                                 </table>
                             </div>
@@ -177,83 +113,135 @@
 @push('scripts')
     <script>
         $(document).ready(function () {
-            // Initialize DataTable
-            $('#paymentVouchersTable').DataTable({
+            // Initialize DataTable with Ajax
+            var table = $('#paymentVouchersTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: {
+                    url: '{{ route("accounting.payment-vouchers.data") }}',
+                    type: 'GET',
+                    error: function(xhr, error, code) {
+                        console.error('DataTables Ajax Error:', error, code);
+                        Swal.fire({
+                            title: 'Error!',
+                            text: 'Failed to load payment vouchers data. Please refresh the page.',
+                            icon: 'error',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                },
+                columns: [
+                    { data: 'formatted_date', name: 'date', title: 'Date', orderable: true, searchable: true },
+                    { data: 'reference_link', name: 'reference', title: 'Reference', orderable: true, searchable: true },
+                    { data: 'bank_account_name', name: 'bankAccount.name', title: 'Bank Account', orderable: true, searchable: true },
+                    { data: 'payee_info', name: 'payee_info', title: 'Payee', orderable: false, searchable: false },
+                    { data: 'description_limited', name: 'description', title: 'Description', orderable: false, searchable: true },
+                    { data: 'formatted_amount', name: 'amount', title: 'Amount', orderable: true, searchable: false },
+                    { data: 'status_badge', name: 'approved', title: 'Status', orderable: true, searchable: false },
+                    { data: 'actions', name: 'actions', title: 'Actions', orderable: false, searchable: false }
+                ],
                 responsive: true,
+                order: [[0, 'desc']], // Sort by date descending by default
                 pageLength: 10,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
-                order: [[0, 'desc']], // Sort by date descending by default
+                language: {
+                    search: "",
+                    searchPlaceholder: "Search payment vouchers...",
+                    processing: '<div class="d-flex justify-content-center align-items-center p-3"><div class="spinner-border text-primary me-2" role="status"><span class="visually-hidden">Loading...</span></div><span class="text-primary">Loading payment vouchers...</span></div>',
+                    emptyTable: "No payment vouchers found",
+                    info: "Showing _START_ to _END_ of _TOTAL_ payment vouchers",
+                    infoEmpty: "Showing 0 to 0 of 0 payment vouchers",
+                    infoFiltered: "(filtered from _MAX_ total payment vouchers)",
+                    lengthMenu: "Show _MENU_ payment vouchers per page",
+                    zeroRecords: "No matching payment vouchers found"
+                },
                 columnDefs: [
                     {
                         targets: -1, // Actions column
                         orderable: false,
-                        searchable: false
+                        searchable: false,
+                        className: 'text-center',
+                        responsivePriority: 1
                     },
                     {
                         targets: 5, // Amount column
-                        className: 'text-end'
+                        className: 'text-end',
+                        responsivePriority: 2
+                    },
+                    {
+                        targets: [0, 1, 2], // Priority columns for responsive
+                        responsivePriority: 3
                     }
                 ],
-                language: {
-                    search: "Search:",
-                    lengthMenu: "Show _MENU_ entries per page",
-                    info: "Showing _START_ to _END_ of _TOTAL_ entries",
-                    infoEmpty: "Showing 0 to 0 of 0 entries",
-                    infoFiltered: "(filtered from _MAX_ total entries)",
-                    paginate: {
-                        first: "First",
-                        last: "Last",
-                        next: "Next",
-                        previous: "Previous"
-                    },
-                    emptyTable: "No payment vouchers found"
-                },
-                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                    '<"row"<"col-sm-12"tr>>' +
-                    '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-                initComplete: function () {
-                    // Add custom styling
-                    $('.dataTables_wrapper').addClass('mt-3');
+                dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
+                drawCallback: function(settings) {
+                    // Reinitialize tooltips after each draw
+                    $('[data-bs-toggle="tooltip"]').tooltip();
                 }
             });
 
-            // Delete payment voucher functionality with SweetAlert
-            function deletePaymentVoucher(hashId, reference) {
+            // Handle delete button clicks with event delegation
+            $('#paymentVouchersTable').on('click', '.delete-payment-btn', function () {
+                const paymentId = $(this).data('payment-id');
+                const paymentReference = $(this).data('payment-reference');
+
                 Swal.fire({
-                    title: 'Delete Payment Voucher',
-                    text: `Are you sure you want to delete payment voucher "${reference}"? This action cannot be undone.`,
+                    title: 'Are you sure?',
+                    text: `Do you want to delete payment voucher "${paymentReference}"? This action cannot be undone!`,
                     icon: 'warning',
                     showCancelButton: true,
-                    confirmButtonColor: '#dc3545',
-                    cancelButtonColor: '#6c757d',
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
                     confirmButtonText: 'Yes, delete it!',
-                    cancelButtonText: 'Cancel',
-                    reverseButtons: true
+                    cancelButtonText: 'Cancel'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        // Create and submit form
-                        const form = $('<form>', {
-                            'method': 'POST',
-                            'action': `/accounting/payment-vouchers/${hashId}`
+                        // Show loading
+                        Swal.fire({
+                            title: 'Deleting...',
+                            text: 'Please wait while we delete the payment voucher.',
+                            allowOutsideClick: false,
+                            allowEscapeKey: false,
+                            showConfirmButton: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
                         });
 
-                        form.append($('<input>', {
-                            'type': 'hidden',
-                            'name': '_token',
-                            'value': '{{ csrf_token() }}'
-                        }));
-
-                        form.append($('<input>', {
-                            'type': 'hidden',
-                            'name': '_method',
-                            'value': 'DELETE'
-                        }));
-
-                        $('body').append(form);
-                        form.submit();
+                        // Use AJAX instead of form submission to maintain loading state
+                        $.ajax({
+                            url: `/accounting/payment-vouchers/${paymentId}`,
+                            type: 'DELETE',
+                            data: {
+                                _token: '{{ csrf_token() }}'
+                            },
+                            success: function(response) {
+                                Swal.fire({
+                                    title: 'Deleted!',
+                                    text: 'Payment voucher has been deleted successfully.',
+                                    icon: 'success',
+                                    confirmButtonText: 'OK'
+                                }).then(() => {
+                                    table.ajax.reload(null, false); // Reload table without resetting pagination
+                                });
+                            },
+                            error: function(xhr) {
+                                let errorMessage = 'An error occurred while deleting the payment voucher.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                
+                                Swal.fire({
+                                    title: 'Error!',
+                                    text: errorMessage,
+                                    icon: 'error',
+                                    confirmButtonText: 'OK'
+                                });
+                            }
+                        });
                     }
                 });
-            }
+            });
         });
     </script>
 @endpush

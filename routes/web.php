@@ -235,6 +235,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Chart Accounts
     Route::get('/chart-accounts', [ChartAccountController::class, 'index'])->name('chart-accounts.index');
+    Route::get('/chart-accounts/data', [ChartAccountController::class, 'getChartAccountsData'])->name('chart-accounts.data');
     Route::get('/chart-accounts/create', [ChartAccountController::class, 'create'])->name('chart-accounts.create');
     Route::post('/chart-accounts', [ChartAccountController::class, 'store'])->name('chart-accounts.store');
     Route::get('/chart-accounts/{encodedId}', [ChartAccountController::class, 'show'])->name('chart-accounts.show');
@@ -242,9 +243,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::put('/chart-accounts/{encodedId}', [ChartAccountController::class, 'update'])->name('chart-accounts.update');
     Route::delete('/chart-accounts/{encodedId}', [ChartAccountController::class, 'destroy'])->name('chart-accounts.destroy');
 
-    // Suppliers
-    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
-    Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+            // Suppliers
+        Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+        Route::get('/suppliers/data', [SupplierController::class, 'getSuppliersData'])->name('suppliers.data');
+        Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
     Route::get('/suppliers/{encodedId}', [SupplierController::class, 'show'])->name('suppliers.show');
     Route::get('/suppliers/{encodedId}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
@@ -253,6 +255,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/suppliers/{encodedId}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
     // Payment Vouchers
+    Route::get('/payment-vouchers/data', [PaymentVoucherController::class, 'getPaymentVouchersData'])->name('payment-vouchers.data');
     Route::resource('payment-vouchers', PaymentVoucherController::class);
     Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
     Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
@@ -264,6 +267,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Receipt Vouchers
     Route::get('/receipt-vouchers', [ReceiptVoucherController::class, 'index'])->name('receipt-vouchers.index');
+    Route::get('/receipt-vouchers/data', [ReceiptVoucherController::class, 'getReceiptVouchersData'])->name('receipt-vouchers.data');
     Route::get('/receipt-vouchers/create', [ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
     Route::post('/receipt-vouchers', [ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
     Route::get('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');

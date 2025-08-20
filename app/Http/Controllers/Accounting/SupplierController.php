@@ -10,7 +10,9 @@ use App\Models\Region;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
 
 class SupplierController extends Controller
 {
@@ -19,16 +21,11 @@ class SupplierController extends Controller
         $user = auth()->user();
         $companyId = $user->company_id ?? null;
 
+        // Get stats only for dashboard display
         if ($companyId) {
-            $suppliers = Supplier::with(['company', 'branch', 'createdBy'])
-                ->byCompany($companyId)
-                ->orderBy('name')
-                ->get();
+            $suppliers = Supplier::byCompany($companyId);
         } else {
-            // If user doesn't have company_id, show all suppliers
-            $suppliers = Supplier::with(['company', 'branch', 'createdBy'])
-                ->orderBy('name')
-                ->get();
+            $suppliers = Supplier::query();
         }
 
         $stats = [
@@ -38,7 +35,121 @@ class SupplierController extends Controller
             'blacklisted' => $suppliers->where('status', 'blacklisted')->count(),
         ];
 
-        return view('accounting.suppliers.index', compact('suppliers', 'stats'));
+        return view('accounting.suppliers.index', compact('stats'));
+    }
+
+    // Ajax endpoint for DataTables
+    public function getSuppliersData(Request $request)
+    {
+        if ($request->ajax()) {
+            $user = auth()->user();
+            $companyId = $user->company_id ?? null;
+
+            if ($companyId) {
+                $suppliers = Supplier::with(['company', 'branch', 'createdBy'])
+                    ->byCompany($companyId)
+                    ->select('suppliers.*');
+            } else {
+                $suppliers = Supplier::with(['company', 'branch', 'createdBy'])
+                    ->select('suppliers.*');
+            }
+
+            return DataTables::eloquent($suppliers)
+                ->addColumn('supplier_name', function ($supplier) {
+                    return '<div class="d-flex align-items-center">
+                                <div class="avatar-sm bg-light-primary text-primary rounded-circle d-flex align-items-center justify-content-center me-3">
+                                    <i class="bx bx-store font-size-18"></i>
+                                </div>
+                                <div>
+                                    <h6 class="mb-0 fw-bold">' . e($supplier->name) . '</h6>
+                                    ' . ($supplier->company_registration_name ? '<small class="text-muted">' . e($supplier->company_registration_name) . '</small>' : '') . '
+                                </div>
+                            </div>';
+                })
+                ->addColumn('contact_info', function ($supplier) {
+                    $contact = '';
+                    if ($supplier->email) {
+                        $contact .= '<div><i class="bx bx-envelope me-1"></i>' . e($supplier->email) . '</div>';
+                    }
+                    if ($supplier->phone) {
+                        $contact .= '<div><i class="bx bx-phone me-1"></i>' . e($supplier->phone) . '</div>';
+                    }
+                    return $contact ?: '<span class="text-muted">No contact info</span>';
+                })
+                ->addColumn('location', function ($supplier) {
+                    return $supplier->address ? '<div><i class="bx bx-map me-1"></i>' . e($supplier->address) . '</div>' : '<span class="text-muted">No address</span>';
+                })
+                ->addColumn('business_details', function ($supplier) {
+                    $details = '';
+                    if ($supplier->tin_number) {
+                        $details .= '<div><strong>TIN:</strong> ' . e($supplier->tin_number) . '</div>';
+                    }
+                    if ($supplier->vat_number) {
+                        $details .= '<div><strong>VAT:</strong> ' . e($supplier->vat_number) . '</div>';
+                    }
+                    if ($supplier->products_or_services) {
+                        $details .= '<div><strong>Services:</strong> ' . e(Str::limit($supplier->products_or_services, 50)) . '</div>';
+                    }
+                    return $details ?: '<span class="text-muted">No business details</span>';
+                })
+                ->addColumn('status_badge', function ($supplier) {
+                    $statusColors = [
+                        'active' => 'success',
+                        'inactive' => 'warning',
+                        'blacklisted' => 'danger'
+                    ];
+                    $color = $statusColors[$supplier->status] ?? 'secondary';
+                    return '<span class="badge bg-' . $color . '">' . ucfirst($supplier->status) . '</span>';
+                })
+                ->addColumn('branch_name', function ($supplier) {
+                    return optional($supplier->branch)->name ?? '<span class="text-muted">No branch</span>';
+                })
+                ->addColumn('actions', function ($supplier) {
+                    $actions = '';
+                    $encodedId = Hashids::encode($supplier->id);
+                    
+                    // View action
+                    if (auth()->user()->can('view supplier details')) {
+                        $actions .= '<a href="' . route('accounting.suppliers.show', $encodedId) . '" 
+                                        class="btn btn-sm btn-outline-primary me-1" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="View supplier details">
+                                        <i class="bx bx-show"></i>
+                                    </a>';
+                    }
+                    
+                    // Edit action
+                    if (auth()->user()->can('edit supplier')) {
+                        $actions .= '<a href="' . route('accounting.suppliers.edit', $encodedId) . '" 
+                                        class="btn btn-sm btn-outline-warning me-1" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="Edit supplier">
+                                        <i class="bx bx-edit"></i>
+                                    </a>';
+                    }
+                    
+                    // Delete action
+                    if (auth()->user()->can('delete supplier')) {
+                        $actions .= '<button type="button"
+                                        class="btn btn-sm btn-outline-danger delete-supplier-btn"
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="Delete supplier"
+                                        data-supplier-id="' . $encodedId . '"
+                                        data-supplier-name="' . e($supplier->name) . '">
+                                        <i class="bx bx-trash"></i>
+                                    </button>';
+                    }
+                    
+                    return '<div class="text-center">' . $actions . '</div>';
+                })
+                ->rawColumns(['supplier_name', 'contact_info', 'location', 'business_details', 'status_badge', 'branch_name', 'actions'])
+                ->make(true);
+        }
+        
+        return response()->json(['error' => 'Invalid request'], 400);
     }
 
     public function create()

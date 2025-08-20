@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
 
 class ReceiptVoucherController extends Controller
 {
@@ -41,38 +42,15 @@ class ReceiptVoucherController extends Controller
     {
         $user = Auth::user();
 
-        // Get receipts for the current company/branch
-        $receipts = Receipt::with(['bankAccount', 'user', 'receiptItems'])
+        // Calculate stats only
+        $receipts = Receipt::with(['bankAccount.chartAccount.accountClassGroup'])
             ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
             ->when($user->branch_id, function ($query) use ($user) {
                 return $query->where('branch_id', $user->branch_id);
-            })
-            ->orderBy('date', 'desc')
-            ->get();
+            });
 
-        // Load customer relationships for receipts with payee_type = 'customer'
-        $customerReceiptIds = $receipts->where('payee_type', 'customer')->pluck('payee_id')->filter();
-        if ($customerReceiptIds->isNotEmpty()) {
-            $receipts->load([
-                'customer' => function ($query) use ($customerReceiptIds) {
-                    $query->whereIn('id', $customerReceiptIds);
-                }
-            ]);
-        }
-
-        // Load loan relationships for receipts with reference_type = 'loan'
-        $loanReceiptIds = $receipts->where('reference_type', 'loan')->pluck('reference')->filter();
-        if ($loanReceiptIds->isNotEmpty()) {
-            $receipts->load([
-                'loan' => function ($query) use ($loanReceiptIds) {
-                    $query->whereIn('id', $loanReceiptIds);
-                }
-            ]);
-        }
-
-        // Calculate stats
         $stats = [
             'total' => $receipts->count(),
             'this_month' => $receipts->where('date', '>=', now()->startOfMonth())->count(),
@@ -80,7 +58,110 @@ class ReceiptVoucherController extends Controller
             'this_month_amount' => $receipts->where('date', '>=', now()->startOfMonth())->sum('amount'),
         ];
 
-        return view('accounting.receipt-vouchers.index', compact('receipts', 'stats'));
+        return view('accounting.receipt-vouchers.index', compact('stats'));
+    }
+
+    // Ajax endpoint for DataTables
+    public function getReceiptVouchersData(Request $request)
+    {
+        $user = Auth::user();
+
+        $receipts = Receipt::with(['bankAccount', 'user', 'customer', 'loan'])
+            ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->when($user->branch_id, function ($query) use ($user) {
+                return $query->where('branch_id', $user->branch_id);
+            })
+            ->select('receipts.*');
+
+        return DataTables::eloquent($receipts)
+            ->addColumn('formatted_date', function ($receipt) {
+                return $receipt->date ? $receipt->date->format('M d, Y') : 'N/A';
+            })
+            ->addColumn('reference_link', function ($receipt) {
+                return '<a href="' . route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id)) . '" 
+                            class="text-primary fw-bold">
+                            ' . e($receipt->reference) . '
+                        </a>';
+            })
+            ->addColumn('bank_account_name', function ($receipt) {
+                return optional($receipt->bankAccount)->name ?? 'N/A';
+            })
+            ->addColumn('payee_info', function ($receipt) {
+                if ($receipt->payee_type == 'customer' && $receipt->customer) {
+                    return '<span class="badge bg-primary me-1">Customer</span>' . e($receipt->customer->name ?? 'N/A');
+                } elseif ($receipt->payee_type == 'supplier' && $receipt->supplier) {
+                    return '<span class="badge bg-success me-1">Supplier</span>' . e($receipt->supplier->name ?? 'N/A');
+                } elseif ($receipt->payee_type == 'other') {
+                    return '<span class="badge bg-warning me-1">Other</span>' . e($receipt->payee_name ?? 'N/A');
+                } else {
+                    return '<span class="text-muted">No payee</span>';
+                }
+            })
+            ->addColumn('description_limited', function ($receipt) {
+                return $receipt->description ? Str::limit($receipt->description, 50) : 'No description';
+            })
+            ->addColumn('formatted_amount', function ($receipt) {
+                return '<span class="text-end fw-bold">' . number_format($receipt->amount, 2) . '</span>';
+            })
+            ->addColumn('user_name', function ($receipt) {
+                return optional($receipt->user)->name ?? 'N/A';
+            })
+            ->addColumn('status_badge', function ($receipt) {
+                return $receipt->status_badge;
+            })
+            ->addColumn('actions', function ($receipt) {
+                $actions = '';
+                
+                // View action
+                if (auth()->user()->can('view receipt voucher details')) {
+                    $actions .= '<a href="' . route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id)) . '" 
+                                    class="btn btn-sm btn-outline-success me-1" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="View receipt voucher">
+                                    <i class="bx bx-show"></i>
+                                </a>';
+                }
+                
+                if ($receipt->reference_type === 'manual') {
+                    // Edit action
+                    if (auth()->user()->can('edit receipt voucher')) {
+                        $actions .= '<a href="' . route('accounting.receipt-vouchers.edit', Hashids::encode($receipt->id)) . '" 
+                                        class="btn btn-sm btn-outline-info me-1" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="Edit receipt voucher">
+                                        <i class="bx bx-edit"></i>
+                                    </a>';
+                    }
+                    
+                    // Delete action
+                    if (auth()->user()->can('delete receipt voucher')) {
+                        $actions .= '<button type="button" 
+                                        class="btn btn-sm btn-outline-danger delete-receipt-btn"
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="Delete receipt voucher"
+                                        data-receipt-id="' . Hashids::encode($receipt->id) . '"
+                                        data-receipt-reference="' . e($receipt->reference) . '">
+                                        <i class="bx bx-trash"></i>
+                                    </button>';
+                    }
+                } else {
+                    $actions .= '<button type="button" 
+                                    class="btn btn-sm btn-outline-secondary" 
+                                    title="Edit/Delete locked: Source is ' . ucfirst($receipt->reference_type) . ' transaction" 
+                                    disabled>
+                                    <i class="bx bx-lock"></i>
+                                </button>';
+                }
+                
+                return '<div class="text-center">' . $actions . '</div>';
+            })
+            ->rawColumns(['reference_link', 'payee_info', 'formatted_amount', 'status_badge', 'actions'])
+            ->make(true);
     }
 
     /**
