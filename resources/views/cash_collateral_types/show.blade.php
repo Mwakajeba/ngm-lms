@@ -1,13 +1,13 @@
 @extends('layouts.main')
 
-@section('title', 'Cash Collateral Type Details')
+@section('title', 'Cash Deposit Account Details')
 
 @section('content')
 <div class="page-wrapper">
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Deposit Accounts Types', 'url' => route('cash_collateral_types.index'), 'icon' => 'bx bx-credit-card'],
+            ['label' => 'Cash Deposit Accounts', 'url' => route('cash_collateral_types.index'), 'icon' => 'bx bx-credit-card'],
             ['label' => $cashCollateral->name, 'url' => '#', 'icon' => 'bx bx-info-circle']
         ]" />
         <!-- Header Section -->
@@ -16,7 +16,7 @@
                 <div class="d-flex justify-content-between align-items-center">
                     <h4 class="mb-0 text-dark fw-bold">
                         <i class="bx bx-bookmark me-2 text-primary"></i>
-                        Deposit Accounts Type Details
+                        Cash Deposit Account Details
                     </h4>
                     <div class="d-flex gap-2">
                         <a href="{{ route('cash_collateral_types.edit', $cashCollateral->id) }}" class="btn btn-primary">

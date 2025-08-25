@@ -19,6 +19,7 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -74,10 +75,10 @@ class LoanController extends Controller
                     return optional($loan->product)->name ?? 'N/A';
                 })
                 ->addColumn('formatted_amount', function ($loan) {
-                    return 'TZS ' . number_format($loan->amount, 2);
+                    return '' . number_format($loan->amount, 2);
                 })
                 ->addColumn('formatted_total', function ($loan) {
-                    return 'TZS ' . number_format($loan->amount_total, 2);
+                    return '' . number_format($loan->amount_total, 2);
                 })
                 ->addColumn('interest_display', function ($loan) {
                     return $loan->interest . '%';
@@ -166,8 +167,8 @@ class LoanController extends Controller
     {
         try {
             if ($type === 'new') {
-                // For new loans, get cash and bank accounts (assets)
-                $accounts = \App\Models\ChartAccount::whereHas('accountClassGroup', function ($query) {
+                // For new loans, get bank accounts linked to cash and bank chart accounts (assets)
+                $accounts = \App\Models\BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
                     $query->where('name', 'LIKE', '%cash%')
                           ->orWhere('name', 'LIKE', '%bank%')
                           ->orWhere('name', 'LIKE', '%Cash%')
@@ -175,9 +176,18 @@ class LoanController extends Controller
                           ->orWhere('name', 'LIKE', '%Asset%')
                           ->orWhere('name', 'LIKE', '%asset%');
                 })
-                ->select('id', 'account_name as name', 'account_code as account_number')
-                ->orderBy('account_name')
-                ->get();
+                ->with('chartAccount')
+                ->select('id', 'name', 'account_number')
+                ->orderBy('name')
+                ->get()
+                ->map(function($account) {
+                    return [
+                        'id' => $account->id,
+                        'name' => $account->name,
+                        'account_number' => $account->account_number,
+                        'chart_account' => $account->chartAccount ? $account->chartAccount->account_name : ''
+                    ];
+                });
                 
                 return response()->json([
                     'success' => true,
@@ -186,19 +196,28 @@ class LoanController extends Controller
                 ]);
                 
             } elseif ($type === 'old') {
-                // For old loans, get equity accounts
-                $accounts = \App\Models\ChartAccount::whereHas('accountClassGroup', function ($query) {
+                // For old loans, get bank accounts linked to equity chart accounts
+                $accounts = \App\Models\BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
                     $query->where('name', 'LIKE', '%equity%')
                           ->orWhere('name', 'LIKE', '%Equity%');
                 })
-                ->select('id', 'account_name as name', 'account_code as account_number')
-                ->orderBy('account_name')
-                ->get();
+                ->with('chartAccount')
+                ->select('id', 'name', 'account_number')
+                ->orderBy('name')
+                ->get()
+                ->map(function($account) {
+                    return [
+                        'id' => $account->id,
+                        'name' => $account->name,
+                        'account_number' => $account->account_number,
+                        'chart_account' => $account->chartAccount ? $account->chartAccount->account_name : ''
+                    ];
+                });
                 
                 return response()->json([
                     'success' => true,
                     'accounts' => $accounts,
-                    'type' => 'Equity Accounts'
+                    'type' => 'Bank Accounts (Equity)'
                 ]);
             }
             
@@ -270,30 +289,63 @@ class LoanController extends Controller
             $errorCount = 0;
             $skippedCount = 0;
             $errors = [];
+            
+            // Add debugging
+            \Log::info('Import started', [
+                'total_rows' => count($data),
+                'product_id' => $request->product_id,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+                'skip_errors' => $request->has('skip_errors')
+            ]);
 
-            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, &$successCount, &$errorCount, &$skippedCount, &$errors) {
+            $skipErrors = $request->has('skip_errors');
+
+            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, $skipErrors, &$successCount, &$errorCount, &$skippedCount, &$errors) {
                 foreach ($data as $rowIndex => $row) {
                     try {
                         $rowData = array_combine($header, $row);
+                        \Log::info('Processing row', ['row' => $rowIndex + 2, 'data' => $rowData]);
                         
                         // Validate each row
                         $validated = $this->validateLoanRow($rowData, $rowIndex + 2); // +2 for header and 0-based index
                         
                         if (isset($validated['error'])) {
+                            \Log::warning('Row validation failed', ['row' => $rowIndex + 2, 'error' => $validated['error']]);
                             // Check if it's a customer not found error (skip silently)
                             if (strpos($validated['error'], 'Customer number') !== false && strpos($validated['error'], 'not found') !== false) {
                                 $skippedCount++;
                                 // Log the skip but don't add to errors list for display
                                 error_log("Skipped row " . ($rowIndex + 2) . ": Customer number not found");
                             } else {
-                                $errors[] = $validated['error'];
-                                $errorCount++;
+                                if ($skipErrors) {
+                                    $skippedCount++;
+                                    \Log::info('Skipping row due to validation error', ['row' => $rowIndex + 2, 'error' => $validated['error']]);
+                                } else {
+                                    $errors[] = $validated['error'];
+                                    $errorCount++;
+                                }
                             }
                             continue;
                         }
 
+                        \Log::info('Row validated successfully', ['row' => $rowIndex + 2, 'validated' => $validated]);
+
                         // Check product limits
-                        $this->validateProductLimits($validated, $product);
+                        try {
+                            $this->validateProductLimits($validated, $product);
+                        } catch (\Exception $e) {
+                            \Log::warning('Product limits validation failed', ['row' => $rowIndex + 2, 'error' => $e->getMessage()]);
+                            if ($skipErrors) {
+                                $skippedCount++;
+                                \Log::info('Skipping row due to product limits error', ['row' => $rowIndex + 2]);
+                                continue;
+                            } else {
+                                $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                                $errorCount++;
+                                continue;
+                            }
+                        }
 
                         // Check collateral if required
                         if ($product->requiresCollateral()) {
@@ -301,9 +353,17 @@ class LoanController extends Controller
                             $availableCollateral = CashCollateral::getCashCollateralBalance($validated['customer_id']);
 
                             if ($availableCollateral < $requiredCollateral) {
-                                $errors[] = "Row " . ($rowIndex + 2) . ": Insufficient collateral. Required: " . number_format($requiredCollateral, 2) . ", Available: " . number_format($availableCollateral, 2);
-                                $errorCount++;
-                                continue;
+                                $errorMsg = "Row " . ($rowIndex + 2) . ": Insufficient collateral. Required: " . number_format($requiredCollateral, 2) . ", Available: " . number_format($availableCollateral, 2);
+                                \Log::warning('Collateral validation failed', ['row' => $rowIndex + 2, 'error' => $errorMsg]);
+                                if ($skipErrors) {
+                                    $skippedCount++;
+                                    \Log::info('Skipping row due to insufficient collateral', ['row' => $rowIndex + 2]);
+                                    continue;
+                                } else {
+                                    $errors[] = $errorMsg;
+                                    $errorCount++;
+                                    continue;
+                                }
                             }
                         }
 
@@ -314,18 +374,34 @@ class LoanController extends Controller
                             ->first();
 
                         if ($existingLoan) {
-                            $errors[] = "Row " . ($rowIndex + 2) . ": Customer already has an active loan for this product";
-                            $errorCount++;
-                            continue;
+                            $errorMsg = "Row " . ($rowIndex + 2) . ": Customer already has an active loan for this product";
+                            \Log::warning('Existing loan check failed', ['row' => $rowIndex + 2, 'error' => $errorMsg]);
+                            if ($skipErrors) {
+                                $skippedCount++;
+                                \Log::info('Skipping row due to existing active loan', ['row' => $rowIndex + 2]);
+                                continue;
+                            } else {
+                                $errors[] = $errorMsg;
+                                $errorCount++;
+                                continue;
+                            }
                         }
 
                         // Create loan using the same logic as store method
+                        \Log::info('Creating loan', ['row' => $rowIndex + 2, 'customer_id' => $validated['customer_id']]);
                         $this->createLoanFromImport($validated, $product, $request->account_id, $userId, $branchId);
                         $successCount++;
+                        \Log::info('Loan created successfully', ['row' => $rowIndex + 2, 'success_count' => $successCount]);
 
                     } catch (\Exception $e) {
-                        $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
-                        $errorCount++;
+                        \Log::error('Error creating loan', ['row' => $rowIndex + 2, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+                        if ($skipErrors) {
+                            $skippedCount++;
+                            \Log::info('Skipping row due to creation error', ['row' => $rowIndex + 2, 'error' => $e->getMessage()]);
+                        } else {
+                            $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                            $errorCount++;
+                        }
                     }
                 }
             });

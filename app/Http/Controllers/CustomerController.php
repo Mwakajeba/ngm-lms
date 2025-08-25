@@ -14,6 +14,7 @@ use App\Models\Filetype;
 use App\Services\LoanPenaltyService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
@@ -107,24 +108,24 @@ class CustomerController extends Controller
     // Show form to create a new customer
     public function create()
     {
-        $branchId = auth()->user()->branch_id;
-        $loanOfficers = User::where('branch_id', $branchId)->get();
-        $filetypes = Filetype::orderBy('name')->get();
+    $branchId = auth()->user()->branch_id;
+    $loanOfficers = User::where('branch_id', $branchId)->get();
+    $filetypes = Filetype::orderBy('name')->get();
+    $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
+    $branches = Branch::all();
+    $companies = Company::all();
+    $registrars = User::all();
+    $regions = Region::all();
+    $groups = \App\Models\Group::where('branch_id', $branchId)->get();
 
-        $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
-        $branches = Branch::all();
-        $companies = Company::all();
-        $registrars = User::all();
-        $regions = Region::all();
-
-        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes'));
+    return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'groups'));
     }
 
     // Store a new customer
     public function store(Request $request)
     {
         // Basic validation rules
-        $rules = [
+    $rules = [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'phone1' => 'required|string|max:20',
@@ -139,6 +140,7 @@ class CustomerController extends Controller
             'idNumber' => 'nullable|string|max:100',
             'relation' => 'nullable|string|max:255',
             'category' => 'required|in:Guarantor,Borrower',
+            'group_id' => 'nullable|exists:groups,id',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
             'loan_officer_ids' => 'nullable|array',
             'loan_officer_ids.*' => 'exists:users,id',
@@ -155,7 +157,7 @@ class CustomerController extends Controller
         $validated = $request->validate($rules);
 
         // Prepare customer data
-        $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents']);
+    $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents', 'group_id']);
         $data['category'] = $request->category;
         $password = 12345;
         $date = now()->toDateString();
@@ -181,6 +183,18 @@ class CustomerController extends Controller
         DB::beginTransaction();
         try {
             $customer = \App\Models\Customer::create($data);
+
+            // Save group membership
+            if ($request->filled('group_id')) {
+                DB::table('group_members')->insert([
+                    'group_id' => $request->group_id,
+                    'customer_id' => $customer->id,
+                    'status' => 'active',
+                    'joined_date' => now()->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
 
             // Attach loan officers
             if ($request->has('loan_officer_ids')) {
@@ -605,5 +619,80 @@ class CustomerController extends Controller
         };
 
         return response()->stream($callback, 200, $headers);
+    }
+    
+    /**
+     * Send SMS message to customer
+     */
+    public function sendMessage(Request $request, $customerId)
+    {
+        try {
+            // Decode the customer ID
+            $decodedId = Hashids::decode($customerId);
+            if (empty($decodedId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid customer ID'
+                ], 400);
+            }
+            
+            $customer = Customer::findOrFail($decodedId[0]);
+            
+            // Validate request
+            $request->validate([
+                'phone_number' => 'required|string',
+                'message_content' => 'required|string|max:500',
+            ]);
+            
+            $phoneNumber = $request->phone_number;
+            $message = $request->message_content;
+            
+            // Use phone number as provided since it's already in clean format
+            // Remove any spaces, dashes, or special characters except +
+            $phoneNumber = preg_replace('/[^0-9+]/', '', $phoneNumber);
+            
+            // Ensure phone number is not empty after cleaning
+            if (empty($phoneNumber)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Invalid phone number provided.'
+                ], 400);
+            }
+            
+            // Send SMS using SmsHelper
+            $smsResponse = \App\Helpers\SmsHelper::send($phoneNumber, $message);
+            
+            // Log the SMS activity (optional)
+            \DB::table('sms_logs')->insert([
+                'customer_id' => $customer->id,
+                'phone_number' => $phoneNumber,
+                'message' => $message,
+                'response' => $smsResponse,
+                'sent_by' => auth()->id(),
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'SMS sent successfully to ' . $customer->name,
+                'response' => $smsResponse
+            ]);
+            
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors()
+            ], 422);
+        } catch (\Exception $e) {
+            \Log::error('SMS sending failed: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to send SMS: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Cash Collateral Deposit')
+@section('title', 'Cash Deposit')
 
 @section('content')
 <div class="page-wrapper">
@@ -18,7 +18,7 @@
 
         <div class="card">
             <div class="card-body">
-                <form action="{{ route('cash_collaterals.depositStore') }}" method="POST">
+                <form action="{{ route('cash_collaterals.depositStore') }}" method="POST" id="depositForm">
                     @csrf
                     <input type="hidden" name="collateral_id" value="{{ Hashids::encode($collateral->id) }}" />
 
@@ -70,12 +70,13 @@
                             @enderror
                         </div>
                         <div class="col-md-12 mb-3">
-                            <label for="notes" class="form-label">Notes (Optional)</label>
+                            <label for="notes" class="form-label">Notes <span class="text-danger">*</span></label>
                             <textarea class="form-control"
                                 id="notes"
                                 name="notes"
                                 rows="3"
-                                placeholder="Enter any additional notes about this deposit">{{ old('notes') }}</textarea>
+                                placeholder="Enter notes about this deposit"
+                                required>{{ old('notes') }}</textarea>
                             @error('notes')
                             <span class="text-danger">{{ $message }}</span>
                             @enderror
@@ -83,16 +84,17 @@
                     </div>
 
                     <div class="row mt-4">
-                        @can('view borrower profile')
                         <div class="col-md-6">
                             <a href="{{ route('customers.show', Hashids::encode($customer->id))}}" class="btn btn-secondary">
-                                <i class="bx bx-arrow-back me-1"></i> Back
+                                <i class="bx bx-arrow-back me-1"></i> Cancel
                             </a>
                         </div>
-                        @endcan
                         <div class="col-md-6 text-end">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bx bx-save me-1"></i> Process Deposit
+                            <button type="submit" class="btn btn-primary" id="submitBtn">
+                                <span class="btn-text">
+                                    <i class="bx bx-save me-1"></i> Process Deposit
+                                </span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                             </button>
                         </div>
                     </div>
@@ -107,13 +109,51 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        const form = $('#depositForm');
+        const submitBtn = $('#submitBtn');
+        const btnText = submitBtn.find('.btn-text');
+        const spinner = submitBtn.find('.spinner-border');
+
         // Auto-select today's date if not already set
         if (!$('#deposit_date').val()) {
             $('#deposit_date').val(new Date().toISOString().split('T')[0]);
         }
 
-        // Format amount input
-        
+        // Handle form submission with loading state
+        form.on('submit', function(e) {
+            // Disable the submit button to prevent double submission
+            submitBtn.prop('disabled', true);
+            
+            // Show loading state
+            btnText.html('<i class="bx bx-loader-alt bx-spin me-1"></i> Processing...');
+            spinner.removeClass('d-none');
+            
+            // Add loading class for visual feedback
+            submitBtn.addClass('loading');
+        });
+
+        // Re-enable button if form validation fails (page doesn't redirect)
+        setTimeout(function() {
+            if (submitBtn.prop('disabled')) {
+                submitBtn.prop('disabled', false);
+                btnText.html('<i class="bx bx-save me-1"></i> Process Deposit');
+                spinner.addClass('d-none');
+                submitBtn.removeClass('loading');
+            }
+        }, 5000); // Reset after 5 seconds if still on page
     });
 </script>
+
+<style>
+    .btn.loading {
+        position: relative;
+        pointer-events: none;
+    }
+    
+    .btn .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        margin-left: 0.5rem;
+    }
+</style>
 @endpush

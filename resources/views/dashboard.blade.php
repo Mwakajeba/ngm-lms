@@ -75,17 +75,24 @@ use Vinkla\Hashids\Facades\Hashids;
                             <div class="col-md-8">
                                 <div class="card-title d-flex align-items-center">
                                     <div><i class="bx bx-home me-1 font-22 text-primary"></i></div>
-                                    <h5 class="mb-0 text-primary">Welcome back, {{ auth()->user()->name }}!</h5>
+                                    <h5 class="mb-0 text-primary">Welcome back, {{ auth()->user()->name }}!
+                                        <span class="badge bg-warning text-dark ms-2" style="font-size: 1rem; vertical-align: middle;">
+                                            Branch: {{ session('branch_id') ? optional(auth()->user()->branches->where('id', session('branch_id'))->first())->name : (auth()->user()->branch->name ?? 'N/A') }}
+                                        </span>
+                                    </h5>
                                 </div>
                                 <p class="mb-0 text-muted">Here's what's happening with your financial data today</p>
                             </div>
                             <div class="col-md-4 text-end">
                                 <div class="d-flex gap-2 justify-content-end">
-                                    <a href="{{ route('customers.create') }}" class="btn btn-primary">
-                                        <i class="bx bx-user-plus me-1"></i> Create Customer
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#bulkSmsModal">
+                                        <i class="bx bx-envelope"></i> SMS
+                                    </button>
+                                    <a href="{{ route('customers.create') }}" class="btn btn-sm btn-primary">
+                                        <i class="bx bx-user-plus"></i> Create Customer
                                     </a>
-                                    <a href="{{ route('loans.create') }}" class="btn btn-success">
-                                        <i class="bx bx-money me-1"></i> Create Loan
+                                    <a href="{{ route('loans.create') }}" class="btn btn-sm btn-success">
+                                        <i class="bx bx-money"></i> Create Loan
                                     </a>
                                 </div>
                             </div>
@@ -535,7 +542,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                     @foreach($financialReportData['chartAccountsLiabilities'] as $groupName => $accounts)
                                                     @php $groupTotal = collect($accounts)->sum(fn($account) => $account['sum'] ?? 0); @endphp
                                                     @if($groupTotal != 0)
-                                                    <tr class="table-dark">
+                                                    <tr class="table-secondary">
                                                         <td colspan="4" class="fw-bold text-dark">{{ $groupName }}</td>
                                                     </tr>
                                                     @foreach($accounts as $chartAccountLiability)
@@ -774,6 +781,168 @@ use Vinkla\Hashids\Facades\Hashids;
         </div>
         @endcan
 
+        <!-- Send Bulk SMS Button -->
+        <div class="d-flex justify-content-end mb-3">
+            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#bulkSmsModal">
+                <i class="bx bx-envelope"></i> Send Bulk SMS
+            </button>
+        </div>
+
+        <!-- Bulk SMS Modal -->
+        <div class="modal fade" id="bulkSmsModal" tabindex="-1" aria-labelledby="bulkSmsModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="bulkSmsModalLabel">
+                            <i class="bx bx-envelope me-2"></i>Send Bulk SMS
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="bulkSmsForm" action="{{ route('sms.bulk') }}" method="POST">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="branch_id" class="form-label">Select Branch</label>
+                                <select class="form-select" id="branch_id" name="branch_id" required>
+                                    <option value="all">All Branches</option>
+                                    @foreach(App\Models\Branch::all() as $branch)
+                                        <option value="{{ $branch->id }}">{{ $branch->name }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="mb-3">
+                                <label for="message_title" class="form-label fw-bold">Message Title</label>
+                                <select class="form-select" id="message_title" name="message_title" required>
+                                    <option value="">Select a title...</option>
+                                    <option value="Payment Reminder">Payment Reminder</option>
+                                    <option value="Loan Approved">Loan Approved</option>
+                                    <option value="Loan Disbursed">Loan Disbursed</option>
+                                    <option value="Custom">Custom Title</option>
+                                </select>
+                                <div class="form-text">Choose a title for this SMS batch or select Custom to enter your own.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="bulk_message_content" class="form-label">Message Content</label>
+                                <textarea class="form-control" id="bulk_message_content" name="bulk_message_content" rows="4" maxlength="500" required></textarea>
+                                <div class="form-text"><span id="bulk_character_count">0</span>/500 characters</div>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bx bx-x me-1"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="sendBulkSmsBtn">
+                                <i class="bx bx-send me-1"></i>Send Bulk SMS
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+        <script>
+        // Character counter for bulk SMS
+        function updateBulkCharacterCount() {
+            const bulkMessageContent = document.getElementById('bulk_message_content');
+            const bulkCharacterCount = document.getElementById('bulk_character_count');
+            const count = bulkMessageContent.value.length;
+            bulkCharacterCount.textContent = count;
+            if (count > 500) {
+                bulkCharacterCount.style.color = 'red';
+            } else if (count > 450) {
+                bulkCharacterCount.style.color = 'orange';
+            } else {
+                bulkCharacterCount.style.color = 'green';
+            }
+        }
+        document.getElementById('bulk_message_content').addEventListener('input', updateBulkCharacterCount);
+
+        // Bulk SMS form submission
+        const bulkSmsForm = document.getElementById('bulkSmsForm');
+        bulkSmsForm.addEventListener('submit', function(e) {
+            e.preventDefault();
+            const sendBtn = document.getElementById('sendBulkSmsBtn');
+            const originalText = sendBtn.innerHTML;
+            const modal = document.getElementById('bulkSmsModal');
+            const formElements = modal.querySelectorAll('input, textarea, select, button');
+            const closeBtn = modal.querySelector('.btn-close');
+            // Show loading state and disable all form elements
+            sendBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Sending...';
+            sendBtn.disabled = true;
+            formElements.forEach(element => { element.disabled = true; });
+            if (closeBtn) closeBtn.disabled = true;
+            const modalBody = modal.querySelector('.modal-body');
+            modalBody.style.opacity = '0.7';
+            // Submit the form via AJAX
+            fetch(this.action, {
+                method: 'POST',
+                body: new FormData(this),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let responseMsg = '';
+                if (typeof data.response === 'string') {
+                    try {
+                        const parsed = JSON.parse(data.response);
+                        responseMsg = parsed.message || data.message || '';
+                    } catch (e) {
+                        responseMsg = data.response || data.message || '';
+                    }
+                } else if (typeof data.response === 'object' && data.response !== null) {
+                    responseMsg = data.response.message || data.message || '';
+                } else {
+                    responseMsg = data.message || '';
+                }
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Bulk SMS Sent!',
+                        html: `<div><b>${responseMsg}</b></div>`,
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+                    bulkSmsForm.reset();
+                    updateBulkCharacterCount();
+                    const modalInstance = bootstrap.Modal.getInstance(modal);
+                    modalInstance.hide();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed to Send Bulk SMS',
+                        text: responseMsg || 'Unknown error occurred',
+                        confirmButtonColor: '#dc3545',
+                        footer: 'Please try again or contact support if the problem persists.'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Connection Error',
+                    text: 'Failed to send bulk SMS due to connection issues.',
+                    confirmButtonColor: '#dc3545',
+                    footer: 'Please check your internet connection and try again.'
+                });
+            })
+            .finally(() => {
+                sendBtn.innerHTML = originalText;
+                sendBtn.disabled = false;
+                formElements.forEach(element => { element.disabled = false; });
+                if (closeBtn) closeBtn.disabled = false;
+                modalBody.style.opacity = '1';
+            });
+        });
+        </script>
+        @endpush
     </div>
 </div>
 @endcan

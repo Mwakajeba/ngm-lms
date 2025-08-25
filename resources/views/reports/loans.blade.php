@@ -29,9 +29,9 @@
                                         </div>
                                         <h5 class="card-title">Loan Portfolio Report</h5>
                                         <p class="card-text">Comprehensive overview of all active loans and their status.</p>
-                                        <button class="btn btn-primary" disabled>
-                                            <i class="bx bx-file me-1"></i> Coming Soon
-                                        </button>
+                                        <a href="{{ route('accounting.loans.reports.portfolio') }}" class="btn btn-primary">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -44,9 +44,9 @@
                                         </div>
                                         <h5 class="card-title">Loan Performance Report</h5>
                                         <p class="card-text">Analyze loan performance metrics and repayment trends.</p>
-                                        <button class="btn btn-success" disabled>
-                                            <i class="bx bx-file me-1"></i> Coming Soon
-                                        </button>
+                                        <a href="{{ route('accounting.loans.reports.performance') }}" class="btn btn-success">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -59,9 +59,9 @@
                                         </div>
                                         <h5 class="card-title">Delinquency Report</h5>
                                         <p class="card-text">Track overdue loans and payment delinquencies.</p>
-                                        <button class="btn btn-warning" disabled>
-                                            <i class="bx bx-file me-1"></i> Coming Soon
-                                        </button>
+                                        <a href="{{ route('accounting.loans.reports.delinquency') }}" class="btn btn-warning">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
                                     </div>
                                 </div>
                             </div>
@@ -109,6 +109,22 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-dark">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-calendar-check fs-1 text-dark"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Aging Installment Report</h5>
+                                        <p class="card-text">Analyze outstanding installment principal amounts and aging buckets for scheduled payments</p>
+                                        <a href="{{ route('accounting.loans.reports.loan_aging_installment') }}" class="btn btn-dark">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-info">
                                     <div class="card-body text-center">
@@ -118,6 +134,66 @@
                                         <h5 class="card-title">Loan Outstanding Balance Report</h5>
                                         <p class="card-text">View all loans with their current outstanding balances and details.</p>
                                         <a href="{{ route('accounting.loans.reports.loan_outstanding') }}" class="btn btn-info">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-error-circle fs-1 text-warning"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Arrears Report</h5>
+                                        <p class="card-text">Track loans that are in arrears with overdue payments and arrears analysis.</p>
+                                        <a href="{{ route('accounting.loans.reports.loan_arrears') }}" class="btn btn-warning">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-bar-chart-alt-2 fs-1 text-primary"></i>
+                                        </div>
+                                        <h5 class="card-title">Expected vs Collected Report</h5>
+                                        <p class="card-text">Compare expected collections from loan schedules against actual collections for any period.</p>
+                                        <a href="{{ route('accounting.loans.reports.expected_vs_collected') }}" class="btn btn-primary">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-danger">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-shield-x fs-1 text-danger"></i>
+                                        </div>
+                                        <h5 class="card-title">Portfolio at Risk (PAR) Report</h5>
+                                        <p class="card-text">Assess portfolio risk with PAR analysis showing loans past due and risk indicators.</p>
+                                        <a href="{{ route('accounting.loans.reports.portfolio_at_risk') }}" class="btn btn-danger">
+                                            <i class="bx bx-file me-1"></i> Generate Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-analyze fs-1 text-info"></i>
+                                        </div>
+                                        <h5 class="card-title">Internal Portfolio Analysis</h5>
+                                        <p class="card-text">Conservative risk analysis showing only overdue amounts at risk for detailed internal assessment.</p>
+                                        <a href="{{ route('accounting.loans.reports.internal_portfolio_analysis') }}" class="btn btn-info">
                                             <i class="bx bx-file me-1"></i> Generate Report
                                         </a>
                                     </div>

@@ -1,5 +1,5 @@
 @extends('layouts.main')
-@section('title', 'Edit Cash Collateral')
+@section('title', 'Edit Cash Deposit')
 
 @section('content')
 <div class="page-wrapper">

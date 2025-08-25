@@ -264,7 +264,7 @@ use Vinkla\Hashids\Facades\Hashids;
             <div class="card-body">
                 @if($group->members->count() > 0)
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table id="groupMembersTable" class="table table-hover">
                         <thead>
                             <tr>
                                 <th>Member</th>
@@ -273,41 +273,6 @@ use Vinkla\Hashids\Facades\Hashids;
                                 <th class="text-center">Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($group->members as $member)
-                            <tr>
-                                <td>
-                                    <div class="d-flex align-items-center">
-                                        <div
-                                            class="avatar-sm bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-2">
-                                            <i class="bx bx-user font-size-16"></i>
-                                        </div>
-                                        <div>
-                                            <strong>{{ $member->customer->name }}</strong>
-                                            <br>
-                                            <small
-                                                class="text-muted">{{ $member->customer->phone ?? 'No phone' }}</small>
-                                        </div>
-                                    </div>
-                                </td>
-                                <td>{{ $member->joined_date->format('M d, Y') }}</td>
-                                <td>
-                                    <small class="text-muted">{{ Str::limit($member->notes, 50) }}</small>
-                                </td>
-                                <td class="text-center">
-                                    <div class="btn-group" role="group">
-                                        <button type="button" class="btn btn-sm btn-outline-danger"
-                                            onclick="removeMember('{{ Hashids::encode($group->id) }}', {{ $member->id }}, '{{ $member->customer->name }}')"
-                                            title="Remove Member"
-                                            @if($member->customer->loans()->where('status', 'active')->exists()) disabled @endif>
-                                            <i class="bx bx-trash"></i>
-                                        </button>
-                                    </div>
-                                </td>
-
-                            </tr>
-                            @endforeach
-                        </tbody>
                     </table>
                 </div>
                 @else
@@ -338,42 +303,23 @@ use Vinkla\Hashids\Facades\Hashids;
                 </h5>
             </div>
             <div class="card-body">
-                @if(isset($loans) && $loans->count() > 0)
                 <div class="table-responsive">
-                    <table class="table table-hover">
+                    <table id="groupLoansTable" class="table table-striped table-bordered">
                         <thead>
                             <tr>
-                                <th>Loan ID</th>
+                                <th>Loan No</th>
+                                <th>Customer No</th>
                                 <th>Customer</th>
-                                <th>Amount</th>
-                                <th>Status</th>
-                                <th>Created Date</th>
+                                <th>Amount (with Interest)</th>
+                                <th>Total Paid</th>
+                                <th>Outstanding Balance</th>
+                                <th>Disbursed On</th>
+                                <th>Expiry</th>
+                                <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
-                            @foreach($loans as $loan)
-                            <tr>
-                                <td><strong>#{{ $loan->id ?? 'N/A' }}</strong></td>
-                                <td>{{ $loan->customer->name ?? 'N/A' }}</td>
-                                <td>{{ number_format($loan->amount ?? 0, 2) }}</td>
-                                <td>
-                                    <span class="badge bg-{{ $loan->status == 'active' ? 'success' : 'secondary' }}">
-                                        {{ ucfirst($loan->status ?? 'N/A') }}
-                                    </span>
-                                </td>
-                                <td>{{ $loan->created_at ? $loan->created_at->format('M d, Y') : 'N/A' }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
                     </table>
                 </div>
-                @else
-                <div class="text-center py-4">
-                    <i class="bx bx-credit-card text-muted" style="font-size: 3rem;"></i>
-                    <h5 class="text-muted mt-3">No Loans Associated</h5>
-                    <p class="text-muted">This group doesn't have any associated loans yet.</p>
-                </div>
-                @endif
             </div>
         </div>
     </div>
@@ -441,6 +387,24 @@ use Vinkla\Hashids\Facades\Hashids;
 
 @push('scripts')
 <script>
+$(document).ready(function() {
+    $('#groupMembersTable').DataTable({
+        processing: true,
+        serverSide: false,
+        ajax: {
+            url: '{{ url('group-members-ajax/' . $group->id) }}',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'member', orderable: false, searchable: true },
+            { data: 'joined_date' },
+            { data: 'notes', orderable: false, searchable: true },
+            { data: 'actions', orderable: false, searchable: false }
+        ]
+    });
+});
+</script>
+<script>
     function removeMember(groupId, memberId, memberName) {
         Swal.fire({
             title: 'Remove Member?',
@@ -475,5 +439,38 @@ use Vinkla\Hashids\Facades\Hashids;
             }
         });
     }
+</script>
+@endpush
+
+@push('scripts')
+<script>
+$(document).ready(function() {
+    $('#groupLoansTable').DataTable({
+        processing: true,
+        serverSide: false,
+        ajax: {
+            url: '{{ url('group-loans-ajax/' . $group->id) }}',
+            dataSrc: 'data'
+        },
+        columns: [
+            { data: 'loan_no' },
+            { data: 'customer_no' },
+            { data: 'customer' },
+            { data: 'amount_with_interest' },
+            { data: 'total_paid' },
+            { data: 'outstanding' },
+            { data: 'disbursed_on' },
+            { data: 'last_repayment_date' },
+            {
+                data: 'show_url',
+                orderable: false,
+                searchable: false,
+                render: function(data, type, row) {
+                    return '<a href="' + data + '" class="btn btn-sm btn-info">View</a>';
+                }
+            }
+        ]
+    });
+});
 </script>
 @endpush

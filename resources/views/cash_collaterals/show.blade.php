@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Cash Collateral Details')
+@section('title', 'Cash Deposit Details')
 
 @section('content')
 <div class="page-wrapper">
@@ -78,7 +78,7 @@
                         </div>
                     </div>
                     <div class="card-body">
-                        @if($transactions->count() > 0)
+                        @if($transactions->count() > 0 || true)
                         <div class="table-responsive">
                             <table class="table table-bordered dt-responsive nowrap" id="transactionsTable">
                                 <thead class="table-light">
@@ -94,70 +94,7 @@
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach($transactions as $transaction)
-                                    <tr>
-                                        <td>{{ $transaction['date']->format('d/m/Y') }}</td>
-                                        <td>
-                                            @if($transaction['type'] === 'Deposit')
-                                            <span class="badge bg-success">
-                                                <i class="bx bx-plus me-1"></i> Deposit
-                                            </span>
-                                            @else
-                                            <span class="badge bg-warning">
-                                                <i class="bx bx-minus me-1"></i> Withdrawal
-                                            </span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $transaction['description'] }}</td>
-                                        <td>
-                                            <span class="fw-bold {{ $transaction['type'] === 'Deposit' ? 'text-success' : 'text-danger' }}">
-                                                TSHS {{ number_format($transaction['amount'], 2) }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="fw-bold {{ $transaction['balance'] >= 0 ? 'text-success' : 'text-danger' }}">
-                                                TSHS {{ number_format($transaction['balance'], 2) }}
-                                            </span>
-                                        </td>
-                                        <td>{{ $transaction['bank_account'] }}</td>
-                                        <td>{{ $transaction['user'] }}</td>
-                                        <td>
-                                            <div class="btn-group" role="group">
-                                                @if($transaction['type'] === 'Deposit')
-                                                @can('edit transaction')
-                                                <a href="{{ route('receipts.edit', Hashids::encode($transaction['id'])) }}"
-                                                    class="btn btn-sm btn-outline-primary"
-                                                    title="Edit Deposit">
-                                                    <i class="bx bx-edit"></i>
-                                                </a>
-                                                @else
-                                                <a href="{{ route('payments.edit', Hashids::encode($transaction['id'])) }}"
-                                                    class="btn btn-sm btn-outline-primary"
-                                                    title="Edit Withdrawal">
-                                                    <i class="bx bx-edit"></i>
-                                                </a>
-                                                @endcan
-                                                @endif
-
-                                                @php
-                                                $encodedId = Hashids::encode($transaction['id']);
-                                                @endphp
-
-
-
-                                                @can('delete transaction')
-                                                <button type="button"
-                                                    class="btn btn-sm btn-outline-danger"
-                                                    onclick="deleteTransaction('{{ $encodedId }}', '{{ $transaction['type'] }}', '{{ $transaction['transaction_type'] }}')"
-                                                    title="Delete Transaction">
-                                                    <i class="bx bx-trash"></i>
-                                                </button>
-                                                @endcan
-
-                                            </div>
-                                        </td>
-                                    </tr>
-                                    @endforeach
+                                    <!-- Data will be loaded via Ajax -->
                                 </tbody>
                             </table>
                         </div>
@@ -165,7 +102,7 @@
                         <div class="text-center py-5">
                             <i class="bx bx-money bx-lg text-muted mb-3"></i>
                             <h5 class="text-muted">No transactions found</h5>
-                            <p class="text-muted">No deposits or withdrawals have been made for this cash collateral yet.</p>
+                            <p class="text-muted">No deposits or withdrawals have been made for this cash deposit yet.</p>
                             @can('deposit cash collateral')
                             <a href="{{ route('cash_collaterals.deposit', Hashids::encode($cashCollateral->id)) }}"
                                 class="btn btn-primary">
@@ -233,7 +170,7 @@
 <!-- Hidden div for PDF content -->
 <div id="pdfContent" style="display: none;">
     <div style="text-align: center; margin-bottom: 20px;">
-        <h2>Cash Collateral Transaction Report</h2>
+        <h2>Cash Deposit Transaction Report</h2>
         <p><strong>Customer:</strong> {{ $cashCollateral->customer->name }}</p>
         <p><strong>Type:</strong> {{ $cashCollateral->type->name }}</p>
         <p><strong>Current Balance:</strong> TSHS {{ number_format($cashCollateral->amount, 2) }}</p>
@@ -281,7 +218,7 @@
         printWindow.document.write(`
             <html>
                 <head>
-                    <title>Cash Collateral Transactions - {{ $cashCollateral->customer->name }}</title>
+                    <title>Cash Deposit Transactions - {{ $cashCollateral->customer->name }}</title>
                     <style>
                         body { font-family: Arial, sans-serif; margin: 20px; }
                         table { width: 100%; border-collapse: collapse; margin-top: 20px; }
@@ -362,27 +299,65 @@
 <script>
     $(document).ready(function() {
         $('#transactionsTable').DataTable({
-            responsive: true,
-            order: [
-                [1, 'desc']
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route("cash_collaterals.show", Hashids::encode($cashCollateral->id)) }}',
+                type: 'GET',
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest'
+                }
+            },
+            columns: [
+                { data: 'formatted_date', name: 'date', title: 'Date' },
+                { data: 'type_badge', name: 'type', title: 'Type', orderable: false },
+                { data: 'description', name: 'description', title: 'Description' },
+                { data: 'formatted_amount', name: 'amount', title: 'Amount', orderable: false },
+                { data: 'formatted_balance', name: 'balance', title: 'Balance', orderable: false },
+                { data: 'bank_account', name: 'bank_account', title: 'Bank Account' },
+                { data: 'user', name: 'user', title: 'Processed By' },
+                { 
+                    data: 'actions', 
+                    name: 'actions', 
+                    title: 'Actions',
+                    orderable: false, 
+                    searchable: false 
+                }
             ],
+            responsive: true,
+            order: [[0, 'desc']],
             pageLength: 10,
             language: {
                 search: "",
-                searchPlaceholder: "Search transactions..."
+                searchPlaceholder: "Search transactions...",
+                processing: "Loading transactions..."
             },
             columnDefs: [{
                     targets: -1,
-                    responsivePriority: 1,
-                    orderable: false,
-                    searchable: false
+                    responsivePriority: 1
                 },
                 {
-                    targets: [0, 1, 2],
-                    responsivePriority: 2
+                    targets: [1, 3, 4, 7],
+                    className: 'text-center'
                 }
-            ]
+            ],
+            drawCallback: function(settings) {
+                // Re-initialize tooltips after each draw
+                $('[data-bs-toggle="tooltip"]').tooltip();
+            }
         });
     });
+
+    // Function to print deposit receipt from table action button
+    function printDepositReceiptFromTable(receiptId) {
+        const url = '{{ route("cash_collaterals.printDepositReceipt", ":id") }}'.replace(':id', receiptId);
+        window.open(url, '_blank', 'width=800,height=600');
+    }
+
+    // Function to print withdrawal receipt from table action button
+    function printWithdrawalReceiptFromTable(paymentId) {
+        const url = '{{ route("cash_collaterals.printWithdrawalReceipt", ":id") }}'.replace(':id', paymentId);
+        window.open(url, '_blank', 'width=800,height=600');
+    }
 </script>
 @endpush

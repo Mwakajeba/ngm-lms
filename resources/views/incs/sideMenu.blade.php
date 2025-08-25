@@ -26,23 +26,31 @@
                                 $isChildEditOrDelete = Str::contains($child->route, ['edit', 'delete', 'destroy', 'create']);
                             @endphp
 
-                            @if (!$isChildEditOrDelete)
+                            @if (!$isChildEditOrDelete && $child->route)
+                                @auth
+                                @if (Route::has($child->route))
                                 <li>
                                     <a href="{{ route($child->route) }}">
                                         <i class="bx bx-right-arrow-alt"></i>{{ $child->name }}
                                     </a>
                                 </li>
+                                @endif
+                                @endauth
                             @endif
                         @endforeach
                     </ul>
                 </li>
-            @elseif(!$isEditOrDelete)
+            @elseif(!$isEditOrDelete && $menu->route)
+                @auth
+                @if (Route::has($menu->route))
                 <li>
                     <a href="{{ route($menu->route) }}">
                         <div class="parent-icon"><i class="{{ $menu->icon ?? 'bx bx-circle' }}"></i></div>
                         <div class="menu-title">{{ $menu->name }}</div>
                     </a>
                 </li>
+                @endif
+                @endauth
             @endif
         @endforeach
     </ul>

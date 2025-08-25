@@ -172,4 +172,12 @@ class User extends Authenticatable
     public function loans(){
         return $this->hasMany(Loan::class, 'loan_officer_id');
     }
+
+    /**
+     * The branches that belong to the user (many-to-many)
+     */
+    public function branches()
+    {
+        return $this->belongsToMany(Branch::class, 'branch_user');
+    }
 }

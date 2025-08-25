@@ -338,4 +338,77 @@ class DashboardController extends Controller
             'profitLoss' => $previousYearProfitLoss
         ];
     }
-} 
+
+    /**
+     * Handle bulk SMS sending from dashboard
+     */
+    public function sendBulkSms(Request $request)
+    {
+        $request->validate([
+            'branch_id' => 'required',
+            'message_title' => 'required|string|max:100',
+            'bulk_message_content' => 'required|string|max:500',
+            'custom_title' => 'nullable|string|max:100',
+        ]);
+
+        $branchId = $request->branch_id;
+        $title = $request->message_title;
+        $customTitle = $request->custom_title;
+        $messageContent = $request->bulk_message_content;
+
+        // If 'Custom' is selected, use the custom title
+        if ($title === 'Custom' && $customTitle) {
+            $title = $customTitle;
+        }
+
+        // Get customers for the selected branch or all branches
+        $customersQuery = \App\Models\Customer::query();
+        if ($branchId !== 'all') {
+            $customersQuery->where('branch_id', $branchId);
+        }
+        $customers = $customersQuery->whereNotNull('phone1')->get();
+
+        $valid = 0;
+        $invalid = 0;
+        $duplicates = 0;
+        $sentNumbers = [];
+        $responses = [];
+
+        foreach ($customers as $customer) {
+            $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
+            if (empty($phone) || in_array($phone, $sentNumbers)) {
+                $invalid++;
+                if (in_array($phone, $sentNumbers)) $duplicates++;
+                continue;
+            }
+            $sentNumbers[] = $phone;
+            $fullMessage = $title . ": " . $messageContent;
+            //$smsResponse = \App\Helpers\SmsHelper::send($phone, $fullMessage);
+            $responses[] = $smsResponse;
+            $valid++;
+            // Log SMS
+            \DB::table('sms_logs')->insert([
+                'customer_id' => $customer->id,
+                'phone_number' => $phone,
+                'message' => $fullMessage,
+                'response' => $smsResponse,
+                'sent_by' => auth()->id(),
+                'sent_at' => now(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => "Bulk SMS sent successfully!",
+            'response' => [
+                'message' => 'Message Submitted Successfully',
+                'valid' => $valid,
+                'invalid' => $invalid,
+                'duplicates' => $duplicates,
+                'details' => $responses
+            ]
+        ]);
+    }
+}

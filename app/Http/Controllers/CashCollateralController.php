@@ -21,12 +21,64 @@ class CashCollateralController extends Controller
 {
     public function index()
     {
-        $cashCollaterals = CashCollateral::with(['customer', 'type'])
-            ->where('branch_id', Auth::user()->branch_id)
-            ->where('company_id', Auth::user()->company_id)
-            ->paginate(10);
+        if (request()->ajax()) {
+            $cashCollaterals = CashCollateral::with(['customer', 'type'])
+                ->where('branch_id', Auth::user()->branch_id)
+                ->where('company_id', Auth::user()->company_id)
+                ->get();
 
-        return view('cash_collaterals.index', compact('cashCollaterals'));
+            return datatables($cashCollaterals)
+                ->addColumn('customer_name', function ($collateral) {
+                    return $collateral->customer->name ?? 'N/A';
+                })
+                ->addColumn('type_name', function ($collateral) {
+                    return $collateral->type->name ?? 'N/A';
+                })
+                ->addColumn('formatted_amount', function ($collateral) {
+                    return number_format($collateral->amount, 2);
+                })
+                ->addColumn('formatted_date', function ($collateral) {
+                    return $collateral->created_at->format('Y-m-d H:i');
+                })
+                ->addColumn('actions', function ($collateral) {
+                    $encodedId = Hashids::encode($collateral->id);
+                    $actions = '';
+                    
+                    if (auth()->user()->can('deposit cash collateral')) {
+                        $actions .= '<a href="' . route('cash_collaterals.deposit', $encodedId) . '" class="btn btn-sm btn-primary me-1 mb-1">Deposit</a>';
+                    }
+                    
+                    if (auth()->user()->can('withdraw cash collateral')) {
+                        $actions .= '<a href="' . route('cash_collaterals.withdraw', $encodedId) . '" class="btn btn-sm btn-success me-1 mb-1">Withdraw</a>';
+                    }
+                    
+                    if (auth()->user()->can('view cash collateral details')) {
+                        $actions .= '<a href="' . route('cash_collaterals.show', $encodedId) . '" class="btn btn-sm btn-outline-info me-1 mb-1">View</a>';
+                    }
+                    
+                    if (auth()->user()->can('edit cash collateral')) {
+                        $actions .= '<a href="' . route('cash_collaterals.edit', $encodedId) . '" class="btn btn-sm btn-outline-warning me-1 mb-1">Edit</a>';
+                    }
+                    
+                    if (auth()->user()->can('delete cash collateral')) {
+                        $actions .= '<form action="' . route('cash_collaterals.destroy', $encodedId) . '" method="POST" class="d-inline delete-form">';
+                        $actions .= csrf_field();
+                        $actions .= method_field('DELETE');
+                        $actions .= '<button type="submit" class="btn btn-sm btn-outline-danger mb-1" data-name="' . $collateral->id . '">Delete</button>';
+                        $actions .= '</form>';
+                    }
+                    
+                    return $actions;
+                })
+                ->rawColumns(['actions'])
+                ->make(true);
+        }
+
+        $totalCollaterals = CashCollateral::where('branch_id', Auth::user()->branch_id)
+            ->where('company_id', Auth::user()->company_id)
+            ->count();
+
+        return view('cash_collaterals.index', compact('totalCollaterals'));
     }
 
     public function create()
@@ -45,6 +97,8 @@ class CashCollateralController extends Controller
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'type_id' => 'required|exists:cash_collateral_types,id',
+            'selected_account_types' => 'required|array|min:1',
+            'selected_account_types.*' => 'exists:cash_collateral_types,id',
         ]);
 
         $data = $request->only(['customer_id', 'type_id', 'amount']);
@@ -55,7 +109,7 @@ class CashCollateralController extends Controller
 
         CashCollateral::create($data);
 
-        return redirect()->route('cash_collaterals.index')->with('success', 'Cash Collateral created successfully.');
+        return redirect()->route('cash_collaterals.index')->with('success', 'Cash Deposit created successfully.');
     }
 
 
@@ -71,6 +125,123 @@ class CashCollateralController extends Controller
         $cashCollateral = CashCollateral::with(['customer', 'type'])->findOrFail($id);
 
         $this->authorizeUserAccess($cashCollateral);
+
+        // Handle Ajax request for DataTables
+        if (request()->ajax()) {
+            //////////////////// GET DEPOSIT TRANSACTION FOR CASH COLLATERAL OF CUSTOMER(RECIEPTS)////////////////////////////////////////////
+            $deposits = Receipt::where('reference', $cashCollateral->id)
+                ->where('reference_type', 'Deposit')
+                ->with(['bankAccount', 'user'])
+                ->get()
+                ->map(function ($receipt) {
+                    return [
+                        'id' => $receipt->id,
+                        'date' => $receipt->date,
+                        'description' => $receipt->description,
+                        'amount' => $receipt->amount,
+                        'type' => 'Deposit',
+                        'transaction_type' => 'receipt',
+                        'bank_account' => $receipt->bankAccount->name ?? 'N/A',
+                        'user' => $receipt->user->name ?? 'N/A',
+                        'created_at' => $receipt->created_at,
+                    ];
+                });
+
+            // ////////GET WITHDRAWAL TRANSACTION FOR CASH COLLATERAL OF CUSTOMER(PAYMENTS) ////////////////
+            $withdrawals = Payment::where('reference', $cashCollateral->id)
+                ->where('reference_type', 'Withdrawal')
+                ->with(['bankAccount', 'user'])
+                ->get()
+                ->map(function ($payment) {
+                    return [
+                        'id' => $payment->id,
+                        'date' => $payment->date,
+                        'description' => $payment->description,
+                        'amount' => $payment->amount,
+                        'type' => 'Withdrawal',
+                        'transaction_type' => 'payment',
+                        'bank_account' => $payment->bankAccount->name ?? 'N/A',
+                        'user' => $payment->user->name ?? 'N/A',
+                        'created_at' => $payment->created_at,
+                    ];
+                });
+
+            // Combine and sort by date
+            $transactions = $deposits->concat($withdrawals)->sortByDesc('date');
+
+            // Calculate running balance
+            $balance = 0;
+            $transactions = $transactions->map(function ($transaction) use (&$balance) {
+                if ($transaction['type'] === 'Deposit') {
+                    $balance += $transaction['amount'];
+                } else {
+                    $balance -= $transaction['amount'];
+                }
+                $transaction['balance'] = $balance;
+                return $transaction;
+            });
+
+            return datatables($transactions)
+                ->addColumn('formatted_date', function ($transaction) {
+                    return $transaction['date']->format('d/m/Y');
+                })
+                ->addColumn('type_badge', function ($transaction) {
+                    if ($transaction['type'] === 'Deposit') {
+                        return '<span class="badge bg-success"><i class="bx bx-plus me-1"></i> Deposit</span>';
+                    } else {
+                        return '<span class="badge bg-warning"><i class="bx bx-minus me-1"></i> Withdrawal</span>';
+                    }
+                })
+                ->addColumn('formatted_amount', function ($transaction) {
+                    $class = $transaction['type'] === 'Deposit' ? 'text-success' : 'text-danger';
+                    return '<span class="fw-bold ' . $class . '">TSHS ' . number_format($transaction['amount'], 2) . '</span>';
+                })
+                ->addColumn('formatted_balance', function ($transaction) {
+                    $class = $transaction['balance'] >= 0 ? 'text-success' : 'text-danger';
+                    return '<span class="fw-bold ' . $class . '">TSHS ' . number_format($transaction['balance'], 2) . '</span>';
+                })
+                ->addColumn('actions', function ($transaction) {
+                    $encodedId = Hashids::encode($transaction['id']);
+                    $actions = '';
+                    
+                    // Print Receipt Button
+                    if ($transaction['type'] === 'Deposit') {
+                        $actions .= '<button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="printDepositReceiptFromTable(' . $transaction['id'] . ')" title="Print Receipt">
+                                        <i class="bx bx-printer"></i>
+                                    </button>';
+                    } else {
+                        $actions .= '<button type="button" class="btn btn-sm btn-outline-primary me-1" onclick="printWithdrawalReceiptFromTable(' . $transaction['id'] . ')" title="Print Receipt">
+                                        <i class="bx bx-printer"></i>
+                                    </button>';
+                    }
+                    
+                    // Edit Button
+                    if (auth()->user()->can('edit transaction')) {
+                        if ($transaction['type'] === 'Deposit') {
+                            $actions .= '<a href="' . route('receipts.edit', $encodedId) . '" class="btn btn-sm btn-outline-warning me-1" title="Edit ' . $transaction['type'] . '">
+                                            <i class="bx bx-edit"></i>
+                                        </a>';
+                        } else {
+                            $actions .= '<a href="' . route('payments.edit', $encodedId) . '" class="btn btn-sm btn-outline-warning me-1" title="Edit ' . $transaction['type'] . '">
+                                            <i class="bx bx-edit"></i>
+                                        </a>';
+                        }
+                    }
+                    
+                    // Delete Button
+                    if (auth()->user()->can('delete transaction')) {
+                        $actions .= '<button type="button" class="btn btn-sm btn-outline-danger" 
+                                        onclick="deleteTransaction(\'' . $encodedId . '\', \'' . $transaction['type'] . '\', \'' . $transaction['transaction_type'] . '\')" 
+                                        title="Delete Transaction">
+                                        <i class="bx bx-trash"></i>
+                                    </button>';
+                    }
+                    
+                    return $actions;
+                })
+                ->rawColumns(['type_badge', 'formatted_amount', 'formatted_balance', 'actions'])
+                ->make(true);
+        }
 
         //////////////////// GET DEPOSIT TRANSACTION FOR CASH COLLATERAL OF CUSTOMER(RECIEPTS)////////////////////////////////////////////
         $deposits = Receipt::where('reference', $cashCollateral->id)
@@ -148,6 +319,8 @@ class CashCollateralController extends Controller
         $request->validate([
             'customer_id' => 'required|exists:customers,id',
             'type_id' => 'required|exists:cash_collateral_types,id',
+            'selected_account_types' => 'required|array|min:1',
+            'selected_account_types.*' => 'exists:cash_collateral_types,id',
         ]);
 
         $data = $request->only(['customer_id', 'type_id', 'amount']);
@@ -158,7 +331,7 @@ class CashCollateralController extends Controller
 
         $cashCollateral->update($data);
 
-        return redirect()->route('cash_collaterals.index')->with('success', 'Cash Collateral updated successfully.');
+        return redirect()->route('cash_collaterals.index')->with('success', 'Cash Deposit updated successfully.');
     }
 
     public function destroy(CashCollateral $cashCollateral)
@@ -214,7 +387,7 @@ class CashCollateralController extends Controller
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'deposit_date' => 'required|date',
             'amount' => 'required|numeric|min:0.01',
-            'notes' => 'nullable|string|max:500',
+            'notes' => 'required|string|max:500',
         ]);
 
         try {
@@ -229,8 +402,7 @@ class CashCollateralController extends Controller
                 $user = Auth::user();
                 $collateral = CashCollateral::with(['customer', 'type'])->findOrFail($collateralId);
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
-                $notes = "Being deposit for {$collateral->type->name}, paid by {$collateral->customer->name}, TSHS {$request->amount}";
-
+                $notes = $request->notes;
 
                 // Create receipt
                 $receipt = Receipt::create([
@@ -292,12 +464,29 @@ class CashCollateralController extends Controller
 
                 // Send SMS to customer after successful deposit
                 if ($collateral->customer && $collateral->customer->phone1) {
-                    $smsMessage = "Cash collateral deposit processed successfully. Amount: TSHS" . number_format($request->amount, 2);
+                    $smsMessage = "Cash deposit processed successfully. Amount: TSHS" . number_format($request->amount, 2);
                     $this->sendSms($collateral->customer->phone1, $smsMessage);
                 }
 
+                // Generate thermal receipt data
+                $receiptData = [
+                    'receipt_id' => $receipt->id,
+                    'receipt_number' => $receipt->reference_number ?? 'DEP-' . str_pad($receipt->id, 6, '0', STR_PAD_LEFT),
+                    'date' => $receipt->date,
+                    'customer_name' => $collateral->customer->name,
+                    'deposit_type' => $collateral->type->name,
+                    'amount' => $request->amount,
+                    'notes' => $notes,
+                    'bank_account' => $bankAccount->name . ' - ' . $bankAccount->account_number,
+                    'received_by' => $user->name,
+                    'branch' => $user->branch->name ?? 'N/A',
+                    'time' => now()->format('H:i:s'),
+                ];
+
                 return redirect()->route('customers.show', Hashids::encode($collateral->customer_id))
-                    ->with('success', 'Cash collateral deposit processed successfully. Amount: TSHS' . number_format($request->amount, 2));
+                    ->with('success', 'Cash deposit processed successfully. Amount: TSHS' . number_format($request->amount, 2))
+                    ->with('print_receipt', true)
+                    ->with('receipt_data', $receiptData);
             });
         } catch (\Throwable $th) {
             return redirect()->back()
@@ -796,6 +985,67 @@ class CashCollateralController extends Controller
             return redirect()->back()
                 ->withErrors(['error' => 'Failed to update payment: ' . $e->getMessage()])
                 ->withInput();
+        }
+    }
+
+    /**
+     * Print receipt for cash deposit
+     */
+    public function printDepositReceipt($id)
+    {
+        try {
+            $receipt = Receipt::with([
+                'customer',
+                'bankAccount',
+                'user',
+                'receiptItems.chartAccount'
+            ])->findOrFail($id);
+
+            // Get collateral information
+            $collateral = CashCollateral::with(['type', 'customer'])->find($receipt->reference);
+
+            // Get company and branch information with null checks
+            $company_name = optional(optional(auth()->user())->company)->name ?? 'Smart Finance';
+            $branch_name = optional(optional(auth()->user())->branch)->name ?? 'Main Branch';
+
+            return view('cash_collaterals.print_receipt', compact(
+                'receipt', 
+                'collateral', 
+                'company_name', 
+                'branch_name'
+            ));
+
+        } catch (\Exception $e) {
+            abort(404, 'Receipt not found: ' . $e->getMessage());
+        }
+    }
+
+    public function printWithdrawalReceipt($id)
+    {
+        try {
+            $payment = Payment::with([
+                'customer',
+                'bankAccount',
+                'user',
+                'paymentItems.chartAccount'
+            ])->findOrFail($id);
+
+            // Get collateral information
+            $collateral = CashCollateral::with(['type', 'customer'])->find($payment->reference);
+
+            // Get company and branch information with null checks
+            $company_name = optional(optional(auth()->user())->company)->name ?? 'Smart Finance';
+            $branch_name = optional(optional(auth()->user())->branch)->name ?? 'Main Branch';
+
+            return view('cash_collaterals.print_withdrawal_receipt', compact(
+                'payment', 
+                'collateral', 
+                'company_name', 
+                'branch_name'
+            ));
+
+        } catch (\Exception $e) {
+            abort(404, 'Withdrawal receipt not found: ' . $e->getMessage());
         }
     }
 }

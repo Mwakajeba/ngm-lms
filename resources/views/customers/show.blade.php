@@ -269,6 +269,12 @@
                                 <i class="bx bx-edit"></i> Edit
                             </a>
                             @endcan
+                            
+                            <!-- Send Message Button -->
+                            <button type="button" class="btn btn-sm btn-info flex-fill" data-bs-toggle="modal" data-bs-target="#sendMessageModal">
+                                <i class="bx bx-message"></i> Send Message
+                            </button>
+                            
                             @can('delete customer')
                             <form action="{{ route('customers.destroy', Hashids::encode($customer->id)) }}" method="POST" class="flex-fill delete-form" style="display:inline;">
                                 @csrf
@@ -290,7 +296,7 @@
             <div class="col-xl-8">
                 <div class="card">
                     <div class="card-body">
-                        <h5 class="card-title mb-4">Deposits Accounts Records</h5>
+                        <h5 class="card-title mb-4">Cash Deposits Records</h5>
                         <hr class="my-4">
 
                         <div class="table-responsive">
@@ -458,9 +464,72 @@
             <p class="mb-0">Copyright © {{ date('Y') }}. All right reserved. -- By SAFCO FINTECH</p>
         </footer>
 
+        <!-- Send Message Modal -->
+        <div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="sendMessageModalLabel">
+                            <i class="bx bx-message me-2"></i>Send SMS to {{ $customer->name }}
+                        </h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <form id="sendMessageForm" action="{{ route('customers.send-message', Hashids::encode($customer->id)) }}" method="POST">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label for="phone_number" class="form-label">Phone Number</label>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number" 
+                                       value="{{ $customer->phone1 }}" readonly>
+                                <div class="form-text">Message will be sent to this number</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="message_template" class="form-label">Message Template</label>
+                                <select class="form-select" id="message_template" name="message_template">
+                                    <option value="">Select a template...</option>
+                                    <option value="payment_reminder">Payment Reminder</option>
+                                    <option value="loan_approved">Loan Approved</option>
+                                    <option value="loan_disbursed">Loan Disbursed</option>
+                                    <option value="custom">Custom Message</option>
+                                </select>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="message_content" class="form-label">Message Content</label>
+                                <textarea class="form-control" id="message_content" name="message_content" 
+                                          rows="4" placeholder="Type your message here..." required></textarea>
+                                <div class="form-text">
+                                    <span id="character_count">0</span>/160 characters
+                                </div>
+                            </div>
+                            
+                            <div class="alert alert-info">
+                                <i class="bx bx-info-circle me-2"></i>
+                                <strong>Note:</strong> SMS charges may apply. Please ensure the message is appropriate and professional.
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                <i class="bx bx-x me-1"></i>Cancel
+                            </button>
+                            <button type="submit" class="btn btn-primary" id="sendMessageBtn">
+                                <i class="bx bx-send me-1"></i>Send SMS Now
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- TEST BUTTON FOR LOADING STATE AND SWEETALERT -->
+
+        <!-- TEST MODAL -->
+
         @endsection
 
         @push('scripts')
+        <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
         <script>
             // Password toggle functionality
             document.getElementById('toggleCurrentPassword').addEventListener('click', function() {
@@ -588,5 +657,457 @@
                     return false;
                 }
             });
+
+            // Check if we need to print a receipt after deposit
+            @if(session('print_receipt') && session('receipt_data'))
+                setTimeout(function() {
+                    const receiptData = @json(session('receipt_data'));
+                    printDepositReceipt(receiptData);
+                }, 1000);
+            @endif
+        });
+
+        function printDepositReceipt(receiptData) {
+            // Create a new window for thermal printer (narrow width)
+            const printWindow = window.open('', '_blank', 'width=320,height=600');
+            
+            // Set the document title
+            const customerName = receiptData.customer_name.replace(/[^a-zA-Z0-9\s]/g, '').replace(/\s+/g, '_');
+            const fileName = `Deposit_Receipt_${customerName}_${receiptData.date}`;
+            
+            const receiptHtml = `
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${fileName}</title>
+                    <style>
+                        @page {
+                            size: 80mm 200mm;
+                            margin: 0;
+                            padding: 0;
+                        }
+                        
+                        @media print {
+                            body { 
+                                font-family: 'Courier New', monospace; 
+                                font-size: 10px; 
+                                margin: 0; 
+                                padding: 5px;
+                                width: 280px;
+                                max-width: 280px;
+                                min-width: 280px;
+                                page-break-after: avoid;
+                                page-break-before: avoid;
+                            }
+                        }
+                        
+                        body { 
+                            font-family: 'Courier New', monospace; 
+                            font-size: 10px; 
+                            margin: 0; 
+                            padding: 5px;
+                            width: 280px;
+                            max-width: 280px;
+                            min-width: 280px;
+                        }
+                        .header { text-align: center; margin-bottom: 8px; }
+                        .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                        .subtitle { font-size: 10px; margin-bottom: 8px; }
+                        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                        .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                        .label { font-weight: bold; }
+                        .value { text-align: right; }
+                        .total { font-weight: bold; font-size: 12px; }
+                        .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                        .center { text-align: center; }
+                        .bold { font-weight: bold; }
+                        .notes { margin: 8px 0; font-size: 9px; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="title">SMARTFINANCE</div>
+                        <div class="subtitle">Cash Deposit Receipt</div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="row">
+                        <span class="label">Customer:</span>
+                        <span class="value">${receiptData.customer_name}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Deposit Type:</span>
+                        <span class="value">${receiptData.deposit_type}</span>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="row">
+                        <span class="label">Receipt No:</span>
+                        <span class="value">${receiptData.receipt_number}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Date:</span>
+                        <span class="value">${receiptData.date}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Time:</span>
+                        <span class="value">${receiptData.time}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Bank Account:</span>
+                        <span class="value">${receiptData.bank_account}</span>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="row total">
+                        <span class="label">Amount Deposited:</span>
+                        <span class="value">TSHS ${parseFloat(receiptData.amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</span>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="notes">
+                        <div class="label">Notes:</div>
+                        <div style="margin-top: 2px;">${receiptData.notes}</div>
+                    </div>
+                    
+                    <div class="divider"></div>
+                    
+                    <div class="footer">
+                        <div>Received by: ${receiptData.received_by}</div>
+                        <div>Branch: ${receiptData.branch}</div>
+                        <div style="margin-top: 5px;">Thank you for your deposit!</div>
+                    </div>
+                </body>
+                </html>
+            `;
+            
+            printWindow.document.write(receiptHtml);
+            printWindow.document.close();
+            
+            // Auto print after a short delay
+            setTimeout(() => {
+                printWindow.print();
+                // Auto close after printing (optional)
+                setTimeout(() => {
+                    printWindow.close();
+                }, 2000);
+            }, 500);
+        }
+
+        // Message template functionality
+        document.getElementById('message_template').addEventListener('change', function() {
+            const template = this.value;
+            const messageContent = document.getElementById('message_content');
+            const customerName = '{{ $customer->name }}';
+            
+            let templateText = '';
+            
+            switch(template) {
+                case 'payment_reminder':
+                    templateText = `Dear ${customerName}, this is a friendly reminder that your loan payment is due. Please make your payment to avoid any late fees. Thank you.`;
+                    break;
+                case 'loan_approved':
+                    templateText = `Dear ${customerName}, congratulations! Your loan application has been approved. Please visit our office for the next steps. Thank you.`;
+                    break;
+                case 'loan_disbursed':
+                    templateText = `Dear ${customerName}, your loan has been successfully disbursed. Please check your account. Thank you for choosing SmartFinance.`;
+                    break;
+                case 'custom':
+                    templateText = '';
+                    break;
+                default:
+                    templateText = '';
+            }
+            
+            messageContent.value = templateText;
+            updateCharacterCount();
+        });
+
+        // Character counter
+        function updateCharacterCount() {
+            const messageContent = document.getElementById('message_content');
+            const characterCount = document.getElementById('character_count');
+            const count = messageContent.value.length;
+            
+            characterCount.textContent = count;
+            
+            if (count > 160) {
+                characterCount.style.color = 'red';
+            } else if (count > 140) {
+                characterCount.style.color = 'orange';
+            } else {
+                characterCount.style.color = 'green';
+            }
+        }
+
+        // Ensure character counter always works
+        function updateCharacterCount() {
+            var messageContent = document.getElementById('message_content');
+            var characterCount = document.getElementById('character_count');
+            if (messageContent && characterCount) {
+                var count = messageContent.value.length;
+                characterCount.textContent = count;
+                if (count > 160) {
+                    characterCount.style.color = 'red';
+                } else if (count > 140) {
+                    characterCount.style.color = 'orange';
+                } else {
+                    characterCount.style.color = 'green';
+                }
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            var messageContent = document.getElementById('message_content');
+            if (messageContent) {
+                messageContent.addEventListener('input', updateCharacterCount);
+                updateCharacterCount();
+            }
+        });
+
+        var sendMessageModal = document.getElementById('sendMessageModal');
+        if (sendMessageModal) {
+            sendMessageModal.addEventListener('shown.bs.modal', function () {
+                var messageContent = document.getElementById('message_content');
+                if (messageContent) {
+                    updateCharacterCount();
+                }
+            });
+        }
+
+        // Form submission
+        document.getElementById('sendMessageForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const form = this;
+            const sendBtn = document.getElementById('sendMessageBtn');
+            const originalText = sendBtn.innerHTML;
+            const messageContent = document.getElementById('message_content').value.trim();
+            const phoneNumber = document.getElementById('phone_number').value.trim();
+            const modal = document.getElementById('sendMessageModal');
+            const formElements = modal.querySelectorAll('input, textarea, select, button');
+            const closeBtn = modal.querySelector('.btn-close');
+
+            if (!messageContent) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Message Required',
+                    text: 'Please enter a message to send.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+            if (!phoneNumber) {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Phone Number Required',
+                    text: 'Phone number is required to send SMS.',
+                    confirmButtonColor: '#3085d6'
+                });
+                return;
+            }
+
+            Swal.fire({
+                icon: 'question',
+                title: 'Confirm SMS Sending',
+                html: `
+                    <div class="text-start">
+                        <p><strong>To:</strong> ${phoneNumber}</p>
+                        <p><strong>Message:</strong></p>
+                        <div class="border p-2 rounded bg-light" style="max-height: 100px; overflow-y: auto;">
+                            ${messageContent}
+                        </div>
+                        <small class="text-muted">SMS charges may apply</small>
+                    </div>
+                `,
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Send SMS',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Loading state
+                    sendBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Sending...';
+                    sendBtn.disabled = true;
+                    formElements.forEach(element => { element.disabled = true; });
+                    if (closeBtn) closeBtn.disabled = true;
+                    const modalBody = modal.querySelector('.modal-body');
+                    modalBody.style.opacity = '0.7';
+
+                    // Submit via AJAX
+                    fetch(form.action, {
+                        method: 'POST',
+                        body: new FormData(form),
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Message Sent Successfully!',
+                                text: data.message || 'SMS has been sent.',
+                                confirmButtonColor: '#28a745',
+                                timer: 3000,
+                                timerProgressBar: true
+                            });
+                            document.getElementById('message_template').value = '';
+                            document.getElementById('message_content').value = '';
+                            updateCharacterCount();
+                            const modalInstance = bootstrap.Modal.getInstance(modal);
+                            modalInstance.hide();
+                        } else {
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Failed to Send Message',
+                                text: data.message || 'Unknown error occurred',
+                                confirmButtonColor: '#dc3545',
+                                footer: 'Please try again or contact support if the problem persists.'
+                            });
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Connection Error',
+                            text: 'Failed to send message due to connection issues.',
+                            confirmButtonColor: '#dc3545',
+                            footer: 'Please check your internet connection and try again.'
+                        });
+                    })
+                    .finally(() => {
+                        // Reset button state and re-enable all form elements
+                        sendBtn.innerHTML = originalText;
+                        sendBtn.disabled = false;
+                        formElements.forEach(element => { element.disabled = false; });
+                        if (closeBtn) closeBtn.disabled = false;
+                        modalBody.style.opacity = '1';
+                    });
+                }
+            });
+        });
+
+        function sendSMS() {
+            const sendBtn = document.getElementById('sendMessageBtn');
+            const originalText = sendBtn.innerHTML;
+            const modal = document.getElementById('sendMessageModal');
+            const formElements = modal.querySelectorAll('input, textarea, select, button');
+            const closeBtn = modal.querySelector('.btn-close');
+            const form = document.getElementById('sendMessageForm');
+
+            // Show loading state and disable all form elements
+            sendBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Sending Message...';
+            sendBtn.disabled = true;
+            formElements.forEach(element => { element.disabled = true; });
+            if (closeBtn) closeBtn.disabled = true;
+
+            // Add loading overlay to modal body
+            const modalBody = modal.querySelector('.modal-body');
+            modalBody.style.position = 'relative';
+            modalBody.style.opacity = '0.7';
+
+            // Submit the form
+            fetch(form.action, {
+                method: 'POST',
+                body: new FormData(form),
+                headers: {
+                    'X-Requested-With': 'XMLHttpRequest',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                }
+            })
+            .then(response => response.json())
+            .then(data => {
+                let responseMsg = '';
+                if (typeof data.response === 'string') {
+                    try {
+                        const parsed = JSON.parse(data.response);
+                        responseMsg = parsed.message || data.message || '';
+                    } catch (e) {
+                        responseMsg = data.response || data.message || '';
+                    }
+                } else if (typeof data.response === 'object' && data.response !== null) {
+                    responseMsg = data.response.message || data.message || '';
+                } else {
+                    responseMsg = data.message || '';
+                }
+                if (data.success) {
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Message Sent Successfully!',
+                        html: `<div>SMS has been sent to <b>${document.getElementById('phone_number').value}</b><br><small>${responseMsg}</small></div>`,
+                        confirmButtonColor: '#28a745',
+                        timer: 3000,
+                        timerProgressBar: true,
+                        showConfirmButton: true
+                    });
+                    document.getElementById('message_template').value = '';
+                    document.getElementById('message_content').value = '';
+                    updateCharacterCount();
+                    const modalInstance = bootstrap.Modal.getInstance(document.getElementById('sendMessageModal'));
+                    modalInstance.hide();
+                } else {
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Failed to Send Message',
+                        text: responseMsg || 'Unknown error occurred',
+                        confirmButtonColor: '#dc3545',
+                        footer: 'Please try again or contact support if the problem persists.'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Connection Error',
+                    text: 'Failed to send message due to connection issues.',
+                    confirmButtonColor: '#dc3545',
+                    footer: 'Please check your internet connection and try again.'
+                });
+            })
+            .finally(() => {
+                // Reset button state and re-enable all form elements
+                sendBtn.innerHTML = originalText;
+                sendBtn.disabled = false;
+                formElements.forEach(element => { element.disabled = false; });
+                if (closeBtn) closeBtn.disabled = false;
+                modalBody.style.opacity = '1';
+            });
+        }
+
+        document.getElementById('testLoadingBtn').addEventListener('click', function() {
+            const btn = this;
+            const modal = document.getElementById('testLoadingModal');
+            const closeBtn = modal.querySelector('.btn-close');
+            btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Testing...';
+            btn.disabled = true;
+            if (closeBtn) closeBtn.disabled = true;
+            const modalBody = modal.querySelector('.modal-body');
+            modalBody.style.opacity = '0.7';
+            setTimeout(function() {
+                btn.innerHTML = 'Simulate Send';
+                btn.disabled = false;
+                if (closeBtn) closeBtn.disabled = false;
+                modalBody.style.opacity = '1';
+                const modalInstance = bootstrap.Modal.getInstance(modal);
+                modalInstance.hide();
+                Swal.fire({
+                    icon: 'success',
+                    title: 'Loading & SweetAlert2 Work!',
+                    text: 'This is a test notification.',
+                    confirmButtonColor: '#28a745',
+                    timer: 2000,
+                    timerProgressBar: true
+                });
+            }, 2000);
+        });
         </script>
         @endpush

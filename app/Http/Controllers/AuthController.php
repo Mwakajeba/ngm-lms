@@ -110,7 +110,7 @@ class AuthController extends Controller
                 'activity_time' => now(),
             ]);
 
-            return redirect()->intended('/dashboard');
+            return redirect()->intended('/change-branch');
         }
 
         LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);

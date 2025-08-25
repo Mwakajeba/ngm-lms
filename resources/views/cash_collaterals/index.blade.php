@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Cash Collaterals')
+@section('title', 'Cash Deposits')
 
 @section('content')
 <div class="page-wrapper">
@@ -18,8 +18,8 @@
                 <div class="card radius-10">
                     <div class="card-body d-flex align-items-center">
                         <div class="flex-grow-1">
-                            <p class="text-muted mb-1">Total Collaterals</p>
-                            <h4 class="mb-0">{{ $cashCollaterals->count() }}</h4>
+                            <p class="text-muted mb-1">Total Deposits</p>
+                            <h4 class="mb-0">{{ $totalCollaterals }}</h4>
                         </div>
                         <div class="ms-3">
                             <div class="avatar-sm bg-warning text-white rounded-circle d-flex align-items-center justify-content-center">
@@ -35,7 +35,7 @@
         <div class="card radius-10">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="card-title mb-0">Deposits Accounts List</h4>
+                    <h4 class="card-title mb-0">Cash Deposits List</h4>
                     @can('create cash collateral')
                     <a href="{{ route('cash_collaterals.create') }}" class="btn btn-primary">
                         <i class="bx bx-plus"></i> Add Account
@@ -55,48 +55,7 @@
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($cashCollaterals as $collateral)
-                            <tr>
-                                <td>{{ $collateral->customer->name ?? 'N/A' }}</td>
-                                <td>{{ $collateral->type->name ?? 'N/A' }}</td>
-                                <td>{{ number_format($collateral->amount, 2) }}</td>
-                                <td>{{ $collateral->created_at->format('Y-m-d') }}</td>
-                                <td class="text-center">
-                                    <div class="btn-group" role="group">
-
-                                        @can('deposit cash collateral')
-
-                                        <a href="{{ route('cash_collaterals.deposit',Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-primary">
-                                            Deposit
-                                        </a>
-
-                                        @endcan
-
-                                        @can('withdraw cash collateral')
-
-                                        <a href="{{ route('cash_collaterals.withdraw', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-success">
-                                            Withdraw
-                                        </a>
-                                        @endcan
-                                        @can('view cash collateral details')
-                                        <a href="{{ route('cash_collaterals.show', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-info">View</a>
-                                        @endcan
-
-                                        @can('edit cash collateral')
-                                        <a href="{{ route('cash_collaterals.edit', Hashids::encode($collateral->id)) }}" class="btn btn-sm btn-outline-warning">Edit</a>
-                                        @endcan
-
-                                        @can('delete cash collateral')
-                                        <form action="{{ route('cash_collaterals.destroy', Hashids::encode($collateral->id)) }}" method="POST" class="d-inline delete-form">
-                                            @csrf
-                                            @method('DELETE')
-                                            <button type="submit" class="btn btn-sm btn-outline-danger" data-name="{{ $collateral->id }}">Delete</button>
-                                        </form>
-                                        @endcan
-                                    </div>
-                                </td>
-                            </tr>
-                            @endforeach
+                            <!-- Data will be loaded via Ajax -->
                         </tbody>
                     </table>
                 </div>
@@ -111,17 +70,36 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
-        $('#collateralTable').DataTable({
-            responsive: true,
-            order: [
-                [0, 'asc']
+        const table = $('#collateralTable').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: {
+                url: '{{ route('cash_collaterals.index') }}',
+                type: 'GET'
+            },
+            columns: [
+                { data: 'customer_name', name: 'customer.name' },
+                { data: 'type_name', name: 'type.name' },
+                { data: 'formatted_amount', name: 'amount', searchable: false },
+                { data: 'formatted_date', name: 'created_at' },
+                { 
+                    data: 'actions', 
+                    name: 'actions', 
+                    orderable: false, 
+                    searchable: false,
+                    className: 'text-center'
+                }
             ],
+            responsive: true,
+            order: [[3, 'desc']], // Order by created_at desc
             pageLength: 10,
             language: {
                 search: "",
-                searchPlaceholder: "Search collaterals..."
+                searchPlaceholder: "Search deposits...",
+                processing: '<div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>'
             },
-            columnDefs: [{
+            columnDefs: [
+                {
                     targets: -1,
                     orderable: false,
                     searchable: false,
@@ -131,8 +109,50 @@
                     targets: [0, 1],
                     responsivePriority: 2
                 }
-            ]
+            ],
+            drawCallback: function() {
+                // Reinitialize delete forms after table redraw
+                initializeDeleteForms();
+            }
         });
+
+        // Function to initialize delete forms
+        function initializeDeleteForms() {
+            $('.delete-form').off('submit').on('submit', function(e) {
+                e.preventDefault();
+                
+                const form = this;
+                const itemName = $(this).find('button[data-name]').data('name');
+                
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: `You want to delete this deposit account?`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Yes, delete it!',
+                    cancelButtonText: 'Cancel'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Show loading state
+                        Swal.fire({
+                            title: 'Deleting...',
+                            allowOutsideClick: false,
+                            didOpen: () => {
+                                Swal.showLoading();
+                            }
+                        });
+                        
+                        // Submit the form
+                        form.submit();
+                    }
+                });
+            });
+        }
+
+        // Initialize delete forms on page load
+        initializeDeleteForms();
     });
 </script>
 @endpush

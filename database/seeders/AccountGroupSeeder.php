@@ -52,7 +52,7 @@ class AccountGroupSeeder extends Seeder
                 'class_id' => 2,
                 'company_id' => 1,
                 'group_code' => '2000',
-                'name' => 'Cash Collateral',
+                'name' => 'Cash Deposit',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
