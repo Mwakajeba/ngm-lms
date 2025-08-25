@@ -45,23 +45,52 @@ class LoanRepaymentController extends Controller
     public function store(Request $request)
     {
         try {
+            // Add debugging
+            Log::info('Repayment request received', $request->all());
+
             $request->validate([
                 'loan_id' => 'required|exists:loans,id',
                 'schedule_id' => 'required|exists:loan_schedules,id',
                 'payment_date' => 'required|date',
                 'amount' => 'required|numeric|min:0.01',
-                'bank_account_id' => 'required|exists:bank_accounts,id',
+                'payment_source' => 'required|in:bank,cash_deposit',
+                'bank_account_id' => 'required_if:payment_source,bank|exists:bank_accounts,id',
+                'cash_deposit_id' => 'required_if:payment_source,cash_deposit|exists:cash_collaterals,id',
             ]);
 
-            // Prepare payment data
+            Log::info('Validation passed');
+
+            // Check cash deposit balance if using cash deposit
+            if ($request->payment_source === 'cash_deposit') {
+                $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
+                
+                if ($cashDeposit->amount < $request->amount) {
+                    return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
+                }
+            }
+
+            // Prepare payment data based on source
             $paymentData = [
                 'payment_date' => $request->payment_date,
-                'bank_account_id' => $request->bank_account_id,
+                'payment_source' => $request->payment_source,
             ];
+
+            if ($request->payment_source === 'bank') {
+                $paymentData['bank_account_id'] = $request->bank_account_id;
+            } else {
+                $paymentData['cash_deposit_id'] = $request->cash_deposit_id;
+            }
 
             // Get calculation method from loan product
             $loan = Loan::with('product')->findOrFail($request->loan_id);
             $calculationMethod = $loan->product->interest_method ?? 'flat_rate';
+
+            Log::info('Processing repayment', [
+                'loan_id' => $request->loan_id,
+                'amount' => $request->amount,
+                'calculation_method' => $calculationMethod,
+                'payment_source' => $request->payment_source
+            ]);
 
             // Process repayment using service
             $result = $this->repaymentService->processRepayment(
@@ -71,10 +100,13 @@ class LoanRepaymentController extends Controller
                 $calculationMethod
             );
 
+            Log::info('Repayment processing result', $result);
+
             return redirect()->back()->with('success', 'Repayment recorded successfully!');
 
         } catch (\Exception $e) {
             Log::error('Loan repayment error: ' . $e->getMessage());
+            Log::error('Repayment error stack trace: ' . $e->getTraceAsString());
 
             return redirect()->back()->with('error', 'Failed to record repayment: ' . $e->getMessage());
         }

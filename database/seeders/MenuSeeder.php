@@ -53,8 +53,8 @@ class MenuSeeder extends Seeder
             'Deposit Accounts' => [
                 'icon' => 'bx bx-outline',
                 'visibleRoutes' => [
-                    ['name' => 'Deposit Accounts Types', 'route' => 'cash_collateral_types.index'],
-                    ['name' => 'Deposit Accounts', 'route' => 'cash_collaterals.index'],
+                    ['name' => 'Cash Deposit Accounts', 'route' => 'cash_collateral_types.index'],
+                    ['name' => 'Cash Deposits', 'route' => 'cash_collaterals.index'],
                 ],
                 'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show', 'cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
             ],
@@ -101,6 +101,15 @@ class MenuSeeder extends Seeder
                     ['name' => 'Chat', 'route' => 'chat.index'],
                 ],
                 'hiddenRoutes' => ['chat.messages', 'chat.send'],
+            ],
+
+            // Add Change Branch menu under Dashboard
+            'Change Branch' => [
+                'icon' => 'bx bx-transfer',
+                'visibleRoutes' => [
+                    ['name' => 'Change Branch', 'route' => 'change-branch'],
+                ],
+                'hiddenRoutes' => [],
             ],
         ];
 

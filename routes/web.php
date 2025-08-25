@@ -1,42 +1,63 @@
+// Group Members AJAX
+Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxController::class, 'index'])->name('group.members.ajax');
 <?php
 
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
 use App\Http\Controllers\AuthController;
+use App\Http\Controllers\LanguageController;
 use App\Http\Controllers\OtpEmailController;
+use App\Http\Controllers\ReportsController;
 use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\SettingsController;
+use App\Http\Controllers\ActivityLogsController;
+use App\Http\Controllers\FileTypeController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\CashCollateralTypeController;
 use App\Http\Controllers\SuperAdminController;
-use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\LocationController;
 use App\Http\Controllers\AccountClassGroupController;
+use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\Accounting\SupplierController;
+use App\Http\Controllers\Accounting\PaymentVoucherController;
+use App\Http\Controllers\BillPurchaseController;
+use App\Http\Controllers\Accounting\ReceiptVoucherController;
+use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Accounting\BankReconciliationController;
-use App\Http\Controllers\Accounting\BillPurchaseController;
+use App\Http\Controllers\Accounting\BankReconciliationReportController;
 use App\Http\Controllers\Accounting\BudgetController;
 use App\Http\Controllers\Accounting\FeeController;
-use App\Http\Controllers\Accounting\JournalEntryController;
-use App\Http\Controllers\Accounting\PaymentVoucherController;
 use App\Http\Controllers\Accounting\PenaltyController;
-use App\Http\Controllers\Accounting\ReceiptVoucherController;
-use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
-use App\Http\Controllers\Accounting\SupplierController;
-use App\Http\Controllers\ActivityLogsController;
-use App\Http\Controllers\ChartAccountController;
-use App\Http\Controllers\BankAccountController;
-use App\Http\Controllers\CashCollateralTypeController;
-use App\Http\Controllers\CashCollateralController;
 use App\Http\Controllers\JournalController;
+use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\LoanProductController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
-use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\LoanController;
 use App\Http\Controllers\LoanReportController;
 use App\Http\Controllers\LoanRepaymentController;
+use App\Http\Controllers\LoanCollateralController;
+use App\Http\Controllers\CashCollateralController;
+use App\Http\Controllers\LocationController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\TransactionController;
+// Add other main app routes here
+// ...existing code...
+// Route::middleware(['auth'])->group(function () {
+    Route::get('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'show'])->name('change-branch');
+    Route::post('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'change'])->name('change-branch.submit');
+//     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+// Group Loans AJAX
+Route::get('group-loans-ajax/{group}', [\App\Http\Controllers\GroupLoanAjaxController::class, 'index'])->name('group.loans.ajax');
+//     // Add other main app routes here
+// });
+// // ...existing code...
+
+// Loans in Arrears (30+ days)
+Route::get('arrears-loans', [\App\Http\Controllers\ArrearsLoanController::class, 'index'])->name('arrears.loans.list');
+Route::get('arrears-loans/pdf', [\App\Http\Controllers\ArrearsLoanController::class, 'exportPdf'])->name('arrears.loans.pdf');
+
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -58,6 +79,8 @@ Route::post('/reset-password', [AuthController::class, 'storeNewPassword']);
 
 Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('resend.otp');
 
+Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+
 // Language switching
 Route::get('/language/{locale}', [LanguageController::class, 'switchLanguage'])->name('language.switch');
 // Test language route
@@ -68,7 +91,6 @@ Route::get('/test-language', function () {
 Route::get('/request-email-otp', [OtpEmailController::class, 'showEmailForm'])->name('email-otp-form');
 Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->name('email-otp-send');
 
-Route::get('/dashboard', [App\Http\Controllers\DashboardController::class, 'index'])->middleware('auth')->name('dashboard');
 
 // Reports Route
 Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->middleware('auth')->name('reports.index');
@@ -120,8 +142,10 @@ Route::put('/users/profile', [UserController::class, 'updateProfile'])->name('us
 Route::resource('users', UserController::class)->middleware(['auth', 'company.scope']);
 
 // Additional user routes that require user parameter
+
 Route::patch('/users/{user}/status', [UserController::class, 'changeStatus'])->name('users.status')->middleware(['auth', 'company.scope']);
 Route::post('/users/{user}/roles', [UserController::class, 'assignRoles'])->name('users.roles')->middleware(['auth', 'company.scope']);
+Route::post('/users/{user}/assign-branches', [UserController::class, 'assignBranches'])->name('users.assign-branches')->middleware(['auth', 'company.scope']);
 
 ////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
 
@@ -201,8 +225,8 @@ Route::resource('cash_collateral_types', CashCollateralTypeController::class)->m
 ////////////////////////////////////////////// SUPER ADMIN ROUTES ////////////////////////////////////////////////
 
 Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:super-admin'])->group(function () {
-    Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('dashboard');
 
+    Route::get('/dashboard', [SuperAdminController::class, 'dashboard'])->name('super-admin.dashboard');
     // Companies
     Route::get('/companies', [SuperAdminController::class, 'companies'])->name('companies');
     Route::get('/companies/create', [SuperAdminController::class, 'createCompany'])->name('companies.create');
@@ -399,19 +423,67 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
   //route
 
+    Route::name('loans.reports.')->group(function () {
+        //////LOANS REPORT ROUTE////////
+        Route::get('/loan-disbursement', [LoanReportController::class, 'loanDisbursementReport'])->name('disbursed');
+        Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loan-export');
+        ////////REPAYMENT ROUTE///////
+        Route::get('/loan-repayments', [LoanReportController::class, 'getRepaymentReport'])->name('repayment');
+        Route::get('/loan-repayment', [LoanReportController::class, 'getRepaymentReport'])->name('loan-repayment');
+        Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loan-export-repayment');
+        // Loan Aging Report
+        Route::get('/loan-aging', [LoanReportController::class, 'loanAgingReport'])->name('loan_aging');
+        Route::get('/loan-aging/export-excel', [LoanReportController::class, 'exportLoanAgingToExcel'])->name('loan_aging.export_excel');
+        Route::get('/loan-aging/export-pdf', [LoanReportController::class, 'exportLoanAgingToPdf'])->name('loan_aging.export_pdf');
+        
+        // Loan Aging Installment Report
+        Route::get('/loan-aging-installment', [LoanReportController::class, 'loanAgingInstallmentReport'])->name('loan_aging_installment');
+        Route::get('/loan-aging-installment/export-excel', [LoanReportController::class, 'exportLoanAgingInstallmentToExcel'])->name('loan_aging_installment.export_excel');
+        Route::get('/loan-aging-installment/export-pdf', [LoanReportController::class, 'exportLoanAgingInstallmentToPdf'])->name('loan_aging_installment.export_pdf');
 
-    //////LOANS REPORT ROUTE////////
-    Route::get('/loan-disbursement', [LoanReportController::class, 'loanDisbursementReport'])->name('loans.reports.disbursed');
-    Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loans.reports.loan-export');
-    ////////REPAYMENT ROUTE///////
-    Route::get('/loan-repayments', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.repayment');
-    Route::get('/loan-repayment', [LoanReportController::class, 'getRepaymentReport'])->name('loans.reports.loan-repayment');
-    Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loans.reports.loan-export-repayment');
-    // Loan Aging Report
-    Route::get('/loan-aging', [LoanReportController::class, 'loanAgingReport'])->name('loans.reports.loan_aging');
+        // Reports Index
+        Route::get('/reports', function() {
+            return view('loans.reports.index');
+        })->name('reports.index');
 
-    // Loan Outstanding Report
-    Route::get('/loan-outstanding', [LoanReportController::class, 'loanOutstandingReport'])->name('loans.reports.loan_outstanding');
+        // Loan Arrears Report
+        Route::get('/loan-arrears', [LoanReportController::class, 'loanArrearsReport'])->name('loan_arrears');
+        Route::get('/loan-arrears/export-excel', [LoanReportController::class, 'exportLoanArrearsToExcel'])->name('loan_arrears.export_excel');
+        Route::get('/loan-arrears/export-pdf', [LoanReportController::class, 'exportLoanArrearsToPdf'])->name('loan_arrears.export_pdf');
+
+        // Expected vs Collected Report
+        Route::get('/expected-vs-collected', [LoanReportController::class, 'expectedVsCollectedReport'])->name('expected_vs_collected');
+        Route::get('/expected-vs-collected/export-excel', [LoanReportController::class, 'exportExpectedVsCollectedToExcel'])->name('expected_vs_collected.export_excel');
+        Route::get('/expected-vs-collected/export-pdf', [LoanReportController::class, 'exportExpectedVsCollectedToPdf'])->name('expected_vs_collected.export_pdf');
+
+        // Portfolio at Risk (PAR) Report
+                Route::get('/portfolio-at-risk', [LoanReportController::class, 'portfolioAtRiskReport'])->name('portfolio_at_risk');
+                Route::get('/portfolio-at-risk/export-excel', [LoanReportController::class, 'exportPortfolioAtRiskToExcel'])->name('portfolio_at_risk.export_excel');
+                Route::get('/portfolio-at-risk/export-pdf', [LoanReportController::class, 'exportPortfolioAtRiskToPdf'])->name('portfolio_at_risk.export_pdf');
+                
+                // Internal Portfolio Analysis Report
+                Route::get('/internal-portfolio-analysis', [LoanReportController::class, 'internalPortfolioAnalysisReport'])->name('internal_portfolio_analysis');
+                Route::get('/internal-portfolio-analysis/export-excel', [LoanReportController::class, 'exportInternalPortfolioAnalysisToExcel'])->name('internal_portfolio_analysis.export_excel');
+                Route::get('/internal-portfolio-analysis/export-pdf', [LoanReportController::class, 'exportInternalPortfolioAnalysisToPdf'])->name('internal_portfolio_analysis.export_pdf');
+                
+                // Loan Portfolio Report
+                Route::get('/portfolio', [LoanReportController::class, 'portfolioReport'])->name('portfolio');
+                Route::get('/portfolio/export-excel', [LoanReportController::class, 'exportPortfolioToExcel'])->name('portfolio.export_excel');
+                Route::get('/portfolio/export-pdf', [LoanReportController::class, 'exportPortfolioToPdf'])->name('portfolio.export_pdf');
+                
+                // Loan Performance Report
+                Route::get('/performance', [LoanReportController::class, 'performanceReport'])->name('performance');
+                Route::get('/performance/export-excel', [LoanReportController::class, 'exportPerformanceToExcel'])->name('performance.export_excel');
+                Route::get('/performance/export-pdf', [LoanReportController::class, 'exportPerformanceToPdf'])->name('performance.export_pdf');
+                
+                // Delinquency Report
+                Route::get('/delinquency', [LoanReportController::class, 'delinquencyReport'])->name('delinquency');
+                Route::get('/delinquency/export-excel', [LoanReportController::class, 'exportDelinquencyToExcel'])->name('delinquency.export_excel');
+                Route::get('/delinquency/export-pdf', [LoanReportController::class, 'exportDelinquencyToPdf'])->name('delinquency.export_pdf');
+                
+        // Loan Outstanding Report
+        Route::get('/loan-outstanding', [LoanReportController::class, 'loanOutstandingReport'])->name('loan_outstanding');
+    });
 
 });
 
@@ -436,6 +508,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
+    Route::post('customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
@@ -518,6 +591,14 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loans/{loan}/guarantors', [LoanController::class, 'addGuarantor'])->name('loans.addGuarantor');
     Route::delete('/loans/{loan}/guarantors/{guarantor}', [LoanController::class, 'removeGuarantor'])->name('loans.removeGuarantor');
 
+    // Loan Collateral Routes
+    Route::post('/loan-collaterals', [LoanCollateralController::class, 'store'])->name('loan-collaterals.store');
+    Route::get('/loan-collaterals/{collateral}', [LoanCollateralController::class, 'show'])->name('loan-collaterals.show');
+    Route::put('/loan-collaterals/{collateral}', [LoanCollateralController::class, 'update'])->name('loan-collaterals.update');
+    Route::patch('/loan-collaterals/{collateral}/status', [LoanCollateralController::class, 'updateStatus'])->name('loan-collaterals.update-status');
+    Route::delete('/loan-collaterals/{collateral}', [LoanCollateralController::class, 'destroy'])->name('loan-collaterals.destroy');
+    Route::delete('/loan-collaterals/{collateral}/remove-file', [LoanCollateralController::class, 'removeFile'])->name('loan-collaterals.remove-file');
+
     // Loan Repayment Routes
     Route::post('/repayments', [LoanRepaymentController::class, 'store'])->name('repayments.store');
     Route::get('/repayments/history/{loanId}', [LoanRepaymentController::class, 'getRepaymentHistory'])->name('repayments.history');
@@ -571,8 +652,10 @@ Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
     // Deposit and Withdrawal routes
     Route::get('/{cashcollateral}/deposit', [CashCollateralController::class, 'deposit'])->name('cash_collaterals.deposit');
     Route::post('/deposit-store', [CashCollateralController::class, 'depositStore'])->name('cash_collaterals.depositStore');
+    Route::get('/print-deposit-receipt/{id}', [CashCollateralController::class, 'printDepositReceipt'])->name('cash_collaterals.printDepositReceipt');
     Route::get('/{cashcollateral}/withdraw', [CashCollateralController::class, 'withdraw'])->name('cash_collaterals.withdraw');
     Route::post('/withdraw-store', [CashCollateralController::class, 'withdrawStore'])->name('cash_collaterals.withdrawStore');
+    Route::get('/print-withdrawal-receipt/{id}', [CashCollateralController::class, 'printWithdrawalReceipt'])->name('cash_collaterals.printWithdrawalReceipt');
 });
 
 ////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
@@ -591,7 +674,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat/download/{messageId}', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.download');
 });
 
-
+Route::post('sms/bulk', [App\Http\Controllers\DashboardController::class, 'sendBulkSms'])->name('sms.bulk');
 
 Route::post('/logout', function () {
     Auth::logout();

@@ -452,6 +452,24 @@ class UserController extends Controller
      * @param string $phone
      * @return string
      */
+    /**
+     * Assign branches to a user (AJAX)
+     */
+    public function assignBranches(Request $request, User $user)
+    {
+        $request->validate([
+            'branches' => 'array',
+            'branches.*' => 'exists:branches,id',
+        ]);
+
+        $user->branches()->sync($request->branches ?? []);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Branches assigned successfully.'
+        ]);
+    }
+
     private function formatPhoneNumber($phone)
     {
         // Remove any spaces, dashes, or other characters

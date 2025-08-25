@@ -189,9 +189,9 @@
             @error('top_up_type_value') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
-        <!-- Cash Collateral Configuration -->
+        <!-- Cash Deposit Configuration -->
         <div class="col-12">
-            <h5 class="mb-3 text-primary mt-4">Cash Collateral Configuration</h5>
+            <h5 class="mb-3 text-primary mt-4">Cash Deposit Configuration</h5>
         </div>
 
         <div class="col-md-6 mb-3">
@@ -199,15 +199,15 @@
                 <input class="form-check-input" type="checkbox" name="has_cash_collateral" id="has_cash_collateral"
                     value="1" {{ old('has_cash_collateral', $loanProduct->has_cash_collateral ?? false) ? 'checked' : '' }}>
                 <label class="form-check-label" for="has_cash_collateral">
-                    Has Cash Collateral
+                    Has Cash Deposit
                 </label>
             </div>
         </div>
 
         <div class="col-md-6 mb-3" id="cash_collateral_type_div" style="display: none;">
-            <label class="form-label">Cash Collateral Type</label>
+            <label class="form-label">Cash Deposit Account</label>
             <select name="cash_collateral_type" class="form-select @error('cash_collateral_type') is-invalid @enderror">
-                <option value="">-- Select Cash Collateral Type --</option>
+                <option value="">-- Select Cash Deposit Account --</option>
                 @foreach($cashCollateralTypes as $collateralType)
                     <option value="{{ $collateralType->name }}" {{ old('cash_collateral_type', $loanProduct->cash_collateral_type ?? '') == $collateralType->name ? 'selected' : '' }}>
                         {{ $collateralType->name }}
@@ -218,7 +218,7 @@
         </div>
 
         <div class="col-md-6 mb-3" id="cash_collateral_value_type_div" style="display: none;">
-            <label class="form-label">Cash Collateral Value Type</label>
+            <label class="form-label">Cash Deposit Value Type</label>
             <select name="cash_collateral_value_type"
                 class="form-select @error('cash_collateral_value_type') is-invalid @enderror">
                 <option value="">-- Select Value Type --</option>
@@ -232,7 +232,7 @@
         </div>
 
         <div class="col-md-6 mb-3" id="cash_collateral_value_div" style="display: none;">
-            <label class="form-label">Cash Collateral Value</label>
+            <label class="form-label">Cash Deposit Value</label>
             <input type="number" name="cash_collateral_value" step="0.01" min="0"
                 class="form-control @error('cash_collateral_value') is-invalid @enderror"
                 value="{{ old('cash_collateral_value', $loanProduct->cash_collateral_value ?? '') }}"
@@ -765,7 +765,7 @@
                 }
             });
 
-            // Cash Collateral Toggle
+            // Cash Deposit Toggle
             $('#has_cash_collateral').change(function () {
                 if ($(this).is(':checked')) {
                     $('#cash_collateral_type_div, #cash_collateral_value_type_div, #cash_collateral_value_div').show();

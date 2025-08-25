@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Edit Cash Collateral Deposit')
+@section('title', 'Edit Cash Deposit Transaction')
 
 @section('content')
 <div class="page-wrapper">
@@ -9,7 +9,7 @@
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Customers', 'url' => route('customers.index'), 'icon' => 'bx bx-group'],
             ['label' => 'Customer', 'url' => route('customers.show', Hashids::encode($collateral->customer_id)), 'icon' => 'bx bx-user'],
-            ['label' => 'Cash Collateral', 'url' => route('cash_collaterals.show', Hashids::encode($collateral->id)), 'icon' => 'bx bx-money'],
+            ['label' => 'Cash Deposit', 'url' => route('cash_collaterals.show', Hashids::encode($collateral->id)), 'icon' => 'bx bx-money'],
             ['label' => 'Edit Deposit', 'url' => '#', 'icon' => 'bx bx-edit']
         ]" />
         

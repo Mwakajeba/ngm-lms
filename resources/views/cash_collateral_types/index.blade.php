@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Cash Collateral Types')
+@section('title', 'Cash Deposit Accounts')
 
 @section('content')
 <div class="page-wrapper">
@@ -8,9 +8,9 @@
 
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Deposit Accounts Types', 'url' => '#', 'icon' => 'bx bx-credit-card']
+            ['label' => 'Cash Deposit Accounts', 'url' => '#', 'icon' => 'bx bx-credit-card']
         ]" /> 
-        <h6 class="mb-0 text-uppercase">DEPOSIT ACCOUNTS TYPES</h6>
+        <h6 class="mb-0 text-uppercase">CASH DEPOSIT ACCOUNTS</h6>
         <hr/>
 
         <!-- Stats Card -->
@@ -32,7 +32,7 @@
         <div class="card radius-10">
             <div class="card-body">
                 <div class="d-flex justify-content-between align-items-center mb-4">
-                    <h4 class="card-title mb-0">Deposit Accounts Types</h4>
+                    <h4 class="card-title mb-0">Cash Deposit Accounts</h4>
                     <a href="{{ route('cash_collateral_types.create') }}" class="btn btn-primary">
                         <i class="bx bx-plus"></i> Add Type
                     </a>

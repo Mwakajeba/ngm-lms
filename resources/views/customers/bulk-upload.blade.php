@@ -47,7 +47,7 @@
                                                 <li>Fill in the customer data following the format</li>
                                                 <li>Save as CSV format</li>
                                                 <li>Upload the file below</li>
-                                                <li>Select cash collateral options if needed</li>
+                                                <li>Select cash deposit options if needed</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -117,11 +117,11 @@
                                         </div>
                                     </div>
 
-                                    <!-- Cash Collateral Options -->
+                                    <!-- Cash Deposit Options -->
                                     <div class="col-md-12 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="bx bx-money me-2"></i>Cash Collateral Options
+                                                <h6 class="mb-0"><i class="bx bx-money me-2"></i>Cash Deposit Options
                                                 </h6>
                                             </div>
                                             <div class="card-body">
@@ -129,20 +129,19 @@
                                                     <div class="col-md-6 mb-3">
                                                         <div class="form-check">
                                                             <input type="checkbox" class="form-check-input" value="1"
-                                                                name="has_cash_collateral" id="has_cash_collateral">
+                                                                name="has_cash_collateral" id="has_cash_collateral" checked>
                                                             <label class="form-check-label" for="has_cash_collateral">
-                                                                Apply Cash Collateral to All Customers
+                                                                Apply Cash Deposit to All Customers
                                                             </label>
                                                         </div>
                                                     </div>
 
-                                                    <div class="col-md-6 mb-3" id="collateral-type-container"
-                                                        style="display: none;">
-                                                        <label class="form-label">Collateral Type</label>
+                                                    <div class="col-md-6 mb-3" id="collateral-type-container">
+                                                        <label class="form-label">Deposit Type</label>
                                                         <select name="collateral_type_id" class="form-select">
-                                                            <option value="">Select Collateral Type</option>
-                                                            @foreach($collateralTypes as $type)
-                                                                <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                                            <option value="">Select Deposit Type</option>
+                                                            @foreach($collateralTypes as $index => $type)
+                                                                <option value="{{ $type->id }}" {{ $index === 0 ? 'selected' : '' }}>{{ $type->name }}</option>
                                                             @endforeach
                                                         </select>
                                                     </div>
@@ -190,7 +189,8 @@
             }
 
             checkbox.addEventListener('change', toggleCollateralField);
-            toggleCollateralField(); // On load
+            // Initialize the state on page load
+            toggleCollateralField();
 
             // Handle form submission
             form.addEventListener('submit', function () {

@@ -4,13 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Branch;
 use App\Models\Company;
+use App\Models\Group;
 use App\Models\Loan;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use App\Exports\DisbursementsExport;
 use App\Exports\RepaymentExport;
 use App\Models\Repayment;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\PortfolioAtRiskExport;
+use App\Exports\PortfolioExport;
+use App\Exports\PerformanceExport;
+use App\Exports\DelinquencyExport;
+use App\Exports\InternalPortfolioAnalysisExport;
 use PDF;
 
 class LoanReportController extends Controller
@@ -203,16 +211,27 @@ class LoanReportController extends Controller
     {
         $asOfDate = $request->input('as_of_date', date('Y-m-d'));
         $branchId = $request->input('branch_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        $exportType = $request->input('export_type');
 
-        // Get all branches for filter dropdown
+        // Get all branches and loan officers for filter dropdown
         $branches = Branch::all();
+        $loanOfficers = User::whereHas('roles', function($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
 
         $agingData = [];
-        $loansQuery = Loan::with(['customer', 'branch'])
+        $loansQuery = Loan::with(['customer', 'branch', 'loanOfficer'])
             ->where('status', 'active');
+        
         if ($branchId) {
             $loansQuery->where('branch_id', $branchId);
         }
+        
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+        
         $loans = $loansQuery->get();
 
         foreach ($loans as $loan) {
@@ -280,11 +299,12 @@ class LoanReportController extends Controller
                 'customer_no' => $loan->customer->customerNo ?? 'N/A',
                 'phone' => $loan->customer->phone1 ?? 'N/A',
                 'loan_no' => $loan->loanNo ?? 'N/A',
-                'amount' => $loan->amount ?? 'N/A',
+                'amount' => $loan->amount ?? 0,
                 'outstanding_balance' => $outstandingBalance,
                 'disbursed_no' => $loan->disbursed_on ?? 'N/A',
                 'expiry' => $loan->last_repayment_date ?? 'N/A',
                 'branch' => $loan->branch->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
                 'current' => $current,
                 'bucket_1_30' => $bucket_1_30,
                 'bucket_31_60' => $bucket_31_60,
@@ -294,10 +314,20 @@ class LoanReportController extends Controller
             ];
         }
 
+        // Handle export requests
+        if ($exportType && !empty($agingData)) {
+            if ($exportType === 'excel') {
+                return $this->exportLoanAgingToExcel($agingData, $asOfDate, $branchId, $loanOfficerId);
+            } elseif ($exportType === 'pdf') {
+                return $this->exportLoanAgingToPdf($agingData, $asOfDate, $branchId, $loanOfficerId);
+            }
+        }
+
         // Only show data if filter applied
-        $showData = $request->has('as_of_date') || $request->has('branch_id');
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('loan_officer_id');
         return view('loans.reports.loan_aging', [
             'branches' => $branches,
+            'loanOfficers' => $loanOfficers,
             'agingData' => $showData ? $agingData : null,
         ]);
     }
@@ -380,5 +410,1948 @@ class LoanReportController extends Controller
             'loanOfficers' => $loanOfficers,
             'outstandingData' => $showData ? $outstandingData : null,
         ]);
+    }
+
+    /**
+     * Export Loan Aging Report to Excel
+     */
+    private function exportLoanAgingToExcel($agingData, $asOfDate, $branchId = null, $loanOfficerId = null)
+    {
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+        
+        return \Maatwebsite\Excel\Facades\Excel::download(new class($agingData, $asOfDate, $branch, $loanOfficer) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithTitle, \Maatwebsite\Excel\Concerns\WithStyles, \Maatwebsite\Excel\Concerns\ShouldAutoSize {
+            private $agingData;
+            private $asOfDate;
+            private $branch;
+            private $loanOfficer;
+
+            public function __construct($agingData, $asOfDate, $branch, $loanOfficer)
+            {
+                $this->agingData = collect($agingData);
+                $this->asOfDate = $asOfDate;
+                $this->branch = $branch;
+                $this->loanOfficer = $loanOfficer;
+            }
+
+            public function collection()
+            {
+                return $this->agingData->map(function ($row) {
+                    return [
+                        $row['customer'],
+                        $row['customer_no'],
+                        $row['phone'],
+                        $row['loan_no'],
+                        $row['amount'],
+                        $row['outstanding_balance'],
+                        $row['disbursed_no'],
+                        $row['expiry'],
+                        $row['branch'],
+                        $row['loan_officer'],
+                        $row['current'],
+                        $row['bucket_1_30'],
+                        $row['bucket_31_60'],
+                        $row['bucket_61_90'],
+                        $row['bucket_91_plus'],
+                        $row['total_overdue'],
+                    ];
+                });
+            }
+
+            public function headings(): array
+            {
+                return [
+                    'Customer',
+                    'Customer No',
+                    'Phone',
+                    'Loan No',
+                    'Amount',
+                    'Outstanding Balance',
+                    'Disbursed Date',
+                    'Expiry',
+                    'Branch',
+                    'Loan Officer',
+                    'Current',
+                    '1-30 Days',
+                    '31-60 Days',
+                    '61-90 Days',
+                    '91+ Days',
+                    'Total Overdue',
+                ];
+            }
+
+            public function title(): string
+            {
+                return 'Loan Aging Report';
+            }
+
+            public function styles(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet)
+            {
+                return [
+                    1 => ['font' => ['bold' => true]],
+                ];
+            }
+        }, 'loan_aging_report_' . $asOfDate . '.xlsx');
+    }
+
+    /**
+     * Export Loan Aging Report to PDF
+     */
+    private function exportLoanAgingToPdf($agingData, $asOfDate, $branchId = null, $loanOfficerId = null)
+    {
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+        $company = Company::first(); // Get the first company record
+        
+        $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('loans.reports.loan_aging_pdf', [
+            'agingData' => $agingData,
+            'asOfDate' => $asOfDate,
+            'branch' => $branch,
+            'loanOfficer' => $loanOfficer,
+            'company' => $company,
+        ]);
+        
+        // Set PDF to landscape orientation
+        $pdf->setPaper('A4', 'landscape');
+        
+        return $pdf->download('loan_aging_report_' . $asOfDate . '.pdf');
+    }
+
+    public function loanAgingInstallmentReport(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+
+        // Get aging data for installments
+        $agingData = $this->getInstallmentAgingData($asOfDate, $branchId, $loanOfficerId);
+
+        $branches = Branch::orderBy('name')->get();
+        $loanOfficers = User::whereHas('roles', function($query) {
+            $query->where('name', 'loan_officer');
+        })->orderBy('name')->get();
+
+        return view('loans.reports.loan_aging_installment', compact(
+            'agingData', 'asOfDate', 'branch', 'loanOfficer', 'branches', 'loanOfficers'
+        ));
+    }
+
+    public function exportLoanAgingInstallmentToExcel(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+
+        $agingData = $this->getInstallmentAgingData($asOfDate, $branchId, $loanOfficerId);
+
+        return Excel::download(new class($agingData) implements FromArray, WithHeadings {
+            private $agingData;
+
+            public function __construct($agingData)
+            {
+                $this->agingData = $agingData;
+            }
+
+            public function array(): array
+            {
+                return collect($this->agingData)->map(function ($row) {
+                    return [
+                        $row['customer'],
+                        $row['customer_no'],
+                        $row['phone'],
+                        $row['loan_no'],
+                        $row['amount'],
+                        $row['installment_amount'],
+                        $row['disbursed_no'],
+                        $row['expiry'],
+                        $row['branch'],
+                        $row['loan_officer'],
+                        $row['current'],
+                        $row['bucket_1_30'],
+                        $row['bucket_31_60'],
+                        $row['bucket_61_90'],
+                        $row['bucket_91_plus'],
+                        $row['total_overdue']
+                    ];
+                })->toArray();
+            }
+
+            public function headings(): array
+            {
+                return [
+                    'Customer',
+                    'Customer No',
+                    'Phone',
+                    'Loan No',
+                    'Loan Amount',
+                    'Installment Amount',
+                    'Disbursed Date',
+                    'Expiry',
+                    'Branch',
+                    'Loan Officer',
+                    'Current',
+                    '1-30 Days',
+                    '31-60 Days',
+                    '61-90 Days',
+                    '91+ Days',
+                    'Total Due Principal'
+                ];
+            }
+        }, 'loan_aging_installment_report_' . $asOfDate . '.xlsx');
+    }
+
+    public function exportLoanAgingInstallmentToPdf(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+        $company = Company::first();
+
+        $agingData = $this->getInstallmentAgingData($asOfDate, $branchId, $loanOfficerId);
+
+        $pdf = PDF::loadView('loans.reports.loan_aging_installment_pdf', compact(
+            'agingData', 'asOfDate', 'branch', 'loanOfficer', 'company'
+        ));
+
+        $pdf->setPaper('A4', 'landscape');
+
+        return $pdf->download('loan_aging_installment_report_' . $asOfDate . '.pdf');
+    }
+
+    private function getInstallmentAgingData($asOfDate, $branchId = null, $loanOfficerId = null)
+    {
+        $query = Loan::with(['customer', 'branch', 'loanOfficer', 'schedule' => function($q) use ($asOfDate) {
+            $q->where('due_date', '<=', $asOfDate);
+        }, 'schedule.repayments']);
+
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+
+        if ($loanOfficerId) {
+            $query->where('loan_officer_id', $loanOfficerId);
+        }
+
+        $loans = $query->get();
+
+        $agingData = [];
+
+        foreach ($loans as $loan) {
+            $overdueSchedules = $loan->schedule;
+            
+            if ($overdueSchedules->isEmpty()) {
+                continue;
+            }
+
+            $current = 0;
+            $bucket_1_30 = 0;
+            $bucket_31_60 = 0;
+            $bucket_61_90 = 0;
+            $bucket_91_plus = 0;
+
+            foreach ($overdueSchedules as $schedule) {
+                $dueDate = Carbon::parse($schedule->due_date);
+                $asOfDateCarbon = Carbon::parse($asOfDate);
+                
+                // Calculate days past due
+                $daysPastDue = $asOfDateCarbon->diffInDays($dueDate, false);
+                
+                // Calculate outstanding principal for this schedule
+                $principalPaid = $schedule->repayments->sum('principal');
+                $principalDue = $schedule->principal - $principalPaid;
+
+                if ($principalDue <= 0) continue;
+
+                if ($daysPastDue < 0) {
+                    // Future installments
+                    $current += $principalDue;
+                } elseif ($daysPastDue <= 30) {
+                    $bucket_1_30 += $principalDue;
+                } elseif ($daysPastDue <= 60) {
+                    $bucket_31_60 += $principalDue;
+                } elseif ($daysPastDue <= 90) {
+                    $bucket_61_90 += $principalDue;
+                } else {
+                    $bucket_91_plus += $principalDue;
+                }
+            }
+
+            $totalOverdue = $current + $bucket_1_30 + $bucket_31_60 + $bucket_61_90 + $bucket_91_plus;
+
+            if ($current > 0 || $totalOverdue > 0) {
+                $agingData[] = [
+                    'customer' => $loan->customer->name ?? 'N/A',
+                    'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                    'phone' => $loan->customer->phone1 ?? 'N/A',
+                    'loan_no' => $loan->loanNo ?? 'N/A',
+                    'amount' => $loan->amount,
+                    'installment_amount' => $loan->installment_amount ?? ($loan->amount / $loan->period),
+                    'disbursed_no' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('d-m-Y') : 'N/A',
+                    'expiry' => $loan->last_repayment_date ? Carbon::parse($loan->last_repayment_date)->format('d-m-Y') : 'N/A',
+                    'branch' => $loan->branch->name ?? 'N/A',
+                    'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                    'current' => $current,
+                    'bucket_1_30' => $bucket_1_30,
+                    'bucket_31_60' => $bucket_31_60,
+                    'bucket_61_90' => $bucket_61_90,
+                    'bucket_91_plus' => $bucket_91_plus,
+                    'total_overdue' => $totalOverdue,
+                ];
+            }
+        }
+
+        return $agingData;
+    }
+
+    /**
+     * Loan Arrears Report - Shows loans with overdue payments
+     */
+    public function loanArrearsReport(Request $request)
+    {
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('roles', function($query) {
+            $query->where('name', 'Loan Officer');
+        })->get();
+
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
+        // If this is an AJAX request for DataTables
+        if ($request->ajax()) {
+            return $this->getArrearsDataForDataTables($request);
+        }
+        
+        // Load initial arrears data
+        $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
+        
+        return view('loans.reports.loan_arrears', compact('branches', 'groups', 'loanOfficers', 'branchId', 'groupId', 'loanOfficerId', 'arrearsData'));
+    }
+
+    /**
+     * Get arrears data for AJAX DataTables
+     */
+    public function getArrearsDataForDataTables(Request $request)
+    {
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        
+        $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
+
+        return response()->json([
+            'data' => $arrearsData,
+            'recordsTotal' => count($arrearsData),
+            'recordsFiltered' => count($arrearsData),
+        ]);
+    }
+
+    /**
+     * Export Loan Arrears Report to Excel
+     */
+    public function exportLoanArrearsToExcel(Request $request)
+    {
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        
+        $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
+
+        $data = [
+            'arrears_data' => $arrearsData,
+            'branch_name' => $branchId ? Branch::find($branchId)->name : 'All Branches',
+            'group_name' => $groupId ? Group::find($groupId)->name : 'All Groups',
+            'loan_officer_name' => $loanOfficerId ? User::find($loanOfficerId)->name : 'All Officers',
+            'generated_date' => Carbon::now()->format('d-m-Y H:i:s'),
+        ];
+
+        return Excel::download(new \App\Exports\LoanArrearsExport($data), 'loan_arrears_report_' . date('Y_m_d') . '.xlsx');
+    }
+
+    /**
+     * Export Loan Arrears Report to PDF
+     */
+    public function exportLoanArrearsToPdf(Request $request)
+    {
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        
+        $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
+
+        // Get company details
+        $company = Company::first();
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $group = $groupId ? Group::find($groupId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+
+        $data = [
+            'arrears_data' => $arrearsData,
+            'company' => $company,
+            'branch' => $branch,
+            'group' => $group,
+            'loan_officer' => $loanOfficer,
+            'generated_date' => Carbon::now()->format('d-m-Y H:i:s'),
+            'branch_name' => $branch ? $branch->name : 'All Branches',
+            'group_name' => $group ? $group->name : 'All Groups',
+            'loan_officer_name' => $loanOfficer ? $loanOfficer->name : 'All Officers',
+        ];
+
+        $pdf = PDF::loadView('loans.reports.loan_arrears_pdf', $data)
+                  ->setPaper('A3', 'landscape');
+
+        return $pdf->download('loan_arrears_report_' . date('Y_m_d') . '.pdf');
+    }
+
+    /**
+     * Get arrears data for loans that are overdue
+     */
+    private function getArrearsData($branchId = null, $groupId = null, $loanOfficerId = null)
+    {
+        $today = Carbon::now();
+        
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active');
+
+        if ($branchId) {
+            $loansQuery->where('branch_id', $branchId);
+        }
+
+        if ($groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+
+        $loans = $loansQuery->get();
+        $arrearsData = [];
+
+        foreach ($loans as $loan) {
+            $totalArrears = 0;
+            $daysInArrears = 0;
+            $firstOverdueDate = null;
+            $overdueSchedules = [];
+
+            // Check each schedule item for overdue amounts
+            foreach ($loan->schedule->sortBy('due_date') as $schedule) {
+                $dueDate = Carbon::parse($schedule->due_date);
+                
+                if ($dueDate->lt($today) && $schedule->remaining_amount > 0) {
+                    $totalArrears += $schedule->remaining_amount;
+                    $overdueSchedules[] = $schedule;
+                    
+                    if (!$firstOverdueDate) {
+                        $firstOverdueDate = $dueDate;
+                        $daysInArrears = round($firstOverdueDate->diffInDays($today));
+                    }
+                }
+            }
+
+            // Only include loans that have arrears
+            if ($totalArrears > 0) {
+                $arrearsData[] = [
+                    'customer' => $loan->customer->name ?? 'N/A',
+                    'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                    'phone' => $loan->customer->phone1 ?? 'N/A',
+                    'loan_no' => $loan->loanNo ?? 'N/A',
+                    'loan_amount' => $loan->amount,
+                    'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('d-m-Y') : 'N/A',
+                    'branch' => $loan->branch->name ?? 'N/A',
+                    'group' => $loan->group->name ?? 'N/A',
+                    'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                    'arrears_amount' => $totalArrears,
+                    'days_in_arrears' => $daysInArrears,
+                    'first_overdue_date' => $firstOverdueDate ? $firstOverdueDate->format('d-m-Y') : 'N/A',
+                    'overdue_schedules_count' => count($overdueSchedules),
+                    'arrears_severity' => $this->getArrearsSeverity($daysInArrears),
+                ];
+            }
+        }
+
+        // Sort by days in arrears (highest first)
+        usort($arrearsData, function($a, $b) {
+            return $b['days_in_arrears'] - $a['days_in_arrears'];
+        });
+
+        return $arrearsData;
+    }
+
+    /**
+     * Determine arrears severity based on days overdue
+     */
+    private function getArrearsSeverity($daysInArrears)
+    {
+        if ($daysInArrears <= 30) {
+            return 'Low';
+        } elseif ($daysInArrears <= 60) {
+            return 'Medium';
+        } elseif ($daysInArrears <= 90) {
+            return 'High';
+        } else {
+            return 'Critical';
+        }
+    }
+
+    /**
+     * Expected vs Collected Report - Shows expected amounts vs actual collections for a period
+     */
+    public function expectedVsCollectedReport(Request $request)
+    {
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('roles', function($query) {
+            $query->where('name', 'Loan Officer');
+        })->get();
+
+        // Get the expected vs collected data
+        $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
+        
+        return view('loans.reports.expected_vs_collected', compact(
+            'branches', 'groups', 'loanOfficers', 'startDate', 'endDate', 
+            'branchId', 'groupId', 'loanOfficerId', 'reportData'
+        ));
+    }
+
+    /**
+     * Export Expected vs Collected Report to Excel
+     */
+    public function exportExpectedVsCollectedToExcel(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        
+        $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
+
+        $data = [
+            'report_data' => $reportData,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'branch_name' => $branchId ? Branch::find($branchId)->name : 'All Branches',
+            'group_name' => $groupId ? Group::find($groupId)->name : 'All Groups',
+            'loan_officer_name' => $loanOfficerId ? User::find($loanOfficerId)->name : 'All Officers',
+            'generated_date' => Carbon::now()->format('d-m-Y H:i:s'),
+        ];
+
+        return Excel::download(new \App\Exports\ExpectedVsCollectedExport($data), 'expected_vs_collected_report_' . $startDate . '_to_' . $endDate . '.xlsx');
+    }
+
+    /**
+     * Export Expected vs Collected Report to PDF
+     */
+    public function exportExpectedVsCollectedToPdf(Request $request)
+    {
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        
+        $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
+
+        // Get company and filter details
+        $company = Company::first();
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $group = $groupId ? Group::find($groupId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+
+        $data = [
+            'report_data' => $reportData,
+            'company' => $company,
+            'start_date' => $startDate,
+            'end_date' => $endDate,
+            'branch' => $branch,
+            'group' => $group,
+            'loan_officer' => $loanOfficer,
+            'branch_name' => $branch ? $branch->name : 'All Branches',
+            'group_name' => $group ? $group->name : 'All Groups',
+            'loan_officer_name' => $loanOfficer ? $loanOfficer->name : 'All Officers',
+            'generated_date' => Carbon::now()->format('d-m-Y H:i:s'),
+        ];
+
+        $pdf = PDF::loadView('loans.reports.expected_vs_collected_pdf', $data)
+                  ->setPaper('A3', 'landscape');
+
+        return $pdf->download('expected_vs_collected_report_' . $startDate . '_to_' . $endDate . '.pdf');
+    }
+
+    /**
+     * Get expected vs collected data for a specific period
+     */
+    private function getExpectedVsCollectedData($startDate, $endDate, $branchId = null, $groupId = null, $loanOfficerId = null)
+    {
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active');
+
+        if ($branchId) {
+            $loansQuery->where('branch_id', $branchId);
+        }
+
+        if ($groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+
+        $loans = $loansQuery->get();
+        $reportData = [];
+
+        foreach ($loans as $loan) {
+            $expectedPrincipal = 0;
+            $expectedInterest = 0;
+            $expectedFees = 0;
+            $expectedPenalty = 0;
+            $expectedTotal = 0;
+
+            $collectedPrincipal = 0;
+            $collectedInterest = 0;
+            $collectedFees = 0;
+            $collectedPenalty = 0;
+            $collectedTotal = 0;
+
+            // Get schedules that fall within the date range
+            $schedulesInPeriod = $loan->schedule->filter(function($schedule) use ($startDate, $endDate) {
+                $dueDate = Carbon::parse($schedule->due_date);
+                return $dueDate->between(Carbon::parse($startDate), Carbon::parse($endDate));
+            });
+
+            foreach ($schedulesInPeriod as $schedule) {
+                // Calculate expected amounts from schedule
+                $expectedPrincipal += $schedule->principal ?? 0;
+                $expectedInterest += $schedule->interest ?? 0;
+                $expectedFees += $schedule->fee_amount ?? 0;
+                $expectedPenalty += $schedule->penalty_amount ?? 0;
+
+                // Calculate collected amounts from repayments for this schedule
+                $repayments = $schedule->repayments;
+                foreach ($repayments as $repayment) {
+                    $paymentDate = Carbon::parse($repayment->payment_date);
+                    // Only count repayments made within the period
+                    if ($paymentDate->between(Carbon::parse($startDate), Carbon::parse($endDate))) {
+                        $collectedPrincipal += $repayment->principal ?? 0;
+                        $collectedInterest += $repayment->interest ?? 0;
+                        $collectedFees += $repayment->fee_amount ?? 0;
+                        $collectedPenalty += $repayment->penalt_amount ?? 0;
+                    }
+                }
+            }
+
+            $expectedTotal = $expectedPrincipal + $expectedInterest + $expectedFees + $expectedPenalty;
+            $collectedTotal = $collectedPrincipal + $collectedInterest + $collectedFees + $collectedPenalty;
+
+            // Only include loans that have expected amounts in the period
+            if ($expectedTotal > 0) {
+                $variance = $collectedTotal - $expectedTotal;
+                $collectionRate = $expectedTotal > 0 ? ($collectedTotal / $expectedTotal) * 100 : 0;
+
+                $reportData[] = [
+                    'customer' => $loan->customer->name ?? 'N/A',
+                    'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                    'phone' => $loan->customer->phone1 ?? 'N/A',
+                    'loan_no' => $loan->loanNo ?? 'N/A',
+                    'loan_amount' => $loan->amount,
+                    'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('d-m-Y') : 'N/A',
+                    'branch' => $loan->branch->name ?? 'N/A',
+                    'group' => $loan->group->name ?? 'N/A',
+                    'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                    'expected_principal' => $expectedPrincipal,
+                    'expected_interest' => $expectedInterest,
+                    'expected_fees' => $expectedFees,
+                    'expected_penalty' => $expectedPenalty,
+                    'expected_total' => $expectedTotal,
+                    'collected_principal' => $collectedPrincipal,
+                    'collected_interest' => $collectedInterest,
+                    'collected_fees' => $collectedFees,
+                    'collected_penalty' => $collectedPenalty,
+                    'collected_total' => $collectedTotal,
+                    'variance' => $variance,
+                    'collection_rate' => round($collectionRate, 2),
+                    'collection_status' => $this->getCollectionStatus($collectionRate),
+                ];
+            }
+        }
+
+        // Sort by collection rate (lowest first to highlight problem loans)
+        usort($reportData, function($a, $b) {
+            return $a['collection_rate'] <=> $b['collection_rate'];
+        });
+
+        return $reportData;
+    }
+
+    /**
+     * Determine collection status based on collection rate
+     */
+    private function getCollectionStatus($collectionRate)
+    {
+        if ($collectionRate >= 100) {
+            return 'Excellent';
+        } elseif ($collectionRate >= 80) {
+            return 'Good';
+        } elseif ($collectionRate >= 60) {
+            return 'Fair';
+        } elseif ($collectionRate >= 40) {
+            return 'Poor';
+        } else {
+            return 'Critical';
+        }
+    }
+
+    /**
+     * Portfolio at Risk (PAR) Report - Shows loan portfolio risk analysis
+     */
+    public function portfolioAtRiskReport(Request $request)
+    {
+        $asOfDate = $request->input('as_of_date', Carbon::now()->toDateString());
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        $parDays = $request->input('par_days', 30); // Default to PAR 30
+
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+
+        // Get the PAR data
+        $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
+        
+        return view('loans.reports.portfolio_at_risk', compact(
+            'branches', 'groups', 'loanOfficers', 'asOfDate', 
+            'branchId', 'groupId', 'loanOfficerId', 'parDays', 'parData'
+        ));
+    }
+
+    /**
+     * Export Portfolio at Risk Report to Excel
+     */
+    public function exportPortfolioAtRiskToExcel(Request $request)
+    {
+        $asOfDate = $request->input('as_of_date');
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        $parDays = $request->input('par_days', 30);
+        
+        $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
+
+        $data = [
+            'par_data' => $parData,
+            'as_of_date' => $asOfDate,
+            'par_days' => $parDays,
+            'branch_name' => $branchId ? Branch::find($branchId)->name : 'All Branches',
+            'group_name' => $groupId ? Group::find($groupId)->name : 'All Groups',
+            'loan_officer_name' => $loanOfficerId ? User::find($loanOfficerId)->name : 'All Officers',
+            'generated_date' => Carbon::now()->format('d-m-Y H:i:s'),
+        ];
+
+        return Excel::download(new \App\Exports\PortfolioAtRiskExport($data), 'portfolio_at_risk_report_' . $asOfDate . '.xlsx');
+    }
+
+    /**
+     * Export Portfolio at Risk Report to PDF
+     */
+    public function exportPortfolioAtRiskToPdf(Request $request)
+    {
+        $asOfDate = $request->input('as_of_date');
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+        $parDays = $request->input('par_days', 30);
+        
+        $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
+
+        // Get company and filter details
+        $company = Company::first();
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $group = $groupId ? Group::find($groupId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+
+        $data = [
+            'par_data' => $parData,
+            'company' => $company,
+            'as_of_date' => $asOfDate,
+            'par_days' => $parDays,
+            'branch' => $branch,
+            'group' => $group,
+            'loan_officer' => $loanOfficer,
+            'branch_name' => $branch ? $branch->name : 'All Branches',
+            'group_name' => $group ? $group->name : 'All Groups',
+            'loan_officer_name' => $loanOfficer ? $loanOfficer->name : 'All Officers',
+            'generated_date' => Carbon::now()->format('d-m-Y H:i:s'),
+        ];
+
+        $pdf = PDF::loadView('loans.reports.portfolio_at_risk_pdf', $data)
+                  ->setPaper('A3', 'landscape');
+
+        return $pdf->download('portfolio_at_risk_report_' . $asOfDate . '.pdf');
+    }
+
+    /**
+     * Get Portfolio at Risk data
+     */
+    private function getPortfolioAtRiskData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)
+    {
+        $asOfDateCarbon = Carbon::parse($asOfDate);
+        
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active');
+
+        if ($branchId) {
+            $loansQuery->where('branch_id', $branchId);
+        }
+
+        if ($groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+
+        $loans = $loansQuery->get();
+        $parData = [];
+
+        foreach ($loans as $loan) {
+            $outstandingBalance = 0;
+            $atRiskAmount = 0;
+            $daysInArrears = 0;
+            $isAtRisk = false;
+            $oldestOverdueDate = null;
+
+            // Calculate outstanding balance from schedule
+            $totalDue = 0;
+            $totalPaid = 0;
+            
+            foreach ($loan->schedule as $schedule) {
+                $scheduleDue = ($schedule->principal ?? 0) + ($schedule->interest ?? 0) + ($schedule->fee_amount ?? 0);
+                $schedulePaid = $schedule->repayments->sum('amount');
+                
+                $totalDue += $scheduleDue;
+                $totalPaid += $schedulePaid;
+            }
+            
+            $outstandingBalance = $totalDue - $totalPaid;
+
+            // Skip loans with no outstanding balance
+            if ($outstandingBalance <= 0) {
+                continue;
+            }
+
+            // Check schedules for overdue amounts
+            $overdueAmount = 0;
+            foreach ($loan->schedule as $schedule) {
+                $dueDate = Carbon::parse($schedule->due_date);
+                
+                if ($dueDate->lte($asOfDateCarbon)) {
+                    $scheduleDue = ($schedule->principal ?? 0) + ($schedule->interest ?? 0) + ($schedule->fee_amount ?? 0);
+                    $schedulePaid = $schedule->repayments->sum('amount');
+                    $scheduleRemaining = $scheduleDue - $schedulePaid;
+                    
+                    if ($scheduleRemaining > 0) {
+                        $daysPastDue = $asOfDateCarbon->diffInDays($dueDate);
+                        $overdueAmount += $scheduleRemaining;
+                        
+                        if ($daysPastDue >= $parDays) {
+                            $isAtRisk = true;
+                            
+                            if (!$oldestOverdueDate || $dueDate->lt($oldestOverdueDate)) {
+                                $oldestOverdueDate = $dueDate;
+                                $daysInArrears = $daysPastDue;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // If loan is at risk, the entire outstanding balance is considered at risk
+            $atRiskAmount = $isAtRisk ? $outstandingBalance : 0;
+
+            // Use loan model's days_in_arrears if available, otherwise calculate from oldest overdue
+            if (isset($loan->days_in_arrears) && $loan->days_in_arrears > 0) {
+                $daysInArrears = $loan->days_in_arrears;
+                $isAtRisk = $daysInArrears >= $parDays;
+                $atRiskAmount = $isAtRisk ? $outstandingBalance : 0;
+            }
+
+            // Calculate risk metrics
+            $riskPercentage = $outstandingBalance > 0 ? ($atRiskAmount / $outstandingBalance) * 100 : 0;
+            $riskLevel = $this->getRiskLevel($daysInArrears);
+
+            $parData[] = [
+                'customer' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                'phone' => $loan->customer->phone1 ?? 'N/A',
+                'loan_no' => $loan->loanNo ?? 'N/A',
+                'loan_amount' => $loan->amount,
+                'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('d-m-Y') : 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'group' => $loan->group->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'outstanding_balance' => $outstandingBalance,
+                'at_risk_amount' => $atRiskAmount,
+                'risk_percentage' => round($riskPercentage, 2),
+                'days_in_arrears' => $daysInArrears,
+                'oldest_overdue_date' => $oldestOverdueDate ? $oldestOverdueDate->format('d-m-Y') : 'N/A',
+                'risk_level' => $riskLevel,
+                'is_at_risk' => $isAtRisk,
+                'par_days' => $parDays,
+            ];
+        }
+
+        // Sort by days in arrears (highest first, then by outstanding balance)
+        usort($parData, function($a, $b) {
+            if ($a['days_in_arrears'] == $b['days_in_arrears']) {
+                return $b['outstanding_balance'] <=> $a['outstanding_balance'];
+            }
+            return $b['days_in_arrears'] <=> $a['days_in_arrears'];
+        });
+
+        return $parData;
+    }
+
+    /**
+     * Internal Portfolio Analysis Report (Conservative Approach)
+     */
+    public function internalPortfolioAnalysisReport(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+        $parDays = $request->get('par_days', 30);
+
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        $analysisData = $this->getInternalPortfolioAnalysisData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
+
+        return view('loans.reports.internal_portfolio_analysis', compact(
+            'analysisData', 'branches', 'groups', 'loanOfficers', 'company',
+            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'parDays'
+        ));
+    }
+
+    /**
+     * Export Internal Portfolio Analysis to Excel
+     */
+    public function exportInternalPortfolioAnalysisToExcel(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+        $parDays = $request->get('par_days', 30);
+
+        $analysisData = $this->getInternalPortfolioAnalysisData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
+        $company = Company::first();
+
+        $filters = [
+            'as_of_date' => $asOfDate,
+            'par_days' => $parDays,
+            'branch_name' => $branchId ? Branch::find($branchId)->name : 'All Branches',
+            'group_name' => $groupId ? Group::find($groupId)->name : 'All Groups',
+            'loan_officer_name' => $loanOfficerId ? User::find($loanOfficerId)->name : 'All Officers',
+        ];
+
+        $filename = 'internal_portfolio_analysis_' . date('Y_m_d_His') . '.xlsx';
+        
+        return Excel::download(new InternalPortfolioAnalysisExport($analysisData, $filters, $company), $filename);
+    }
+
+    /**
+     * Export Internal Portfolio Analysis to PDF
+     */
+    public function exportInternalPortfolioAnalysisToPdf(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+        $parDays = $request->get('par_days', 30);
+
+        $analysisData = $this->getInternalPortfolioAnalysisData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
+        $company = Company::first();
+
+        $data = [
+            'analysis_data' => $analysisData,
+            'company' => $company,
+            'generated_date' => now()->format('d-m-Y H:i:s'),
+            'as_of_date' => $asOfDate,
+            'par_days' => $parDays,
+            'branch_name' => $branchId ? Branch::find($branchId)->name : 'All Branches',
+            'group_name' => $groupId ? Group::find($groupId)->name : 'All Groups',
+            'loan_officer_name' => $loanOfficerId ? User::find($loanOfficerId)->name : 'All Officers',
+        ];
+
+        $filename = 'internal_portfolio_analysis_' . date('Y_m_d_His') . '.pdf';
+        
+        $pdf = PDF::loadView('loans.reports.internal_portfolio_analysis_pdf', $data);
+        $pdf->setPaper('A3', 'landscape');
+        $pdf->setOptions([
+            'margin-top' => 10,
+            'margin-right' => 15,
+            'margin-bottom' => 10,
+            'margin-left' => 15,
+        ]);
+
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Get Internal Portfolio Analysis Data (Conservative Approach - Only Overdue Amounts)
+     */
+    private function getInternalPortfolioAnalysisData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)
+    {
+        $asOfDateCarbon = Carbon::parse($asOfDate);
+        
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active');
+
+        if ($branchId) {
+            $loansQuery->where('branch_id', $branchId);
+        }
+
+        if ($groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+
+        $loans = $loansQuery->get();
+        $analysisData = [];
+
+        foreach ($loans as $loan) {
+            $outstandingBalance = 0;
+            $overdueAmount = 0;
+            $currentAmount = 0;
+            $daysInArrears = 0;
+            $isAtRisk = false;
+            $oldestOverdueDate = null;
+
+            // Calculate outstanding balance and overdue amounts from schedule
+            $totalDue = 0;
+            $totalPaid = 0;
+            
+            foreach ($loan->schedule as $schedule) {
+                $scheduleDue = ($schedule->principal ?? 0) + ($schedule->interest ?? 0) + ($schedule->fee_amount ?? 0);
+                $schedulePaid = $schedule->repayments->sum('amount');
+                $scheduleRemaining = $scheduleDue - $schedulePaid;
+                
+                $totalDue += $scheduleDue;
+                $totalPaid += $schedulePaid;
+                
+                $dueDate = Carbon::parse($schedule->due_date);
+                
+                if ($scheduleRemaining > 0) {
+                    if ($dueDate->lte($asOfDateCarbon)) {
+                        // Overdue amounts
+                        $daysPastDue = $asOfDateCarbon->diffInDays($dueDate);
+                        $overdueAmount += $scheduleRemaining;
+                        
+                        if ($daysPastDue >= $parDays) {
+                            $isAtRisk = true;
+                            
+                            if (!$oldestOverdueDate || $dueDate->lt($oldestOverdueDate)) {
+                                $oldestOverdueDate = $dueDate;
+                                $daysInArrears = $daysPastDue;
+                            }
+                        }
+                    } else {
+                        // Current/future amounts
+                        $currentAmount += $scheduleRemaining;
+                    }
+                }
+            }
+            
+            $outstandingBalance = $totalDue - $totalPaid;
+
+            // Skip loans with no outstanding balance
+            if ($outstandingBalance <= 0) {
+                continue;
+            }
+
+            // Use loan model's days_in_arrears if available
+            if (isset($loan->days_in_arrears) && $loan->days_in_arrears > 0) {
+                $daysInArrears = $loan->days_in_arrears;
+                $isAtRisk = $daysInArrears >= $parDays;
+            }
+
+            // Conservative approach: Only overdue amounts are at risk
+            $atRiskAmount = $isAtRisk ? $overdueAmount : 0;
+
+            // Calculate exposure ratios
+            $overdueRatio = $outstandingBalance > 0 ? ($overdueAmount / $outstandingBalance) * 100 : 0;
+            $riskRatio = $outstandingBalance > 0 ? ($atRiskAmount / $outstandingBalance) * 100 : 0;
+            $riskLevel = $this->getRiskLevel($daysInArrears);
+
+            $analysisData[] = [
+                'customer' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                'phone' => $loan->customer->phone1 ?? 'N/A',
+                'loan_no' => $loan->loanNo ?? 'N/A',
+                'loan_amount' => $loan->amount,
+                'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('d-m-Y') : 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'group' => $loan->group->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'outstanding_balance' => $outstandingBalance,
+                'overdue_amount' => $overdueAmount,
+                'current_amount' => $currentAmount,
+                'at_risk_amount' => $atRiskAmount,
+                'overdue_ratio' => round($overdueRatio, 2),
+                'risk_ratio' => round($riskRatio, 2),
+                'days_in_arrears' => $daysInArrears,
+                'oldest_overdue_date' => $oldestOverdueDate ? $oldestOverdueDate->format('d-m-Y') : 'N/A',
+                'risk_level' => $riskLevel,
+                'is_at_risk' => $isAtRisk,
+                'par_days' => $parDays,
+                'exposure_category' => $this->getExposureCategory($overdueRatio),
+            ];
+        }
+
+        // Sort by overdue ratio (highest first, then by outstanding balance)
+        usort($analysisData, function($a, $b) {
+            if ($a['overdue_ratio'] == $b['overdue_ratio']) {
+                return $b['outstanding_balance'] <=> $a['outstanding_balance'];
+            }
+            return $b['overdue_ratio'] <=> $a['overdue_ratio'];
+        });
+
+        return $analysisData;
+    }
+
+    /**
+     * Get exposure category based on overdue ratio
+     */
+    private function getExposureCategory($overdueRatio)
+    {
+        if ($overdueRatio == 0) {
+            return 'Current';
+        } elseif ($overdueRatio <= 25) {
+            return 'Low Exposure';
+        } elseif ($overdueRatio <= 50) {
+            return 'Medium Exposure';
+        } elseif ($overdueRatio <= 75) {
+            return 'High Exposure';
+        } else {
+            return 'Critical Exposure';
+        }
+    }
+
+    /**
+     * Determine risk level based on days in arrears
+     */
+    private function getRiskLevel($daysInArrears)
+    {
+        if ($daysInArrears == 0) {
+            return 'Low';
+        } elseif ($daysInArrears <= 30) {
+            return 'Low';
+        } elseif ($daysInArrears <= 60) {
+            return 'Medium';
+        } elseif ($daysInArrears <= 90) {
+            return 'High';
+        } else {
+            return 'Critical';
+        }
+    }
+
+    /**
+     * Loan Portfolio Report - Comprehensive overview of all active loans
+     */
+    public function portfolioReport(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $status = $request->get('status') ?: 'all';
+        $exportType = $request->get('export_type');
+
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        // Determine if we should show data (when form is submitted)
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('group_id') || 
+                   $request->has('loan_officer_id') || $request->has('status') || $request->isMethod('get');
+
+        $portfolioData = null;
+        if ($showData) {
+            $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
+            
+            // Handle exports
+            if ($exportType) {
+                if ($exportType === 'excel') {
+                    return $this->exportPortfolioToExcel($request);
+                } elseif ($exportType === 'pdf') {
+                    return $this->exportPortfolioToPdf($request);
+                }
+            }
+        }
+
+        return view('loans.reports.portfolio', compact(
+            'portfolioData', 'branches', 'groups', 'loanOfficers', 'company',
+            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'status', 'showData'
+        ));
+    }
+
+    /**
+     * Export Portfolio Report to Excel
+     */
+    public function exportPortfolioToExcel(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $status = $request->get('status') ?: 'all';
+
+        $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
+
+        $filename = 'loan_portfolio_report_' . $asOfDate . '.xlsx';
+        
+        return Excel::download(new PortfolioExport($portfolioData), $filename);
+    }
+
+    /**
+     * Export Portfolio Report to PDF
+     */
+    public function exportPortfolioToPdf(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $status = $request->get('status') ?: 'all';
+        
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
+
+        $pdf = PDF::loadView('loans.reports.portfolio_pdf', compact(
+            'portfolioData', 'branches', 'groups', 'loanOfficers', 'company',
+            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'status'
+        ));
+        
+        $pdf->setPaper('A3', 'landscape');
+        $pdf->setOptions(['margin-left' => 10, 'margin-right' => 10, 'margin-top' => 10, 'margin-bottom' => 10]);
+        
+        $filename = 'loan_portfolio_report_' . $asOfDate . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Get Portfolio Data
+     */
+    private function getPortfolioData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $status = 'all')
+    {
+        $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments', 'repayments'])
+            ->when($branchId, function($q) use ($branchId) {
+                return $q->where('branch_id', $branchId);
+            })
+            ->when($groupId, function($q) use ($groupId) {
+                return $q->where('group_id', $groupId);
+            })
+            ->when($loanOfficerId, function($q) use ($loanOfficerId) {
+                return $q->where('loan_officer_id', $loanOfficerId);
+            });
+
+        if ($status !== 'all') {
+            $query->where('status', $status);
+        }
+
+        $loans = $query->get();
+        $portfolioData = [];
+        
+        $totalDisbursed = 0;
+        $totalOutstanding = 0;
+        $totalPaid = 0;
+        $totalLoans = $loans->count();
+        $activeLoans = 0;
+        $completedLoans = 0;
+        $defaultedLoans = 0;
+
+        foreach ($loans as $loan) {
+            // Calculate loan metrics using correct field names from migration
+            $disbursedAmount = $loan->amount ?? 0; // Use 'amount' field for disbursed amount
+            
+            // Calculate total due - prefer loan amount_total, fallback to amount + interest
+            $totalDue = $loan->amount_total ?? 0;
+            if ($totalDue == 0) {
+                $totalDue = $disbursedAmount + ($loan->interest_amount ?? 0);
+            }
+            
+            // If we still have no total due and there's a schedule, use schedule calculation
+            if ($totalDue == 0 && $loan->schedule->count() > 0) {
+                $totalDue = $loan->schedule->sum(function($schedule) {
+                    return $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0);
+                });
+            }
+            
+            // If still no total due, fallback to disbursed amount
+            if ($totalDue == 0) {
+                $totalDue = $disbursedAmount;
+            }
+            
+            // Calculate total repaid - try from schedule repayments first, then direct repayments
+            $totalRepaid = 0;
+            if ($loan->schedule->count() > 0) {
+                $totalRepaid = $loan->schedule->sum(function($schedule) {
+                    return $schedule->repayments->sum(function($repayment) {
+                        return $repayment->amount ?? ($repayment->principal + $repayment->interest + ($repayment->fee_amount ?? 0));
+                    });
+                });
+            } else {
+                // Fallback to direct repayments
+                $totalRepaid = $loan->repayments->sum('amount') ?? 0;
+            }
+            
+            $outstandingAmount = max(0, $totalDue - $totalRepaid);
+            
+            // Calculate performance metrics
+            $repaymentRate = $totalDue > 0 ? ($totalRepaid / $totalDue) * 100 : 0;
+            
+            // Use loan model attributes if available, otherwise calculate
+            $daysInArrears = 0;
+            if (method_exists($loan, 'getDaysInArrearsAttribute')) {
+                $daysInArrears = $loan->days_in_arrears ?? 0;
+            }
+            $isInArrears = $daysInArrears > 0;
+            
+            // Loan status metrics
+            if ($loan->status === 'active') $activeLoans++;
+            elseif ($loan->status === 'completed') $completedLoans++;
+            elseif ($loan->status === 'defaulted') $defaultedLoans++;
+
+            $portfolioData[] = [
+                'loan_id' => $loan->id,
+                'customer' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? $loan->customer->customer_no ?? 'N/A',
+                'phone' => $loan->customer->phone1 ?? $loan->customer->phone ?? 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'group' => $loan->group->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'disbursed_amount' => $disbursedAmount,
+                'outstanding_amount' => $outstandingAmount,
+                'total_due' => $totalDue,
+                'total_paid' => $totalRepaid,
+                'repayment_rate' => $repaymentRate,
+                'days_in_arrears' => $daysInArrears,
+                'is_in_arrears' => $isInArrears,
+                'status' => $loan->status,
+                'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('Y-m-d') : 'N/A', // Use 'disbursed_on'
+                'maturity_date' => $loan->last_repayment_date ? Carbon::parse($loan->last_repayment_date)->format('Y-m-d') : 'N/A', // Use 'last_repayment_date' for expiry
+            ];
+
+            $totalDisbursed += $disbursedAmount;
+            $totalOutstanding += $outstandingAmount;
+            $totalPaid += $totalRepaid;
+        }
+
+        // Calculate summary metrics
+        $overallRepaymentRate = $totalDisbursed > 0 ? ($totalPaid / $totalDisbursed) * 100 : 0;
+        $portfolioAtRisk = collect($portfolioData)->where('is_in_arrears', true)->sum('outstanding_amount');
+        $parRatio = $totalOutstanding > 0 ? ($portfolioAtRisk / $totalOutstanding) * 100 : 0;
+
+        return [
+            'summary' => [
+                'total_loans' => $totalLoans,
+                'active_loans' => $activeLoans,
+                'completed_loans' => $completedLoans,
+                'defaulted_loans' => $defaultedLoans,
+                'total_disbursed' => $totalDisbursed,
+                'total_outstanding' => $totalOutstanding,
+                'total_paid' => $totalPaid,
+                'overall_repayment_rate' => $overallRepaymentRate,
+                'portfolio_at_risk' => $portfolioAtRisk,
+                'par_ratio' => $parRatio,
+            ],
+            'loans' => $portfolioData,
+        ];
+    }
+
+    /**
+     * Loan Performance Report - Analyze loan performance metrics and repayment trends
+     */
+    public function performanceReport(Request $request)
+    {
+        $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $exportType = $request->get('export_type');
+
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        // Determine if we should show data (when form is submitted)
+        $showData = $request->has('from_date') || $request->has('to_date') || $request->has('branch_id') || 
+                   $request->has('group_id') || $request->has('loan_officer_id') || $request->isMethod('get');
+
+        $performanceData = null;
+        if ($showData) {
+            $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
+            
+            // Handle exports
+            if ($exportType) {
+                if ($exportType === 'excel') {
+                    return $this->exportPerformanceToExcel($request);
+                } elseif ($exportType === 'pdf') {
+                    return $this->exportPerformanceToPdf($request);
+                }
+            }
+        }
+
+        return view('loans.reports.performance', compact(
+            'performanceData', 'branches', 'groups', 'loanOfficers', 'company',
+            'fromDate', 'toDate', 'branchId', 'groupId', 'loanOfficerId', 'showData'
+        ));
+    }
+
+    /**
+     * Export Performance Report to Excel
+     */
+    public function exportPerformanceToExcel(Request $request)
+    {
+        $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+
+        $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
+
+        $filename = 'loan_performance_report_' . $fromDate . '_to_' . $toDate . '.xlsx';
+        
+        return Excel::download(new PerformanceExport($performanceData), $filename);
+    }
+
+    /**
+     * Export Performance Report to PDF
+     */
+    public function exportPerformanceToPdf(Request $request)
+    {
+        $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
+
+        $pdf = PDF::loadView('loans.reports.performance_pdf', compact(
+            'performanceData', 'branches', 'groups', 'loanOfficers', 'company',
+            'fromDate', 'toDate', 'branchId', 'groupId', 'loanOfficerId'
+        ));
+        
+        $pdf->setPaper('A3', 'landscape');
+        $pdf->setOptions(['margin-left' => 10, 'margin-right' => 10, 'margin-top' => 10, 'margin-bottom' => 10]);
+        
+        $filename = 'loan_performance_report_' . $fromDate . '_to_' . $toDate . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Get Performance Data
+     */
+    private function getPerformanceData($fromDate, $toDate, $branchId = null, $groupId = null, $loanOfficerId = null)
+    {
+        $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments'])
+            ->where('status', 'active')
+            ->when($branchId, function($q) use ($branchId) {
+                return $q->where('branch_id', $branchId);
+            })
+            ->when($groupId, function($q) use ($groupId) {
+                return $q->where('group_id', $groupId);
+            })
+            ->when($loanOfficerId, function($q) use ($loanOfficerId) {
+                return $q->where('loan_officer_id', $loanOfficerId);
+            });
+
+        $loans = $query->get();
+        $performanceData = [];
+        
+        // Period metrics
+        $periodicRepayments = Repayment::whereBetween('payment_date', [$fromDate, $toDate])
+            ->when($branchId, function($q) use ($branchId) {
+                return $q->whereHas('loanSchedule.loan', function($lq) use ($branchId) {
+                    $lq->where('branch_id', $branchId);
+                });
+            })
+            ->when($groupId, function($q) use ($groupId) {
+                return $q->whereHas('loanSchedule.loan', function($lq) use ($groupId) {
+                    $lq->where('group_id', $groupId);
+                });
+            })
+            ->when($loanOfficerId, function($q) use ($loanOfficerId) {
+                return $q->whereHas('loanSchedule.loan', function($lq) use ($loanOfficerId) {
+                    $lq->where('loan_officer_id', $loanOfficerId);
+                });
+            })
+            ->sum(DB::raw('principal + interest + COALESCE(fee_amount, 0) + COALESCE(penalt_amount, 0)'));
+
+        $totalLoans = $loans->count();
+        $totalDisbursed = 0;
+        $totalOutstanding = 0;
+        $totalRepaid = 0;
+        $loansInArrears = 0;
+        $onTimePayments = 0;
+        $latePayments = 0;
+        $averageDaysInArrears = 0;
+        $totalDaysInArrears = 0;
+
+        foreach ($loans as $loan) {
+            // Calculate loan metrics using correct field names from migration
+            $disbursedAmount = $loan->amount ?? 0; // Use 'amount' field for disbursed amount
+            $totalDue = $loan->schedule->sum(function($schedule) {
+                return $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0);
+            });
+            $totalPaid = $loan->schedule->sum(function($schedule) {
+                return $schedule->repayments->sum(function($repayment) {
+                    return $repayment->principal + $repayment->interest + ($repayment->fee_amount ?? 0) + ($repayment->penalt_amount ?? 0);
+                });
+            });
+            $outstandingAmount = $totalDue - $totalPaid;
+            
+            // Performance metrics
+            $daysInArrears = $loan->days_in_arrears ?? 0;
+            $isInArrears = $daysInArrears > 0;
+            $repaymentRate = $totalDue > 0 ? ($totalPaid / $totalDue) * 100 : 0;
+            
+            if ($isInArrears) {
+                $loansInArrears++;
+                $totalDaysInArrears += $daysInArrears;
+            }
+
+            // Payment performance analysis
+            $schedulePayments = $loan->schedule()->whereHas('repayments', function($q) use ($fromDate, $toDate) {
+                $q->whereBetween('payment_date', [$fromDate, $toDate]);
+            })->get();
+
+            foreach ($schedulePayments as $schedule) {
+                $repayments = $schedule->repayments()->whereBetween('payment_date', [$fromDate, $toDate])->get();
+                foreach ($repayments as $repayment) {
+                    if ($repayment->payment_date <= $schedule->due_date) {
+                        $onTimePayments++;
+                    } else {
+                        $latePayments++;
+                    }
+                }
+            }
+
+            $performanceData[] = [
+                'loan_id' => $loan->id,
+                'customer' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'group' => $loan->group->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'disbursed_amount' => $disbursedAmount,
+                'outstanding_amount' => $outstandingAmount,
+                'total_paid' => $totalPaid,
+                'repayment_rate' => $repaymentRate,
+                'days_in_arrears' => $daysInArrears,
+                'is_in_arrears' => $isInArrears,
+                'performance_grade' => $this->getPerformanceGrade($repaymentRate, $daysInArrears),
+                'risk_category' => $this->getRiskCategory($daysInArrears),
+            ];
+
+            $totalDisbursed += $disbursedAmount;
+            $totalOutstanding += $outstandingAmount;
+            $totalRepaid += $totalPaid;
+        }
+
+        // Calculate averages and ratios
+        $averageDaysInArrears = $loansInArrears > 0 ? $totalDaysInArrears / $loansInArrears : 0;
+        $totalPayments = $onTimePayments + $latePayments;
+        $onTimePaymentRate = $totalPayments > 0 ? ($onTimePayments / $totalPayments) * 100 : 0;
+        $latePaymentRate = $totalPayments > 0 ? ($latePayments / $totalPayments) * 100 : 0;
+        $arrearsRate = $totalLoans > 0 ? ($loansInArrears / $totalLoans) * 100 : 0;
+        $overallRepaymentRate = $totalDisbursed > 0 ? ($totalRepaid / $totalDisbursed) * 100 : 0;
+
+        // Calculate performance grades counts
+        $excellent_loans = collect($performanceData)->where('performance_grade', 'Excellent')->count();
+        $good_loans = collect($performanceData)->where('performance_grade', 'Good')->count();
+        $fair_loans = collect($performanceData)->where('performance_grade', 'Fair')->count();
+        $poor_loans = collect($performanceData)->where('performance_grade', 'Poor')->count();
+
+        // Calculate average repayment rate
+        $average_repayment_rate = $totalLoans > 0
+            ? collect($performanceData)->avg('repayment_rate')
+            : 0;
+
+        // Calculate total collections (all time)
+        $total_collections = collect($performanceData)->sum('total_paid');
+
+        // Calculate period collections (for the selected period)
+        $period_collections = $periodicRepayments;
+
+        return [
+            'summary' => [
+                'total_loans' => $totalLoans,
+                'excellent_loans' => $excellent_loans,
+                'good_loans' => $good_loans,
+                'fair_loans' => $fair_loans,
+                'poor_loans' => $poor_loans,
+                'average_repayment_rate' => $average_repayment_rate,
+                'total_collections' => $total_collections,
+                'period_collections' => $period_collections,
+                'total_disbursed' => $totalDisbursed,
+                'total_outstanding' => $totalOutstanding,
+                'total_repaid' => $totalRepaid,
+                'periodic_repayments' => $periodicRepayments,
+                'loans_in_arrears' => $loansInArrears,
+                'average_days_in_arrears' => $averageDaysInArrears,
+                'on_time_payments' => $onTimePayments,
+                'late_payments' => $latePayments,
+                'on_time_payment_rate' => $onTimePaymentRate,
+                'late_payment_rate' => $latePaymentRate,
+                'arrears_rate' => $arrearsRate,
+                'overall_repayment_rate' => $overallRepaymentRate,
+            ],
+            'loans' => $performanceData,
+        ];
+    }
+
+    /**
+     * Get Performance Grade
+     */
+    private function getPerformanceGrade($repaymentRate, $daysInArrears)
+    {
+        if ($repaymentRate >= 95 && $daysInArrears == 0) {
+            return 'Excellent';
+        } elseif ($repaymentRate >= 85 && $daysInArrears <= 15) {
+            return 'Good';
+        } elseif ($repaymentRate >= 70 && $daysInArrears <= 30) {
+            return 'Fair';
+        } elseif ($repaymentRate >= 50 && $daysInArrears <= 60) {
+            return 'Poor';
+        } else {
+            return 'Critical';
+        }
+    }
+
+    /**
+     * Get Risk Category
+     */
+    private function getRiskCategory($daysInArrears)
+    {
+        if ($daysInArrears == 0) {
+            return 'Low Risk';
+        } elseif ($daysInArrears <= 30) {
+            return 'Medium Risk';
+        } elseif ($daysInArrears <= 90) {
+            return 'High Risk';
+        } else {
+            return 'Critical Risk';
+        }
+    }
+
+    /**
+     * Delinquency Report - Track overdue loans and payment delinquencies
+     */
+    public function delinquencyReport(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $bucket = $request->get('bucket');
+        $delinquencyDays = $request->get('delinquency_days', 1); // Minimum days to be considered delinquent
+        $exportType = $request->get('export_type');
+
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        // Determine if we should show data (when form is submitted)
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('group_id') || 
+                   $request->has('loan_officer_id') || $request->has('bucket') || $request->isMethod('get');
+
+        $delinquencyData = null;
+        if ($showData) {
+            $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays);
+            
+            // Handle exports
+            if ($exportType) {
+                if ($exportType === 'excel') {
+                    return $this->exportDelinquencyToExcel($request);
+                } elseif ($exportType === 'pdf') {
+                    return $this->exportDelinquencyToPdf($request);
+                }
+            }
+        }
+
+        return view('loans.reports.delinquency', compact(
+            'delinquencyData', 'branches', 'groups', 'loanOfficers', 'company',
+            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'bucket', 'delinquencyDays', 'showData'
+        ));
+    }
+
+    /**
+     * Export Delinquency Report to Excel
+     */
+    public function exportDelinquencyToExcel(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $delinquencyDays = $request->get('delinquency_days', 1);
+
+        $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays);
+
+        $filename = 'delinquency_report_' . $asOfDate . '.xlsx';
+        
+        return Excel::download(new DelinquencyExport($delinquencyData), $filename);
+    }
+
+    /**
+     * Export Delinquency Report to PDF
+     */
+    public function exportDelinquencyToPdf(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $delinquencyDays = $request->get('delinquency_days', 1);
+        
+        $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays);
+
+        $pdf = PDF::loadView('loans.reports.delinquency_pdf', compact(
+            'delinquencyData', 'branches', 'groups', 'loanOfficers', 'company',
+            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'delinquencyDays'
+        ));
+        
+        $pdf->setPaper('A3', 'landscape');
+        $pdf->setOptions(['margin-left' => 10, 'margin-right' => 10, 'margin-top' => 10, 'margin-bottom' => 10]);
+        
+        $filename = 'delinquency_report_' . $asOfDate . '.pdf';
+        
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Get Delinquency Data
+     */
+    private function getDelinquencyData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $delinquencyDays = 1)
+    {
+        $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments'])
+            ->where('status', 'active')
+            ->when($branchId, function($q) use ($branchId) {
+                return $q->where('branch_id', $branchId);
+            })
+            ->when($groupId, function($q) use ($groupId) {
+                return $q->where('group_id', $groupId);
+            })
+            ->when($loanOfficerId, function($q) use ($loanOfficerId) {
+                return $q->where('loan_officer_id', $loanOfficerId);
+            });
+
+        $loans = $query->get();
+        $delinquencyData = [];
+        
+        $totalLoans = $loans->count();
+        $delinquentLoans = 0;
+        $totalDelinquentAmount = 0;
+        $totalOutstanding = 0;
+        
+        // Delinquency buckets
+        $bucket1to30 = ['count' => 0, 'amount' => 0]; // 1-30 days
+        $bucket31to60 = ['count' => 0, 'amount' => 0]; // 31-60 days
+        $bucket61to90 = ['count' => 0, 'amount' => 0]; // 61-90 days
+        $bucket91to180 = ['count' => 0, 'amount' => 0]; // 91-180 days
+        $bucket180plus = ['count' => 0, 'amount' => 0]; // 180+ days
+
+        foreach ($loans as $loan) {
+            // Calculate loan metrics
+            $totalDue = $loan->schedule->sum(function($schedule) {
+                return $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0);
+            });
+            $totalPaid = $loan->schedule->sum(function($schedule) {
+                return $schedule->repayments->sum('amount');
+            });
+            $outstandingAmount = $totalDue - $totalPaid;
+            $totalOutstanding += $outstandingAmount;
+            
+            // Get days in arrears
+            $daysInArrears = $loan->days_in_arrears ?? 0;
+            $isDelinquent = $daysInArrears >= $delinquencyDays;
+            
+            if ($isDelinquent) {
+                $delinquentLoans++;
+                $totalDelinquentAmount += $outstandingAmount;
+
+                // Categorize into buckets
+                if ($daysInArrears >= 1 && $daysInArrears <= 30) {
+                    $bucket1to30['count']++;
+                    $bucket1to30['amount'] += $outstandingAmount;
+                } elseif ($daysInArrears >= 31 && $daysInArrears <= 60) {
+                    $bucket31to60['count']++;
+                    $bucket31to60['amount'] += $outstandingAmount;
+                } elseif ($daysInArrears >= 61 && $daysInArrears <= 90) {
+                    $bucket61to90['count']++;
+                    $bucket61to90['amount'] += $outstandingAmount;
+                } elseif ($daysInArrears >= 91 && $daysInArrears <= 180) {
+                    $bucket91to180['count']++;
+                    $bucket91to180['amount'] += $outstandingAmount;
+                } else {
+                    $bucket180plus['count']++;
+                    $bucket180plus['amount'] += $outstandingAmount;
+                }
+
+                $delinquencyData[] = [
+                    'loan_id' => $loan->id,
+                    'customer' => $loan->customer->name ?? 'N/A',
+                    'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                    'phone' => $loan->customer->phone1 ?? 'N/A',
+                    'branch' => $loan->branch->name ?? 'N/A',
+                    'group' => $loan->group->name ?? 'N/A',
+                    'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                    'outstanding_amount' => $outstandingAmount,
+                    'days_in_arrears' => $daysInArrears,
+                    'delinquency_bucket' => $this->getDelinquencyBucket($daysInArrears),
+                    'severity_level' => $this->getSeverityLevel($daysInArrears),
+                    'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('Y-m-d') : 'N/A', // Use 'disbursed_on'
+                    'last_payment_date' => $this->getLastPaymentDate($loan),
+                    'next_due_date' => $this->getNextDueDate($loan),
+                ];
+            }
+        }
+
+        // Calculate percentages
+        $delinquencyRate = $totalLoans > 0 ? ($delinquentLoans / $totalLoans) * 100 : 0;
+        $delinquentAmountRate = $totalOutstanding > 0 ? ($totalDelinquentAmount / $totalOutstanding) * 100 : 0;
+
+        return [
+            'summary' => [
+                'total_loans' => $totalLoans,
+                'delinquent_loans' => $delinquentLoans,
+                'total_delinquent_loans' => $delinquentLoans,
+                'average_days_overdue' => $delinquentLoans > 0 ? collect($delinquencyData)->avg('days_in_arrears') : 0,
+                'current_loans' => $totalLoans - $delinquentLoans,
+                'delinquency_rate' => $delinquencyRate,
+                'total_outstanding' => $totalOutstanding,
+                'total_delinquent_amount' => $totalDelinquentAmount,
+                'delinquent_amount_rate' => $delinquentAmountRate,
+                'delinquency_days_threshold' => $delinquencyDays,
+            ],
+            'buckets' => [
+                '1-30' => $bucket1to30,
+                '31-60' => $bucket31to60,
+                '61-90' => $bucket61to90,
+                '91-180' => $bucket91to180,
+                '180+' => $bucket180plus,
+            ],
+            'loans' => $delinquencyData,
+        ];
+    }
+
+    /**
+     * Get Delinquency Bucket
+     */
+    private function getDelinquencyBucket($daysInArrears)
+    {
+        if ($daysInArrears >= 1 && $daysInArrears <= 30) {
+            return '1-30 Days';
+        } elseif ($daysInArrears >= 31 && $daysInArrears <= 60) {
+            return '31-60 Days';
+        } elseif ($daysInArrears >= 61 && $daysInArrears <= 90) {
+            return '61-90 Days';
+        } elseif ($daysInArrears >= 91 && $daysInArrears <= 180) {
+            return '91-180 Days';
+        } else {
+            return '180+ Days';
+        }
+    }
+
+    /**
+     * Get Severity Level
+     */
+    private function getSeverityLevel($daysInArrears)
+    {
+        if ($daysInArrears >= 1 && $daysInArrears <= 15) {
+            return 'Low';
+        } elseif ($daysInArrears >= 16 && $daysInArrears <= 30) {
+            return 'Medium';
+        } elseif ($daysInArrears >= 31 && $daysInArrears <= 90) {
+            return 'High';
+        } else {
+            return 'Critical';
+        }
+    }
+
+    /**
+     * Get Last Payment Date
+     */
+    private function getLastPaymentDate($loan)
+    {
+        $lastRepayment = $loan->schedule()
+            ->whereHas('repayments')
+            ->with('repayments')
+            ->get()
+            ->flatMap->repayments
+            ->sortByDesc('payment_date')
+            ->first();
+
+        return $lastRepayment ? Carbon::parse($lastRepayment->payment_date)->format('Y-m-d') : 'N/A';
+    }
+
+    /**
+     * Get Next Due Date
+     */
+    private function getNextDueDate($loan)
+    {
+        $nextSchedule = $loan->schedule()
+            ->where('due_date', '>=', now())
+            ->orderBy('due_date')
+            ->first();
+
+        return $nextSchedule ? Carbon::parse($nextSchedule->due_date)->format('Y-m-d') : 'N/A';
     }
 }

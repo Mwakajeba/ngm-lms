@@ -20,11 +20,11 @@
             <div class="card-body">
                 <form method="GET" action="{{ route('accounting.loans.reports.loan_aging') }}">
                     <div class="row">
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="as_of_date" class="form-label">As of Date</label>
                             <input type="date" class="form-control" id="as_of_date" name="as_of_date" value="{{ request('as_of_date', date('Y-m-d')) }}">
                         </div>
-                        <div class="col-md-4 mb-3">
+                        <div class="col-md-3 mb-3">
                             <label for="branch_id" class="form-label">Branch</label>
                             <select class="form-select" id="branch_id" name="branch_id">
                                 <option value="">All Branches</option>
@@ -33,7 +33,16 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-4 mb-3 d-flex align-items-end">
+                        <div class="col-md-3 mb-3">
+                            <label for="loan_officer_id" class="form-label">Loan Officer</label>
+                            <select class="form-select" id="loan_officer_id" name="loan_officer_id">
+                                <option value="">All Loan Officers</option>
+                                @foreach($loanOfficers as $officer)
+                                    <option value="{{ $officer->id }}" {{ request('loan_officer_id') == $officer->id ? 'selected' : '' }}>{{ $officer->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-3 mb-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bx bx-search me-1"></i> Apply Filters
                             </button>
@@ -45,8 +54,28 @@
 
         @if(isset($agingData))
         <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bx bx-list-ul me-2"></i>Aging Summary</h5>
+                <div class="d-flex gap-2">
+                    <form method="GET" action="{{ route('accounting.loans.reports.loan_aging') }}" class="d-inline">
+                        <input type="hidden" name="as_of_date" value="{{ request('as_of_date') }}">
+                        <input type="hidden" name="branch_id" value="{{ request('branch_id') }}">
+                        <input type="hidden" name="loan_officer_id" value="{{ request('loan_officer_id') }}">
+                        <input type="hidden" name="export_type" value="excel">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="bx bx-download me-1"></i> Excel
+                        </button>
+                    </form>
+                    <form method="GET" action="{{ route('accounting.loans.reports.loan_aging') }}" class="d-inline">
+                        <input type="hidden" name="as_of_date" value="{{ request('as_of_date') }}">
+                        <input type="hidden" name="branch_id" value="{{ request('branch_id') }}">
+                        <input type="hidden" name="loan_officer_id" value="{{ request('loan_officer_id') }}">
+                        <input type="hidden" name="export_type" value="pdf">
+                        <button type="submit" class="btn btn-danger btn-sm">
+                            <i class="bx bx-download me-1"></i> PDF
+                        </button>
+                    </form>
+                </div>
             </div>
             <div class="card-body">
                 <div class="table-responsive">
@@ -62,6 +91,7 @@
                                 <th>Disbursed Date</th>
                                 <th>Expiry</th>
                                 <th>Branch</th>
+                                <th>Loan Officer</th>
                                 <th>Current</th>
                                 <th>1-30 Days</th>
                                 <th>31-60 Days</th>
@@ -82,6 +112,7 @@
                                     <td>{{ $row['disbursed_no'] }}</td>
                                     <td>{{ $row['expiry'] }}</td>
                                     <td>{{ $row['branch'] }}</td>
+                                    <td>{{ $row['loan_officer'] }}</td>
                                     <td class="text-end">{{ number_format($row['current'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['bucket_1_30'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['bucket_31_60'], 2) }}</td>
@@ -91,7 +122,7 @@
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="9" class="text-center text-muted">No aging data found for the selected criteria.</td>
+                                    <td colspan="16" class="text-center text-muted">No aging data found for the selected criteria.</td>
                                 </tr>
                             @endforelse
                         </tbody>

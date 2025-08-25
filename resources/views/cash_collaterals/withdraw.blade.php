@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Cash Collateral Withdrawal')
+@section('title', 'Cash Deposit Withdrawal')
 
 @section('content')
 <div class="page-wrapper">
@@ -93,8 +93,11 @@
                             </a>
                         </div>
                         <div class="col-md-6 text-end">
-                            <button type="submit" class="btn btn-warning">
-                                <i class="bx bx-money me-1"></i> Process Withdrawal
+                            <button type="submit" class="btn btn-warning" id="submitBtn">
+                                <span class="btn-text">
+                                    <i class="bx bx-money me-1"></i> Process Withdrawal
+                                </span>
+                                <span class="spinner-border spinner-border-sm d-none" role="status" aria-hidden="true"></span>
                             </button>
                         </div>
                     </div>
@@ -109,6 +112,11 @@
 @push('scripts')
 <script>
     $(document).ready(function() {
+        const form = $('form');
+        const submitBtn = $('#submitBtn');
+        const btnText = submitBtn.find('.btn-text');
+        const spinner = submitBtn.find('.spinner-border');
+
         // Auto-select today's date if not already set
         if (!$('#withdrawal_date').val()) {
             $('#withdrawal_date').val(new Date().toISOString().split('T')[0]);
@@ -132,6 +140,74 @@
                 $(this).val(available.toFixed(2));
             }
         });
+
+        // Handle form submission with loading state
+        form.on('submit', function(e) {
+            // Validate form before showing loading
+            let isValid = true;
+            
+            // Check required fields
+            $('input[required], select[required]').each(function() {
+                if (!$(this).val()) {
+                    isValid = false;
+                    $(this).addClass('is-invalid');
+                } else {
+                    $(this).removeClass('is-invalid');
+                }
+            });
+
+            // Check amount validation
+            let amount = parseFloat($('#amount').val()) || 0;
+            let available = parseFloat('{{ $collateral->amount ?? 0 }}');
+            
+            if (amount <= 0) {
+                isValid = false;
+                $('#amount').addClass('is-invalid');
+                alert('Please enter a valid amount greater than 0.');
+            } else if (amount > available) {
+                isValid = false;
+                $('#amount').addClass('is-invalid');
+                alert('Withdrawal amount cannot exceed available collateral amount.');
+            }
+
+            if (!isValid) {
+                e.preventDefault();
+                return false;
+            }
+
+            // Disable the submit button to prevent double submission
+            submitBtn.prop('disabled', true);
+            
+            // Show loading state
+            btnText.html('<i class="bx bx-loader-alt bx-spin me-1"></i> Processing...');
+            spinner.removeClass('d-none');
+            
+            // Add loading class for visual feedback
+            submitBtn.addClass('loading');
+        });
+
+        // Re-enable button if form validation fails (page doesn't redirect)
+        setTimeout(function() {
+            if (submitBtn.prop('disabled')) {
+                submitBtn.prop('disabled', false);
+                btnText.html('<i class="bx bx-money me-1"></i> Process Withdrawal');
+                spinner.addClass('d-none');
+                submitBtn.removeClass('loading');
+            }
+        }, 5000); // Reset after 5 seconds if still on page
     });
 </script>
+
+<style>
+    .btn.loading {
+        position: relative;
+        pointer-events: none;
+    }
+    
+    .btn .spinner-border-sm {
+        width: 1rem;
+        height: 1rem;
+        margin-left: 0.5rem;
+    }
+</style>
 @endpush

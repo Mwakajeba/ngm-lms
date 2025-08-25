@@ -110,6 +110,11 @@ class Loan extends Model
         return $this->hasMany(LoanFile::class, 'loan_id');
     }
 
+    public function collaterals()
+    {
+        return $this->hasMany(\App\Models\LoanCollateral::class, 'loan_id');
+    }
+
     public function branch()
     {
         return $this->belongsTo(Branch::class, 'branch_id');
@@ -569,5 +574,58 @@ class Loan extends Model
     {
         return $this->hasMany(Receipt::class, 'reference')
             ->where('reference_type', 'loan');
+    }
+
+    /**
+     * Calculate the total amount in arrears (overdue amount)
+     */
+    public function getArrearsAmountAttribute()
+    {
+        $today = Carbon::now();
+        $totalArrears = 0;
+
+        foreach ($this->schedule as $scheduleItem) {
+            $dueDate = Carbon::parse($scheduleItem->due_date);
+            
+            // If the due date has passed and there's a remaining amount
+            if ($dueDate->lt($today) && $scheduleItem->remaining_amount > 0) {
+                $totalArrears += $scheduleItem->remaining_amount;
+            }
+        }
+
+        return $totalArrears;
+    }
+
+    /**
+     * Calculate the number of days in arrears (days since first overdue payment)
+     */
+    public function getDaysInArrearsAttribute()
+    {
+        $today = Carbon::now();
+        $firstOverdueDate = null;
+
+        foreach ($this->schedule->sortBy('due_date') as $scheduleItem) {
+            $dueDate = Carbon::parse($scheduleItem->due_date);
+            
+            // If the due date has passed and there's a remaining amount
+            if ($dueDate->lt($today) && $scheduleItem->remaining_amount > 0) {
+                $firstOverdueDate = $dueDate;
+                break; // We found the first overdue date
+            }
+        }
+
+        if ($firstOverdueDate) {
+            return round($firstOverdueDate->diffInDays($today));
+        }
+
+        return 0; // No arrears
+    }
+
+    /**
+     * Check if the loan is in arrears
+     */
+    public function getIsInArrearsAttribute()
+    {
+        return $this->arrears_amount > 0;
     }
 }

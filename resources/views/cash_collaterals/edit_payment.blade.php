@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Edit Cash Collateral Withdrawal')
+@section('title', 'Edit Cash Deposit Withdrawal')
 
 @section('content')
 <div class="page-wrapper">

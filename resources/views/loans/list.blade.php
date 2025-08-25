@@ -196,11 +196,11 @@ use Vinkla\Hashids\Facades\Hashids;
 
                             <div class="row">
                                 <div class="col-md-12 mb-3">
-                                    <label for="account_id" class="form-label">Chart Account <span class="text-danger">*</span></label>
+                                    <label for="account_id" class="form-label">Bank Account <span class="text-danger">*</span></label>
                                     <select class="form-select" id="account_id" name="account_id" required disabled>
                                         <option value="">Select loan type first</option>
                                     </select>
-                                    <div class="form-text" id="chart_account_help">Select loan type to see available accounts</div>
+                                    <div class="form-text" id="chart_account_help">Select loan type to see available bank accounts</div>
                                 </div>
                             </div>
 
@@ -382,13 +382,13 @@ use Vinkla\Hashids\Facades\Hashids;
             
             if (!loanType) {
                 chartAccountSelect.prop('disabled', true).html('<option value="">Select loan type first</option>');
-                helpText.text('Select loan type to see accounts');
+                helpText.text('Select loan type to see bank accounts');
                 return;
             }
             
             // Enable the select and show loading
             chartAccountSelect.prop('disabled', false).html('<option value="">Loading accounts...</option>');
-            helpText.text('Loading chart accounts...');
+            helpText.text('Loading bank accounts...');
             
             // Fetch chart accounts via Ajax
             $.ajax({
@@ -396,12 +396,16 @@ use Vinkla\Hashids\Facades\Hashids;
                 method: 'GET',
                 success: function(response) {
                     if (response.success && response.accounts) {
-                        let options = '<option value="">Select Chart Account</option>';
+                        let options = '<option value="">Select Bank Account</option>';
                         
                         response.accounts.forEach(function(account) {
-                            const displayName = account.account_number ? 
-                                `${account.account_number} - ${account.name}` : 
-                                account.name;
+                            let displayName = account.name;
+                            if (account.account_number) {
+                                displayName = `${account.account_number} - ${account.name}`;
+                            }
+                            if (account.chart_account) {
+                                displayName += ` (${account.chart_account})`;
+                            }
                             options += `<option value="${account.id}">${displayName}</option>`;
                         });
                         
@@ -409,7 +413,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         helpText.text(`${response.type} available for selection`);
                     } else {
                         chartAccountSelect.html('<option value="">No accounts found</option>');
-                        helpText.text('No chart accounts found for this loan type');
+                        helpText.text('No bank accounts found for this loan type');
                     }
                 },
                 error: function(xhr, status, error) {

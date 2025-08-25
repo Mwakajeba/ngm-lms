@@ -37,40 +37,42 @@
 				<a class="nav-link dark-mode-icon" href="javascript:;"><i class='bx bx-moon'></i>
 				</a>
 			</li>
+			<!--SHORT MENU-->
 			<li class="nav-item dropdown dropdown-large">
 				<a class="nav-link dropdown-toggle dropdown-toggle-nocaret" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">	<i class='bx bx-category'></i>
 				</a>
 				<div class="dropdown-menu dropdown-menu-end">
 					<div class="row row-cols-3 g-3 p-3">
+						@can('view customers')
 						<div class="col text-center">
-							<div class="app-box mx-auto bg-gradient-cosmic"><i class='bx bx-home'></i>
-							</div>
-							<div class="app-title">Company</div>
+							<a href="{{ route('customers.index') }}" class="text-decoration-none">
+								<div class="app-box mx-auto bg-gradient-blues"><i class='bx bx-user'></i></div>
+								<div class="app-title">Customers</div>
+							</a>
 						</div>
-						<div class="col text-center">
-							<div class="app-box mx-auto bg-gradient-burning"><i class='bx bx-home'></i>
-							</div>
-							<div class="app-title">Branches</div>
-						</div>
+						@endcan
 
+						@can('view loans')
 						<div class="col text-center">
-							<div class="app-box mx-auto bg-gradient-kyoto"><i class='bx bx-notification'></i>
-							</div>
-							<div class="app-title">Roles & Permissions</div>
+							<a href="{{ route('loans.list') }}" class="text-decoration-none">
+								<div class="app-box mx-auto bg-gradient-blues"><i class='bx bx-money'></i></div>
+								<div class="app-title">Loans</div>
+							</a>
 						</div>
-						<!-- <div class="col text-center">
-							<div class="app-box mx-auto bg-gradient-blues"><i class='bx bx-file'></i>
-							</div>
-							<div class="app-title">Files</div>
-						</div>
+						@endcan
+
+						@can('view groups')
 						<div class="col text-center">
-							<div class="app-box mx-auto bg-gradient-moonlit"><i class='bx bx-filter-alt'></i>
-							</div>
-							<div class="app-title">Alerts</div>
-						</div> -->
+							<a href="{{ route('groups.index') }}" class="text-decoration-none">
+								<div class="app-box mx-auto bg-gradient-blues"><i class='bx bx-group'></i></div>
+								<div class="app-title">Groups</div>
+							</a>
+						</div>
+						@endcan
 					</div>
 				</div>
 			</li>
+			<!--SHORT MENU-->
 			@php
 				$today = \Carbon\Carbon::today()->toDateString();
 				$dueSchedules = \DB::table('loan_schedules')
@@ -132,9 +134,48 @@
 				</div>
 			</li>
 			<li class="nav-item dropdown dropdown-large">
-				<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false"> <span class="alert-count">8</span>
-					<i class='bx bx-comment'></i>
-				</a>
+							<a class="nav-link dropdown-toggle dropdown-toggle-nocaret position-relative" href="#" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+								<span class="alert-count" id="navbarArrearsCount">
+									{{ $arrearsLoansCount ?? 0 }}
+								</span>
+								<i class='bx bx-comment'></i>
+							</a>
+							<div class="dropdown-menu dropdown-menu-end">
+								<a href="javascript:;">
+									<div class="msg-header">
+										<p class="msg-header-title">Loans in Arrears (1-30 days)</p>
+									</div>
+								</a>
+								<div class="header-message-list">
+									@if(isset($arrearsLoans) && count($arrearsLoans))
+										@foreach($arrearsLoans as $loan)
+											<a class="dropdown-item" href="javascript:;">
+												<div class="d-flex align-items-center">
+													<div class="user-online">
+														<i class="bx bx-user"></i>
+													</div>
+													<div class="flex-grow-1">
+														<h6 class="msg-name">{{ $loan->customer_name }} <span class="msg-time float-end">{{ $loan->days_in_arrears }} days</span></h6>
+														<p class="msg-info">Amount in Arrears: {{ number_format($loan->amount_in_arrears, 2) }}</p>
+													</div>
+												</div>
+											</a>
+										@endforeach
+									@else
+										<a class="dropdown-item" href="javascript:;">
+											<div class="d-flex align-items-center">
+												<div class="user-online"><i class="bx bx-user"></i></div>
+												<div class="flex-grow-1">
+													<h6 class="msg-name">No loans in arrears for 1-30 days</h6>
+												</div>
+											</div>
+										</a>
+									@endif
+								</div>
+								<a href="{{ route('arrears.loans.list') }}" id="viewArrearsLoans">
+									<div class="text-center msg-footer">View More</div>
+								</a>
+							</div>
 				<div class="dropdown-menu dropdown-menu-end">
 					<a href="javascript:;">
 						<div class="msg-header">

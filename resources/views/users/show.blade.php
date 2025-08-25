@@ -114,6 +114,49 @@
                                     @endif
                                 @endcan
                             </div>
+
+                            @can('assign branches')
+                            <div class="d-flex flex-wrap gap-2 mt-4">
+                                <!-- Existing buttons ... -->
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#assignBranchModal">
+                                    <i class="bx bx-git-branch"></i> Assign/View Branch
+                                </button>
+                            </div>
+                            @endcan
+
+                            <!-- Assign Branch Modal -->
+                            <div class="modal fade" id="assignBranchModal" tabindex="-1" aria-labelledby="assignBranchModalLabel" aria-hidden="true">
+                                <div class="modal-dialog modal-dialog-centered">
+                                    <div class="modal-content">
+                                        <form id="assignBranchForm" action="{{ route('users.assign-branches', $user->id) }}" method="POST">
+                                            @csrf
+                                            <div class="modal-header">
+                                                <h5 class="modal-title" id="assignBranchModalLabel">Assign Branches</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-2 fw-bold">Select branches user can access:</div>
+                                                @foreach(App\Models\Branch::all() as $branch)
+                                                    <div class="form-check">
+                                                        <input class="form-check-input" type="checkbox" name="branches[]" value="{{ $branch->id }}"
+                                                            id="branch_{{ $branch->id }}"
+                                                            {{ $user->branches && $user->branches->contains($branch->id) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="branch_{{ $branch->id }}">
+                                                            {{ $branch->name }}
+                                                        </label>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                                <button type="submit" class="btn btn-primary" id="assignBranchBtn">
+                                                    <i class="bx bx-save"></i> Save
+                                                </button>
+                                            </div>
+                                        </form>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -282,5 +325,54 @@ function submitDeleteUserForm(userId) {
     document.body.appendChild(form);
     form.submit();
 }
+
+document.getElementById('assignBranchForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    const form = this;
+    const btn = document.getElementById('assignBranchBtn');
+    const originalText = btn.innerHTML;
+    btn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Saving...';
+    btn.disabled = true;
+
+    fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: {
+            'X-Requested-With': 'XMLHttpRequest',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire({
+                icon: 'success',
+                title: 'Branches Assigned!',
+                text: data.message || 'Branch access updated.',
+                timer: 2000,
+                timerProgressBar: true
+            });
+            const modalInstance = bootstrap.Modal.getInstance(document.getElementById('assignBranchModal'));
+            modalInstance.hide();
+        } else {
+            Swal.fire({
+                icon: 'error',
+                title: 'Error',
+                text: data.message || 'Failed to assign branches.'
+            });
+        }
+    })
+    .catch(() => {
+        Swal.fire({
+            icon: 'error',
+            title: 'Error',
+            text: 'Network or server error.'
+        });
+    })
+    .finally(() => {
+        btn.innerHTML = originalText;
+        btn.disabled = false;
+    });
+});
 </script>
-@endpush 
+@endpush

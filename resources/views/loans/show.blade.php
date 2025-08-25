@@ -66,6 +66,66 @@
             </div>
         </div>
 
+        <!-- Arrears Information Card -->
+        @if($loan->is_in_arrears)
+        <div class="card shadow-sm border-0 mb-4 border-start border-danger border-4">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-danger-subtle text-danger rounded-circle p-3">
+                                    <i class="bx bx-error-circle fs-4"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1 text-danger fw-bold">Amount in Arrears</h6>
+                                <h4 class="mb-0 text-danger fw-bold">TZS {{ number_format($loan->arrears_amount, 2) }}</h4>
+                                <small class="text-muted">Total overdue amount</small>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-shrink-0">
+                                <div class="bg-warning-subtle text-warning rounded-circle p-3">
+                                    <i class="bx bx-time-five fs-4"></i>
+                                </div>
+                            </div>
+                            <div class="flex-grow-1 ms-3">
+                                <h6 class="mb-1 text-warning fw-bold">Days in Arrears</h6>
+                                <h4 class="mb-0 text-warning fw-bold">{{ round($loan->days_in_arrears) }} days</h4>
+                                <small class="text-muted">Since first overdue payment</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                @if($loan->days_in_arrears > 30)
+                <div class="alert alert-danger mt-3 mb-0">
+                    <i class="bx bx-error-circle me-2"></i>
+                    <strong>Warning:</strong> This loan has been in arrears for more than 30 days. Consider taking appropriate action.
+                </div>
+                @endif
+            </div>
+        </div>
+        @else
+        <div class="card shadow-sm border-0 mb-4 border-start border-success border-4">
+            <div class="card-body py-3">
+                <div class="d-flex align-items-center">
+                    <div class="flex-shrink-0">
+                        <div class="bg-success-subtle text-success rounded-circle p-2">
+                            <i class="bx bx-check-circle fs-5"></i>
+                        </div>
+                    </div>
+                    <div class="flex-grow-1 ms-3">
+                        <h6 class="mb-0 text-success fw-bold">Loan is Current</h6>
+                        <small class="text-muted">No overdue payments</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+
         <ul class="nav nav-tabs nav-tabs-style-2 mb-4" role="tablist">
             <li class="nav-item" role="presentation">
                 <a class="nav-link active d-flex align-items-center" data-bs-toggle="tab" href="#loan_detail" role="tab">
@@ -109,75 +169,185 @@
             <div class="tab-pane fade show active" id="loan_detail" role="tabpanel">
                 <div class="card shadow-sm border-0">
                     <div class="card-header bg-primary border-0 py-3">
-                        <h6 class="mb-0 text-dark fw-bold"><i class="bx bx-info-circle me-2"></i> LOAN INFORMATION</h6>
+                        <h6 class="mb-0 text-white fw-bold"><i class="bx bx-info-circle me-2"></i> LOAN INFORMATION</h6>
                     </div>
-                    <div class="card-body">
-                        <div class="row g-3">
-                            @foreach([
-                            ['label' => 'Customer Name', 'value' => $loan->customer->name, 'icon' => 'bx bx-user'],
-                            ['label' => 'Product', 'value' => $loan->product->name, 'icon' => 'bx bx-package'],
-                            ['label' => 'Branch', 'value' => $loan->branch->name ?? 'N/A', 'icon' => 'bx bx-building'],
-                            ['label' => 'Group', 'value' => $loan->group->name ?? 'N/A', 'icon' => 'bx bx-group'],
-                            ['label' => 'Bank Account', 'value' => $loan->bankAccount->name ?? 'N/A', 'icon' => 'bx bx-bank'],
-                            ['label' => 'Sector', 'value' => $loan->sector, 'icon' => 'bx bx-tag']
-                            ] as $item)
-                            <div class="col-12 col-md-6">
-                                <div class="p-3 bg-light rounded-3 d-flex align-items-center">
-                                    <i class="{{ $item['icon'] }} me-3 fs-3 text-primary"></i>
-                                    <div>
-                                        <p class="text-muted text-uppercase fw-bold mb-0" style="font-size: 0.8rem;">{{ $item['label'] }}</p>
-                                        <p class="fw-bold mb-0 text-dark">{{ $item['value'] }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
+                    <div class="card-body p-0">
+                        <div class="table-responsive">
+                            <table class="table table-striped" width="50%">
+                                <tbody>
+                                    <!-- Customer Information -->
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-bold text-dark py-3 ps-4">
+                                            <i class="bx bx-user me-2 text-primary"></i>CUSTOMER INFORMATION
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4" style="width: 40%;">Customer Name</td>
+                                        <td class="text-dark">{{ $loan->customer->name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Phone Number</td>
+                                        <td class="text-dark">{{ $loan->customer->phone1 ?? 'N/A' }}</td>
+                                    </tr>
 
-                            <div class="col-12">
-                                <hr class="my-4">
-                            </div>
+                                    <!-- Loan Details -->
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-bold text-dark py-3 ps-4">
+                                            <i class="bx bx-package me-2 text-primary"></i>LOAN DETAILS
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Product</td>
+                                        <td class="text-dark">{{ $loan->product->name }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Branch</td>
+                                        <td class="text-dark">{{ $loan->branch->name ?? 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Group</td>
+                                        <td class="text-dark">{{ $loan->group->name ?? 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Bank Account</td>
+                                        <td class="text-dark">{{ $loan->bankAccount->name ?? 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Sector</td>
+                                        <td class="text-dark">{{ $loan->sector ?? 'N/A' }}</td>
+                                    </tr>
 
-                            @foreach([
-                            ['label' => 'Amount', 'value' => 'TZS ' . number_format($loan->amount, 2), 'icon' => 'bx bx-money'],
-                            ['label' => 'Interest Amount', 'value' => 'TZS ' . number_format($loan->interest_amount, 2), 'icon' => 'bx bx-trending-up'],
-                            ['label' => 'Total Repayable', 'value' => 'TZS ' . number_format($loan->amount_total, 2), 'icon' => 'bx bx-calculator'],
-                            ['label' => 'Period', 'value' => $loan->period . ' months', 'icon' => 'bx bx-time'],
-                            ['label' => 'Interest Method', 'value' => $loan->product->interest_method, 'icon' => 'bx bx-bar-chart-alt-2'],
-                            ['label' => 'Interest Rate', 'value' => ($loan->interest ?? 'N/A') . '%', 'icon' => 'bx bx-bar-chart-alt-2'],
-                            ['label' => 'Repayment Installment', 'value' => 'TZS ' . number_format($loan->amount_total / $loan->period, 2), 'icon' => 'bx bx-credit-card'],
-                            ['label' => 'Total Repayments', 'value' => 'TZS ' . number_format($loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0, 2), 'icon' => 'bx bx-transfer'],
-                            ['label' => 'Balance', 'value' => 'TZS ' . number_format($loan->amount_total - ($loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0), 2), 'icon' => 'bx bx-calculator']
-                            ] as $item)
-                            <div class="col-12 col-md-6">
-                                <div class="p-3 bg-light rounded-3 d-flex align-items-center justify-content-between">
-                                    <div class="d-flex align-items-center">
-                                        <i class="{{ $item['icon'] }} me-3 fs-3 text-primary"></i>
-                                        <p class="text-muted text-uppercase fw-bold mb-0" style="font-size: 0.8rem;">{{ $item['label'] }}</p>
-                                    </div>
-                                    <p class="fw-bold mb-0 text-dark">{{ $item['value'] }}</p>
-                                </div>
-                            </div>
-                            @endforeach
+                                    <!-- Financial Information -->
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-bold text-dark py-3 ps-4">
+                                            <i class="bx bx-money me-2 text-primary"></i>FINANCIAL INFORMATION
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Principal Amount</td>
+                                        <td class="text-dark fw-bold">TZS {{ number_format($loan->amount, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Interest Amount</td>
+                                        <td class="text-dark">TZS {{ number_format($loan->interest_amount, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Total Repayable</td>
+                                        <td class="text-success fw-bold">TZS {{ number_format($loan->amount_total, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Interest Rate</td>
+                                        <td class="text-dark">{{ ($loan->interest ?? 'N/A') }}%</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Interest Method</td>
+                                        <td class="text-dark">{{ $loan->product->interest_method ?? 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Loan Period</td>
+                                        <td class="text-dark">{{ $loan->period }} months</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Monthly Installment</td>
+                                        <td class="text-dark">TZS {{ number_format($loan->amount_total / $loan->period, 2) }}</td>
+                                    </tr>
 
-                            <div class="col-12">
-                                <hr class="my-4">
-                            </div>
+                                    <!-- Payment Information -->
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-bold text-dark py-3 ps-4">
+                                            <i class="bx bx-credit-card me-2 text-primary"></i>PAYMENT INFORMATION
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Total Repayments</td>
+                                        <td class="text-info fw-bold">TZS {{ number_format($loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0, 2) }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Outstanding Balance</td>
+                                        <td class="text-danger fw-bold">TZS {{ number_format($loan->amount_total - ($loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0), 2) }}</td>
+                                    </tr>
 
-                            @foreach([
-                            ['label' => 'Disbursed On', 'value' => \Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y'), 'icon' => 'bx bx-calendar-check'],
-                            ['label' => 'First Repayment', 'value' => \Carbon\Carbon::parse($loan->first_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-event'],
-                            ['label' => 'Last Repayment', 'value' => \Carbon\Carbon::parse($loan->last_repayment_date)->format('M d, Y'), 'icon' => 'bx bx-calendar-minus'],
-                            ['label' => 'Applied On', 'value' => \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y'), 'icon' => 'bx bx-calendar-plus']
-                            ] as $item)
-                            <div class="col-12 col-md-6 col-lg-3">
-                                <div class="p-3 bg-light rounded-3 d-flex align-items-center">
-                                    <i class="{{ $item['icon'] }} me-3 fs-3 text-primary"></i>
-                                    <div>
-                                        <p class="text-muted text-uppercase fw-bold mb-0" style="font-size: 0.8rem;">{{ $item['label'] }}</p>
-                                        <p class="fw-bold mb-0 text-dark">{{ $item['value'] }}</p>
-                                    </div>
-                                </div>
-                            </div>
-                            @endforeach
+                                    <!-- Important Dates -->
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-bold text-dark py-3 ps-4">
+                                            <i class="bx bx-calendar me-2 text-primary"></i>IMPORTANT DATES
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Applied On</td>
+                                        <td class="text-dark">{{ \Carbon\Carbon::parse($loan->date_applied)->format('F d, Y') }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Disbursed On</td>
+                                        <td class="text-dark">{{ $loan->disbursed_on ? \Carbon\Carbon::parse($loan->disbursed_on)->format('F d, Y') : 'Not yet disbursed' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">First Repayment Date</td>
+                                        <td class="text-dark">{{ $loan->first_repayment_date ? \Carbon\Carbon::parse($loan->first_repayment_date)->format('F d, Y') : 'N/A' }}</td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Last Repayment Date</td>
+                                        <td class="text-dark">{{ $loan->last_repayment_date ? \Carbon\Carbon::parse($loan->last_repayment_date)->format('F d, Y') : 'N/A' }}</td>
+                                    </tr>
+
+                                    <!-- Status Information -->
+                                    <tr class="table-secondary">
+                                        <td colspan="2" class="fw-bold text-dark py-3 ps-4">
+                                            <i class="bx bx-check-circle me-2 text-primary"></i>STATUS INFORMATION
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Current Status</td>
+                                        <td>
+                                            @php
+                                                $status = strtolower($loan->status);
+                                                $badgeClass = match($status) {
+                                                    'pending' => 'bg-secondary',
+                                                    'checked' => 'bg-info',
+                                                    'approved' => 'bg-success',
+                                                    'active' => 'bg-primary',
+                                                    'disbursed' => 'bg-primary',
+                                                    'completed' => 'bg-success',
+                                                    'defaulted' => 'bg-danger',
+                                                    'rejected' => 'bg-danger',
+                                                    'cancelled' => 'bg-dark',
+                                                    default => 'bg-secondary',
+                                                };
+                                            @endphp
+                                            <span class="badge {{ $badgeClass }} fs-6">{{ ucfirst($loan->status) }}</span>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="fw-bold text-muted ps-4">Payment Progress</td>
+                                        <td>
+                                            @php
+                                                $totalPaid = $loan->repayments?->sum(function($r) { return ($r->principal + $r->interest); }) ?? 0;
+                                                $progress = $loan->amount_total > 0 ? round(($totalPaid / $loan->amount_total) * 100) : 0;
+                                                $progressBarClass = match(true) {
+                                                    $progress === 100 => 'bg-success',
+                                                    $progress >= 75 => 'bg-primary',
+                                                    $progress >= 50 => 'bg-info',
+                                                    $progress >= 25 => 'bg-warning',
+                                                    default => 'bg-danger',
+                                                };
+                                            @endphp
+                                            <div class="d-flex align-items-center">
+                                                <div class="progress me-3" style="width: 200px; height: 8px;">
+                                                    <div class="progress-bar {{ $progressBarClass }}" role="progressbar" style="width: {{ $progress }}%;" aria-valuenow="{{ $progress }}" aria-valuemin="0" aria-valuemax="100"></div>
+                                                </div>
+                                                <span class="fw-bold">{{ $progress }}%</span>
+                                                @if($progress === 100)
+                                                    <span class="badge bg-success ms-2">Fully Paid</span>
+                                                @elseif($progress === 0)
+                                                    <span class="badge bg-danger ms-2">No Repayments</span>
+                                                @else
+                                                    <span class="badge bg-warning text-dark ms-2">Partially Paid</span>
+                                                @endif
+                                            </div>
+                                        </td>
+                                    </tr>
+                                </tbody>
+                            </table>
                         </div>
                     </div>
                 </div>
@@ -562,43 +732,124 @@
                 </div>
 
                 @if($loan->collaterals && $loan->collaterals->count())
-                <div class="card radius-10">
-                    <div class="card-header bg-primary text-white">
-                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>LOAN COLLATERAL LIST</h6>
-                    </div>
-                    <div class="card-body p-0">
-                        <div class="table-responsive">
-                            <table class="table table-bordered table-striped mb-0">
-                                <thead class="bg-light">
-                                    <tr>
-                                        <th>#</th>
-                                        <th>Type</th>
-                                        <th>Description</th>
-                                        <th>Value</th>
-                                        <th class="text-end pe-4">Actions</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @foreach($loan->collaterals as $index => $collateral)
-                                    <tr>
-                                        <th scope="row" class="ps-4">{{ $index + 1 }}</th>
-                                        <td>{{ ucfirst($collateral->type ?? 'N/A') }}</td>
-                                        <td>{{ $collateral->description ?? 'N/A' }}</td>
-                                        <td>{{ number_format($collateral->value ?? 0, 2) }}</td>
-                                        <td class="text-end pe-4">
-                                            <a href="#" class="btn btn-sm btn-outline-secondary">View</a>
-                                        </td>
-                                    </tr>
-                                    @endforeach
-                                </tbody>
-                            </table>
+                <div class="row">
+                    @foreach($loan->collaterals as $collateral)
+                    <div class="col-md-6 col-lg-4 mb-4">
+                        <div class="card h-100 shadow-sm border-0">
+                            <div class="card-header bg-light border-0 d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="mb-0 fw-bold text-dark">{{ $collateral->title }}</h6>
+                                    <small class="text-muted">{{ ucfirst($collateral->type) }}</small>
+                                </div>
+                                <div class="dropdown">
+                                    <button class="btn btn-sm btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                        <i class="bx bx-dots-vertical-rounded"></i>
+                                    </button>
+                                    <ul class="dropdown-menu">
+                                        <li><a class="dropdown-item" href="#" onclick="viewCollateral({{ $collateral->id }})">
+                                            <i class="bx bx-show me-2"></i>View Details
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="editCollateral({{ $collateral->id }})">
+                                            <i class="bx bx-edit me-2"></i>Edit
+                                        </a></li>
+                                        <li><a class="dropdown-item" href="#" onclick="changeCollateralStatus({{ $collateral->id }})">
+                                            <i class="bx bx-refresh me-2"></i>Change Status
+                                        </a></li>
+                                        <li><hr class="dropdown-divider"></li>
+                                        <li><a class="dropdown-item text-danger" href="#" onclick="deleteCollateral({{ $collateral->id }})">
+                                            <i class="bx bx-trash me-2"></i>Delete
+                                        </a></li>
+                                    </ul>
+                                </div>
+                            </div>
+                            
+                            @if($collateral->images && count($collateral->images) > 0)
+                            <div class="card-img-top position-relative" style="height: 200px; overflow: hidden;">
+                                <img src="{{ asset('storage/' . $collateral->images[0]) }}" alt="Collateral Image" 
+                                     class="w-100 h-100" style="object-fit: cover;">
+                                @if(count($collateral->images) > 1)
+                                <div class="position-absolute top-0 end-0 m-2">
+                                    <span class="badge bg-dark">+{{ count($collateral->images) - 1 }}</span>
+                                </div>
+                                @endif
+                            </div>
+                            @else
+                            <div class="card-img-top bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                <i class="bx bx-image-alt fs-1 text-muted"></i>
+                            </div>
+                            @endif
+
+                            <div class="card-body">
+                                <p class="card-text text-muted small mb-2">{{ Str::limit($collateral->description, 100) }}</p>
+                                
+                                <div class="row mb-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Estimated Value</small>
+                                        <p class="fw-bold text-success mb-0">TZS {{ number_format($collateral->estimated_value, 2) }}</p>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Status</small>
+                                        <p class="mb-0">
+                                            <span class="badge {{ $collateral->getStatusBadgeClass() }}">
+                                                {{ ucfirst($collateral->status) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+
+                                @if($collateral->condition)
+                                <div class="row mb-2">
+                                    <div class="col-12">
+                                        <small class="text-muted">Condition</small>
+                                        <p class="mb-0">
+                                            <span class="badge {{ $collateral->getConditionBadgeClass() }}">
+                                                {{ ucfirst($collateral->condition) }}
+                                            </span>
+                                        </p>
+                                    </div>
+                                </div>
+                                @endif
+
+                                @if($collateral->location)
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Location</small>
+                                    <small class="text-dark">{{ $collateral->location }}</small>
+                                </div>
+                                @endif
+
+                                @if($collateral->documents && count($collateral->documents) > 0)
+                                <div class="mb-2">
+                                    <small class="text-muted d-block">Documents</small>
+                                    <small class="text-primary">
+                                        <i class="bx bx-file me-1"></i>{{ count($collateral->documents) }} file(s)
+                                    </small>
+                                </div>
+                                @endif
+                            </div>
+
+                            <div class="card-footer bg-transparent border-0">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-sm btn-outline-primary w-100" onclick="viewCollateral({{ $collateral->id }})">
+                                            <i class="bx bx-show me-1"></i>View
+                                        </button>
+                                    </div>
+                                    <div class="col-6">
+                                        <button type="button" class="btn btn-sm btn-outline-secondary w-100" onclick="changeCollateralStatus({{ $collateral->id }})">
+                                            <i class="bx bx-refresh me-1"></i>Status
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
+                    @endforeach
                 </div>
                 @else
                 <div class="card card-body text-center p-5">
-                    <h4 class="text-muted">No collaterals assigned to this loan.</h4>
-                    <p class="text-secondary">Click the button above to add a collateral.</p>
+                    <i class="bx bx-shield fs-1 text-muted mb-3"></i>
+                    <h4 class="text-muted">No collaterals assigned to this loan</h4>
+                    <p class="text-secondary">Collaterals provide security for the loan. Click the button above to add the first collateral.</p>
                 </div>
                 @endif
             </div>
@@ -652,7 +903,7 @@
 
 <div class="modal fade" id="addGuarantorModal" tabindex="-1" aria-labelledby="addGuarantorModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="{{ route('loans.addGuarantor', $loan->id) }}" method="POST">
+        <form id="addGuarantorForm" action="{{ route('loans.addGuarantor', $loan->id) }}" method="POST">
             @csrf
             <div class="modal-content">
                 <div class="modal-header">
@@ -686,7 +937,7 @@
 
 <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="{{ route('loan-documents.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
+        <form id="uploadDocumentForm" action="{{ route('loan-documents.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
             @csrf
             <input type="hidden" name="loan_id" value="{{ $loan->id }}">
             <div class="modal-header">
@@ -719,7 +970,7 @@
 <!-- Add Repayment Modal -->
 <div class="modal fade" id="addRepaymentModal" tabindex="-1" aria-labelledby="addRepaymentModalLabel" aria-hidden="true">
     <div class="modal-dialog">
-        <form action="#" method="POST" class="modal-content" id="repaymentForm">
+        <form id="addRepaymentForm" action="#" method="POST" class="modal-content">
             @csrf
             <div class="modal-header">
                 <h5 class="modal-title" id="addRepaymentModalLabel">Add Repayment</h5>
@@ -758,39 +1009,247 @@
 
 <!-- Add Collateral Modal -->
 <div class="modal fade" id="addCollateralModal" tabindex="-1" aria-labelledby="addCollateralModalLabel" aria-hidden="true">
-    <div class="modal-dialog">
-        <form action="#" method="POST" class="modal-content" id="collateralForm">
+    <div class="modal-dialog modal-lg">
+        <form id="addCollateralForm" action="{{ route('loan-collaterals.store') }}" method="POST" enctype="multipart/form-data" class="modal-content">
             @csrf
-            <div class="modal-header">
-                <h5 class="modal-title" id="addCollateralModalLabel">Add Collateral</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            <input type="hidden" name="loan_id" value="{{ $loan->id }}">
+            <div class="modal-header bg-primary text-white">
+                <h5 class="modal-title" id="addCollateralModalLabel">
+                    <i class="bx bx-plus-circle me-2"></i>Add Collateral
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
             <div class="modal-body">
-                <div class="mb-3">
-                    <label for="collateral_type" class="form-label">Collateral Type</label>
-                    <select class="form-select" name="type" id="collateral_type" required>
-                        <option value="">-- Select Type --</option>
-                        <option value="property">Property</option>
-                        <option value="vehicle">Vehicle</option>
-                        <option value="equipment">Equipment</option>
-                        <option value="cash">Cash</option>
-                        <option value="other">Other</option>
-                    </select>
-                </div>
-                <div class="mb-3">
-                    <label for="description" class="form-label">Description</label>
-                    <textarea class="form-control" name="description" id="description" rows="3" required></textarea>
-                </div>
-                <div class="mb-3">
-                    <label for="value" class="form-label">Value</label>
-                    <input type="number" step="0.01" class="form-control" name="value" id="value" required>
+                <div class="row">
+                    <!-- Basic Information -->
+                    <div class="col-12">
+                        <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="collateral_type" class="form-label">Collateral Type</label>
+                            <select class="form-select" name="type" id="collateral_type" required>
+                                <option value="">-- Select Type --</option>
+                                @foreach(\App\Models\LoanCollateral::getTypeOptions() as $key => $value)
+                                <option value="{{ $key }}">{{ $value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="title" class="form-label">Title/Name</label>
+                            <input type="text" class="form-control" name="title" id="title" required 
+                                   placeholder="e.g., Toyota Corolla 2020">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="description" class="form-label">Description</label>
+                            <textarea class="form-control" name="description" id="description" rows="3" required
+                                      placeholder="Detailed description of the collateral"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- Financial Information -->
+                    <div class="col-12 mt-3">
+                        <h6 class="text-primary mb-3"><i class="bx bx-money me-2"></i>Financial Information</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="estimated_value" class="form-label">Estimated Value (TZS)</label>
+                            <input type="number" step="0.01" class="form-control" name="estimated_value" id="estimated_value" required>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="appraised_value" class="form-label">Appraised Value (TZS) <small class="text-muted">(Optional)</small></label>
+                            <input type="number" step="0.01" class="form-control" name="appraised_value" id="appraised_value">
+                        </div>
+                    </div>
+
+                    <!-- Additional Details -->
+                    <div class="col-12 mt-3">
+                        <h6 class="text-primary mb-3"><i class="bx bx-detail me-2"></i>Additional Details</h6>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="condition" class="form-label">Condition</label>
+                            <select class="form-select" name="condition" id="condition">
+                                <option value="">-- Select Condition --</option>
+                                @foreach(\App\Models\LoanCollateral::getConditionOptions() as $key => $value)
+                                <option value="{{ $key }}">{{ $value }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="serial_number" class="form-label">Serial Number</label>
+                            <input type="text" class="form-control" name="serial_number" id="serial_number" 
+                                   placeholder="Serial/Model number">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="registration_number" class="form-label">Registration Number</label>
+                            <input type="text" class="form-control" name="registration_number" id="registration_number" 
+                                   placeholder="License/Registration">
+                        </div>
+                    </div>
+                    <div class="col-md-8">
+                        <div class="mb-3">
+                            <label for="location" class="form-label">Location</label>
+                            <input type="text" class="form-control" name="location" id="location" 
+                                   placeholder="Where is the collateral located?">
+                        </div>
+                    </div>
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            <label for="valuation_date" class="form-label">Valuation Date</label>
+                            <input type="date" class="form-control" name="valuation_date" id="valuation_date">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="valuator_name" class="form-label">Valuator Name</label>
+                            <input type="text" class="form-control" name="valuator_name" id="valuator_name" 
+                                   placeholder="Name of the person who valued the collateral">
+                        </div>
+                    </div>
+                    <div class="col-12">
+                        <div class="mb-3">
+                            <label for="notes" class="form-label">Additional Notes</label>
+                            <textarea class="form-control" name="notes" id="notes" rows="2" 
+                                      placeholder="Any additional information"></textarea>
+                        </div>
+                    </div>
+
+                    <!-- File Uploads -->
+                    <div class="col-12 mt-3">
+                        <h6 class="text-primary mb-3"><i class="bx bx-upload me-2"></i>Images & Documents</h6>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="images" class="form-label">Images</label>
+                            <input type="file" class="form-control" name="images[]" id="images" 
+                                   multiple accept="image/*">
+                            <small class="text-muted">Select multiple images (JPEG, PNG). Max 2MB each.</small>
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label for="documents" class="form-label">Documents</label>
+                            <input type="file" class="form-control" name="documents[]" id="documents" 
+                                   multiple accept=".pdf,.doc,.docx,.jpg,.png">
+                            <small class="text-muted">Select documents (PDF, DOC, DOCX, Images). Max 5MB each.</small>
+                        </div>
+                    </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                <button type="submit" class="btn btn-primary">Add Collateral</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-primary">
+                    <i class="bx bx-check me-1"></i>Add Collateral
+                </button>
             </div>
         </form>
+    </div>
+</div>
+
+<!-- View Collateral Modal -->
+<div class="modal fade" id="viewCollateralModal" tabindex="-1" aria-labelledby="viewCollateralModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-xl">
+        <div class="modal-content">
+            <div class="modal-header bg-info text-white">
+                <h5 class="modal-title" id="viewCollateralModalLabel">
+                    <i class="bx bx-show me-2"></i>Collateral Details
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="collateralDetailsContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-primary" onclick="editCollateralFromView()">
+                    <i class="bx bx-edit me-1"></i>Edit
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Collateral Modal -->
+<div class="modal fade" id="editCollateralModal" tabindex="-1" aria-labelledby="editCollateralModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <form id="editCollateralForm" method="POST" enctype="multipart/form-data" class="modal-content">
+            @csrf
+            @method('PUT')
+            <div class="modal-header bg-secondary text-white">
+                <h5 class="modal-title" id="editCollateralModalLabel">
+                    <i class="bx bx-edit me-2"></i>Edit Collateral
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body" id="editCollateralContent">
+                <!-- Content will be loaded dynamically -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i>Cancel
+                </button>
+                <button type="submit" class="btn btn-secondary">
+                    <i class="bx bx-check me-1"></i>Update Collateral
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Change Status Modal -->
+<div class="modal fade" id="changeStatusModal" tabindex="-1" aria-labelledby="changeStatusModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-dark">
+                <h5 class="modal-title" id="changeStatusModalLabel">
+                    <i class="bx bx-refresh me-2"></i>Change Collateral Status
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="changeStatusForm">
+                    <input type="hidden" id="status_collateral_id" name="collateral_id">
+                    <div class="mb-3">
+                        <label for="new_status" class="form-label">New Status</label>
+                        <select class="form-select" name="status" id="new_status" required>
+                            @foreach(\App\Models\LoanCollateral::getStatusOptions() as $key => $value)
+                            <option value="{{ $key }}">{{ $value }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label for="status_reason" class="form-label">Reason for Change</label>
+                        <textarea class="form-control" name="reason" id="status_reason" rows="3" 
+                                  placeholder="Explain why the status is being changed"></textarea>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bx bx-info-circle me-2"></i>
+                        <strong>Current Status:</strong> <span id="current_status_display"></span>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bx bx-x me-1"></i>Cancel
+                </button>
+                <button type="button" class="btn btn-warning" onclick="updateCollateralStatus()">
+                    <i class="bx bx-check me-1"></i>Update Status
+                </button>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -904,15 +1363,52 @@
                             <input type="number" step="0.01" class="form-control" name="amount" id="payment_amount" required>
                         </div>
                     </div>
+                    
+                    <!-- Payment Source Selection -->
                     <div class="col-md-12">
                         <div class="mb-3">
+                            <label for="payment_source" class="form-label">Payment Source</label>
+                            <select class="form-select" name="payment_source" id="payment_source" required>
+                                <option value="">-- Select Payment Source --</option>
+                                <option value="bank">Receive from Bank</option>
+                                <option value="cash_deposit">Receive from Cash Deposit</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Bank Account Field -->
+                    <div class="col-md-12" id="bank_account_section" style="display: none;">
+                        <div class="mb-3">
                             <label for="bank_account_id" class="form-label">Bank Account</label>
-                            <select class="form-select" name="bank_account_id" id="bank_account_id" required>
+                            <select class="form-select" name="bank_account_id" id="bank_account_id">
                                 <option value="">-- Select Bank Account --</option>
                                 @foreach($bankAccounts ?? [] as $bankAccount)
                                 <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} - {{ $bankAccount->account_number }}</option>
                                 @endforeach
                             </select>
+                        </div>
+                    </div>
+                    
+                    <!-- Cash Deposit Account Field -->
+                    <div class="col-md-12" id="cash_deposit_section" style="display: none;">
+                        <div class="mb-3">
+                            <label for="cash_deposit_id" class="form-label">Cash Deposit Account</label>
+                            <select class="form-select" name="cash_deposit_id" id="cash_deposit_id">
+                                <option value="">-- Select Cash Deposit Account --</option>
+                                @php
+                                    $cashDeposits = \App\Models\CashCollateral::with(['customer', 'type'])
+                                        ->where('amount', '>', 0)
+                                        ->get();
+                                @endphp
+                                @foreach($cashDeposits as $deposit)
+                                <option value="{{ $deposit->id }}" data-balance="{{ $deposit->amount }}">
+                                    {{ $deposit->customer->name }} - {{ $deposit->type->name }} (Balance: TSHS {{ number_format($deposit->amount, 2) }})
+                                </option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted" id="deposit_balance_info" style="display: none;">
+                                Available Balance: <span id="selected_balance" class="text-success fw-bold"></span>
+                            </small>
                         </div>
                     </div>
                 </div>
@@ -1056,6 +1552,230 @@
             });
         });
 
+        // Handle guarantor form submission
+        $('#addGuarantorForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Disable submit button and show loading
+            submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Adding...');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#addGuarantorModal').modal('hide');
+                    showToast('Success!', 'Guarantor added successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to add guarantor.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join(', ');
+                    }
+                    showToast('Error!', errorMessage, 'error');
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // Handle document upload form submission
+        $('#uploadDocumentForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Disable submit button and show loading
+            submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Uploading...');
+            
+            // Create FormData for file uploads
+            const formData = new FormData(this);
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: formData,
+                processData: false,
+                contentType: false,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#uploadDocumentModal').modal('hide');
+                    showToast('Success!', 'Document uploaded successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to upload document.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join(', ');
+                    }
+                    showToast('Error!', errorMessage, 'error');
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // Handle add repayment form submission
+        $('#addRepaymentForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Disable submit button and show loading
+            submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Processing...');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#addRepaymentModal').modal('hide');
+                    showToast('Success!', 'Repayment added successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to add repayment.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join(', ');
+                    }
+                    showToast('Error!', errorMessage, 'error');
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // Handle approval form submission
+        $('#approvalForm').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            
+            // Disable submit button and show loading
+            submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Processing...');
+            
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    $('#approvalModal').modal('hide');
+                    showToast('Success!', 'Action completed successfully!', 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                },
+                error: function(xhr) {
+                    let errorMessage = 'Failed to process action.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join(', ');
+                    }
+                    showToast('Error!', errorMessage, 'error');
+                },
+                complete: function() {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
+
+        // Handle all delete forms with class form-delete
+        $('.form-delete').on('submit', function(e) {
+            e.preventDefault();
+            
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+            const itemName = submitBtn.data('name') || 'item';
+            
+            Swal.fire({
+                title: `Remove ${itemName}?`,
+                text: "This action cannot be undone!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, remove it!'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Disable submit button and show loading
+                    submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Removing...');
+                    
+                    $.ajax({
+                        url: form.attr('action'),
+                        method: 'DELETE',
+                        data: form.serialize(),
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function(response) {
+                            showToast('Success!', `${itemName} removed successfully!`, 'success');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        },
+                        error: function(xhr) {
+                            let errorMessage = `Failed to remove ${itemName}.`;
+                            if (xhr.responseJSON && xhr.responseJSON.message) {
+                                errorMessage = xhr.responseJSON.message;
+                            }
+                            showToast('Error!', errorMessage, 'error');
+                        },
+                        complete: function() {
+                            // Re-enable submit button
+                            submitBtn.prop('disabled', false).html(originalText);
+                        }
+                    });
+                }
+            });
+        });
+
         // Handle repayment schedule form submission
         $('#repayScheduleModal form').on('submit', function(e) {
             e.preventDefault();
@@ -1130,6 +1850,106 @@
         const modal = new bootstrap.Modal(document.getElementById('repayScheduleModal'));
         modal.show();
     }
+
+    // Payment source change handler
+    $(document).ready(function() {
+        $('#payment_source').change(function() {
+            const selectedSource = $(this).val();
+            
+            if (selectedSource === 'bank') {
+                $('#bank_account_section').show();
+                $('#cash_deposit_section').hide();
+                $('#bank_account_id').prop('required', true);
+                $('#cash_deposit_id').prop('required', false);
+                $('#deposit_balance_info').hide();
+            } else if (selectedSource === 'cash_deposit') {
+                $('#bank_account_section').hide();
+                $('#cash_deposit_section').show();
+                $('#bank_account_id').prop('required', false);
+                $('#cash_deposit_id').prop('required', true);
+                $('#deposit_balance_info').show();
+            } else {
+                $('#bank_account_section').hide();
+                $('#cash_deposit_section').hide();
+                $('#bank_account_id').prop('required', false);
+                $('#cash_deposit_id').prop('required', false);
+                $('#deposit_balance_info').hide();
+            }
+        });
+
+        // Cash deposit account change handler
+        $('#cash_deposit_id').change(function() {
+            const selectedOption = $(this).find('option:selected');
+            const balance = selectedOption.data('balance');
+            
+            if (balance !== undefined) {
+                $('#selected_balance').text('TSHS ' + parseFloat(balance).toLocaleString('en-US', {minimumFractionDigits: 2}));
+                $('#deposit_balance_info').show();
+            } else {
+                $('#deposit_balance_info').hide();
+            }
+        });
+
+        // Amount validation for cash deposit
+        $('#payment_amount').on('input', function() {
+            const paymentSource = $('#payment_source').val();
+            const amount = parseFloat($(this).val()) || 0;
+            
+            if (paymentSource === 'cash_deposit') {
+                const selectedOption = $('#cash_deposit_id').find('option:selected');
+                const balance = parseFloat(selectedOption.data('balance')) || 0;
+                
+                if (amount > balance) {
+                    $(this).addClass('is-invalid');
+                    // Show error message
+                    if (!$(this).next('.invalid-feedback').length) {
+                        $(this).after('<div class="invalid-feedback">Amount cannot exceed available balance</div>');
+                    }
+                } else {
+                    $(this).removeClass('is-invalid');
+                    $(this).next('.invalid-feedback').remove();
+                }
+            } else {
+                $(this).removeClass('is-invalid');
+                $(this).next('.invalid-feedback').remove();
+            }
+        });
+
+        // Form validation before submission
+        $('#repayScheduleModal form').on('submit', function(e) {
+            const paymentSource = $('#payment_source').val();
+            
+            if (!paymentSource) {
+                e.preventDefault();
+                alert('Please select a payment source');
+                return false;
+            }
+            
+            if (paymentSource === 'cash_deposit') {
+                const amount = parseFloat($('#payment_amount').val()) || 0;
+                const selectedOption = $('#cash_deposit_id').find('option:selected');
+                const balance = parseFloat(selectedOption.data('balance')) || 0;
+                
+                if (amount > balance) {
+                    e.preventDefault();
+                    alert('Payment amount cannot exceed available cash deposit balance');
+                    return false;
+                }
+                
+                if (!$('#cash_deposit_id').val()) {
+                    e.preventDefault();
+                    alert('Please select a cash deposit account');
+                    return false;
+                }
+            } else if (paymentSource === 'bank') {
+                if (!$('#bank_account_id').val()) {
+                    e.preventDefault();
+                    alert('Please select a bank account');
+                    return false;
+                }
+            }
+        });
+    });
 
     function removePenalty(scheduleId, penaltyAmount) {
         Swal.fire({
@@ -1637,6 +2457,587 @@
                 let errorMessage = 'Failed to update repayment.';
                 if (xhr.responseJSON && xhr.responseJSON.message) {
                     errorMessage = xhr.responseJSON.message;
+                }
+                showToast('Error!', errorMessage, 'error');
+            },
+            complete: function() {
+                // Re-enable submit button
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
+    // Collateral Management Functions
+    function viewCollateral(collateralId) {
+        // Show loading
+        $('#collateralDetailsContent').html('<div class="text-center py-4"><i class="bx bx-loader-alt bx-spin fs-1 text-primary"></i><br>Loading...</div>');
+        $('#viewCollateralModal').modal('show');
+
+        $.ajax({
+            url: `/loan-collaterals/${collateralId}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const collateral = response.collateral;
+                    const images = response.images;
+                    const documents = response.documents;
+
+                    let imagesHtml = '';
+                    if (images && images.length > 0) {
+                        imagesHtml = '<div class="row">';
+                        images.forEach((image, index) => {
+                            imagesHtml += `
+                                <div class="col-md-3 mb-3">
+                                    <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;" 
+                                         onclick="openImageModal('${image}')" role="button">
+                                </div>
+                            `;
+                        });
+                        imagesHtml += '</div>';
+                    } else {
+                        imagesHtml = '<p class="text-muted">No images uploaded</p>';
+                    }
+
+                    let documentsHtml = '';
+                    if (documents && documents.length > 0) {
+                        documentsHtml = '<div class="list-group">';
+                        documents.forEach(doc => {
+                            documentsHtml += `
+                                <a href="${doc.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                    <span><i class="bx bx-file me-2"></i>${doc.name}</span>
+                                    <i class="bx bx-download"></i>
+                                </a>
+                            `;
+                        });
+                        documentsHtml += '</div>';
+                    } else {
+                        documentsHtml = '<p class="text-muted">No documents uploaded</p>';
+                    }
+
+                    const statusBadge = getStatusBadge(collateral.status);
+                    const conditionBadge = collateral.condition ? getConditionBadge(collateral.condition) : '<span class="text-muted">Not specified</span>';
+
+                    const content = `
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="row mb-4">
+                                    <div class="col-12">
+                                        <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Title:</strong> ${collateral.title}<br>
+                                        <strong>Type:</strong> ${collateral.type.charAt(0).toUpperCase() + collateral.type.slice(1)}<br>
+                                        <strong>Status:</strong> ${statusBadge}<br>
+                                        <strong>Condition:</strong> ${conditionBadge}
+                                    </div>
+                                    <div class="col-md-6">
+                                        <strong>Estimated Value:</strong> TZS ${parseFloat(collateral.estimated_value).toLocaleString()}<br>
+                                        ${collateral.appraised_value ? `<strong>Appraised Value:</strong> TZS ${parseFloat(collateral.appraised_value).toLocaleString()}<br>` : ''}
+                                        ${collateral.location ? `<strong>Location:</strong> ${collateral.location}<br>` : ''}
+                                        ${collateral.serial_number ? `<strong>Serial Number:</strong> ${collateral.serial_number}` : ''}
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3"><i class="bx bx-detail me-2"></i>Description</h6>
+                                    <p>${collateral.description}</p>
+                                </div>
+
+                                ${collateral.notes ? `
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3"><i class="bx bx-note me-2"></i>Additional Notes</h6>
+                                    <p>${collateral.notes}</p>
+                                </div>` : ''}
+
+                                <div class="mb-4">
+                                    <h6 class="text-primary mb-3"><i class="bx bx-file me-2"></i>Documents</h6>
+                                    ${documentsHtml}
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="text-primary mb-3"><i class="bx bx-image me-2"></i>Images</h6>
+                                ${imagesHtml}
+                            </div>
+                        </div>
+
+                        ${collateral.status_changed_at ? `
+                        <div class="alert alert-info">
+                            <h6><i class="bx bx-history me-2"></i>Status History</h6>
+                            <small>
+                                <strong>Last Changed:</strong> ${new Date(collateral.status_changed_at).toLocaleDateString()}<br>
+                                <strong>Changed By:</strong> ${collateral.status_changed_by || 'System'}<br>
+                                ${collateral.status_change_reason ? `<strong>Reason:</strong> ${collateral.status_change_reason}` : ''}
+                            </small>
+                        </div>` : ''}
+                    `;
+
+                    $('#collateralDetailsContent').html(content);
+                    window.currentCollateralId = collateralId; // Store for edit function
+                }
+            },
+            error: function(xhr) {
+                $('#collateralDetailsContent').html('<div class="text-center py-4 text-danger"><i class="bx bx-error fs-1"></i><br>Error loading collateral details</div>');
+            }
+        });
+    }
+
+    function editCollateral(collateralId) {
+        // Close view modal if open
+        $('#viewCollateralModal').modal('hide');
+        
+        // Show loading in edit modal
+        $('#editCollateralContent').html('<div class="text-center py-4"><i class="bx bx-loader-alt bx-spin fs-1 text-primary"></i><br>Loading...</div>');
+        $('#editCollateralModal').modal('show');
+
+        $.ajax({
+            url: `/loan-collaterals/${collateralId}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const collateral = response.collateral;
+                    const images = response.images;
+                    const documents = response.documents;
+
+                    // Set form action
+                    $('#editCollateralForm').attr('action', `/loan-collaterals/${collateralId}`);
+
+                    let existingImagesHtml = '';
+                    if (images && images.length > 0) {
+                        existingImagesHtml = '<div class="mb-3"><label class="form-label">Current Images</label><div class="row">';
+                        images.forEach((image, index) => {
+                            const imagePath = collateral.images[index];
+                            existingImagesHtml += `
+                                <div class="col-md-3 mb-2">
+                                    <div class="position-relative">
+                                        <img src="${image}" class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;">
+                                        <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                                                onclick="removeFile('${imagePath}', 'image', ${collateralId})">
+                                            <i class="bx bx-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        existingImagesHtml += '</div></div>';
+                    }
+
+                    let existingDocumentsHtml = '';
+                    if (documents && documents.length > 0) {
+                        existingDocumentsHtml = '<div class="mb-3"><label class="form-label">Current Documents</label><div class="list-group">';
+                        documents.forEach((doc, index) => {
+                            const documentPath = collateral.documents[index];
+                            existingDocumentsHtml += `
+                                <div class="list-group-item d-flex justify-content-between align-items-center">
+                                    <span><i class="bx bx-file me-2"></i>${doc.name}</span>
+                                    <div>
+                                        <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                            <i class="bx bx-download"></i>
+                                        </a>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                onclick="removeFile('${documentPath}', 'document', ${collateralId})">
+                                            <i class="bx bx-trash"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            `;
+                        });
+                        existingDocumentsHtml += '</div></div>';
+                    }
+
+                    const editContent = `
+                        <div class="row">
+                            <div class="col-12">
+                                <h6 class="text-secondary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_type" class="form-label">Collateral Type</label>
+                                    <select class="form-select" name="type" id="edit_type" required>
+                                        <option value="property" ${collateral.type === 'property' ? 'selected' : ''}>Property</option>
+                                        <option value="vehicle" ${collateral.type === 'vehicle' ? 'selected' : ''}>Vehicle</option>
+                                        <option value="equipment" ${collateral.type === 'equipment' ? 'selected' : ''}>Equipment</option>
+                                        <option value="cash" ${collateral.type === 'cash' ? 'selected' : ''}>Cash</option>
+                                        <option value="jewelry" ${collateral.type === 'jewelry' ? 'selected' : ''}>Jewelry</option>
+                                        <option value="electronics" ${collateral.type === 'electronics' ? 'selected' : ''}>Electronics</option>
+                                        <option value="other" ${collateral.type === 'other' ? 'selected' : ''}>Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_title" class="form-label">Title/Name</label>
+                                    <input type="text" class="form-control" name="title" id="edit_title" value="${collateral.title}" required>
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="edit_description" class="form-label">Description</label>
+                                    <textarea class="form-control" name="description" id="edit_description" rows="3" required>${collateral.description}</textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_estimated_value" class="form-label">Estimated Value (TZS)</label>
+                                    <input type="number" step="0.01" class="form-control" name="estimated_value" id="edit_estimated_value" value="${collateral.estimated_value}" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_appraised_value" class="form-label">Appraised Value (TZS)</label>
+                                    <input type="number" step="0.01" class="form-control" name="appraised_value" id="edit_appraised_value" value="${collateral.appraised_value || ''}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_condition" class="form-label">Condition</label>
+                                    <select class="form-select" name="condition" id="edit_condition">
+                                        <option value="">-- Select Condition --</option>
+                                        <option value="excellent" ${collateral.condition === 'excellent' ? 'selected' : ''}>Excellent</option>
+                                        <option value="good" ${collateral.condition === 'good' ? 'selected' : ''}>Good</option>
+                                        <option value="fair" ${collateral.condition === 'fair' ? 'selected' : ''}>Fair</option>
+                                        <option value="poor" ${collateral.condition === 'poor' ? 'selected' : ''}>Poor</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_serial_number" class="form-label">Serial Number</label>
+                                    <input type="text" class="form-control" name="serial_number" id="edit_serial_number" value="${collateral.serial_number || ''}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_registration_number" class="form-label">Registration Number</label>
+                                    <input type="text" class="form-control" name="registration_number" id="edit_registration_number" value="${collateral.registration_number || ''}">
+                                </div>
+                            </div>
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label for="edit_location" class="form-label">Location</label>
+                                    <input type="text" class="form-control" name="location" id="edit_location" value="${collateral.location || ''}">
+                                </div>
+                            </div>
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label for="edit_valuation_date" class="form-label">Valuation Date</label>
+                                    <input type="date" class="form-control" name="valuation_date" id="edit_valuation_date" value="${collateral.valuation_date || ''}">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="edit_valuator_name" class="form-label">Valuator Name</label>
+                                    <input type="text" class="form-control" name="valuator_name" id="edit_valuator_name" value="${collateral.valuator_name || ''}">
+                                </div>
+                            </div>
+                            <div class="col-12">
+                                <div class="mb-3">
+                                    <label for="edit_notes" class="form-label">Additional Notes</label>
+                                    <textarea class="form-control" name="notes" id="edit_notes" rows="2">${collateral.notes || ''}</textarea>
+                                </div>
+                            </div>
+                            
+                            ${existingImagesHtml}
+                            ${existingDocumentsHtml}
+                            
+                            <div class="col-12 mt-3">
+                                <h6 class="text-secondary mb-3"><i class="bx bx-upload me-2"></i>Add New Files</h6>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_new_images" class="form-label">Add New Images</label>
+                                    <input type="file" class="form-control" name="new_images[]" id="edit_new_images" multiple accept="image/*">
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="edit_new_documents" class="form-label">Add New Documents</label>
+                                    <input type="file" class="form-control" name="new_documents[]" id="edit_new_documents" multiple accept=".pdf,.doc,.docx,.jpg,.png">
+                                </div>
+                            </div>
+                        </div>
+                    `;
+
+                    $('#editCollateralContent').html(editContent);
+                }
+            },
+            error: function(xhr) {
+                $('#editCollateralContent').html('<div class="text-center py-4 text-danger"><i class="bx bx-error fs-1"></i><br>Error loading collateral for editing</div>');
+            }
+        });
+    }
+
+    function editCollateralFromView() {
+        if (window.currentCollateralId) {
+            editCollateral(window.currentCollateralId);
+        }
+    }
+
+    function changeCollateralStatus(collateralId) {
+        // Get current collateral data first
+        $.ajax({
+            url: `/loan-collaterals/${collateralId}`,
+            method: 'GET',
+            success: function(response) {
+                if (response.success) {
+                    const collateral = response.collateral;
+                    $('#status_collateral_id').val(collateralId);
+                    $('#current_status_display').text(collateral.status.charAt(0).toUpperCase() + collateral.status.slice(1));
+                    $('#new_status').val(collateral.status);
+                    $('#changeStatusModal').modal('show');
+                }
+            }
+        });
+    }
+
+    function updateCollateralStatus() {
+        const collateralId = $('#status_collateral_id').val();
+        const newStatus = $('#new_status').val();
+        const reason = $('#status_reason').val();
+
+        if (!newStatus) {
+            alert('Please select a status');
+            return;
+        }
+
+        // Get the update button and add loading state
+        const updateBtn = $('#changeStatusModal').find('button[onclick="updateCollateralStatus()"]');
+        const originalText = updateBtn.html();
+        updateBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Updating...');
+
+        $.ajax({
+            url: `/loan-collaterals/${collateralId}/status`,
+            method: 'PATCH',
+            data: {
+                status: newStatus,
+                reason: reason,
+                _token: $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                if (response.success) {
+                    $('#changeStatusModal').modal('hide');
+                    showToast('Success!', response.message, 'success');
+                    setTimeout(() => {
+                        location.reload();
+                    }, 1500);
+                } else {
+                    showToast('Error!', response.message, 'error');
+                }
+            },
+            error: function(xhr) {
+                let errorMessage = 'Failed to update status.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                }
+                showToast('Error!', errorMessage, 'error');
+            },
+            complete: function() {
+                // Re-enable update button
+                updateBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    }
+
+    function deleteCollateral(collateralId) {
+        Swal.fire({
+            title: 'Delete Collateral?',
+            text: "This will permanently delete the collateral and all associated files. This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, delete it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/loan-collaterals/${collateralId}`,
+                    method: 'DELETE',
+                    headers: {
+                        'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('Success!', response.message, 'success');
+                            setTimeout(() => {
+                                location.reload();
+                            }, 1500);
+                        } else {
+                            showToast('Error!', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = 'Failed to delete collateral.';
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showToast('Error!', errorMessage, 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    function removeFile(filePath, fileType, collateralId) {
+        Swal.fire({
+            title: `Remove ${fileType}?`,
+            text: "This action cannot be undone!",
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            cancelButtonColor: '#3085d6',
+            confirmButtonText: 'Yes, remove it!'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: `/loan-collaterals/${collateralId}/remove-file`,
+                    method: 'DELETE',
+                    data: {
+                        file_path: filePath,
+                        file_type: fileType,
+                        _token: $('meta[name="csrf-token"]').attr('content')
+                    },
+                    success: function(response) {
+                        if (response.success) {
+                            showToast('Success!', response.message, 'success');
+                            // Refresh the edit modal
+                            editCollateral(collateralId);
+                        } else {
+                            showToast('Error!', response.message, 'error');
+                        }
+                    },
+                    error: function(xhr) {
+                        let errorMessage = `Failed to remove ${fileType}.`;
+                        if (xhr.responseJSON && xhr.responseJSON.message) {
+                            errorMessage = xhr.responseJSON.message;
+                        }
+                        showToast('Error!', errorMessage, 'error');
+                    }
+                });
+            }
+        });
+    }
+
+    function openImageModal(imageUrl) {
+        Swal.fire({
+            imageUrl: imageUrl,
+            imageAlt: 'Collateral Image',
+            showCloseButton: true,
+            showConfirmButton: false,
+            customClass: {
+                image: 'img-fluid'
+            }
+        });
+    }
+
+    function getStatusBadge(status) {
+        const statusClasses = {
+            'active': 'bg-success',
+            'sold': 'bg-primary',
+            'released': 'bg-info',
+            'foreclosed': 'bg-warning',
+            'damaged': 'bg-danger',
+            'lost': 'bg-dark'
+        };
+        
+        const className = statusClasses[status] || 'bg-secondary';
+        return `<span class="badge ${className}">${status.charAt(0).toUpperCase() + status.slice(1)}</span>`;
+    }
+
+    function getConditionBadge(condition) {
+        const conditionClasses = {
+            'excellent': 'bg-success',
+            'good': 'bg-primary',
+            'fair': 'bg-warning',
+            'poor': 'bg-danger'
+        };
+        
+        const className = conditionClasses[condition] || 'bg-secondary';
+        return `<span class="badge ${className}">${condition.charAt(0).toUpperCase() + condition.slice(1)}</span>`;
+    }
+
+    // Handle add collateral form submission
+    $('#addCollateralForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        // Disable submit button and show loading
+        submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Adding...');
+        
+        // Create FormData for file uploads
+        const formData = new FormData(this);
+        
+        $.ajax({
+            url: "{{ route('loan-collaterals.store') }}",
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                $('#addCollateralModal').modal('hide');
+                showToast('Success!', 'Collateral added successfully!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                let errorMessage = 'Failed to add collateral.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    const errors = Object.values(xhr.responseJSON.errors).flat();
+                    errorMessage = errors.join(', ');
+                }
+                showToast('Error!', errorMessage, 'error');
+            },
+            complete: function() {
+                // Re-enable submit button
+                submitBtn.prop('disabled', false).html(originalText);
+            }
+        });
+    });
+
+    // Handle edit collateral form submission
+    $('#editCollateralForm').on('submit', function(e) {
+        e.preventDefault();
+        
+        const form = $(this);
+        const submitBtn = form.find('button[type="submit"]');
+        const originalText = submitBtn.html();
+        
+        // Disable submit button and show loading
+        submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Updating...');
+        
+        // Create FormData for file uploads
+        const formData = new FormData(this);
+        
+        $.ajax({
+            url: form.attr('action'),
+            method: 'POST',
+            data: formData,
+            processData: false,
+            contentType: false,
+            headers: {
+                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+            },
+            success: function(response) {
+                $('#editCollateralModal').modal('hide');
+                showToast('Success!', 'Collateral updated successfully!', 'success');
+                setTimeout(() => {
+                    location.reload();
+                }, 1500);
+            },
+            error: function(xhr) {
+                let errorMessage = 'Failed to update collateral.';
+                if (xhr.responseJSON && xhr.responseJSON.message) {
+                    errorMessage = xhr.responseJSON.message;
+                } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                    const errors = Object.values(xhr.responseJSON.errors).flat();
+                    errorMessage = errors.join(', ');
                 }
                 showToast('Error!', errorMessage, 'error');
             },
