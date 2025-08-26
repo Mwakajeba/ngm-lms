@@ -1,5 +1,3 @@
-// Group Members AJAX
-Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxController::class, 'index'])->name('group.members.ajax');
 <?php
 
 use Illuminate\Support\Facades\Auth;
@@ -53,7 +51,8 @@ Route::get('group-loans-ajax/{group}', [\App\Http\Controllers\GroupLoanAjaxContr
 //     // Add other main app routes here
 // });
 // // ...existing code...
-
+// Group Members AJAX
+Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxController::class, 'index'])->name('group.members.ajax');
 // Loans in Arrears (30+ days)
 Route::get('arrears-loans', [\App\Http\Controllers\ArrearsLoanController::class, 'index'])->name('arrears.loans.list');
 Route::get('arrears-loans/pdf', [\App\Http\Controllers\ArrearsLoanController::class, 'exportPdf'])->name('arrears.loans.pdf');
