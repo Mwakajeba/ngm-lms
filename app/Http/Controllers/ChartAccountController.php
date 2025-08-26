@@ -12,6 +12,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
 
 class ChartAccountController extends Controller
 {
@@ -20,8 +21,20 @@ class ChartAccountController extends Controller
      */
     public function index(): View
     {
-        $chartAccounts = ChartAccount::with(['accountClassGroup.accountClass', 'cashFlowCategory', 'equityCategory'])->paginate(10);
-        return view('chart-accounts.index', compact('chartAccounts'));
+        $user = auth()->user();
+        
+        // Calculate stats only
+        $baseQuery = ChartAccount::whereHas('accountClassGroup', function ($query) use ($user) {
+            $query->where('company_id', $user->company_id);
+        });
+
+        $stats = [
+            'total' => $baseQuery->count(),
+            'cash_flow' => (clone $baseQuery)->where('has_cash_flow', true)->count(),
+            'equity' => (clone $baseQuery)->where('has_equity', true)->count(),
+        ];
+
+        return view('chart-accounts.index', compact('stats'));
     }
 
     /**
@@ -93,7 +106,13 @@ class ChartAccountController extends Controller
 
         $chartAccount = ChartAccount::findOrFail($decoded[0]);
         $chartAccount->load(['accountClassGroup.accountClass', 'cashFlowCategory', 'equityCategory']);
-        return view('chart-accounts.show', compact('chartAccount'));
+        
+        // Calculate account balance from GL transactions
+        $accountBalance = GlTransaction::where('chart_account_id', $chartAccount->id)
+            ->selectRaw('SUM(CASE WHEN nature = "debit" THEN amount ELSE -amount END) as balance')
+            ->value('balance') ?? 0;
+        
+        return view('chart-accounts.show', compact('chartAccount', 'accountBalance'));
     }
 
     /**
@@ -180,16 +199,177 @@ class ChartAccountController extends Controller
 
         $chartAccount = ChartAccount::findOrFail($decoded[0]);
 
-        // Prevent delete if used in GL Transactions
-        $hasGlTransactions = GlTransaction::where('chart_account_id', $chartAccount->id)->exists();
-        if ($hasGlTransactions) {
+        // Check if chart account is being used in any related models
+        $usageChecks = [
+            'GL Transactions' => GlTransaction::where('chart_account_id', $chartAccount->id)->exists(),
+            'Bank Accounts' => \App\Models\BankAccount::where('chart_account_id', $chartAccount->id)->exists(),
+            'Payment Items' => \App\Models\PaymentItem::where('chart_account_id', $chartAccount->id)->exists(),
+            'Receipt Items' => \App\Models\ReceiptItem::where('chart_account_id', $chartAccount->id)->exists(),
+            'Journal Items' => \App\Models\JournalItem::where('chart_account_id', $chartAccount->id)->exists(),
+            'Fees' => \App\Models\Fee::where('chart_account_id', $chartAccount->id)->exists(),
+            'Penalties (Income Account)' => \App\Models\Penalty::where('penalty_income_account_id', $chartAccount->id)->exists(),
+            'Penalties (Receivables Account)' => \App\Models\Penalty::where('penalty_receivables_account_id', $chartAccount->id)->exists(),
+            'Cash Collateral Types' => \App\Models\CashCollateralType::where('chart_account_id', $chartAccount->id)->exists(),
+            'Loan Products (Principal Receivable)' => \App\Models\LoanProduct::where('principal_receivable_account_id', $chartAccount->id)->exists(),
+            'Loan Products (Interest Receivable)' => \App\Models\LoanProduct::where('interest_receivable_account_id', $chartAccount->id)->exists(),
+            'Loan Products (Interest Revenue)' => \App\Models\LoanProduct::where('interest_revenue_account_id', $chartAccount->id)->exists(),
+            'Budget Lines' => \App\Models\BudgetLine::where('account_id', $chartAccount->id)->exists(),
+        ];
+
+        $usedIn = [];
+        foreach ($usageChecks as $model => $isUsed) {
+            if ($isUsed) {
+                $usedIn[] = $model;
+            }
+        }
+
+        if (!empty($usedIn)) {
+            $usageList = implode(', ', $usedIn);
             return redirect()->route('accounting.chart-accounts.index')
-                ->withErrors(['This account cannot be deleted because it is used in GL Transactions.']);
+                ->withErrors(["This account cannot be deleted because it is used in: {$usageList}"]);
         }
 
         $chartAccount->delete();
 
         return redirect()->route('accounting.chart-accounts.index')
             ->with('success', 'Chart Account deleted successfully.');
+    }
+
+    // Ajax endpoint for DataTables
+    public function getChartAccountsData(Request $request)
+    {
+        try {
+            $user = auth()->user();
+
+            $chartAccounts = ChartAccount::with(['accountClassGroup.accountClass', 'cashFlowCategory', 'equityCategory'])
+                ->whereHas('accountClassGroup', function ($query) use ($user) {
+                    $query->where('company_id', $user->company_id);
+                })
+                ->select('chart_accounts.*');
+
+            return \DataTables::of($chartAccounts)
+                ->addColumn('account_class_name', function ($account) {
+                    return $account->accountClassGroup && $account->accountClassGroup->accountClass 
+                        ? $account->accountClassGroup->accountClass->name 
+                        : 'N/A';
+                })
+                ->addColumn('account_group_name', function ($account) {
+                    return $account->accountClassGroup ? $account->accountClassGroup->name : 'N/A';
+                })
+                ->addColumn('cash_flow_badge', function ($account) {
+                    return $account->has_cash_flow 
+                        ? '<span class="badge bg-success">Yes</span>'
+                        : '<span class="badge bg-secondary">No</span>';
+                })
+                ->addColumn('cash_flow_category_name', function ($account) {
+                    if ($account->has_cash_flow && $account->cashFlowCategory) {
+                        return '<span class="badge bg-info" title="' . e($account->cashFlowCategory->description ?? '') . '">
+                                    <i class="bx bx-money-withdraw me-1"></i>' . e($account->cashFlowCategory->name) . '
+                                </span>';
+                    }
+                    return '<span class="text-muted">-</span>';
+                })
+                ->addColumn('equity_badge', function ($account) {
+                    return $account->has_equity 
+                        ? '<span class="badge bg-success">Yes</span>'
+                        : '<span class="badge bg-secondary">No</span>';
+                })
+                ->addColumn('equity_category_name', function ($account) {
+                    if ($account->has_equity && $account->equityCategory) {
+                        return '<span class="badge bg-warning" title="' . e($account->equityCategory->description ?? '') . '">
+                                    <i class="bx bx-pie-chart-alt me-1"></i>' . e($account->equityCategory->name) . '
+                                </span>';
+                    }
+                    return '<span class="text-muted">-</span>';
+                })
+                ->addColumn('formatted_created_at', function ($account) {
+                    return $account->created_at ? $account->created_at->format('M d, Y') : 'N/A';
+                })
+                ->addColumn('actions', function ($account) {
+                    $actions = '';
+                    $encodedId = Hashids::encode($account->id);
+                    
+                    // View action
+                    if (auth()->user()->can('view chart account details')) {
+                        $actions .= '<a href="' . route('accounting.chart-accounts.show', $encodedId) . '" 
+                                        class="btn btn-sm btn-outline-success me-1" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="View account details">
+                                        <i class="bx bx-show"></i>
+                                    </a>';
+                    }
+                    
+                    // Edit action
+                    if (auth()->user()->can('edit chart account')) {
+                        $actions .= '<a href="' . route('accounting.chart-accounts.edit', $encodedId) . '" 
+                                        class="btn btn-sm btn-outline-info me-1" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="Edit account">
+                                        <i class="bx bx-edit"></i>
+                                    </a>';
+                    }
+                    
+                    // Delete action
+                    if (auth()->user()->can('delete chart account')) {
+                        // Check if account is being used
+                        $usageChecks = [
+                            'GL Transactions' => GlTransaction::where('chart_account_id', $account->id)->exists(),
+                            'Bank Accounts' => \App\Models\BankAccount::where('chart_account_id', $account->id)->exists(),
+                            'Payment Items' => \App\Models\PaymentItem::where('chart_account_id', $account->id)->exists(),
+                            'Receipt Items' => \App\Models\ReceiptItem::where('chart_account_id', $account->id)->exists(),
+                            'Journal Items' => \App\Models\JournalItem::where('chart_account_id', $account->id)->exists(),
+                            'Fees' => \App\Models\Fee::where('chart_account_id', $account->id)->exists(),
+                            'Penalties (Income Account)' => \App\Models\Penalty::where('penalty_income_account_id', $account->id)->exists(),
+                            'Penalties (Receivables Account)' => \App\Models\Penalty::where('penalty_receivables_account_id', $account->id)->exists(),
+                            'Cash Collateral Types' => \App\Models\CashCollateralType::where('chart_account_id', $account->id)->exists(),
+                            'Loan Products (Principal Receivable)' => \App\Models\LoanProduct::where('principal_receivable_account_id', $account->id)->exists(),
+                            'Loan Products (Interest Receivable)' => \App\Models\LoanProduct::where('interest_receivable_account_id', $account->id)->exists(),
+                            'Loan Products (Interest Revenue)' => \App\Models\LoanProduct::where('interest_revenue_account_id', $account->id)->exists(),
+                            'Budget Lines' => \App\Models\BudgetLine::where('account_id', $account->id)->exists(),
+                        ];
+
+                        $usedIn = [];
+                        foreach ($usageChecks as $model => $isUsed) {
+                            if ($isUsed) {
+                                $usedIn[] = $model;
+                            }
+                        }
+
+                        if (!empty($usedIn)) {
+                            // Account is being used - show disabled button with tooltip
+                            $usageList = implode(', ', $usedIn);
+                            $actions .= '<button type="button" 
+                                            class="btn btn-sm btn-outline-secondary"
+                                            disabled
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Cannot delete - Account is used in: ' . e($usageList) . '">
+                                            <i class="bx bx-lock"></i>
+                                        </button>';
+                        } else {
+                            // Account is not being used - show delete button
+                            $actions .= '<button type="button" 
+                                            class="btn btn-sm btn-outline-danger delete-account-btn"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Delete account"
+                                            data-account-id="' . $encodedId . '"
+                                            data-account-name="' . e($account->account_name) . '"
+                                            data-account-code="' . e($account->account_code) . '">
+                                            <i class="bx bx-trash"></i>
+                                        </button>';
+                        }
+                    }
+                    
+                    return '<div class="text-center">' . $actions . '</div>';
+                })
+                ->rawColumns(['cash_flow_badge', 'cash_flow_category_name', 'equity_badge', 'equity_category_name', 'actions'])
+                ->make(true);
+        } catch (\Exception $e) {
+            \Log::error('Chart Accounts DataTable Error: ' . $e->getMessage());
+            return response()->json(['error' => 'Failed to load data: ' . $e->getMessage()], 500);
+        }
     }
 }

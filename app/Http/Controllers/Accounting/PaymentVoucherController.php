@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
+use Yajra\DataTables\Facades\DataTables;
 
 class PaymentVoucherController extends Controller
 {
@@ -29,15 +30,7 @@ class PaymentVoucherController extends Controller
     {
         $user = Auth::user();
 
-        // Get payment vouchers for the current company
-        $paymentVouchers = Payment::with(['bankAccount', 'customer', 'user'])
-            ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
-                $query->where('company_id', $user->company_id);
-            })
-            ->orderBy('created_at', 'desc')
-            ->paginate(15);
-
-        // Calculate stats
+        // Calculate stats only
         $allPayments = Payment::with(['bankAccount.chartAccount.accountClassGroup'])
             ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
@@ -51,7 +44,104 @@ class PaymentVoucherController extends Controller
             'this_month_amount' => $allPayments->where('date', '>=', now()->startOfMonth())->sum('amount'),
         ];
 
-        return view('accounting.payment-vouchers.index', compact('paymentVouchers', 'stats'));
+        return view('accounting.payment-vouchers.index', compact('stats'));
+    }
+
+    // Ajax endpoint for DataTables
+    public function getPaymentVouchersData(Request $request)
+    {
+        $user = Auth::user();
+
+        $payments = Payment::with(['bankAccount', 'customer', 'supplier', 'user'])
+            ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->select('payments.*');
+
+        return DataTables::eloquent($payments)
+                ->addColumn('formatted_date', function ($payment) {
+                    return $payment->date ? $payment->date->format('M d, Y') : 'N/A';
+                })
+                ->addColumn('reference_link', function ($payment) {
+                    return '<a href="' . route('accounting.payment-vouchers.show', $payment->hash_id) . '" 
+                                class="text-primary fw-bold">
+                                ' . e($payment->reference) . '
+                            </a>';
+                })
+                ->addColumn('bank_account_name', function ($payment) {
+                    return optional($payment->bankAccount)->name ?? 'N/A';
+                })
+                ->addColumn('payee_info', function ($payment) {
+                    if ($payment->payee_type == 'customer' && $payment->customer) {
+                        return '<span class="badge bg-primary me-1">Customer</span>' . e($payment->customer->name ?? 'N/A');
+                    } elseif ($payment->payee_type == 'supplier' && $payment->supplier) {
+                        return '<span class="badge bg-success me-1">Supplier</span>' . e($payment->supplier->name ?? 'N/A');
+                    } elseif ($payment->payee_type == 'other') {
+                        return '<span class="badge bg-warning me-1">Other</span>' . e($payment->payee_name ?? 'N/A');
+                    } else {
+                        return '<span class="text-muted">No payee</span>';
+                    }
+                })
+                ->addColumn('description_limited', function ($payment) {
+                    return $payment->description ? Str::limit($payment->description, 50) : 'No description';
+                })
+                ->addColumn('formatted_amount', function ($payment) {
+                    return '<span class="text-end fw-bold">' . number_format($payment->amount, 2) . '</span>';
+                })
+                ->addColumn('status_badge', function ($payment) {
+                    return $payment->status_badge;
+                })
+                ->addColumn('actions', function ($payment) {
+                    $actions = '';
+                    
+                    // View action
+                    if (auth()->user()->can('view payment voucher details')) {
+                        $actions .= '<a href="' . route('accounting.payment-vouchers.show', $payment->hash_id) . '" 
+                                        class="btn btn-sm btn-outline-success me-1" 
+                                        data-bs-toggle="tooltip" 
+                                        data-bs-placement="top" 
+                                        title="View payment voucher">
+                                        <i class="bx bx-show"></i>
+                                    </a>';
+                    }
+                    
+                    if ($payment->reference_type === 'manual') {
+                        // Edit action
+                        if (auth()->user()->can('edit payment voucher')) {
+                            $actions .= '<a href="' . route('accounting.payment-vouchers.edit', $payment->hash_id) . '" 
+                                            class="btn btn-sm btn-outline-info me-1" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Edit payment voucher">
+                                            <i class="bx bx-edit"></i>
+                                        </a>';
+                        }
+                        
+                        // Delete action
+                        if (auth()->user()->can('delete payment voucher')) {
+                            $actions .= '<button type="button" 
+                                            class="btn btn-sm btn-outline-danger delete-payment-btn"
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Delete payment voucher"
+                                            data-payment-id="' . $payment->hash_id . '"
+                                            data-payment-reference="' . e($payment->reference) . '">
+                                            <i class="bx bx-trash"></i>
+                                        </button>';
+                        }
+                    } else {
+                        $actions .= '<button type="button" 
+                                        class="btn btn-sm btn-outline-secondary" 
+                                        title="Edit/Delete locked: Source is ' . ucfirst($payment->reference_type) . ' transaction" 
+                                        disabled>
+                                        <i class="bx bx-lock"></i>
+                                    </button>';
+                    }
+                    
+                    return '<div class="text-center">' . $actions . '</div>';
+                })
+                ->rawColumns(['reference_link', 'payee_info', 'formatted_amount', 'status_badge', 'actions'])
+                ->make(true);
     }
 
     /**
