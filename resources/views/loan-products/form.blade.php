@@ -188,6 +188,16 @@
                 value="{{ old('top_up_type_value', $loanProduct->top_up_type_value ?? '') }}" placeholder="0.00">
             @error('top_up_type_value') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
+            <!-- Allow Push to ESS -->
+            <div class="col-12">
+                <h5 class="mb-3 text-primary mt-4">ESS Configuration</h5>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="form-check">
+                    <input type="checkbox" name="allow_push_to_ess" id="allow_push_to_ess" class="form-check-input" value="1" {{ old('allow_push_to_ess', $loanProduct->allow_push_to_ess ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label" for="allow_push_to_ess">Allow Push to ESS</label>
+                </div>
+            </div>
 
         <!-- Cash Deposit Configuration -->
         <div class="col-12">
