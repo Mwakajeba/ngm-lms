@@ -1956,4 +1956,80 @@ class LoanController extends Controller
         fclose($handle);
         exit;
     }
+
+    /**
+     * Write off a loan (show confirmation or perform action)
+     */
+    public function writeoff($hashid)
+    {
+        $loanId = Hashids::decode($hashid)[0] ?? null;
+        if (!$loanId) {
+            abort(404, 'Invalid loan ID');
+        }
+        $loan = Loan::findOrFail($loanId);
+
+        if (request()->isMethod('post')) {
+            $validated = request()->validate([
+                'outstanding' => 'required|numeric|min:0',
+                'reason' => 'required|string|max:255',
+                'writeoff_type' => 'required|string|max:50',
+            ]);
+
+            $userId = auth()->id();
+            $writeoff = \App\Models\LoanWriteoff::create([
+                'loan_id' => $loan->id,
+                'customer_id' => $loan->customer_id,
+                'outstanding' => $validated['outstanding'],
+                'reason' => $validated['reason'],
+                'writeoff_type' => $validated['writeoff_type'],
+                'createdby' => $userId,
+            ]);
+
+            // Get loan product accounts
+            $product = $loan->product;
+            $amount = $validated['outstanding'];
+            $branchId = auth()->user()->branch_id;
+
+            if ($validated['writeoff_type'] === 'direct') {
+                $debitAccount = $product->direct_writeoff_account_id;
+            } else {
+                $debitAccount = $product->provision_writeoff_account_id;
+            }
+            $creditAccount = $product->principal_receivable_account_id;
+
+            // Create GL transactions using writeoff_id
+            \App\Models\GlTransaction::create([
+                'chart_account_id' => $debitAccount,
+                'customer_id' => $loan->customer_id,
+                'amount' => $amount,
+                'nature' => 'debit',
+                'transaction_id' => $writeoff->id,
+                'transaction_type' => 'Loan Writeoff',
+                'date' => now(),
+                'description' => 'Loan write-off',
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
+            \App\Models\GlTransaction::create([
+                'chart_account_id' => $creditAccount,
+                'customer_id' => $loan->customer_id,
+                'amount' => $amount,
+                'nature' => 'credit',
+                'transaction_id' => $writeoff->id,
+                'transaction_type' => 'Loan Writeoff',
+                'date' => now(),
+                'description' => 'Loan write-off',
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
+
+            $loan->update(['status' => 'written_off']);
+
+            return redirect()->route('loans.list')->with('success', 'Loan written off successfully.');
+        }
+
+        return view('loans.writeoff', compact('loan', 'hashid'));
+    }
+
+    
 }

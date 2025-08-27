@@ -2354,4 +2354,124 @@ class LoanReportController extends Controller
 
         return $nextSchedule ? Carbon::parse($nextSchedule->due_date)->format('Y-m-d') : 'N/A';
     }
+
+        /**
+     * Non Performing Loan Report - List NPLs with metrics and export options
+     */
+    public function nonPerformingLoanReport(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+        $exportType = $request->get('export_type');
+
+        $branches = Branch::all();
+        $loanOfficers = User::whereHas('loans')->get();
+        $company = Company::first();
+
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('loan_officer_id') || $request->isMethod('get');
+        $nplData = null;
+        $nplSummary = [
+            'total_npl_loans' => 0,
+            'total_npl_amount' => 0,
+            'average_dpd' => 0,
+            'provision_total' => 0,
+        ];
+        if ($showData) {
+            $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+            if (count($nplData) > 0) {
+                $nplSummary['total_npl_loans'] = count($nplData);
+                $nplSummary['total_npl_amount'] = collect($nplData)->sum('outstanding');
+                $nplSummary['average_dpd'] = round(collect($nplData)->avg('dpd'), 1);
+                $nplSummary['provision_total'] = collect($nplData)->sum('provision_amount');
+            }
+            if ($exportType === 'excel') {
+                return $this->exportNPLToExcel($request);
+            } elseif ($exportType === 'pdf') {
+                return $this->exportNPLToPdf($request);
+            }
+        }
+        return view('loans.reports.npl_report', compact('nplData', 'nplSummary', 'branches', 'loanOfficers', 'company', 'asOfDate', 'branchId', 'loanOfficerId', 'showData'));
+    }
+
+    /**
+     * Query NPL data from database
+     */
+    private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null)
+    {
+        $query = Loan::with(['customer', 'branch', 'loanOfficer', 'collaterals', 'schedule'])
+            ->where('status', 'active')
+            ->whereDate('disbursed_on', '<=', $asOfDate);
+        if ($branchId) {
+            $query->where('branch_id', $branchId);
+        }
+        if ($loanOfficerId) {
+            $query->where('loan_officer_id', $loanOfficerId);
+        }
+        $loans = $query->get();
+        $nplData = [];
+        foreach ($loans as $loan) {
+            $maxDpd = 0;
+            $hasNplSchedule = false;
+            foreach ($loan->schedule as $schedule) {
+                if ($schedule->due_date < $asOfDate) {
+                    $dpd = Carbon::parse($asOfDate)->diffInDays(Carbon::parse($schedule->due_date));
+                    if ($dpd > $maxDpd) {
+                        $maxDpd = $dpd;
+                    }
+                    if ($dpd > 90) {
+                        $hasNplSchedule = true;
+                    }
+                }
+            }
+            // If any schedule is NPL, include the loan
+            if ($hasNplSchedule) {
+                $nplData[] = [
+                    'date_of' => $asOfDate,
+                    'branch' => $loan->branch->name ?? '',
+                    'loan_officer' => $loan->loanOfficer->name ?? '',
+                    'loan_id' => $loan->loanNo ?? $loan->id,
+                    'borrower' => $loan->customer->name ?? '',
+                    'outstanding' => $loan->amount_total ?? 0,
+                    'dpd' => $maxDpd,
+                    'classification' => $maxDpd > 360 ? 'Loss' : ($maxDpd > 180 ? 'Doubtful' : ($maxDpd > 90 ? 'Substandard' : 'Standard')),
+                    'provision_percent' => $maxDpd > 360 ? '100%' : ($maxDpd > 180 ? '50%' : ($maxDpd > 90 ? '20%' : '0%')),
+                    'provision_amount' => $loan->amount_total * ($maxDpd > 360 ? 1 : ($maxDpd > 180 ? 0.5 : ($maxDpd > 90 ? 0.2 : 0))),
+                    'collateral' => $loan->collaterals->pluck('type')->implode(', '),
+                    'status' => $loan->status ?? '',
+                ];
+            }
+        }
+        return $nplData;
+    }
+
+    /**
+     * Export NPL Report to Excel
+     */
+    public function exportNPLToExcel(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+        $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+        $filename = 'npl_report_' . $asOfDate . '.xlsx';
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\GenericArrayExport($nplData, [
+            'Date Of', 'Branch', 'Loan Officer', 'Loan ID', 'Borrower', 'Outstanding (TZS)', 'DPD', 'Classification', 'Provision %', 'Provision (TZS)', 'Collateral', 'Status'
+        ]), $filename);
+    }
+
+    /**
+     * Export NPL Report to PDF
+     */
+    public function exportNPLToPdf(Request $request)
+    {
+        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id');
+        $loanOfficerId = $request->get('loan_officer_id');
+        $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+        $pdf = \PDF::loadView('loans.reports.npl_report_pdf', compact('nplData', 'asOfDate', 'branchId', 'loanOfficerId'));
+        $pdf->setPaper('A3', 'landscape');
+        $filename = 'npl_report_' . $asOfDate . '.pdf';
+        return $pdf->download($filename);
+    }
 }
