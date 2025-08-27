@@ -188,6 +188,16 @@
                 value="{{ old('top_up_type_value', $loanProduct->top_up_type_value ?? '') }}" placeholder="0.00">
             @error('top_up_type_value') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
+            <!-- Allow Push to ESS -->
+            <div class="col-12">
+                <h5 class="mb-3 text-primary mt-4">ESS Configuration</h5>
+            </div>
+            <div class="col-md-6 mb-3">
+                <div class="form-check">
+                    <input type="checkbox" name="allow_push_to_ess" id="allow_push_to_ess" class="form-check-input" value="1" {{ old('allow_push_to_ess', $loanProduct->allow_push_to_ess ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label" for="allow_push_to_ess">Allow Push to ESS</label>
+                </div>
+            </div>
 
         <!-- Cash Deposit Configuration -->
         <div class="col-12">
@@ -367,7 +377,7 @@
             <select name="principal_receivable_account_id"
                 class="form-select @error('principal_receivable_account_id') is-invalid @enderror" required>
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts as $account)
+                @foreach($chartAccounts->where('account_class', 'Asset') as $account)
                     <option value="{{ $account->id }}" {{ old('principal_receivable_account_id', $loanProduct->principal_receivable_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -381,7 +391,7 @@
             <select name="interest_receivable_account_id"
                 class="form-select @error('interest_receivable_account_id') is-invalid @enderror" required>
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts as $account)
+                @foreach($chartAccounts->where('account_class', 'Asset') as $account)
                     <option value="{{ $account->id }}" {{ old('interest_receivable_account_id', $loanProduct->interest_receivable_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -395,7 +405,7 @@
             <select name="interest_revenue_account_id"
                 class="form-select @error('interest_revenue_account_id') is-invalid @enderror" required>
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts as $account)
+                @foreach($chartAccounts->where('account_class', 'Revenue') as $account)
                     <option value="{{ $account->id }}" {{ old('interest_revenue_account_id', $loanProduct->interest_revenue_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -404,6 +414,32 @@
             @error('interest_revenue_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+        <!-- Write Off Accounts Configuration -->
+        <div class="col-12">
+            <h5 class="mb-3 text-purple mt-4">Write Off Accounts</h5>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Direct Write Off Account (Expense)</label>
+            <select name="direct_writeoff_account_id" class="form-select">
+                <option value="">-- Select Account --</option>
+                @foreach($chartAccounts->where('account_class', 'Expense') as $account)
+                    <option value="{{ $account->id }}" {{ old('direct_writeoff_account_id', $loanProduct->direct_writeoff_account_id ?? '') == $account->id ? 'selected' : '' }}>
+                        {{ $account->account_code }} - {{ $account->account_name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Using Provision Account (Asset)</label>
+            <select name="provision_writeoff_account_id" class="form-select">
+                <option value="">-- Select Account --</option>
+                @foreach($chartAccounts->where('account_class', 'Asset') as $account)
+                    <option value="{{ $account->id }}" {{ old('provision_writeoff_account_id', $loanProduct->provision_writeoff_account_id ?? '') == $account->id ? 'selected' : '' }}>
+                        {{ $account->account_code }} - {{ $account->account_name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
         <!-- Fees and Penalties Configuration -->
         <div class="col-12">
             <h5 class="mb-3 text-primary mt-4">Fees and Penalties Configuration</h5>

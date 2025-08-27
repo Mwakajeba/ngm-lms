@@ -10,6 +10,7 @@ use App\Models\Receipt;
 use App\Models\ReceiptItem;
 use App\Models\GlTransaction;
 use App\Models\ChartAccount;
+use App\Models\BankAccount;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -292,7 +293,7 @@ class LoanRepaymentService
         // Get chart accounts for components and log them
         $chartAccounts = [
             'principal' => $loan->product->principal_receivable_account_id ?? null,
-            'interest' => $loan->product->interest_income_account_id ?? null,
+            'interest' => $loan->product->interest_revenue_account_id ?? null,
             'fee_amount' => $loan->product->fee_income_account_id ?? null,
             'penalty_amount' => $loan->product->penalty_receivables_account_id ?? null
         ];
@@ -304,6 +305,10 @@ class LoanRepaymentService
             'fee_amount' => $schedulePayment['fee_amount'],
             'penalty_amount' => $schedulePayment['penalty_amount']
         ];
+        $bankAccount = BankAccount::find($receipt->bank_account_id);
+        $bankAccountChartAccount = $bankAccount->chart_account_id;
+
+        info("bank account chart account", ['bank_account_id' => $bankAccount->id, 'chart_account_id' => $bankAccountChartAccount]);
         Log::info('GL Component Amounts for Receipt', $components);
 
         // Debit: Bank/cash account (total amount)
@@ -314,7 +319,7 @@ class LoanRepaymentService
             'receipt_id' => $receipt->id
         ]);
         GlTransaction::create([
-            'chart_account_id' => $receipt->bank_account_id,
+            'chart_account_id' => $bankAccountChartAccount,
             'customer_id' => $loan->customer_id,
             'amount' => $schedulePayment['amount'],
             'nature' => 'debit',
@@ -404,13 +409,13 @@ class LoanRepaymentService
      */
     private function createJournalEntry($loan, $repayment, $schedulePayment, $paymentData)
     {
-        Log::info('createJournalEntry called', [
-            'loan_id' => $loan->id,
-            'repayment_id' => $repayment->id ?? null,
-            'schedulePayment' => $schedulePayment,
-            'cash_deposit_id' => $paymentData['cash_deposit_id'] ?? null,
-            'cash_deposit_before' => $cashDeposit->amount,
-        ]);
+        // Log::info('createJournalEntry called', [
+        //     'loan_id' => $loan->id,
+        //     'repayment_id' => $repayment->id ?? null,
+        //     'schedulePayment' => $schedulePayment,
+        //     'cash_deposit_id' => $paymentData['cash_deposit_id'] ?? null,
+        //     'cash_deposit_before' => $cashDeposit->amount,
+        // ]);
         // Get cash deposit account
         $cashDeposit = \App\Models\CashCollateral::findOrFail($paymentData['cash_deposit_id']);
         // Reduce cash deposit balance
@@ -445,10 +450,12 @@ class LoanRepaymentService
         // Always credit all components, not only principal
         $chartAccounts = [
             'principal' => $loan->product->principal_receivable_account_id ?? null,
-            'interest' => $loan->product->interest_income_account_id ?? null,
+            'interest' => $loan->product->interest_revenue_account_id ?? null,
             'fee_amount' => $loan->product->fee_income_account_id ?? null,
             'penalty_amount' => $loan->product->penalty_receivables_account_id ?? null
         ];
+
+        info('chart accounts',$chartAccounts);
 
         $components = [
             'principal' => $schedulePayment['principal'],
@@ -456,10 +463,16 @@ class LoanRepaymentService
             'fee_amount' => $schedulePayment['fee_amount'],
             'penalty_amount' => $schedulePayment['penalty_amount']
         ];
+        info("components amounts",$components);
 
         // check if the interest receivable has been posted first, if not, do not create the interest receivable by debiting  and credit interest income
         $receivableId = $loan->product->interest_receivable_account_id;
         $incomeId = $loan->product->interest_revenue_account_id;
+
+        info("Interest accounts for product {$loan->product->id}", [
+            'receivable_id' => $receivableId,
+            'income_id' => $incomeId,
+        ]);
 
         if (!$receivableId) {
             Log::warning("Missing interest accounts for product {$loan->product->id}");
@@ -472,10 +485,16 @@ class LoanRepaymentService
             ->where('amount', $schedulePayment['interest'])
             ->where('transaction_type', 'Mature Interest')
             ->exists();
+
+        info("Interest accounts for product {$loan->product->id}", [
+            'exists' => $exists,
+        ]);
+
         if (!$incomeId) {
             Log::warning("Missing interest income account for product {$loan->product->id}");
             return 0;
         }
+        info('income account',[$incomeId]);
 
         $incomeExists = GlTransaction::where('chart_account_id', $incomeId)
             ->where('customer_id', $loan->customer_id)
@@ -483,6 +502,11 @@ class LoanRepaymentService
             ->where('amount', $schedulePayment['interest'])
             ->where('transaction_type', 'Interest')
             ->exists();
+
+         info("Interest accounts for product {$loan->product->id}", [
+            'exists' => $incomeExists,
+        ]);
+
 
         if ($exists && $incomeExists) {
             Log::info('Interest receivable and interest income have been posted ovewtite the array chartAccont interest to be receivable instead of icome');

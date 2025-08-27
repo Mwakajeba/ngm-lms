@@ -35,7 +35,7 @@ class LoanProductController extends Controller
     public function create()
     {
         // Get chart accounts for dropdowns
-        $chartAccounts = ChartAccount::all();
+    $chartAccounts = ChartAccount::all();
 
         // Get fees and penalties for dropdowns
         $fees = Fee::where('status', 'active')->get();
@@ -109,7 +109,7 @@ class LoanProductController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+    $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products',
             'product_type' => 'required|string|max:100',
             'minimum_interest_rate' => 'required|numeric|min:0|max:100',
@@ -134,11 +134,14 @@ class LoanProductController extends Controller
             'principal_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_revenue_account_id' => 'required|exists:chart_accounts,id',
+            'direct_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
+            'provision_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
             'fees_id' => 'nullable|array',
             'fees_id.*' => 'nullable|exists:fees,id',
             'penalty_id' => 'nullable|array',
             'penalty_id.*' => 'nullable|exists:penalties,id',
             'repayment_order' => 'nullable|string|max:500',
+            'allow_push_to_ess' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -182,6 +185,7 @@ class LoanProductController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->all();
+            $data['allow_push_to_ess'] = $request->has('allow_push_to_ess');
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 
@@ -255,7 +259,7 @@ class LoanProductController extends Controller
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
         // Get chart accounts for dropdowns
-        $chartAccounts = ChartAccount::all();
+    $chartAccounts = ChartAccount::all();
 
         // Get fees and penalties for dropdowns
         $fees = Fee::where('status', 'active')->get();
@@ -336,7 +340,7 @@ class LoanProductController extends Controller
 
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
-        $validator = Validator::make($request->all(), [
+    $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products,name,' . $loanProduct->id,
             'product_type' => 'required|string|max:100',
             'minimum_interest_rate' => 'required|numeric|min:0|max:100',
@@ -360,11 +364,14 @@ class LoanProductController extends Controller
             'principal_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_revenue_account_id' => 'required|exists:chart_accounts,id',
+            'direct_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
+            'provision_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
             'fees_id' => 'nullable|array',
             'fees_id.*' => 'nullable|exists:fees,id',
             'penalty_id' => 'nullable|array',
             'penalty_id.*' => 'nullable|exists:penalties,id',
             'repayment_order' => 'nullable|string|max:500',
+            'allow_push_to_ess' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -408,6 +415,7 @@ class LoanProductController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->all();
+            $data['allow_push_to_ess'] = $request->has('allow_push_to_ess');
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 

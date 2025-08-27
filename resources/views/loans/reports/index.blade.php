@@ -118,9 +118,25 @@
                     <div class="icon-box mb-3">
                         <i class="fas fa-analytics fa-3x text-secondary"></i>
                     </div>
-                    <h5 class="card-title">Internal Portfolio Analysis</h5>
+                    <h5 class="card-title">Internal Portfolio Analysisxxxx</h5>
                     <p class="card-text text-muted">Conservative portfolio analysis for internal risk management.</p>
                     <a href="{{ route('accounting.loans.reports.internal_portfolio_analysis') }}" class="btn btn-secondary">
+                        <i class="fas fa-file-alt me-1"></i> View Report
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Non Performing Loan Report -->
+        <div class="col-lg-4 col-md-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body text-center">
+                    <div class="icon-box mb-3">
+                        <i class="fas fa-ban fa-3x text-danger"></i>
+                    </div>
+                    <h5 class="card-title">Non Performing Loan Report</h5>
+                    <p class="card-text text-muted">View and analyze non performing loans, provisions, and risk metrics.</p>
+                    <a href="{{ route('loans.reports.npl') }}" class="btn btn-danger">
                         <i class="fas fa-file-alt me-1"></i> View Report
                     </a>
                 </div>
