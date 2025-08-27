@@ -54,8 +54,8 @@ class LoanRepaymentController extends Controller
                 'payment_date' => 'required|date',
                 'amount' => 'required|numeric|min:0.01',
                 'payment_source' => 'required|in:bank,cash_deposit',
-                'bank_account_id' => 'required_if:payment_source,bank|exists:bank_accounts,id',
-                'cash_deposit_id' => 'required_if:payment_source,cash_deposit|exists:cash_collaterals,id',
+                'bank_account_id' => 'required_if:payment_source,bank|nullable|exists:bank_accounts,id',
+                'cash_deposit_id' => 'required_if:payment_source,cash_deposit|nullable|exists:cash_collaterals,id',
             ]);
 
             Log::info('Validation passed');
@@ -63,7 +63,7 @@ class LoanRepaymentController extends Controller
             // Check cash deposit balance if using cash deposit
             if ($request->payment_source === 'cash_deposit') {
                 $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
-                
+
                 if ($cashDeposit->amount < $request->amount) {
                     return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
                 }
