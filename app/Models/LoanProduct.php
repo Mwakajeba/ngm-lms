@@ -38,7 +38,8 @@ class LoanProduct extends Model
         'penalty_ids',
         'repayment_order',
         'is_active',
-        'penalt_deduction_criteria',
+    'penalt_deduction_criteria',
+    'allow_push_to_ess',
     ];
     public function directWriteoffAccount(): BelongsTo
     {
@@ -63,7 +64,8 @@ class LoanProduct extends Model
         'maximum_period' => 'integer',
         'fees_ids' => 'array',
         'penalty_ids' => 'array',
-        'is_active' => 'boolean',
+    'is_active' => 'boolean',
+    'allow_push_to_ess' => 'boolean',
     ];
 
 

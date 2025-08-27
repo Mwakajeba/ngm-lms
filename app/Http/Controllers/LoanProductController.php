@@ -109,7 +109,7 @@ class LoanProductController extends Controller
      */
     public function store(Request $request)
     {
-        $validator = Validator::make($request->all(), [
+    $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products',
             'product_type' => 'required|string|max:100',
             'minimum_interest_rate' => 'required|numeric|min:0|max:100',
@@ -141,6 +141,7 @@ class LoanProductController extends Controller
             'penalty_id' => 'nullable|array',
             'penalty_id.*' => 'nullable|exists:penalties,id',
             'repayment_order' => 'nullable|string|max:500',
+            'allow_push_to_ess' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -184,6 +185,7 @@ class LoanProductController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->all();
+            $data['allow_push_to_ess'] = $request->has('allow_push_to_ess');
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 
@@ -338,7 +340,7 @@ class LoanProductController extends Controller
 
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
-        $validator = Validator::make($request->all(), [
+    $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products,name,' . $loanProduct->id,
             'product_type' => 'required|string|max:100',
             'minimum_interest_rate' => 'required|numeric|min:0|max:100',
@@ -369,6 +371,7 @@ class LoanProductController extends Controller
             'penalty_id' => 'nullable|array',
             'penalty_id.*' => 'nullable|exists:penalties,id',
             'repayment_order' => 'nullable|string|max:500',
+            'allow_push_to_ess' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -412,6 +415,7 @@ class LoanProductController extends Controller
         DB::beginTransaction();
         try {
             $data = $request->all();
+            $data['allow_push_to_ess'] = $request->has('allow_push_to_ess');
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 
