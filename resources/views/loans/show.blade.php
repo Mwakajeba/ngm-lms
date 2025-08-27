@@ -12,7 +12,10 @@
         ]" />
 
         <div class="d-flex align-items-center justify-content-between mb-4">
-            <h4 class="fw-bold text-dark mb-0">Loan Details for {{ $loan->customer->name }}</h4>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <h4 class="fw-bold text-dark mb-0">Loan Details for {{ $loan->customer->name }}</h4>
+                <a href="{{ route('loans.writeoff', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}" class="btn btn-danger" style="margin-left: 16px;">Write Off Loans</a>
+            </div>
             <div class="d-flex gap-2">
             </div>
         </div>

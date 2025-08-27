@@ -32,12 +32,23 @@ class LoanProduct extends Model
         'principal_receivable_account_id',
         'interest_receivable_account_id',
         'interest_revenue_account_id',
+        'direct_writeoff_account_id',
+        'provision_writeoff_account_id',
         'fees_ids',
         'penalty_ids',
         'repayment_order',
         'is_active',
         'penalt_deduction_criteria',
     ];
+    public function directWriteoffAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartAccount::class, 'direct_writeoff_account_id');
+    }
+
+    public function provisionWriteoffAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartAccount::class, 'provision_writeoff_account_id');
+    }
 
     protected $casts = [
         'minimum_interest_rate' => 'decimal:2',

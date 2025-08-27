@@ -35,7 +35,7 @@ class LoanProductController extends Controller
     public function create()
     {
         // Get chart accounts for dropdowns
-        $chartAccounts = ChartAccount::all();
+    $chartAccounts = ChartAccount::all();
 
         // Get fees and penalties for dropdowns
         $fees = Fee::where('status', 'active')->get();
@@ -134,6 +134,8 @@ class LoanProductController extends Controller
             'principal_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_revenue_account_id' => 'required|exists:chart_accounts,id',
+            'direct_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
+            'provision_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
             'fees_id' => 'nullable|array',
             'fees_id.*' => 'nullable|exists:fees,id',
             'penalty_id' => 'nullable|array',
@@ -255,7 +257,7 @@ class LoanProductController extends Controller
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
         // Get chart accounts for dropdowns
-        $chartAccounts = ChartAccount::all();
+    $chartAccounts = ChartAccount::all();
 
         // Get fees and penalties for dropdowns
         $fees = Fee::where('status', 'active')->get();
@@ -360,6 +362,8 @@ class LoanProductController extends Controller
             'principal_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_revenue_account_id' => 'required|exists:chart_accounts,id',
+            'direct_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
+            'provision_writeoff_account_id' => 'nullable|exists:chart_accounts,id',
             'fees_id' => 'nullable|array',
             'fees_id.*' => 'nullable|exists:fees,id',
             'penalty_id' => 'nullable|array',
