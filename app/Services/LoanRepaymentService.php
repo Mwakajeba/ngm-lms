@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\JournalItem;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
 use App\Models\Repayment;
@@ -456,16 +457,49 @@ class LoanRepaymentService
             'penalty_amount' => $schedulePayment['penalty_amount']
         ];
 
+        // check if the interest receivable has been posted first, if not, do not create the interest receivable by debiting  and credit interest income
+        $receivableId = $loan->product->interest_receivable_account_id;
+        $incomeId = $loan->product->interest_revenue_account_id;
+
+        if (!$receivableId) {
+            Log::warning("Missing interest accounts for product {$loan->product->id}");
+            return 0;
+        }
+
+        $exists = GlTransaction::where('chart_account_id', $receivableId)
+            ->where('customer_id', $loan->customer_id)
+            ->where('date', $repayment->due_date)
+            ->where('amount', $schedulePayment['interest'])
+            ->where('transaction_type', 'Mature Interest')
+            ->exists();
+        if (!$incomeId) {
+            Log::warning("Missing interest income account for product {$loan->product->id}");
+            return 0;
+        }
+
+        $incomeExists = GlTransaction::where('chart_account_id', $incomeId)
+            ->where('customer_id', $loan->customer_id)
+            ->where('date', $repayment->due_date)
+            ->where('amount', $schedulePayment['interest'])
+            ->where('transaction_type', 'Interest')
+            ->exists();
+
+        if ($exists && $incomeExists) {
+            Log::info('Interest receivable and interest income have been posted ovewtite the array chartAccont interest to be receivable instead of icome');
+            $chartAccounts['interest'] = $receivableId;
+
+        }
+
         foreach ($components as $component => $amount) {
             if ($amount > 0 && !empty($chartAccounts[$component])) {
-                \App\Models\JournalItem::create([
+                JournalItem::create([
                     'journal_id' => $journal->id,
                     'chart_account_id' => $chartAccounts[$component],
                     'amount' => $amount,
                     'description' => ucfirst($component) . " repayment for loan #{$loan->id}",
                     'nature' => 'credit',
                 ]);
-                \App\Models\GlTransaction::create([
+                GlTransaction::create([
                     'chart_account_id' => $chartAccounts[$component],
                     'customer_id' => $loan->customer_id,
                     'amount' => $amount,
@@ -481,14 +515,14 @@ class LoanRepaymentService
         }
 
         // Debit: Cash collateral account (total amount)
-        \App\Models\JournalItem::create([
+        JournalItem::create([
             'journal_id' => $journal->id,
             'chart_account_id' => $cashDeposit->type->chart_account_id ?? 1,
             'amount' => $schedulePayment['amount'],
             'description' => "Loan repayment from cash deposit",
             'nature' => 'debit',
         ]);
-        \App\Models\GlTransaction::create([
+        GlTransaction::create([
             'chart_account_id' => $cashDeposit->type->chart_account_id ?? 1,
             'customer_id' => $loan->customer_id,
             'amount' => $schedulePayment['amount'],
