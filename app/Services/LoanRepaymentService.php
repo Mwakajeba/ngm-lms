@@ -243,15 +243,18 @@ class LoanRepaymentService
      * Create receipt and GL transactions
      */
     private function createReceiptAndGL($loan, $repayment, $schedulePayment, $paymentData)
-        // Log after receipt is created
-        Log::info('Starting createReceiptAndGL', [
-            'loan_id' => $loan->id,
-            'repayment_id' => $repayment->id,
-            'schedulePayment' => $schedulePayment,
-            'bank_account_id' => $receipt->bank_account_id,
-            'receipt_id' => $receipt->id
-        ]);
     {
+
+        // check if the interest  receivable has been posted first, if not, do not create the interest receivable
+        // credit interest income and debit interest receivable,
+        // Log after receipt is created
+        // Log::info('Starting createReceiptAndGL', [
+        //     'loan_id' => $loan->id,
+        //     'repayment_id' => $repayment->id,
+        //     'schedulePayment' => $schedulePayment,
+        //     'bank_account_id' => $receipt->bank_account_id,
+        //     'receipt_id' => $receipt->id
+        // ]);
         // Only create receipt if payment source is not cash deposit
         if (isset($paymentData['payment_source']) && $paymentData['payment_source'] === 'cash_deposit') {
             $this->createJournalEntry($loan, $repayment, $schedulePayment, $paymentData);
@@ -322,6 +325,39 @@ class LoanRepaymentService
             'user_id' => auth()->id(),
         ]);
 
+        // check if the interest receivable has been posted first, if not, do not create the interest receivable by debiting  and credit interest income
+        $receivableId = $loan->product->interest_receivable_account_id;
+        $incomeId = $loan->product->interest_revenue_account_id;
+
+        if (!$receivableId) {
+            Log::warning("Missing interest accounts for product {$loan->product->id}");
+            return 0;
+        }
+
+        $exists = GlTransaction::where('chart_account_id', $receivableId)
+            ->where('customer_id', $loan->customer_id)
+            ->where('date', $repayment->due_date)
+            ->where('amount', $schedulePayment['interest'])
+            ->where('transaction_type', 'Mature Interest')
+            ->exists();
+        if (!$incomeId) {
+            Log::warning("Missing interest income account for product {$loan->product->id}");
+            return 0;
+        }
+
+        $incomeExists = GlTransaction::where('chart_account_id', $incomeId)
+            ->where('customer_id', $loan->customer_id)
+            ->where('date', $repayment->due_date)
+            ->where('amount', $schedulePayment['interest'])
+            ->where('transaction_type', 'Interest')
+            ->exists();
+
+        if ($exists && $incomeExists) {
+            Log::info('Interest receivable and interest income have been posted ovewtite the array chartAccont interest to be receivable instead of icome');
+            $chartAccounts['interest'] = $receivableId;
+          
+        }
+
         // Credit: Each component to its respective account
         foreach ($components as $component => $amount) {
             $accountId = $chartAccounts[$component] ?? null;
@@ -358,6 +394,7 @@ class LoanRepaymentService
                     'loan_id' => $loan->id,
                     'receipt_id' => $receipt->id
                 ]);
+            }
         }
     }
 
@@ -505,10 +542,10 @@ class LoanRepaymentService
 
         try {
             $schedule = LoanSchedule::findOrFail($scheduleId);
-            
+
             // Get the current penalty amount before removing it
             $currentPenaltyAmount = $schedule->penalty_amount;
-            
+
             Log::info("Removing penalty for schedule ID: {$scheduleId}, current penalty amount: {$currentPenaltyAmount}", [
                 'schedule_id' => $scheduleId,
                 'customer_id' => $schedule->customer_id,
@@ -522,7 +559,7 @@ class LoanRepaymentService
             $deletedCount = GlTransaction::where('transaction_id', $scheduleId)
                 ->whereIn('transaction_type', ['Penalty', 'penalty', 'Loan Penalty'])
                 ->delete();
-                
+
             Log::info("Deleted {$deletedCount} penalty GL transactions for schedule ID: {$scheduleId}");
 
             // Update schedule to remove penalty (ensure it's 0)
@@ -554,8 +591,8 @@ class LoanRepaymentService
     {
         try {
             // Get the payment date (use provided date or current date)
-            $paymentDate = isset($paymentData['payment_date']) 
-                ? Carbon::parse($paymentData['payment_date']) 
+            $paymentDate = isset($paymentData['payment_date'])
+                ? Carbon::parse($paymentData['payment_date'])
                 : Carbon::today();
 
             // Get the schedule due date
