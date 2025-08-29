@@ -255,10 +255,12 @@ $isEdit = isset($customer);
             <select name="group_id" class="form-select selectpicker" data-live-search="true">
                 <option value="">Select Group</option>
                 @foreach($groups as $group)
-                    <option value="{{ $group->id }}"
-                        {{ old('group_id', (isset($customer) && $customer->groups->first()->id ?? '') ) == $group->id ? 'selected' : '' }}>
-                        {{ $group->name }}
-                    </option>
+                    @if($group)
+                        <option value="{{ $group->id }}"
+                            {{ (old('group_id', $customer->group_id ?? ($customer->groups->first()->id ?? '')) == $group->id) ? 'selected' : '' }}>
+                            {{ $group->name }}
+                        </option>
+                    @endif
                 @endforeach
             </select>
             @error('group_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -268,7 +270,6 @@ $isEdit = isset($customer);
         <hr class="my-4">
         <div class="col-md-12 mb-3">
             <label class="form-label">Upload Documents</label>
-
             <div id="file-type-upload-container">
                 {{-- Show existing uploaded documents if editing --}}
                 @if($isEdit && isset($customer) && $customer->filetypes->count())
@@ -295,6 +296,25 @@ $isEdit = isset($customer);
                         </div>
                     </div>
                     @endforeach
+                @else
+                    <div class="row mb-2 file-type-upload-row">
+                        <div class="col-md-5">
+                            <select name="filetypes[]" class="form-select" required>
+                                <option value="">Select File Type</option>
+                                @foreach ($filetypes as $type)
+                                <option value="{{ $type->id }}">{{ $type->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-5">
+                            <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
+                        </div>
+                        <div class="col-md-2 d-flex align-items-center">
+                            <button type="button" class="btn btn-danger btn-sm remove-filetype-row" title="Remove row">
+                                <i class="bx bx-trash"></i>
+                            </button>
+                        </div>
+                    </div>
                 @endif
 
                 {{-- Always show one empty row for new uploads --}}
