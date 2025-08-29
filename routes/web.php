@@ -40,6 +40,9 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TransactionController;
 // Add other main app routes here
+// API route for bank accounts
+Route::get('/api/bank-accounts', [\App\Http\Controllers\Api\BankAccountController::class, 'index']);
+Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');
 
 // Route::middleware(['auth'])->group(function () {
     Route::get('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'show'])->name('change-branch');
@@ -52,6 +55,7 @@ Route::get('group-loans-ajax/{group}', [\App\Http\Controllers\GroupLoanAjaxContr
 Route::post('/loans/{hashid}/writeoff', [\App\Http\Controllers\LoanController::class, 'confirmWriteoff'])->name('loans.writeoff.confirm');
 Route::get('/loans/{hashid}/writeoff', [\App\Http\Controllers\LoanController::class, 'writeoff'])->name('loans.writeoff');
 // // ...existing code...
+Route::get('loans/data', [LoanController::class, 'getLoansData'])->name('loans.data');
 // Group Members AJAX
 Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxController::class, 'index'])->name('group.members.ajax');
 // Loans in Arrears (30+ days)
@@ -565,7 +569,13 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
-    Route::get('loans/data', [LoanController::class, 'getLoansData'])->name('loans.data');
+    Route::get('loans/writtenoff/data', [LoanController::class, 'getWrittenOffLoansData'])->name('loans.writtenoff.data');
+    Route::get('loans/writtenoff', function() {
+        $loans = \App\Models\Loan::with(['customer', 'product', 'branch'])
+            ->where('status', 'written_off')
+            ->get();
+        return view('loans.written_off', compact('loans'));
+    })->name('loans.writtenoff');
     Route::get('loans/chart-accounts/{type}', [LoanController::class, 'getChartAccountsByType'])->name('loans.chart-accounts');
     Route::post('loans/import', [LoanController::class, 'importLoans'])->name('loans.import');
     Route::get('loans/import-template', [LoanController::class, 'downloadTemplate'])->name('loans.import-template');

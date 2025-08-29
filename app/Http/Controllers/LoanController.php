@@ -25,6 +25,42 @@ use Yajra\DataTables\Facades\DataTables;
 
 class LoanController extends Controller
 {
+    // Ajax endpoint for DataTables: Written Off Loans
+
+    public function getWrittenOffLoansData(Request $request)
+    {
+        if ($request->ajax()) {
+            $loans = Loan::with(['customer', 'product', 'branch'])
+                ->where('status', 'written_off')
+                ->select('loans.*');
+
+            return DataTables::eloquent($loans)
+                ->addColumn('loan_no', function ($loan) {
+                    return $loan->loanNo ?? $loan->id;
+                })
+                ->addColumn('customer_name', function ($loan) {
+                    return optional($loan->customer)->name ?? 'N/A';
+                })
+                ->addColumn('product_name', function ($loan) {
+                    return optional($loan->product)->name ?? 'N/A';
+                })
+                ->addColumn('formatted_amount', function ($loan) {
+                    return '' . number_format($loan->amount, 2);
+                })
+                ->addColumn('formatted_total', function ($loan) {
+                    return '' . number_format($loan->amount_total, 2);
+                })
+                ->addColumn('branch_name', function ($loan) {
+                    return optional($loan->branch)->name ?? 'N/A';
+                })
+                ->addColumn('date_applied', function ($loan) {
+                    return $loan->date_applied;
+                })
+                ->rawColumns(['customer_name'])
+                ->make(true);
+        }
+    }
+
     public function index()
     {
         return view('loans.index');

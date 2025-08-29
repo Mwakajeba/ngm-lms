@@ -137,6 +137,23 @@
                                 </div>
                             </div>
                             @endcan
+                            @can('view writeoff loans')
+                            <!-- Written Off Loans -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-danger">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-x-circle fs-1 text-danger"></i>
+                                        </div>
+                                        <h5 class="card-title">Written Off Loans</h5>
+                                        <p class="card-text">Manage all written off loans.</p>
+                                        <a href="{{ route('loans.writtenoff') }}" class="btn btn-danger">
+                                            <i class="bx bx-x-circle me-1"></i> View Loans
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
                         </div>
                     </div>
                 </div>

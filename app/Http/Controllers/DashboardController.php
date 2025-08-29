@@ -18,7 +18,12 @@ class DashboardController extends Controller
 {
     public function index()
     {
-        $company = auth()->user()->company;
+        $user = auth()->user();
+        if (!$user) {
+            // Redirect to login or show an error
+            return redirect()->route('login')->with('error', 'Please login to access the dashboard.');
+        }
+        $company = $user->company;
         
         // Get balance sheet data
         $balanceSheetData = $this->getBalanceSheetData();
