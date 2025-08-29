@@ -375,9 +375,9 @@
         <div class="col-md-4 mb-3">
             <label class="form-label">Principal Receivable Account <span class="text-danger">*</span></label>
             <select name="principal_receivable_account_id"
-                class="form-select @error('principal_receivable_account_id') is-invalid @enderror" required>
+                class="form-select select2-single @error('principal_receivable_account_id') is-invalid @enderror" required>
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts->where('account_class', 'Asset') as $account)
+                @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('principal_receivable_account_id', $loanProduct->principal_receivable_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -389,9 +389,9 @@
         <div class="col-md-4 mb-3">
             <label class="form-label">Interest Receivable Account <span class="text-danger">*</span></label>
             <select name="interest_receivable_account_id"
-                class="form-select @error('interest_receivable_account_id') is-invalid @enderror" required>
+                class="form-select select2-single @error('interest_receivable_account_id') is-invalid @enderror" required>
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts->where('account_class', 'Asset') as $account)
+                @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('interest_receivable_account_id', $loanProduct->interest_receivable_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -403,9 +403,9 @@
         <div class="col-md-4 mb-3">
             <label class="form-label">Interest Revenue Account <span class="text-danger">*</span></label>
             <select name="interest_revenue_account_id"
-                class="form-select @error('interest_revenue_account_id') is-invalid @enderror" required>
+                class="form-select select2-single @error('interest_revenue_account_id') is-invalid @enderror" required>
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts->where('account_class', 'Revenue') as $account)
+                @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('interest_revenue_account_id', $loanProduct->interest_revenue_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -420,9 +420,9 @@
         </div>
         <div class="col-md-4 mb-3">
             <label class="form-label">Direct Write Off Account (Expense)</label>
-            <select name="direct_writeoff_account_id" class="form-select">
+            <select name="direct_writeoff_account_id" class="form-select select2-single">
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts->where('account_class', 'Expense') as $account)
+                @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('direct_writeoff_account_id', $loanProduct->direct_writeoff_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -431,9 +431,9 @@
         </div>
         <div class="col-md-4 mb-3">
             <label class="form-label">Using Provision Account (Asset)</label>
-            <select name="provision_writeoff_account_id" class="form-select">
+            <select name="provision_writeoff_account_id" class="form-select select2-single">
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts->where('account_class', 'Asset') as $account)
+                @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('provision_writeoff_account_id', $loanProduct->provision_writeoff_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -442,9 +442,9 @@
         </div>
         <div class="col-md-4 mb-3">
             <label class="form-label">Income Provision Account (Income)</label>
-            <select name="income_provision_account_id" class="form-select">
+            <select name="income_provision_account_id" class="form-select select2-single">
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts->where('account_class', 'Revenue') as $account)
+                @foreach($chartAccounts as  $account)
                     <option value="{{ $account->id }}" {{ old('income_provision_account_id', $loanProduct->income_provision_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -769,327 +769,18 @@
 @endpush
 
 @push('scripts')
-    <script>
-        $(document).ready(function () {
-            // Initialize top up fields on page load
-            if (!$('#has_top_up').is(':checked')) {
-                $('#top_up_type').prop('disabled', true);
-                $('#top_up_type_value').prop('disabled', true);
-            } else {
-                // If checkbox is checked, show the type div
-                $('#top_up_type_div').show();
-                $('#top_up_type').prop('disabled', false);
-
-                // Check if top up type requires value field
-                var selectedType = $('#top_up_type').val();
-                if (selectedType === 'percentage' || selectedType === 'fixed_amount') {
-                    $('#top_up_value_div').show();
-                    $('#top_up_type_value').prop('disabled', false);
-                }
-            }
-
-            // Top Up Toggle
-            $('#has_top_up').change(function () {
-                if ($(this).is(':checked')) {
-                    $('#top_up_type_div').show();
-                    $('#top_up_type').prop('disabled', false);
-                } else {
-                    $('#top_up_type_div, #top_up_value_div').hide();
-                    $('#top_up_type').val('').prop('disabled', true);
-                    $('#top_up_type_value').val('').prop('disabled', true);
-                }
-            });
-
-            // Top Up Type Toggle
-            $('#top_up_type').change(function () {
-                var selectedValue = $(this).val();
-                if (selectedValue === 'percentage' || selectedValue === 'fixed_amount') {
-                    $('#top_up_value_div').show();
-                    $('#top_up_type_value').prop('disabled', false);
-                } else {
-                    $('#top_up_value_div').hide();
-                    $('#top_up_type_value').val('').prop('disabled', true);
-                }
-            });
-
-            // Cash Deposit Toggle
-            $('#has_cash_collateral').change(function () {
-                if ($(this).is(':checked')) {
-                    $('#cash_collateral_type_div, #cash_collateral_value_type_div, #cash_collateral_value_div').show();
-                } else {
-                    $('#cash_collateral_type_div, #cash_collateral_value_type_div, #cash_collateral_value_div').hide();
-                }
-            });
-
-            // Approval Levels Toggle
-            $('#has_approval_levels').change(function () {
-                if ($(this).is(':checked')) {
-                    $('#approval_levels_div').show();
-                } else {
-                    $('#approval_levels_div').hide();
-                }
-            });
-
-            // Fees and Penalties Dynamic Add/Remove
-            $('#add_fee').click(function () {
-                var feesContainer = $('#fees_container');
-                var feeRow = `
-                                                                <div class="row fee-row mb-2">
-                                                                    <div class="col-md-10">
-                                                                        <select name="fees_id[]" class="form-select fee-select @error('fees_id') is-invalid @enderror">
-                                                                            <option value="">-- Select Fee --</option>
-                                                                            @foreach($fees as $fee)
-                                                                                <option value="{{ $fee->id }}">
-                                                                                    {{ $fee->name }} ({{ $fee->fee_type }})
-                                                                                </option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                    </div>
-                                                                    <div class="col-md-2">
-                                                                        <button type="button" class="btn btn-sm btn-danger remove-fee">
-                                                                            <i class="bx bx-trash"></i> Remove
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                feesContainer.append(feeRow);
-                updateFeeRemoveButtons();
-            });
-
-            $('#fees_container').on('click', '.remove-fee', function () {
-                $(this).closest('.fee-row').remove();
-                updateFeeRemoveButtons();
-            });
-
-            $('#add_penalty').click(function () {
-                var penaltiesContainer = $('#penalties_container');
-                var penaltyRow = `
-                                                                <div class="row penalty-row mb-2">
-                                                                    <div class="col-md-10">
-                                                                        <select name="penalty_id[]" class="form-select penalty-select @error('penalty_id') is-invalid @enderror">
-                                                                            <option value="">-- Select Penalty --</option>
-                                                                            @foreach($penalties as $penalty)
-                                                                                <option value="{{ $penalty->id }}">
-                                                                                    {{ $penalty->name }} ({{ $penalty->penalty_type }})
-                                                                                </option>
-                                                                            @endforeach
-                                                                        </select>
-                                                                    </div>
-                                                                    <div class="col-md-2">
-                                                                        <button type="button" class="btn btn-sm btn-danger remove-penalty">
-                                                                            <i class="bx bx-trash"></i> Remove
-                                                                        </button>
-                                                                    </div>
-                                                                </div>
-                                                            `;
-                penaltiesContainer.append(penaltyRow);
-                updatePenaltyRemoveButtons();
-            });
-
-            $('#penalties_container').on('click', '.remove-penalty', function () {
-                $(this).closest('.penalty-row').remove();
-                updatePenaltyRemoveButtons();
-            });
-
-            // Approval Levels Dual-List Functionality
-            $('#move_right').click(function () {
-                $('#available_roles option:selected').each(function () {
-                    var option = $(this).clone();
-                    $('#selected_roles').append(option);
-                    $(this).remove();
-                });
-                updateApprovalLevelsInput();
-            });
-
-            $('#move_left').click(function () {
-                $('#selected_roles option:selected').each(function () {
-                    var option = $(this).clone();
-                    $('#available_roles').append(option);
-                    $(this).remove();
-                });
-                updateApprovalLevelsInput();
-            });
-
-            // Repayment Order Dual-List Functionality
-            $('#move_repayment_right').click(function () {
-                $('#available_repayment_components option:selected').each(function () {
-                    var option = $(this).clone();
-                    $('#selected_repayment_components').append(option);
-                    $(this).remove();
-                });
-                updateRepaymentOrderInput();
-            });
-
-            $('#move_repayment_left').click(function () {
-                $('#selected_repayment_components option:selected').each(function () {
-                    var option = $(this).clone();
-                    $('#available_repayment_components').append(option);
-                    $(this).remove();
-                });
-                updateRepaymentOrderInput();
-            });
-
-            // Role Description Display
-            $('#available_roles, #selected_roles').change(function () {
-                var selectedOption = $(this).find('option:selected');
-                if (selectedOption.length > 0) {
-                    var description = selectedOption.data('description');
-                    if (description) {
-                        $('#description_text').text(description);
-                        $('#role_description').show();
-                    } else {
-                        $('#role_description').hide();
-                    }
-                } else {
-                    $('#role_description').hide();
-                }
-            });
-
-            // Repayment Component Description Display
-            $('#available_repayment_components, #selected_repayment_components').change(function () {
-                var selectedOption = $(this).find('option:selected');
-                if (selectedOption.length > 0) {
-                    var description = selectedOption.data('description');
-                    if (description) {
-                        $('#repayment_description_text').text(description);
-                        $('#repayment_component_description').show();
-                    } else {
-                        $('#repayment_component_description').hide();
-                    }
-                } else {
-                    $('#repayment_component_description').hide();
-                }
-            });
-
-            // Drag and Drop Reordering for Selected Roles
-            $('#selected_roles').on('mousedown', 'option', function (e) {
-                if (e.which === 1) { // Left mouse button
-                    var $this = $(this);
-                    var $select = $('#selected_roles');
-                    var startY = e.pageY;
-                    var startIndex = $this.index();
-
-                    $this.addClass('dragging');
-
-                    $(document).on('mousemove.drag', function (e) {
-                        var currentY = e.pageY;
-                        var $options = $select.find('option');
-                        var currentIndex = Math.floor((currentY - $select.offset().top) / $this.outerHeight());
-
-                        if (currentIndex >= 0 && currentIndex < $options.length && currentIndex !== startIndex) {
-                            if (currentIndex > startIndex) {
-                                $this.insertAfter($options.eq(currentIndex));
-                            } else {
-                                $this.insertBefore($options.eq(currentIndex));
-                            }
-                            startIndex = currentIndex;
-                            updateApprovalLevelsInput();
-                        }
-                    });
-
-                    $(document).on('mouseup.drag', function () {
-                        $this.removeClass('dragging');
-                        $(document).off('mousemove.drag mouseup.drag');
-                    });
-                }
-            });
-
-            // Drag and Drop Reordering for Selected Repayment Components
-            $('#selected_repayment_components').on('mousedown', 'option', function (e) {
-                if (e.which === 1) { // Left mouse button
-                    var $this = $(this);
-                    var $select = $('#selected_repayment_components');
-                    var startY = e.pageY;
-                    var startIndex = $this.index();
-
-                    $this.addClass('dragging');
-
-                    $(document).on('mousemove.drag', function (e) {
-                        var currentY = e.pageY;
-                        var $options = $select.find('option');
-                        var currentIndex = Math.floor((currentY - $select.offset().top) / $this.outerHeight());
-
-                        if (currentIndex >= 0 && currentIndex < $options.length && currentIndex !== startIndex) {
-                            if (currentIndex > startIndex) {
-                                $this.insertAfter($options.eq(currentIndex));
-                            } else {
-                                $this.insertBefore($options.eq(currentIndex));
-                            }
-                            startIndex = currentIndex;
-                            updateRepaymentOrderInput();
-                        }
-                    });
-
-                    $(document).on('mouseup.drag', function () {
-                        $this.removeClass('dragging');
-                        $(document).off('mousemove.drag mouseup.drag');
-                    });
-                }
-            });
-
-            // Update hidden input with selected roles
-            function updateApprovalLevelsInput() {
-                var selectedRoles = [];
-                $('#selected_roles option').each(function () {
-                    selectedRoles.push($(this).val());
-                });
-
-                // Update the hidden input or create one if it doesn't exist
-                var $hiddenInput = $('input[name="approval_levels"]');
-                if ($hiddenInput.length === 0) {
-                    $hiddenInput = $('<input type="hidden" name="approval_levels">');
-                    $('#selected_roles').after($hiddenInput);
-                }
-                $hiddenInput.val(selectedRoles.join(','));
-            }
-
-            // Update hidden input with selected repayment order
-            function updateRepaymentOrderInput() {
-                var selectedComponents = [];
-                $('#selected_repayment_components option').each(function () {
-                    selectedComponents.push($(this).val());
-                });
-
-                var $hiddenInput = $('input[name="repayment_order"]');
-                if ($hiddenInput.length === 0) {
-                    $hiddenInput = $('<input type="hidden" name="repayment_order">');
-                    $('#selected_repayment_components').after($hiddenInput);
-                }
-                $hiddenInput.val(selectedComponents.join(','));
-            }
-
-            // Initialize approval levels input
-            updateApprovalLevelsInput();
-            updateRepaymentOrderInput();
-
-            // Initialize fee and penalty remove buttons
-            updateFeeRemoveButtons();
-            updatePenaltyRemoveButtons();
-
-            // Trigger change events on page load
-            $('#has_top_up').trigger('change');
-            $('#top_up_type').trigger('change');
-            $('#has_cash_collateral').trigger('change');
-            $('#has_approval_levels').trigger('change');
-
-            // Functions to update remove button visibility
-            function updateFeeRemoveButtons() {
-                var feeRows = $('.fee-row');
-                if (feeRows.length > 1) {
-                    feeRows.find('.remove-fee').show();
-                } else {
-                    feeRows.find('.remove-fee').hide();
-                }
-            }
-
-            function updatePenaltyRemoveButtons() {
-                var penaltyRows = $('.penalty-row');
-                if (penaltyRows.length > 1) {
-                    penaltyRows.find('.remove-penalty').show();
-                } else {
-                    penaltyRows.find('.remove-penalty').hide();
-                }
-            }
-        });
-    </script>
+<script>
+(function(){
+    function ensureSelect2(cb){
+        if (window.jQuery && jQuery.fn && jQuery.fn.select2) { cb(); return; }
+        var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js';
+        s.onload=cb; document.head.appendChild(s);
+        var l=document.createElement('link'); l.rel='stylesheet'; l.href='https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css';
+        document.head.appendChild(l);
+    }
+    ensureSelect2(function(){
+        jQuery('.select2-single').select2({ width: '100%' });
+    });
+})();
+</script>
 @endpush
