@@ -280,7 +280,7 @@ class CustomerController extends Controller
         $regions = \App\Models\Region::all();
     $filetypes = \App\Models\Filetype::orderBy('name')->get();
     $groups = \App\Models\Group::where('branch_id', $branchId)->get();
-    $customer->load('loanOfficers');
+    $customer->load('loanOfficers', 'filetypes');
     return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes', 'groups'));
     }
 
