@@ -32,15 +32,21 @@ class LoanProduct extends Model
         'principal_receivable_account_id',
         'interest_receivable_account_id',
         'interest_revenue_account_id',
-        'direct_writeoff_account_id',
-        'provision_writeoff_account_id',
+    'direct_writeoff_account_id',
+    'provision_writeoff_account_id',
+    'income_provision_account_id',
         'fees_ids',
         'penalty_ids',
         'repayment_order',
         'is_active',
-    'penalt_deduction_criteria',
-    'allow_push_to_ess',
+        'penalt_deduction_criteria',
+        'allow_push_to_ess',
     ];
+
+    public function incomeProvisionAccount(): BelongsTo
+    {
+        return $this->belongsTo(ChartAccount::class, 'income_provision_account_id');
+    }
     public function directWriteoffAccount(): BelongsTo
     {
         return $this->belongsTo(ChartAccount::class, 'direct_writeoff_account_id');

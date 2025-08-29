@@ -74,10 +74,13 @@
 			</li>
 			<!--SHORT MENU-->
 			@php
+				$branchId = auth()->user()->branch_id;
 				$today = \Carbon\Carbon::today()->toDateString();
 				$dueSchedules = \DB::table('loan_schedules')
+					->join('loans', 'loan_schedules.loan_id', '=', 'loans.id')
 					->join('customers', 'loan_schedules.customer_id', '=', 'customers.id')
 					->where('loan_schedules.due_date', $today)
+					->where('loans.branch_id', $branchId)
 					->select('customers.name', \DB::raw('(loan_schedules.principal + loan_schedules.interest) as amount_due'))
 					->get();
 			@endphp
@@ -92,22 +95,23 @@
 							<!-- <p class="msg-header-clear ms-auto">Marks all as read</p> -->
 						</div>
 					</a>
-					<div class="header-notifications-list">
+					<div class="header-notifications-list" style="display: flex; flex-direction: column;">
 						@if($dueSchedules->count())
 							@foreach($dueSchedules as $due)
 								<a class="dropdown-item" href="javascript:;">
 									<div class="d-flex align-items-center">
-										<div class="notify bg-light-warning text-warning"><i class="bx bx-user"></i></div>
+										<div class="user-online"><i class="bx bx-user"></i></div>
 										<div class="flex-grow-1">
 											<h6 class="msg-name">{{ $due->name }} <span class="msg-time float-end">Due Today</span></h6>
-											<p class="msg-info">Amount: {{ number_format($due->amount_due, 2) }}</p>
+											<p class="msg-info">Amount Due: {{ number_format($due->amount_due, 2) }}</p>
+										</div>
 									</div>
 								</a>
 							@endforeach
 						@else
 							<a class="dropdown-item" href="javascript:;">
 								<div class="d-flex align-items-center">
-									<div class="notify bg-light-secondary text-secondary"><i class="bx bx-user"></i></div>
+									<div class="user-online"><i class="bx bx-user"></i></div>
 									<div class="flex-grow-1">
 										<h6 class="msg-name">No due payments today</h6>
 									</div>
@@ -115,21 +119,9 @@
 							</a>
 						@endif
 						
-						<!-- Chat Notifications Section -->
-						<div class="dropdown-divider"></div>
-						<div class="dropdown-header">
-							<small class="text-muted">Chat Notifications</small>
-						</div>
-						<div id="navbarChatNotifications">
-							<!-- Chat notifications will be populated here -->
-						</div>
-						
 					</div>
 					<a href="javascript:;">
 						<div class="text-center msg-footer">View All Notifications</div>
-					</a>
-					<a href="/chat" id="viewChatNotifications">
-						<div class="text-center msg-footer">View Chat Notifications</div>
 					</a>
 				</div>
 			</li>

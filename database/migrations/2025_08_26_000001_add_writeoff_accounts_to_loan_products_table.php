@@ -13,6 +13,7 @@ return new class extends Migration {
         Schema::table('loan_products', function (Blueprint $table) {
             $table->foreignId('direct_writeoff_account_id')->nullable()->constrained('chart_accounts')->after('interest_revenue_account_id');
             $table->foreignId('provision_writeoff_account_id')->nullable()->constrained('chart_accounts')->after('direct_writeoff_account_id');
+            $table->foreignId('income_provision_account_id')->nullable()->constrained('chart_accounts')->after('provision_writeoff_account_id');
         });
     }
 
@@ -26,6 +27,8 @@ return new class extends Migration {
             $table->dropColumn('direct_writeoff_account_id');
             $table->dropForeign(['provision_writeoff_account_id']);
             $table->dropColumn('provision_writeoff_account_id');
+            $table->dropForeign(['income_provision_account_id']);
+            $table->dropColumn('income_provision_account_id');
         });
     }
 };

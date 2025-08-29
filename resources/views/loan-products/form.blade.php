@@ -416,9 +416,9 @@
 
         <!-- Write Off Accounts Configuration -->
         <div class="col-12">
-            <h5 class="mb-3 text-purple mt-4">Write Off Accounts</h5>
+            <h5 class="mb-3 text-primary mt-4">Write Off Accounts</h5>
         </div>
-        <div class="col-md-6 mb-3">
+        <div class="col-md-4 mb-3">
             <label class="form-label">Direct Write Off Account (Expense)</label>
             <select name="direct_writeoff_account_id" class="form-select">
                 <option value="">-- Select Account --</option>
@@ -429,12 +429,23 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-md-6 mb-3">
+        <div class="col-md-4 mb-3">
             <label class="form-label">Using Provision Account (Asset)</label>
             <select name="provision_writeoff_account_id" class="form-select">
                 <option value="">-- Select Account --</option>
                 @foreach($chartAccounts->where('account_class', 'Asset') as $account)
                     <option value="{{ $account->id }}" {{ old('provision_writeoff_account_id', $loanProduct->provision_writeoff_account_id ?? '') == $account->id ? 'selected' : '' }}>
+                        {{ $account->account_code }} - {{ $account->account_name }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-4 mb-3">
+            <label class="form-label">Income Provision Account (Income)</label>
+            <select name="income_provision_account_id" class="form-select">
+                <option value="">-- Select Account --</option>
+                @foreach($chartAccounts->where('account_class', 'Revenue') as $account)
+                    <option value="{{ $account->id }}" {{ old('income_provision_account_id', $loanProduct->income_provision_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
                 @endforeach
