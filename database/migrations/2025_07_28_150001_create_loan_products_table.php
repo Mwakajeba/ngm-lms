@@ -22,8 +22,8 @@ return new class extends Migration {
             $table->decimal('maximum_principal', 15, 2);
             $table->integer('minimum_period');
             $table->integer('maximum_period');
-            $table->string('top_up_type');
-            $table->decimal('top_up_type_value', 15, 2);
+            $table->string('top_up_type')->nullable(); // e.g., fixed, percentage
+            $table->decimal('top_up_type_value', 15, 2)->default(0);
             $table->boolean('has_cash_collateral')->default(false);
             $table->string('cash_collateral_type')->nullable();  //  eg.cash deposit 
             $table->string('cash_collateral_value_type')->nullable(); // fixed or percentage
