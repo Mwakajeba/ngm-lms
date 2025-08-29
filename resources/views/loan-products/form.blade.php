@@ -784,3 +784,158 @@
 })();
 </script>
 @endpush
+
+@push('scripts')
+<script>
+(function(){
+    function setDisplay(id, show){
+        var el = document.getElementById(id);
+        if (!el) return;
+        el.style.display = show ? '' : 'none';
+    }
+
+    function toggleTopUp(){
+        var hasTopUp = document.getElementById('has_top_up');
+        var isChecked = hasTopUp && hasTopUp.checked;
+        setDisplay('top_up_type_div', isChecked);
+        var type = document.getElementById('top_up_type');
+        var showValue = isChecked && type && type.value !== '' && type.value !== 'none';
+        setDisplay('top_up_value_div', showValue);
+    }
+
+    function toggleCashCollateral(){
+        var hasCash = document.getElementById('has_cash_collateral');
+        var isChecked = hasCash && hasCash.checked;
+        setDisplay('cash_collateral_type_div', isChecked);
+        setDisplay('cash_collateral_value_type_div', isChecked);
+        setDisplay('cash_collateral_value_div', isChecked);
+    }
+
+    function toggleApprovalLevels(){
+        var hasApproval = document.getElementById('has_approval_levels');
+        var isChecked = hasApproval && hasApproval.checked;
+        setDisplay('approval_levels_div', isChecked);
+    }
+
+    document.addEventListener('DOMContentLoaded', function(){
+        // Initial state
+        toggleTopUp();
+        toggleCashCollateral();
+        toggleApprovalLevels();
+
+        // Listeners
+        var hasTopUp = document.getElementById('has_top_up');
+        if (hasTopUp) hasTopUp.addEventListener('change', toggleTopUp);
+        var topUpType = document.getElementById('top_up_type');
+        if (topUpType) topUpType.addEventListener('change', toggleTopUp);
+
+        var hasCash = document.getElementById('has_cash_collateral');
+        if (hasCash) hasCash.addEventListener('change', toggleCashCollateral);
+
+        var hasApproval = document.getElementById('has_approval_levels');
+        if (hasApproval) hasApproval.addEventListener('change', toggleApprovalLevels);
+    });
+})();
+</script>
+@endpush
+
+@push('scripts')
+<script>
+(function(){
+    function byId(id){ return document.getElementById(id); }
+    function moveSelected(fromSel, toSel){
+        const selected = Array.from(fromSel.selectedOptions);
+        selected.forEach(opt => {
+            const exists = Array.from(toSel.options).some(o => o.value === opt.value);
+            if (!exists) {
+                const clone = opt.cloneNode(true);
+                toSel.add(clone);
+                fromSel.remove(opt.index);
+            }
+        });
+        updateRoleDescription();
+    }
+    function removeSelected(fromSel, toSel){
+        const selected = Array.from(toSel.selectedOptions);
+        selected.forEach(opt => {
+            const exists = Array.from(fromSel.options).some(o => o.value === opt.value);
+            if (!exists) {
+                const clone = opt.cloneNode(true);
+                fromSel.add(clone);
+            }
+            toSel.remove(opt.index);
+        });
+        updateRoleDescription();
+    }
+    function enableDragReorder(selectEl){
+        let dragStartIndex = null;
+        selectEl.addEventListener('dragstart', function(e){
+            const target = e.target;
+            if (target.tagName === 'OPTION'){
+                dragStartIndex = Array.from(selectEl.options).indexOf(target);
+                e.dataTransfer.effectAllowed = 'move';
+            }
+        });
+        selectEl.addEventListener('dragover', function(e){ e.preventDefault(); });
+        selectEl.addEventListener('drop', function(e){
+            e.preventDefault();
+            const opt = document.elementFromPoint(e.clientX, e.clientY);
+            let dropIndex = -1;
+            if (opt && opt.tagName === 'OPTION'){
+                dropIndex = Array.from(selectEl.options).indexOf(opt);
+            } else {
+                dropIndex = selectEl.options.length - 1;
+            }
+            if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex){
+                const moving = selectEl.options[dragStartIndex];
+                const clone = moving.cloneNode(true);
+                selectEl.remove(dragStartIndex);
+                selectEl.add(clone, dropIndex);
+                selectEl.selectedIndex = dropIndex;
+                updateRoleDescription();
+            }
+            dragStartIndex = null;
+        });
+        Array.from(selectEl.options).forEach(opt => opt.draggable = true);
+    }
+    function updateRoleDescription(){
+        const sel = byId('selected_roles');
+        const box = byId('role_description');
+        const text = byId('description_text');
+        const opt = sel && sel.options[sel.selectedIndex];
+        if (opt && opt.dataset && opt.dataset.description){
+            text.textContent = opt.dataset.description;
+            box.style.display = '';
+        } else {
+            text.textContent = '';
+            box.style.display = 'none';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', function(){
+        const avail = byId('available_roles');
+        const selected = byId('selected_roles');
+        const addBtn = byId('move_right');
+        const removeBtn = byId('move_left');
+        if (addBtn && removeBtn && avail && selected){
+            addBtn.addEventListener('click', function(){ moveSelected(avail, selected); });
+            removeBtn.addEventListener('click', function(){ removeSelected(avail, selected); });
+            selected.addEventListener('change', updateRoleDescription);
+            avail.addEventListener('change', function(){
+                const opt = avail.options[avail.selectedIndex];
+                const box = byId('role_description');
+                const text = byId('description_text');
+                if (opt && opt.dataset.description){
+                    text.textContent = opt.dataset.description;
+                    box.style.display = '';
+                } else {
+                    text.textContent = '';
+                    box.style.display = 'none';
+                }
+            });
+            enableDragReorder(selected);
+            updateRoleDescription();
+        }
+    });
+})();
+</script>
+@endpush
