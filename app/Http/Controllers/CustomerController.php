@@ -118,7 +118,8 @@ class CustomerController extends Controller
     $regions = Region::all();
     $groups = \App\Models\Group::where('branch_id', $branchId)->get();
 
-    return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'groups'));
+    $customer = null;
+    return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'groups', 'customer'));
     }
 
     // Store a new customer

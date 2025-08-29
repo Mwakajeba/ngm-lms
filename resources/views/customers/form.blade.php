@@ -257,7 +257,7 @@ $isEdit = isset($customer);
                 @foreach($groups as $group)
                     @if($group)
                         <option value="{{ $group->id }}"
-                            {{ (old('group_id', $customer->group_id ?? ($customer->groups->first()->id ?? '')) == $group->id) ? 'selected' : '' }}>
+                            {{ (old('group_id', $customer->group_id ?? ((isset($customer) && isset($customer->groups) && $customer->groups->first() ? $customer->groups->first()->id : ''))) == $group->id) ? 'selected' : '' }}>
                             {{ $group->name }}
                         </option>
                     @endif
