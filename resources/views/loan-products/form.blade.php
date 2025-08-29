@@ -1053,3 +1053,133 @@
 })();
 </script>
 @endpush
+
+@push('scripts')
+<script>
+(function(){
+  function byId(id){ return document.getElementById(id); }
+
+  function createFeeRow(){
+    const container = byId('fees_container');
+    const feeRow = document.createElement('div');
+    feeRow.className = 'row fee-row mb-2';
+    
+    const feeOptions = @json($fees->map(function($fee) {
+      return ['id' => $fee->id, 'name' => $fee->name, 'type' => $fee->fee_type];
+    }));
+    
+    let optionsHtml = '<option value="">-- Select Fee --</option>';
+    feeOptions.forEach(fee => {
+      optionsHtml += `<option value="${fee.id}">${fee.name} (${fee.type})</option>`;
+    });
+
+    feeRow.innerHTML = `
+      <div class="col-md-10">
+        <select name="fees_id[]" class="form-select fee-select">
+          ${optionsHtml}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="button" class="btn btn-sm btn-danger remove-fee">
+          <i class="bx bx-trash"></i> Remove
+        </button>
+      </div>
+    `;
+
+    container.appendChild(feeRow);
+    updateRemoveButtons();
+  }
+
+  function createPenaltyRow(){
+    const container = byId('penalties_container');
+    const penaltyRow = document.createElement('div');
+    penaltyRow.className = 'row penalty-row mb-2';
+    
+    const penaltyOptions = @json($penalties->map(function($penalty) {
+      return ['id' => $penalty->id, 'name' => $penalty->name, 'type' => $penalty->penalty_type];
+    }));
+    
+    let optionsHtml = '<option value="">-- Select Penalty --</option>';
+    penaltyOptions.forEach(penalty => {
+      optionsHtml += `<option value="${penalty.id}">${penalty.name} (${penalty.type})</option>`;
+    });
+
+    penaltyRow.innerHTML = `
+      <div class="col-md-10">
+        <select name="penalty_id[]" class="form-select penalty-select">
+          ${optionsHtml}
+        </select>
+      </div>
+      <div class="col-md-2">
+        <button type="button" class="btn btn-sm btn-danger remove-penalty">
+          <i class="bx bx-trash"></i> Remove
+        </button>
+      </div>
+    `;
+
+    container.appendChild(penaltyRow);
+    updateRemoveButtons();
+  }
+
+  function updateRemoveButtons(){
+    const feeRows = document.querySelectorAll('.fee-row');
+    const penaltyRows = document.querySelectorAll('.penalty-row');
+    
+    feeRows.forEach((row, index) => {
+      const removeBtn = row.querySelector('.remove-fee');
+      if (removeBtn) {
+        removeBtn.style.display = feeRows.length > 1 ? '' : 'none';
+      }
+    });
+    
+    penaltyRows.forEach((row, index) => {
+      const removeBtn = row.querySelector('.remove-penalty');
+      if (removeBtn) {
+        removeBtn.style.display = penaltyRows.length > 1 ? '' : 'none';
+      }
+    });
+  }
+
+  function removeFeeRow(event){
+    const row = event.target.closest('.fee-row');
+    if (row) {
+      row.remove();
+      updateRemoveButtons();
+    }
+  }
+
+  function removePenaltyRow(event){
+    const row = event.target.closest('.penalty-row');
+    if (row) {
+      row.remove();
+      updateRemoveButtons();
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const addFeeBtn = byId('add_fee');
+    const addPenaltyBtn = byId('add_penalty');
+    
+    if (addFeeBtn) {
+      addFeeBtn.addEventListener('click', createFeeRow);
+    }
+    
+    if (addPenaltyBtn) {
+      addPenaltyBtn.addEventListener('click', createPenaltyRow);
+    }
+
+    // Event delegation for remove buttons
+    document.addEventListener('click', function(e){
+      if (e.target.closest('.remove-fee')) {
+        removeFeeRow(e);
+      } else if (e.target.closest('.remove-penalty')) {
+        removePenaltyRow(e);
+      }
+    });
+
+    // Initial state
+    updateRemoveButtons();
+  });
+})();
+</script>
+@endpush
