@@ -278,9 +278,10 @@ class CustomerController extends Controller
         $companies = \App\Models\Company::all();
         $registrars = \App\Models\User::all();
         $regions = \App\Models\Region::all();
-        $filetypes = \App\Models\Filetype::orderBy('name')->get();
-        $customer->load('loanOfficers');
-        return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes'));
+    $filetypes = \App\Models\Filetype::orderBy('name')->get();
+    $groups = \App\Models\Group::where('branch_id', $branchId)->get();
+    $customer->load('loanOfficers');
+    return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes', 'groups'));
     }
 
     // Update customer data
