@@ -9,7 +9,7 @@ use App\Http\Controllers\RolePermissionController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ActivityLogsController;
-use App\Http\Controllers\FileTypeController;
+use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -158,7 +158,7 @@ Route::post('/users/{user}/assign-branches', [UserController::class, 'assignBran
 Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope'])->group(function () {
 
     //Filetypes settings
-    Route::resource('filetypes', FileTypeController::class);
+    Route::resource('filetypes', FiletypeController::class);
 
     Route::get('/', [SettingsController::class, 'index'])->name('index');
 
