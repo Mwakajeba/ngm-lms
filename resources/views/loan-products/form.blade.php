@@ -939,3 +939,117 @@
 })();
 </script>
 @endpush
+
+@push('scripts')
+<script>
+(function(){
+  function byId(id){ return document.getElementById(id); }
+
+  function moveSelected(fromSel, toSel){
+    const selected = Array.from(fromSel.selectedOptions);
+    selected.forEach(opt => {
+      const exists = Array.from(toSel.options).some(o => o.value === opt.value);
+      if (!exists) {
+        const clone = opt.cloneNode(true);
+        toSel.add(clone);
+        fromSel.remove(opt.index);
+      }
+    });
+    updateDescription();
+  }
+
+  function removeSelected(fromSel, toSel){
+    const selected = Array.from(toSel.selectedOptions);
+    selected.forEach(opt => {
+      const exists = Array.from(fromSel.options).some(o => o.value === opt.value);
+      if (!exists) {
+        const clone = opt.cloneNode(true);
+        fromSel.add(clone);
+      }
+      toSel.remove(opt.index);
+    });
+    updateDescription();
+  }
+
+  function updateDescription(){
+    const sel = byId('selected_repayment_components');
+    const box = byId('repayment_component_description');
+    const text = byId('repayment_description_text');
+    const opt = sel && sel.options[sel.selectedIndex];
+    if (opt && opt.dataset && opt.dataset.description){
+      text.textContent = opt.dataset.description;
+      box.style.display = '';
+    } else {
+      text.textContent = '';
+      box.style.display = 'none';
+    }
+  }
+
+  function enableDragReorder(selectEl){
+    let dragStartIndex = null;
+
+    selectEl.addEventListener('dragstart', function(e){
+      const target = e.target;
+      if (target.tagName === 'OPTION'){
+        dragStartIndex = Array.from(selectEl.options).indexOf(target);
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    });
+
+    selectEl.addEventListener('dragover', function(e){ e.preventDefault(); });
+
+    selectEl.addEventListener('drop', function(e){
+      e.preventDefault();
+      const at = document.elementFromPoint(e.clientX, e.clientY);
+      let dropIndex = -1;
+      if (at && at.tagName === 'OPTION'){
+        dropIndex = Array.from(selectEl.options).indexOf(at);
+      } else {
+        dropIndex = selectEl.options.length - 1;
+      }
+      if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex){
+        const moving = selectEl.options[dragStartIndex];
+        const clone = moving.cloneNode(true);
+        selectEl.remove(dragStartIndex);
+        selectEl.add(clone, dropIndex);
+        selectEl.selectedIndex = dropIndex;
+        updateDescription();
+      }
+      dragStartIndex = null;
+    });
+
+    Array.from(selectEl.options).forEach(opt => opt.draggable = true);
+  }
+
+  document.addEventListener('DOMContentLoaded', function(){
+    const avail = byId('available_repayment_components');
+    const selected = byId('selected_repayment_components');
+    const addBtn = byId('move_repayment_right');
+    const removeBtn = byId('move_repayment_left');
+
+    if (addBtn && removeBtn && avail && selected){
+      addBtn.addEventListener('click', function(){ moveSelected(avail, selected); });
+      removeBtn.addEventListener('click', function(){ removeSelected(avail, selected); });
+
+      selected.addEventListener('change', updateDescription);
+
+      avail.addEventListener('change', function(){
+        const opt = avail.options[avail.selectedIndex];
+        const box = byId('repayment_component_description');
+        const text = byId('repayment_description_text');
+        if (opt && opt.dataset.description){
+          text.textContent = opt.dataset.description;
+          box.style.display = '';
+        } else {
+          text.textContent = '';
+          box.style.display = 'none';
+        }
+      });
+
+      enableDragReorder(selected);
+      updateDescription();
+    }
+  });
+})();
+</script>
+@endpush
