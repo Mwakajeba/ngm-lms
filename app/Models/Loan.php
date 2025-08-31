@@ -484,7 +484,7 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        $fee = $product->fee;
+          $fee = $product->fee;
         $penalty = $product->penalty;
 
         $isReducing = in_array($method, [
@@ -510,6 +510,10 @@ class Loan extends Model
                 $feeAmount = $fee->amount;
                 $feeType = $fee->fee_type;
                 $criteria = $fee->deduction_criteria;
+                $includeInSchedule = $fee->include_in_schedule;
+                $status = $fee->status;
+
+                \Log::info('[LoanSchedule] Repayment #'.$i.' Fee ID: '.$fee->id.' include_in_schedule: '.($includeInSchedule ? 'true' : 'false').', status: '.$status);
 
                 $applyFee = match ($criteria) {
                     'charge_same_fee_to_all_repayments',
@@ -519,7 +523,9 @@ class Loan extends Model
                     default => false
                 };
 
-                if ($applyFee) {
+                \Log::info('[LoanSchedule] Repayment #'.$i.' Fee criteria: '.$criteria.' Apply: '.($applyFee ? 'yes' : 'no'));
+
+                if ($applyFee && $includeInSchedule && $status === 'active') {
                     $divideAcross = in_array($criteria, [
                         'charge_same_fee_to_all_repayments',
                         'distribute_fee_evenly_to_all_repayments'
@@ -530,6 +536,7 @@ class Loan extends Model
                         : $feeAmount;
 
                     $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
+                    \Log::info('[LoanSchedule] Repayment #'.$i.' Fee applied: '.$loanFee);
                 }
             }
 
