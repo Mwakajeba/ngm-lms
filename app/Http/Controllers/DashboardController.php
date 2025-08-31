@@ -16,6 +16,106 @@ use App\Services\LoanPenaltyService;
 
 class DashboardController extends Controller
 {
+    /**
+     * Endpoint for monthly collections (expected, collected, arrears) for current year
+     */
+    public function monthlyCollections()
+    {
+        $year = now()->year;
+        $months = [];
+        $expected = [];
+        $collected = [];
+        $arrears = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $monthLabel = date('M', mktime(0, 0, 0, $m, 1));
+            $months[] = $monthLabel;
+            // Expected: sum of all schedules due in this month (no branch/company filter)
+            $exp = \App\Models\LoanSchedule::whereYear('due_date', $year)
+                ->whereMonth('due_date', $m)
+                ->sum('principal');
+            $exp += \App\Models\LoanSchedule::whereYear('due_date', $year)
+                ->whereMonth('due_date', $m)
+                ->sum('interest');
+            $expected[] = $exp;
+            // Collected: sum of repayments made for schedules due in this month (no branch/company filter)
+            $repayments = \DB::table('repayments')
+                ->join('loan_schedules', 'repayments.loan_schedule_id', '=', 'loan_schedules.id')
+                ->whereYear('loan_schedules.due_date', $year)
+                ->whereMonth('loan_schedules.due_date', $m)
+                ->sum(\DB::raw('repayments.principal + repayments.interest'));
+            $collected[] = $repayments;
+            // Arrears: expected - collected
+            $arrears[] = max(0, $exp - $repayments);
+        }
+        return response()->json([
+            'months' => $months,
+            'expected' => $expected,
+            'collected' => $collected,
+            'arrears' => $arrears
+        ]);
+    }
+    /**
+     * Endpoint for delinquency loan buckets (current year)
+     */
+    public function delinquencyLoanBuckets()
+    {
+        $year = now()->year;
+        $company = auth()->user()->company;
+        // Define buckets (days overdue)
+        $buckets = [
+            '1-30 days' => [1, 30],
+            '31-60 days' => [31, 60],
+            '61-90 days' => [61, 90],
+            '91-180 days' => [91, 180],
+            '181-360 days' => [181, 360],
+            '361+ days' => [361, 10000],
+        ];
+        $labels = [];
+        $values = [];
+        foreach ($buckets as $label => [$min, $max]) {
+            $count = \App\Models\Loan::whereYear('disbursed_on', $year)
+                ->whereHas('branch', function($q) use ($company) {
+                    $q->where('company_id', $company->id);
+                })
+                ->where('status', 'active')
+                ->whereHas('schedule', function($q) use ($min, $max) {
+                    $q->whereRaw('DATEDIFF(CURDATE(), due_date) BETWEEN ? AND ?', [$min, $max]);
+                })
+                ->count();
+            $labels[] = $label;
+            $values[] = $count;
+        }
+        return response()->json([
+            'labels' => $labels,
+            'values' => $values
+        ]);
+    }
+    /**
+     * Endpoint for loan product disbursement data (current year)
+     */
+    public function loanProductDisbursement()
+    {
+        $year = now()->year;
+        $company = auth()->user()->company;
+        $products = \App\Models\LoanProduct::all();
+
+        $productNames = [];
+        $amounts = [];
+        foreach ($products as $product) {
+            $total = \App\Models\Loan::where('product_id', $product->id)
+                ->whereYear('disbursed_on', $year)
+                ->whereHas('branch', function($q) use ($company) {
+                    $q->where('company_id', $company->id);
+                })
+                ->sum('amount');
+            $productNames[] = $product->name;
+            $amounts[] = $total;
+        }
+        return response()->json([
+            'products' => $productNames,
+            'amounts' => $amounts
+        ]);
+    }
     public function index()
     {
         $user = auth()->user();
@@ -62,33 +162,53 @@ class DashboardController extends Controller
         ->take(5)
         ->get();
             
-        // Get bank reconciliation stats
-        $bankReconciliationStats = BankReconciliation::whereHas('branch', function($query) use ($company) {
+        // Loan statistics
+        $loans = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
-        })
-        ->selectRaw('
-            COUNT(*) as total,
-            SUM(CASE WHEN status = "completed" THEN 1 ELSE 0 END) as completed,
-            SUM(CASE WHEN status = "in_progress" THEN 1 ELSE 0 END) as in_progress,
-            SUM(CASE WHEN status = "draft" THEN 1 ELSE 0 END) as draft
-        ')
-        ->first();
+        })->get();
+
+        $totalLoanAmount = $loans->sum('amount_total');
+        $totalPrincipal = $loans->sum('amount');
+        $totalInterest = $loans->sum('interest_amount');
+
+        // Repaid principal and interest
+        $repaidPrincipal = 0;
+        $repaidInterest = 0;
+        $outstandingPrincipal = 0;
+        $outstandingInterest = 0;
+        foreach ($loans as $loan) {
+            $schedules = \App\Models\LoanSchedule::where('loan_id', $loan->id)->get();
+            foreach ($schedules as $schedule) {
+                $principalPaid = \DB::table('repayments')->where('loan_schedule_id', $schedule->id)->sum('principal');
+                $interestPaid = \DB::table('repayments')->where('loan_schedule_id', $schedule->id)->sum('interest');
+                $repaidPrincipal += $principalPaid;
+                $repaidInterest += $interestPaid;
+                $outstandingPrincipal += max(0, $schedule->principal - $principalPaid);
+                $outstandingInterest += max(0, $schedule->interest - $interestPaid);
+            }
+        }
 
         $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
         info('penaltyBalance'.$penaltyBalance);
-        
+
         // Get previous year comparative data
         $previousYearData = $this->getPreviousYearData();
-            
+
         return view('dashboard', compact(
             'balanceSheetData',
             'financialReportData',
             'recentJournals',
             'recentPayments', 
             'recentReceipts',
-            'bankReconciliationStats',
             'penaltyBalance',
-            'previousYearData'
+            'previousYearData',
+            'totalLoanAmount',
+            'totalPrincipal',
+            'totalInterest',
+            'repaidPrincipal',
+            'repaidInterest',
+            'outstandingPrincipal',
+            'outstandingInterest'
         ));
     }
     

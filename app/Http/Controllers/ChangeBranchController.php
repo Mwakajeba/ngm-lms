@@ -10,10 +10,14 @@ class ChangeBranchController extends Controller
 {
     public function show()
     {
-    $user = Auth::user();
-    $branches = $user->branches()->get();
-    \Log::info('User branches', ['user_id' => $user->id, 'branches' => $branches]);
-    return view('auth.change-branch', compact('branches'));
+        $user = Auth::user();
+        if (!$user) {
+            // Redirect to login if not authenticated
+            return redirect()->route('login')->with('error', 'Session expired. Please login again.');
+        }
+        $branches = $user->branches()->get();
+        \Log::info('User branches', ['user_id' => $user->id, 'branches' => $branches]);
+        return view('auth.change-branch', compact('branches'));
     }
 
     public function change(Request $request)

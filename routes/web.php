@@ -40,6 +40,9 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TransactionController;
 // Add other main app routes here
+Route::get('/dashboard/loan-product-disbursement', [DashboardController::class, 'loanProductDisbursement'])->middleware('auth');
+Route::get('/dashboard/delinquency-loan-buckets', [DashboardController::class, 'delinquencyLoanBuckets'])->middleware('auth');
+Route::get('/dashboard/monthly-collections', [DashboardController::class, 'monthlyCollections'])->middleware('auth');
 // API route for bank accounts
 Route::get('/api/bank-accounts', [\App\Http\Controllers\Api\BankAccountController::class, 'index']);
 Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');

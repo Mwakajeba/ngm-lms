@@ -171,16 +171,58 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            <!-- Loan Stats Cards -->
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Bank Reconciliations</p>
-                                <h4 class="font-weight-bold">{{ $bankReconciliationStats->total ?? 0 }}</h4>
-                                <p class="text-secondary mb-0 font-13">Active reconciliations</p>
+                                <p class="mb-0">Total Loan Amount</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($totalLoanAmount ?? 0, 2) }}</h4>
                             </div>
-                            <div class="widgets-icons bg-gradient-kyoto text-white"><i class='bx bx-bank'></i></div>
+                            <div class="widgets-icons bg-gradient-blues text-white"><i class='bx bx-wallet'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0">Total Principal</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($totalPrincipal ?? 0, 2) }}</h4>
+                                <p class="mb-0">Total Interest: TZS {{ number_format($totalInterest ?? 0, 2) }}</p>
+                            </div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0">Repaid Principal</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($repaidPrincipal ?? 0, 2) }}</h4>
+                                <p class="mb-0">Repaid Interest: TZS {{ number_format($repaidInterest ?? 0, 2) }}</p>
+                            </div>
+                            <div class="widgets-icons bg-gradient-success text-white"><i class='bx bx-check-circle'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0">Outstanding Principal</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($outstandingPrincipal ?? 0, 2) }}</h4>
+                                <p class="mb-0">Outstanding Interest: TZS {{ number_format($outstandingInterest ?? 0, 2) }}</p>
+                            </div>
+                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-hourglass'></i></div>
                         </div>
                     </div>
                 </div>
@@ -188,48 +230,233 @@ use Vinkla\Hashids\Facades\Hashids;
         </div>
         <!--end row-->
 
-        <!-- Charts Row -->
+        <!-- Loan Product Disbursement Chart -->
         <div class="row">
-            <div class="col-12 col-lg-6">
+            <div class="col-5">
                 <div class="card radius-10">
                     <div class="card-body">
-                        <div id="chart1"></div>
-                    </div>
+                        <h5 class="mb-3">Delinquency Loan Buckets (This Year)</h5>
+                        <canvas id="delinquencyLoanChart"></canvas>
+                   </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-6">
+            <div class="col-7">
                 <div class="card radius-10">
                     <div class="card-body">
-                        <div id="chart2"></div>
+                        <h5 class="mb-3">Loan Product Disbursement (This Year)</h5>
+                        <canvas id="loanProductChart"></canvas>
                     </div>
                 </div>
             </div>
         </div>
+        <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Loan Product Disbursement Chart
+            fetch('/dashboard/loan-product-disbursement')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('loanProductChart').getContext('2d');
+                    if (!data.products.length || !data.amounts.length || data.amounts.every(a => a == 0)) {
+                        document.getElementById('loanProductChart').style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.style.textAlign = 'center';
+                        fallback.style.padding = '40px 0';
+                        fallback.style.color = '#888';
+                        fallback.innerHTML = '<b>No loan product disbursement data available for this year.</b>';
+                        ctx.canvas.parentNode.appendChild(fallback);
+                        return;
+                    }
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.products,
+                            datasets: [{
+                                label: 'Amount Disbursed (TZS)',
+                                data: data.amounts,
+                                backgroundColor: [
+                                    '#8e44ad', '#e74c3c', '#f1c40f', '#27ae60', '#34495e', '#00bfff'
+                                ],
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: false },
+                                title: {
+                                    display: true,
+                                    text: 'Loan By Product Disbursement (This Year)'
+                                }
+                            },
+                            scales: {
+                                y: {
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Amount (TZS)' }
+                                },
+                                x: {
+                                    title: { display: true, text: 'Loan Product' }
+                                }
+                            }
+                        }
+                    });
+                });
+
+            // Delinquency Loan Pie Chart
+            fetch('/dashboard/delinquency-loan-buckets')
+                .then(response => response.json())
+                .then(data => {
+                    const ctx = document.getElementById('delinquencyLoanChart').getContext('2d');
+                    if (!data.labels.length || !data.values.length || data.values.every(v => v == 0)) {
+                        document.getElementById('delinquencyLoanChart').style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.style.textAlign = 'center';
+                        fallback.style.padding = '40px 0';
+                        fallback.style.color = '#888';
+                        fallback.innerHTML = '<b>No delinquency loan data available for this year.</b>';
+                        ctx.canvas.parentNode.appendChild(fallback);
+                        return;
+                    }
+                    new Chart(ctx, {
+                        type: 'pie',
+                        data: {
+                            labels: data.labels,
+                            datasets: [{
+                                label: 'Delinquency Loans',
+                                data: data.values,
+                                backgroundColor: [
+                                    '#e74c3c', '#f1c40f', '#27ae60', '#34495e', '#00bfff', '#8e44ad'
+                                ],
+                            }]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: true },
+                                title: {
+                                    display: true,
+                                    text: 'Delinquency Loan Buckets (Percent)'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                                            const value = context.parsed;
+                                            const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+                                            return `${context.label}: ${value} (${percent}%)`;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    });
+                });
+        });
+
+           // Monthly Collections Grouped Bar Chart
+            fetch('/dashboard/monthly-collections')
+                .then(response => response.json())
+                .then(data => {
+                    console.log('Monthly Collections Chart Data:', data);
+                    const ctx = document.getElementById('monthlyCollectionsChart').getContext('2d');
+                    const isEmpty = !data.months || !data.expected || !data.collected || !data.arrears ||
+                        data.months.length === 0 ||
+                        (data.expected.every(v => v == 0) && data.collected.every(v => v == 0) && data.arrears.every(v => v == 0));
+                    if (isEmpty) {
+                        document.getElementById('monthlyCollectionsChart').style.display = 'none';
+                        const fallback = document.createElement('div');
+                        fallback.style.textAlign = 'center';
+                        fallback.style.padding = '40px 0';
+                        fallback.style.color = '#888';
+                        fallback.innerHTML = '<b>No monthly collections data available for this year.</b>';
+                        ctx.canvas.parentNode.appendChild(fallback);
+                        return;
+                    }
+                    // Highlight months with no repayments by changing the collected bar color to gray
+                    const collectedColors = data.collected.map(v => v == 0 ? '#cccccc' : '#27ae60');
+                    new Chart(ctx, {
+                        type: 'bar',
+                        data: {
+                            labels: data.months,
+                            datasets: [
+                                {
+                                    label: 'Expected',
+                                    data: data.expected,
+                                    backgroundColor: '#f1c40f',
+                                    barPercentage: 0.3,
+                                    categoryPercentage: 0.6
+                                },
+                                {
+                                    label: 'Collected',
+                                    data: data.collected,
+                                    backgroundColor: collectedColors,
+                                    barPercentage: 0.3,
+                                    categoryPercentage: 0.6
+                                },
+                                {
+                                    label: 'Arrears',
+                                    data: data.arrears,
+                                    backgroundColor: '#e74c3c',
+                                    barPercentage: 0.3,
+                                    categoryPercentage: 0.6
+                                }
+                            ]
+                        },
+                        options: {
+                            responsive: true,
+                            plugins: {
+                                legend: { display: true },
+                                title: {
+                                    display: true,
+                                    text: 'Monthly Expected vs Collected vs Arrears'
+                                },
+                                tooltip: {
+                                    callbacks: {
+                                        label: function(context) {
+                                            let label = context.dataset.label || '';
+                                            let value = context.parsed;
+                                            if (label === 'Collected' && value === 0) {
+                                                return `${context.label}: No repayments`;
+                                            }
+                                            return `${context.label}: ${value.toLocaleString()}`;
+                                        }
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    stacked: true,
+                                    title: { display: true, text: 'Month' }
+                                },
+                                y: {
+                                    stacked: false,
+                                    beginAtZero: true,
+                                    title: { display: true, text: 'Amount (TZS)' }
+                                }
+                            },
+                            barThickness: 12
+                        }
+                    });
+                });
+        </script>
         <!--end row-->
 
         <!-- Balance Sheet Overview -->
         <div class="row">
             <div class="col-12 col-lg-8 d-lg-flex align-items-lg-stretch">
                 <div class="card radius-10 w-100">
-                    <div class="card-header border-bottom-0 bg-transparent">
-                        <div class="d-lg-flex align-items-center">
-                            <div class="">
-                                <h5 class="mb-1">Balance Sheet Overview</h5>
-                                <p class="text-secondary mb-2 mb-lg-0 font-14">Financial position by account class</p>
-                            </div>
-                            <div class="ms-lg-auto">
-                                <div class="btn-group-round">
-                                    <div class="btn-group">
-                                        <button type="button" class="btn btn-white">Assets</button>
-                                        <button type="button" class="btn btn-white">Liabilities</button>
-                                        <button type="button" class="btn btn-white">Equity</button>
-                                    </div>
+                    <div class="card-body">
+                        <div id="chart3"></div>
+                        <div class="mt-4">
+                            <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
+                                <div class="card-header bg-white border-bottom-0 d-flex align-items-center">
+                                    <i class="bx bx-bar-chart-alt-2 text-primary me-2 font-20"></i>
+                                    <h6 class="mb-0 text-dark">Monthly Collections Overview (This Year)</h6>
+                                </div>
+                                <div class="card-body pt-3 pb-2">
+                                    <canvas id="monthlyCollectionsChart" height="120"></canvas>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="card-body">
-                        <div id="chart3"></div>
                     </div>
                 </div>
             </div>

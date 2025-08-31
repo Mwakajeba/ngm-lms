@@ -74,7 +74,18 @@
 			</li>
 			<!--SHORT MENU-->
 			@php
-				$branchId = auth()->user()->branch_id;
+				$user = auth()->user();
+				if (!$user) {
+					// Session expired, logout using POST
+					echo '<script>document.addEventListener("DOMContentLoaded", function() { document.getElementById("logout-form").submit(); });</script>';
+					exit;
+				}
+				$branchId = $user->branch_id ?? null;
+				if (!$branchId) {
+					// Redirect to branch selection page
+					header('Location: ' . route('choose.branch'));
+					exit;
+				}
 				$today = \Carbon\Carbon::today()->toDateString();
 				$dueSchedules = \DB::table('loan_schedules')
 					->join('loans', 'loan_schedules.loan_id', '=', 'loans.id')

@@ -346,6 +346,19 @@ class CustomerController extends Controller
         try {
             $customer->update($data);
 
+            // Sync group membership
+            DB::table('group_members')->where('customer_id', $customer->id)->delete();
+            if ($request->filled('group_id')) {
+                DB::table('group_members')->insert([
+                    'group_id' => $request->group_id,
+                    'customer_id' => $customer->id,
+                    'status' => 'active',
+                    'joined_date' => now()->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+
             // Sync loan officers
             if ($request->has('loan_officer_ids')) {
                 // Delete previous ones
