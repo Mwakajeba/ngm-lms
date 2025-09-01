@@ -233,7 +233,7 @@
                                         </tr>
                                         <tr>
                                             <th scope="row">Description :</th>
-                                            <td>{{ $customer->company->description ?? 'N/A' }}</td>
+                                            <td>{{ $customer->description ?? 'N/A' }}</td>
                                         </tr>
                                         <tr>
                                             <th scope="row">Registrar :</th>

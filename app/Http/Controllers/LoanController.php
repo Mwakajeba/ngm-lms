@@ -557,6 +557,7 @@ class LoanController extends Controller
         // Generate repayment schedule
         $loan->generateRepaymentSchedule($validated['interest']);
 
+
         // Record Payment
         $bankAccount = BankAccount::findOrFail($accountId);
         $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
@@ -808,6 +809,29 @@ class LoanController extends Controller
 
                 // Step 4: Generate repayment schedule
                 $loan->generateRepaymentSchedule($validated['interest']);
+
+                // Log generated schedule details
+                $schedule = $loan->schedule()->orderBy('due_date')->get();
+                info('Generated Loan Schedule:', [
+                    'loan_id' => $loan->id,
+                    'loan_amount' => $loan->amount,
+                    'periods' => $schedule->count(),
+                    'total_principal' => $schedule->sum('principal'),
+                    'total_interest' => $schedule->sum('interest'),
+                    'total_fees' => $schedule->sum('fee_amount'),
+                    'total_penalties' => $schedule->sum('penalty_amount'),
+                    'schedule_items' => $schedule->map(function ($item, $index) {
+                        return [
+                            'installment' => $index + 1,
+                            'due_date' => $item->due_date,
+                            'principal' => $item->principal,
+                            'interest' => $item->interest,
+                            'fee_amount' => $item->fee_amount,
+                            'penalty_amount' => $item->penalty_amount,
+                            'total_due' => $item->principal + $item->interest + $item->fee_amount + $item->penalty_amount
+                        ];
+                    })->toArray()
+                ]);
 
                 // Step 5: Record Payment
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);

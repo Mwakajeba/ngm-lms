@@ -32,9 +32,9 @@ class LoanProduct extends Model
         'principal_receivable_account_id',
         'interest_receivable_account_id',
         'interest_revenue_account_id',
-    'direct_writeoff_account_id',
-    'provision_writeoff_account_id',
-    'income_provision_account_id',
+        'direct_writeoff_account_id',
+        'provision_writeoff_account_id',
+        'income_provision_account_id',
         'fees_ids',
         'penalty_ids',
         'repayment_order',
@@ -70,8 +70,8 @@ class LoanProduct extends Model
         'maximum_period' => 'integer',
         'fees_ids' => 'array',
         'penalty_ids' => 'array',
-    'is_active' => 'boolean',
-    'allow_push_to_ess' => 'boolean',
+        'is_active' => 'boolean',
+        'allow_push_to_ess' => 'boolean',
     ];
 
 
@@ -119,9 +119,27 @@ class LoanProduct extends Model
     //     return $this->belongsToMany(Fee::class, null, null, null, 'fees_ids');
     // }
 
-    public function fee()
+    /**
+     * Get the fees associated with this loan product
+     */
+    public function fees()
     {
-        return $this->belongsTo(Fee::class, 'fee_ids')->where('include_in_schedule', true);
+        return $this->belongsToMany(Fee::class, null, null, null, 'fees_ids');
+    }
+
+    /**
+     * Get the first fee that includes in schedule
+     */
+    public function getScheduleFeeAttribute()
+    {
+        if (!$this->fees_ids || !is_array($this->fees_ids)) {
+            return null;
+        }
+
+        return Fee::whereIn('id', $this->fees_ids)
+            ->where('include_in_schedule', true)
+            ->where('status', 'active')
+            ->first();
     }
 
 
@@ -200,7 +218,8 @@ class LoanProduct extends Model
 
     public function calculateRequiredCollateral(float $loanAmount): float
     {
-        if (!$this->has_cash_collateral) return 0;
+        if (!$this->has_cash_collateral)
+            return 0;
 
         return $this->cash_collateral_value_type === 'percentage'
             ? ($loanAmount * $this->cash_collateral_value / 100)
