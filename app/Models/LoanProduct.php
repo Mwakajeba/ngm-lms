@@ -32,9 +32,9 @@ class LoanProduct extends Model
         'principal_receivable_account_id',
         'interest_receivable_account_id',
         'interest_revenue_account_id',
-    'direct_writeoff_account_id',
-    'provision_writeoff_account_id',
-    'income_provision_account_id',
+        'direct_writeoff_account_id',
+        'provision_writeoff_account_id',
+        'income_provision_account_id',
         'fees_ids',
         'penalty_ids',
         'repayment_order',
@@ -70,8 +70,8 @@ class LoanProduct extends Model
         'maximum_period' => 'integer',
         'fees_ids' => 'array',
         'penalty_ids' => 'array',
-    'is_active' => 'boolean',
-    'allow_push_to_ess' => 'boolean',
+        'is_active' => 'boolean',
+        'allow_push_to_ess' => 'boolean',
     ];
 
 
@@ -200,7 +200,8 @@ class LoanProduct extends Model
 
     public function calculateRequiredCollateral(float $loanAmount): float
     {
-        if (!$this->has_cash_collateral) return 0;
+        if (!$this->has_cash_collateral)
+            return 0;
 
         return $this->cash_collateral_value_type === 'percentage'
             ? ($loanAmount * $this->cash_collateral_value / 100)

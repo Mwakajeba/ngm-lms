@@ -484,7 +484,7 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-          $fee = $product->fee;
+        $fee = $product->fee;
         $penalty = $product->penalty;
 
         $isReducing = in_array($method, [
@@ -507,36 +507,48 @@ class Loan extends Model
             // === Fees ===
             $loanFee = 0;
             if ($fee) {
-                $feeAmount = $fee->amount;
+                $feeAmount = (float) $fee->amount;
                 $feeType = $fee->fee_type;
                 $criteria = $fee->deduction_criteria;
                 $includeInSchedule = $fee->include_in_schedule;
                 $status = $fee->status;
 
-                \Log::info('[LoanSchedule] Repayment #'.$i.' Fee ID: '.$fee->id.' include_in_schedule: '.($includeInSchedule ? 'true' : 'false').', status: '.$status);
+                \Log::info('[LoanSchedule] Repayment #' . $i . ' Fee ID: ' . $fee->id . ' include_in_schedule: ' . ($includeInSchedule ? 'true' : 'false') . ', status: ' . $status);
 
-                $applyFee = match ($criteria) {
-                    'charge_same_fee_to_all_repayments',
-                    'distribute_fee_evenly_to_all_repayments' => true,
-                    'charge_fee_on_first_repayment' => $i === 0,
-                    'charge_fee_on_last_repayment' => $i === ($period - 1),
-                    default => false
-                };
+                if ($includeInSchedule && $status === 'active') {
+                    // Total fee basis (for distribution or per-installment use)
+                    $totalFee = $feeType === 'percentage'
+                        ? ((float) $principal * (float) $feeAmount / 100)
+                        : (float) $feeAmount;
+                    $totalFeeFloat = (float) $totalFee;
 
-                \Log::info('[LoanSchedule] Repayment #'.$i.' Fee criteria: '.$criteria.' Apply: '.($applyFee ? 'yes' : 'no'));
+                    switch ($criteria) {
+                        case 'distribute_fee_evenly_to_all_repayments':
+                            // Spread the total fee evenly across all installments
+                            $loanFee = round($totalFeeFloat / max(1, $period), 2);
+                            break;
 
-                if ($applyFee && $includeInSchedule && $status === 'active') {
-                    $divideAcross = in_array($criteria, [
-                        'charge_same_fee_to_all_repayments',
-                        'distribute_fee_evenly_to_all_repayments'
-                    ]);
+                        case 'charge_same_fee_to_all_repayments':
+                            // Charge the same fee amount on every installment (no division)
+                            $loanFee = round($totalFeeFloat, 2);
+                            break;
 
-                    $calculated = $feeType === 'percentage'
-                        ? ($principal * $feeAmount / 100)
-                        : $feeAmount;
+                        case 'charge_fee_on_first_repayment':
+                            $loanFee = $i === 0 ? round($totalFeeFloat, 2) : 0;
+                            break;
 
-                    $loanFee = round($calculated / ($divideAcross ? $period : 1), 2);
-                    \Log::info('[LoanSchedule] Repayment #'.$i.' Fee applied: '.$loanFee);
+                        case 'charge_fee_on_last_repayment':
+                            $loanFee = $i === ($period - 1) ? round($totalFeeFloat, 2) : 0;
+                            break;
+
+                        case 'do_not_include_in_loan_schedule':
+                        case 'charge_fee_on_release_date':
+                        default:
+                            $loanFee = 0; // Not applied on schedule rows
+                            break;
+                    }
+
+                    \Log::info('[LoanSchedule] Repayment #' . $i . ' Fee criteria: ' . $criteria . ' Applied amount: ' . $loanFee);
                 }
             }
 
@@ -555,8 +567,8 @@ class Loan extends Model
                 };
 
                 $penaltyAmount = $type === 'percentage'
-                    ? round($base * $penalty->amount / 100, 2)
-                    : round($penalty->amount, 2);
+                    ? round((float) $base * (float) $penalty->amount / 100, 2)
+                    : round((float) $penalty->amount, 2);
             }
 
             LoanSchedule::create([
@@ -593,7 +605,7 @@ class Loan extends Model
 
         foreach ($this->schedule as $scheduleItem) {
             $dueDate = Carbon::parse($scheduleItem->due_date);
-            
+
             // If the due date has passed and there's a remaining amount
             if ($dueDate->lt($today) && $scheduleItem->remaining_amount > 0) {
                 $totalArrears += $scheduleItem->remaining_amount;
@@ -613,7 +625,7 @@ class Loan extends Model
 
         foreach ($this->schedule->sortBy('due_date') as $scheduleItem) {
             $dueDate = Carbon::parse($scheduleItem->due_date);
-            
+
             // If the due date has passed and there's a remaining amount
             if ($dueDate->lt($today) && $scheduleItem->remaining_amount > 0) {
                 $firstOverdueDate = $dueDate;
@@ -634,5 +646,215 @@ class Loan extends Model
     public function getIsInArrearsAttribute()
     {
         return $this->arrears_amount > 0;
+    }
+
+    /**
+     * Check if the loan is eligible for top-up based on product settings
+     * 
+     * @return bool
+     */
+    public function isEligibleForTopUp(): bool
+    {
+        $product = $this->product;
+
+        // Step 1: Check if product exists and top-up is allowed
+        if (!$product || !$product->top_up_type || !$product->top_up_type_value) {
+            info('Top-up eligibility check failed: Product or top-up settings not found', [
+                'loan_id' => $this->id,
+                'product_id' => $this->product_id
+            ]);
+            return false;
+        }
+
+        // Check if loan is active
+        if ($this->status !== self::STATUS_ACTIVE) {
+            info('Top-up eligibility check failed: Loan is not active', [
+                'loan_id' => $this->id,
+                'status' => $this->status
+            ]);
+            return false;
+        }
+
+        // Check if loan has arrears
+        if ($this->is_in_arrears) {
+            info('Top-up eligibility check failed: Loan has arrears', [
+                'loan_id' => $this->id,
+                'arrears_amount' => $this->arrears_amount
+            ]);
+            return false;
+        }
+
+        // Check if loan already has top-up children
+        if ($this->topUpChildren()->exists()) {
+            info('Top-up eligibility check failed: Loan already has top-up children', [
+                'loan_id' => $this->id
+            ]);
+            return false;
+        }
+
+        // Check if this loan is itself a top-up loan
+        if ($this->top_up_id) {
+            info('Top-up eligibility check failed: Loan is itself a top-up loan', [
+                'loan_id' => $this->id,
+                'top_up_id' => $this->top_up_id
+            ]);
+            return false;
+        }
+
+        // Step 2: Fetch loan schedules
+        $schedules = $this->schedule;
+
+        // Step 3: Get top-up type and value
+        $type = $product->top_up_type;
+        $value = $product->top_up_type_value;
+
+        info('Top-up eligibility check data', [
+            'loan_id' => $this->id,
+            'type' => $type,
+            'value' => $value,
+            'schedules_count' => $schedules->count()
+        ]);
+
+        switch ($type) {
+            case 'number_of_installment':
+                // Get paid amount and calculate total amount for required installments
+                $paidAmount = $this->getTotalPaidAmount();
+                $installmentAmount = $this->getInstallmentAmount();
+
+                if ($installmentAmount <= 0) {
+                    info('Top-up eligibility check failed: Invalid installment amount', [
+                        'loan_id' => $this->id,
+                        'installment_amount' => $installmentAmount
+                    ]);
+                    return false;
+                }
+
+                // Calculate total amount for the required number of installments
+                $requiredInstallmentsAmount = $installmentAmount * $value;
+
+                info('Top-up eligibility check - installments amount', [
+                    'loan_id' => $this->id,
+                    'paid_amount' => $paidAmount,
+                    'installment_amount' => $installmentAmount,
+                    'required_installments' => $value,
+                    'required_installments_amount' => $requiredInstallmentsAmount,
+                    'is_eligible' => $paidAmount >= $requiredInstallmentsAmount
+                ]);
+
+                return $paidAmount >= $requiredInstallmentsAmount;
+
+            case 'percentage':
+                // Calculate percentage of total amount paid
+                $totalToPay = $this->getTotalAmountToPay();
+                $totalPaid = $this->getTotalPaidAmount();
+
+                if ($totalToPay <= 0) {
+                    info('Top-up eligibility check failed: Invalid total amount to pay', [
+                        'loan_id' => $this->id,
+                        'total_to_pay' => $totalToPay
+                    ]);
+                    return false;
+                }
+
+                $paidPercentage = ($totalPaid / $totalToPay) * 100;
+
+                info('Top-up eligibility check - percentage', [
+                    'loan_id' => $this->id,
+                    'total_paid' => $totalPaid,
+                    'total_to_pay' => $totalToPay,
+                    'paid_percentage' => $paidPercentage,
+                    'required_percentage' => $value,
+                    'is_eligible' => $paidPercentage >= $value
+                ]);
+
+                return $paidPercentage >= $value;
+
+            case 'fixed_amount':
+                // Check if paid amount has reached the required fixed amount for top-up
+                $paidAmount = $this->getTotalPaidAmount();
+                $requiredAmount = $value;
+                $isEligible = $paidAmount >= $requiredAmount;
+
+                info('Top-up eligibility check - fixed amount', [
+                    'loan_id' => $this->id,
+                    'paid_amount' => $paidAmount,
+                    'required_amount' => $requiredAmount,
+                    'is_eligible' => $isEligible
+                ]);
+
+                return $isEligible;
+
+            default:
+                info('Top-up eligibility check failed: Unknown top-up type', [
+                    'loan_id' => $this->id,
+                    'type' => $type
+                ]);
+                return false;
+        }
+    }
+
+
+
+    /**
+     * Get the calculated top-up amount for this loan
+     * The top-up amount is the remaining balance of the loan
+     * 
+     * @return float
+     */
+    public function getCalculatedTopUpAmount(): float
+    {
+        if (!$this->isEligibleForTopUp()) {
+            return 0;
+        }
+
+        // Calculate the outstanding balance from schedule and repayments
+        $totalOutstanding = 0;
+
+        foreach ($this->schedule as $scheduleItem) {
+            $totalOutstanding += $scheduleItem->remaining_amount;
+        }
+
+        return max(0, round($totalOutstanding, 2));
+    }
+
+    /**
+     * Get the total amount paid for this loan
+     * 
+     * @return float
+     */
+    public function getTotalPaidAmount(): float
+    {
+        return $this->repayments->sum(function ($repayment) {
+            return $repayment->principal + $repayment->interest + $repayment->fee_amount + $repayment->penalt_amount;
+        });
+    }
+
+    /**
+     * Get the total amount to pay for this loan (from schedule)
+     * 
+     * @return float
+     */
+    public function getTotalAmountToPay(): float
+    {
+        return $this->schedule->sum(function ($scheduleItem) {
+            return $scheduleItem->principal + $scheduleItem->interest + $scheduleItem->fee_amount + $scheduleItem->penalty_amount;
+        });
+    }
+
+    /**
+     * Get the installment amount (average amount per installment)
+     * 
+     * @return float
+     */
+    public function getInstallmentAmount(): float
+    {
+        $totalAmount = $this->getTotalAmountToPay();
+        $totalInstallments = $this->period;
+
+        if ($totalInstallments <= 0) {
+            return 0;
+        }
+
+        return round($totalAmount / $totalInstallments, 2);
     }
 }
