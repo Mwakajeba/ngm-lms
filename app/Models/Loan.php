@@ -484,7 +484,8 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        $fee = $product->fee;
+        $fee = $product->schedule_fee;
+        \Log::info('[LoanSchedule] Fee: ' . $fee);
         $penalty = $product->penalty;
 
         $isReducing = in_array($method, [
