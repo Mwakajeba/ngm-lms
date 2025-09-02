@@ -110,6 +110,21 @@ class Payment extends Model
             ->where('transaction_type', 'payment');
     }
 
+    public function approvals()
+    {
+        return $this->hasMany(PaymentVoucherApproval::class);
+    }
+
+    public function pendingApprovals()
+    {
+        return $this->hasMany(PaymentVoucherApproval::class)->pending();
+    }
+
+    public function currentApproval()
+    {
+        return $this->hasMany(PaymentVoucherApproval::class)->pending()->orderBy('approval_level')->first();
+    }
+
     // Scopes
     public function scopeApproved($query)
     {
@@ -202,5 +217,201 @@ class Payment extends Model
     public function getRouteKey()
     {
         return HashIdHelper::encode($this->id);
+    }
+
+    /**
+     * Check if payment requires approval.
+     */
+    public function requiresApproval()
+    {
+        // Only manual payment vouchers require approval
+        if ($this->reference_type !== 'manual') {
+            return false;
+        }
+
+        $settings = PaymentVoucherApprovalSetting::where('company_id', $this->user->company_id)->first();
+        
+        if (!$settings) {
+            return false; // No approval settings configured
+        }
+
+        return $settings->getRequiredApprovalLevel($this->amount) > 0;
+    }
+
+    /**
+     * Get the required approval level for this payment.
+     */
+    public function getRequiredApprovalLevel()
+    {
+        // Only manual payment vouchers require approval
+        if ($this->reference_type !== 'manual') {
+            return 0; // No approval required
+        }
+
+        $settings = PaymentVoucherApprovalSetting::where('company_id', $this->user->company_id)->first();
+        
+        if (!$settings) {
+            return 0; // No approval required
+        }
+
+        return $settings->getRequiredApprovalLevel($this->amount);
+    }
+
+    /**
+     * Initialize approval workflow for this payment.
+     */
+    public function initializeApprovalWorkflow()
+    {
+        // Only manual payment vouchers require approval
+        if ($this->reference_type !== 'manual') {
+            // Auto-approve non-manual payments
+            $this->update([
+                'approved' => true,
+                'approved_by' => $this->user_id,
+                'approved_at' => now(),
+            ]);
+            return;
+        }
+
+        $settings = PaymentVoucherApprovalSetting::where('company_id', $this->user->company_id)->first();
+        
+        if (!$settings) {
+            return; // No approval settings configured
+        }
+
+        $requiredLevel = $settings->getRequiredApprovalLevel($this->amount);
+        
+        if ($requiredLevel === 0) {
+            // Auto-approve
+            $this->update([
+                'approved' => true,
+                'approved_by' => $this->user_id,
+                'approved_at' => now(),
+            ]);
+            return;
+        }
+
+        // Create approval records for each level
+        for ($level = 1; $level <= $requiredLevel; $level++) {
+            $approvalType = $settings->{"level{$level}_approval_type"};
+            $approvers = $settings->{"level{$level}_approvers"} ?? [];
+
+            if ($approvalType === 'role') {
+                foreach ($approvers as $roleName) {
+                    $role = \Spatie\Permission\Models\Role::where('name', $roleName)->first();
+                    if ($role) {
+                        PaymentVoucherApproval::create([
+                            'payment_id' => $this->id,
+                            'approval_level' => $level,
+                            'approver_type' => 'role',
+                            'approver_name' => $role->name,
+                            'status' => 'pending',
+                        ]);
+                    }
+                }
+            } elseif ($approvalType === 'user') {
+                foreach ($approvers as $userId) {
+                    // Ensure userId is an integer
+                    $userId = (int) $userId;
+                    $user = User::find($userId);
+                    if ($user) {
+                        PaymentVoucherApproval::create([
+                            'payment_id' => $this->id,
+                            'approval_level' => $level,
+                            'approver_id' => $user->id,
+                            'approver_type' => 'user',
+                            'approver_name' => $user->name,
+                            'status' => 'pending',
+                        ]);
+                    }
+                }
+            }
+        }
+
+        // Update payment status
+        $this->update([
+            'approved' => false,
+            'approved_by' => null,
+            'approved_at' => null,
+        ]);
+    }
+
+    /**
+     * Check if payment is fully approved.
+     */
+    public function isFullyApproved()
+    {
+        $requiredLevel = $this->getRequiredApprovalLevel();
+        
+        if ($requiredLevel === 0) {
+            return $this->approved;
+        }
+
+        // Check if the required approval level is approved
+        $requiredLevelApproved = $this->approvals()
+            ->where('approval_level', $requiredLevel)
+            ->where('status', 'approved')
+            ->exists();
+            
+        return $requiredLevelApproved;
+    }
+
+    /**
+     * Check if payment is rejected.
+     */
+    public function isRejected()
+    {
+        return $this->approvals()->rejected()->exists();
+    }
+
+    /**
+     * Get approval status for display.
+     */
+    public function getApprovalStatusAttribute()
+    {
+        if ($this->isRejected()) {
+            return 'rejected';
+        }
+
+        if ($this->isFullyApproved()) {
+            return 'approved';
+        }
+
+        if ($this->requiresApproval()) {
+            return 'pending';
+        }
+
+        return $this->approved ? 'approved' : 'pending';
+    }
+
+    /**
+     * Get approval status badge for display.
+     */
+    public function getApprovalStatusBadgeAttribute()
+    {
+        $status = $this->approval_status;
+        
+        switch ($status) {
+            case 'approved':
+                return '<span class="badge bg-success">Approved</span>';
+            case 'rejected':
+                return '<span class="badge bg-danger">Rejected</span>';
+            case 'pending':
+                return '<span class="badge bg-warning">Pending Approval</span>';
+            default:
+                return '<span class="badge bg-secondary">Unknown</span>';
+        }
+    }
+
+    /**
+     * Get reference type badge for display.
+     */
+    public function getReferenceTypeBadgeAttribute()
+    {
+        if ($this->reference_type === 'manual') {
+            return '<span class="badge bg-primary">Manual Payment Voucher</span>';
+        } else {
+            return '<span class="badge bg-secondary">' . ucfirst(str_replace(' ', ' ', $this->reference_type)) . '</span>';
+        }
     }
 }

@@ -95,13 +95,13 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => [],
             ],
-            'Chat' => [
-                'icon' => 'bx bx-message',
-                'visibleRoutes' => [
-                    ['name' => 'Chat', 'route' => 'chat.index'],
-                ],
-                'hiddenRoutes' => ['chat.messages', 'chat.send'],
-            ],
+            // 'Chat' => [
+            //     'icon' => 'bx bx-message',
+            //     'visibleRoutes' => [
+            //         ['name' => 'Chat', 'route' => 'chat.index'],
+            //     ],
+            //     'hiddenRoutes' => ['chat.messages', 'chat.send'],
+            // ],
 
             // Add Change Branch menu under Dashboard
             'Change Branch' => [

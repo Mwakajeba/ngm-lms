@@ -10,6 +10,7 @@ use App\Services\BackupService;
 use App\Services\AiAssistantService;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Auth;
 use Vinkla\Hashids\Facades\Hashids;
 
 class SettingsController extends Controller
@@ -628,6 +629,144 @@ class SettingsController extends Controller
             return redirect()->route('settings.fees')->with('success', 'Fees settings updated successfully!');
         } catch (\Exception $e) {
             return redirect()->route('settings.fees')->with('error', 'Failed to update fees settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Subscription Settings
+     */
+    public function subscriptionSettings()
+    {
+        return view('settings.subscription');
+    }
+
+    /**
+     * Update Subscription Settings
+     */
+    public function updateSubscriptionSettings(Request $request)
+    {
+        $request->validate([
+            'subscription_plan' => 'required|string|in:basic,premium,enterprise',
+            'billing_cycle' => 'required|string|in:monthly,quarterly,yearly',
+            'auto_renewal' => 'boolean',
+            'payment_method' => 'required|string|in:credit_card,bank_transfer,mobile_money',
+            'billing_email' => 'required|email',
+            'billing_address' => 'required|string',
+        ]);
+
+        try {
+            // Update subscription settings logic here
+            // This would typically save to a settings table or config file
+
+            return redirect()->route('settings.subscription')->with('success', 'Subscription settings updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('settings.subscription')->with('error', 'Failed to update subscription settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Payment Voucher Approval Settings
+     */
+    public function paymentVoucherApprovalSettings()
+    {
+        $user = Auth::user();
+        
+        // Load roles and users for dropdowns
+        $roles = \Spatie\Permission\Models\Role::all();
+        $users = \App\Models\User::forCompany()->active()->get();
+        
+        // Load existing approval settings
+        $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', $user->company_id)->first();
+        
+        return view('settings.payment-voucher-approval', compact('roles', 'users', 'settings'));
+    }
+
+    /**
+     * Update Payment Voucher Approval Settings
+     */
+    public function updatePaymentVoucherApprovalSettings(Request $request)
+    {
+        $request->validate([
+            'approval_levels' => 'required|integer|min:1|max:5',
+            'approval_threshold_1' => 'required|numeric|min:0',
+            'approval_threshold_2' => 'nullable|numeric|min:0',
+            'approval_threshold_3' => 'nullable|numeric|min:0',
+            'approval_threshold_4' => 'nullable|numeric|min:0',
+            'approval_threshold_5' => 'nullable|numeric|min:0',
+            'auto_approval_limit' => 'required|numeric|min:0',
+            'escalation_time' => 'required|integer|min:1|max:72',
+            'require_approval_for_all' => 'boolean',
+            
+            // Approval assignments validation
+            'level1_approval_type' => 'required|in:role,user',
+            'level1_approvers' => 'required|array|min:1',
+            'level2_approval_type' => 'nullable|in:role,user',
+            'level2_approvers' => 'nullable|array',
+            'level3_approval_type' => 'nullable|in:role,user',
+            'level3_approvers' => 'nullable|array',
+            'level4_approval_type' => 'nullable|in:role,user',
+            'level4_approvers' => 'nullable|array',
+            'level5_approval_type' => 'nullable|in:role,user',
+            'level5_approvers' => 'nullable|array',
+        ]);
+
+        try {
+            $user = Auth::user();
+            $companyId = $user->company_id;
+
+            // Find or create approval settings for the company
+            $settings = \App\Models\PaymentVoucherApprovalSetting::firstOrCreate(
+                ['company_id' => $companyId],
+                [
+                    'approval_levels' => 2,
+                    'auto_approval_limit' => 100000,
+                    'approval_threshold_1' => 500000,
+                    'escalation_time' => 24,
+                    'require_approval_for_all' => false,
+                ]
+            );
+
+            // Update basic settings
+            $settings->update([
+                'approval_levels' => $request->approval_levels,
+                'auto_approval_limit' => $request->auto_approval_limit,
+                'approval_threshold_1' => $request->approval_threshold_1,
+                'approval_threshold_2' => $request->approval_threshold_2,
+                'approval_threshold_3' => $request->approval_threshold_3,
+                'approval_threshold_4' => $request->approval_threshold_4,
+                'approval_threshold_5' => $request->approval_threshold_5,
+                'escalation_time' => $request->escalation_time,
+                'require_approval_for_all' => $request->has('require_approval_for_all'),
+            ]);
+
+            // Update approval assignments
+            for ($level = 1; $level <= 5; $level++) {
+                $approvalType = $request->{"level{$level}_approval_type"};
+                $approvers = $request->{"level{$level}_approvers"} ?? [];
+
+                if ($approvalType && !empty($approvers)) {
+                    // Process approver IDs - extract actual IDs from "user_X" or "role_X" format
+                    $processedApprovers = [];
+                    foreach ($approvers as $approver) {
+                        if (str_starts_with($approver, 'user_')) {
+                            $userId = (int) str_replace('user_', '', $approver);
+                            $processedApprovers[] = $userId;
+                        } elseif (str_starts_with($approver, 'role_')) {
+                            $roleName = str_replace('role_', '', $approver);
+                            $processedApprovers[] = $roleName;
+                        }
+                    }
+
+                    $settings->update([
+                        "level{$level}_approval_type" => $approvalType,
+                        "level{$level}_approvers" => $processedApprovers,
+                    ]);
+                }
+            }
+
+            return redirect()->route('settings.payment-voucher-approval')->with('success', 'Payment voucher approval settings updated successfully!');
+        } catch (\Exception $e) {
+            return redirect()->route('settings.payment-voucher-approval')->with('error', 'Failed to update payment voucher approval settings: ' . $e->getMessage());
         }
     }
 }

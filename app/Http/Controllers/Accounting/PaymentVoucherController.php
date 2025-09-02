@@ -52,7 +52,7 @@ class PaymentVoucherController extends Controller
     {
         $user = Auth::user();
 
-        $payments = Payment::with(['bankAccount', 'customer', 'supplier', 'user'])
+        $payments = Payment::with(['bankAccount', 'customer', 'supplier', 'user', 'approvals'])
             ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
@@ -85,11 +85,18 @@ class PaymentVoucherController extends Controller
                 ->addColumn('description_limited', function ($payment) {
                     return $payment->description ? Str::limit($payment->description, 50) : 'No description';
                 })
+                ->addColumn('reference_type_badge', function ($payment) {
+                    if ($payment->reference_type === 'manual') {
+                        return '<span class="badge bg-primary">Manual Payment Voucher</span>';
+                    } else {
+                        return '<span class="badge bg-secondary">' . ucfirst(str_replace(' ', ' ', $payment->reference_type)) . '</span>';
+                    }
+                })
                 ->addColumn('formatted_amount', function ($payment) {
                     return '<span class="text-end fw-bold">' . number_format($payment->amount, 2) . '</span>';
                 })
                 ->addColumn('status_badge', function ($payment) {
-                    return $payment->status_badge;
+                    return $payment->approval_status_badge;
                 })
                 ->addColumn('actions', function ($payment) {
                     $actions = '';
@@ -106,8 +113,8 @@ class PaymentVoucherController extends Controller
                     }
                     
                     if ($payment->reference_type === 'manual') {
-                        // Edit action
-                        if (auth()->user()->can('edit payment voucher')) {
+                        // Edit action - only if not approved
+                        if (auth()->user()->can('edit payment voucher') && !$payment->isFullyApproved()) {
                             $actions .= '<a href="' . route('accounting.payment-vouchers.edit', $payment->hash_id) . '" 
                                             class="btn btn-sm btn-outline-info me-1" 
                                             data-bs-toggle="tooltip" 
@@ -115,10 +122,19 @@ class PaymentVoucherController extends Controller
                                             title="Edit payment voucher">
                                             <i class="bx bx-edit"></i>
                                         </a>';
+                        } elseif (auth()->user()->can('edit payment voucher') && $payment->isFullyApproved()) {
+                            $actions .= '<button type="button" 
+                                            class="btn btn-sm btn-outline-secondary" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Cannot edit: Payment voucher is approved" 
+                                            disabled>
+                                            <i class="bx bx-lock"></i>
+                                        </button>';
                         }
                         
-                        // Delete action
-                        if (auth()->user()->can('delete payment voucher')) {
+                        // Delete action - only if not approved
+                        if (auth()->user()->can('delete payment voucher') && !$payment->isFullyApproved()) {
                             $actions .= '<button type="button" 
                                             class="btn btn-sm btn-outline-danger delete-payment-btn"
                                             data-bs-toggle="tooltip" 
@@ -127,6 +143,15 @@ class PaymentVoucherController extends Controller
                                             data-payment-id="' . $payment->hash_id . '"
                                             data-payment-reference="' . e($payment->reference) . '">
                                             <i class="bx bx-trash"></i>
+                                        </button>';
+                        } elseif (auth()->user()->can('delete payment voucher') && $payment->isFullyApproved()) {
+                            $actions .= '<button type="button" 
+                                            class="btn btn-sm btn-outline-secondary" 
+                                            data-bs-toggle="tooltip" 
+                                            data-bs-placement="top" 
+                                            title="Cannot delete: Payment voucher is approved" 
+                                            disabled>
+                                            <i class="bx bx-lock"></i>
                                         </button>';
                         }
                     } else {
@@ -140,7 +165,7 @@ class PaymentVoucherController extends Controller
                     
                     return '<div class="text-center">' . $actions . '</div>';
                 })
-                ->rawColumns(['reference_link', 'payee_info', 'formatted_amount', 'status_badge', 'actions'])
+                ->rawColumns(['reference_link', 'payee_info', 'description_limited', 'reference_type_badge', 'formatted_amount', 'status_badge', 'actions'])
                 ->make(true);
     }
 
@@ -257,10 +282,13 @@ class PaymentVoucherController extends Controller
                     'customer_id' => $request->customer_id,
                     'supplier_id' => $request->supplier_id,
                     'branch_id' => $user->branch_id,
-                    'approved' => true, // Auto-approve for now
-                    'approved_by' => $user->id,
-                    'approved_at' => now(),
+                    'approved' => false, // Will be set by approval workflow
+                    'approved_by' => null,
+                    'approved_at' => null,
                 ]);
+
+                // Initialize approval workflow
+                $payment->initializeApprovalWorkflow();
 
                 // Create payment items
                 $paymentItems = [];
@@ -339,6 +367,12 @@ class PaymentVoucherController extends Controller
     {
         $user = Auth::user();
 
+        // Check if payment voucher is approved - if so, prevent editing
+        if ($paymentVoucher->isFullyApproved()) {
+            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                ->withErrors(['error' => 'Cannot edit an approved payment voucher.']);
+        }
+
         // Get bank accounts for the current company
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
@@ -382,6 +416,12 @@ class PaymentVoucherController extends Controller
      */
     public function update(Request $request, Payment $paymentVoucher)
     {
+        // Check if payment voucher is approved - if so, prevent updating
+        if ($paymentVoucher->isFullyApproved()) {
+            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                ->withErrors(['error' => 'Cannot update an approved payment voucher.']);
+        }
+
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
@@ -529,6 +569,12 @@ class PaymentVoucherController extends Controller
      */
     public function destroy(Payment $paymentVoucher)
     {
+        // Check if payment voucher is approved - if so, prevent deletion
+        if ($paymentVoucher->isFullyApproved()) {
+            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                ->withErrors(['error' => 'Cannot delete an approved payment voucher.']);
+        }
+
         try {
             return $this->runTransaction(function () use ($paymentVoucher) {
                 // Delete attachment if exists
@@ -571,6 +617,12 @@ class PaymentVoucherController extends Controller
      */
     public function removeAttachment(Payment $paymentVoucher)
     {
+        // Check if payment voucher is approved - if so, prevent attachment removal
+        if ($paymentVoucher->isFullyApproved()) {
+            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                ->withErrors(['error' => 'Cannot modify an approved payment voucher.']);
+        }
+
         try {
             // Delete attachment file if exists
             if ($paymentVoucher->attachment && Storage::disk('public')->exists($paymentVoucher->attachment)) {
@@ -622,5 +674,191 @@ class PaymentVoucherController extends Controller
         } catch (\Exception $e) {
             return redirect()->back()->withErrors(['error' => 'Failed to export PDF: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Show approval interface for payment voucher
+     */
+    public function showApproval(Payment $paymentVoucher)
+    {
+        $user = Auth::user();
+        
+        // Check if user can approve this payment
+        $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', $user->company_id)->first();
+        
+        if (!$settings) {
+            return redirect()->back()->withErrors(['error' => 'No approval settings configured.']);
+        }
+
+        $currentApproval = $paymentVoucher->currentApproval();
+        
+        if (!$currentApproval) {
+            return redirect()->back()->withErrors(['error' => 'No pending approval found for this payment voucher.']);
+        }
+
+        // Check if current user can approve at this level
+        if (!$settings->canUserApproveAtLevel($user, $currentApproval->approval_level)) {
+            return redirect()->back()->withErrors(['error' => 'You do not have permission to approve this payment voucher.']);
+        }
+
+        $paymentVoucher->load(['bankAccount', 'customer', 'supplier', 'user', 'branch', 'paymentItems.chartAccount', 'approvals.approver']);
+
+        return view('accounting.payment-vouchers.approval', compact('paymentVoucher', 'currentApproval', 'settings'));
+    }
+
+    /**
+     * Approve payment voucher
+     */
+    public function approve(Request $request, Payment $paymentVoucher)
+    {
+        $user = Auth::user();
+        
+        // Check if user can approve this payment
+        $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', $user->company_id)->first();
+        
+        if (!$settings) {
+            return redirect()->back()->withErrors(['error' => 'No approval settings configured.']);
+        }
+
+        $currentApproval = $paymentVoucher->currentApproval();
+        
+        if (!$currentApproval) {
+            return redirect()->back()->withErrors(['error' => 'No pending approval found for this payment voucher.']);
+        }
+
+        // Check if current user can approve at this level
+        if (!$settings->canUserApproveAtLevel($user, $currentApproval->approval_level)) {
+            return redirect()->back()->withErrors(['error' => 'You do not have permission to approve this payment voucher.']);
+        }
+
+        $request->validate([
+            'comments' => 'nullable|string|max:500',
+        ]);
+
+        try {
+            DB::transaction(function () use ($paymentVoucher, $currentApproval, $user, $request) {
+                // Approve current level
+                $currentApproval->approve($request->comments);
+                
+                // Check if this was the final approval level
+                if ($paymentVoucher->isFullyApproved()) {
+                    $paymentVoucher->update([
+                        'approved' => true,
+                        'approved_by' => $user->id,
+                        'approved_at' => now(),
+                    ]);
+                }
+            });
+
+            // Check if this is an AJAX request
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment voucher approved successfully.',
+                    'redirect' => route('accounting.payment-vouchers.show', $paymentVoucher)
+                ]);
+            }
+
+            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                ->with('success', 'Payment voucher approved successfully.');
+        } catch (\Exception $e) {
+            // Check if this is an AJAX request
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to approve payment voucher: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Failed to approve payment voucher: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Reject payment voucher
+     */
+    public function reject(Request $request, Payment $paymentVoucher)
+    {
+        $user = Auth::user();
+        
+        // Check if user can approve this payment
+        $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', $user->company_id)->first();
+        
+        if (!$settings) {
+            return redirect()->back()->withErrors(['error' => 'No approval settings configured.']);
+        }
+
+        $currentApproval = $paymentVoucher->currentApproval();
+        
+        if (!$currentApproval) {
+            return redirect()->back()->withErrors(['error' => 'No pending approval found for this payment voucher.']);
+        }
+
+        // Check if current user can approve at this level
+        if (!$settings->canUserApproveAtLevel($user, $currentApproval->approval_level)) {
+            return redirect()->back()->withErrors(['error' => 'You do not have permission to reject this payment voucher.']);
+        }
+
+        $request->validate([
+            'comments' => 'required|string|max:500',
+        ]);
+
+        try {
+            DB::transaction(function () use ($paymentVoucher, $currentApproval, $request) {
+                // Reject current level
+                $currentApproval->reject($request->comments);
+                
+                // Reject all remaining pending approvals
+                $paymentVoucher->pendingApprovals()->update([
+                    'status' => 'rejected',
+                    'comments' => 'Rejected by higher level approval',
+                    'approved_at' => now(),
+                ]);
+            });
+
+            // Check if this is an AJAX request
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Payment voucher rejected successfully.',
+                    'redirect' => route('accounting.payment-vouchers.show', $paymentVoucher)
+                ]);
+            }
+
+            return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
+                ->with('success', 'Payment voucher rejected successfully.');
+        } catch (\Exception $e) {
+            // Check if this is an AJAX request
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to reject payment voucher: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()->withErrors(['error' => 'Failed to reject payment voucher: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Show pending approvals for current user
+     */
+    public function pendingApprovals()
+    {
+        $user = Auth::user();
+        
+        $pendingApprovals = \App\Models\PaymentVoucherApproval::with(['payment.bankAccount', 'payment.user'])
+            ->whereHas('payment.user', function ($query) use ($user) {
+                $query->where('company_id', $user->company_id);
+            })
+            ->where(function ($query) use ($user) {
+                $query->where('approver_id', $user->id)
+                      ->orWhereIn('approver_name', $user->getRoleNames());
+            })
+            ->pending()
+            ->orderBy('created_at', 'desc')
+            ->paginate(15);
+
+        return view('accounting.payment-vouchers.pending-approvals', compact('pendingApprovals'));
     }
 }

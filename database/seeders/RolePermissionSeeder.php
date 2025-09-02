@@ -412,6 +412,29 @@ class RolePermissionSeeder extends Seeder
             'delete group',
             'edit group',
             'view group details',
+
+            // Subscription Management
+            'manage subscription',
+            'view subscription',
+            'create subscription',
+            'edit subscription',
+            'cancel subscription',
+            'upgrade subscription',
+            'downgrade subscription',
+            'view billing history',
+            'manage billing information',
+
+            // Payment Voucher Approval Process
+            'manage payment voucher approval',
+            'view payment voucher approval',
+            'create payment voucher approval',
+            'edit payment voucher approval',
+            'delete payment voucher approval',
+            'configure approval workflow',
+            'set approval thresholds',
+            'assign approvers',
+            'view approval history',
+            'manage approval levels',
         ];
 
         // Create or update permissions
@@ -534,7 +557,15 @@ class RolePermissionSeeder extends Seeder
             'view statistics',
             'view kpi reports',
             'view menus',
-            'view chat'
+            'view chat',
+            'manage subscription',
+            'view subscription',
+            'manage payment voucher approval',
+            'view payment voucher approval',
+            'configure approval workflow',
+            'set approval thresholds',
+            'assign approvers',
+            'view approval history'
         ];
         $managerRole->syncPermissions($managerPermissions);
 
@@ -574,7 +605,9 @@ class RolePermissionSeeder extends Seeder
             'view customer reports',
             'view statistics',
             'view menus',
-            'view chat'
+            'view chat',
+            'view subscription',
+            'view payment voucher approval'
         ];
         $userRole->syncPermissions($userPermissions);
 
