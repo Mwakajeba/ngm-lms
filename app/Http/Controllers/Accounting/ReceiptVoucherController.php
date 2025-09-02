@@ -659,6 +659,52 @@ class ReceiptVoucherController extends Controller
     }
 
     /**
+     * Export receipt voucher to PDF
+     */
+    public function exportPdf($encodedId)
+    {
+        try {
+            // Decode the ID
+            $decoded = Hashids::decode($encodedId);
+            if (empty($decoded)) {
+                return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
+            }
+
+            $receiptVoucher = Receipt::findOrFail($decoded[0]);
+
+            // Check if user has access to this receipt voucher
+            $user = Auth::user();
+            if ($receiptVoucher->bankAccount->chartAccount->accountClassGroup->company_id !== $user->company_id) {
+                abort(403, 'Unauthorized access to this receipt voucher.');
+            }
+
+            // Load relationships
+            $receiptVoucher->load([
+                'bankAccount.chartAccount',
+                'customer',
+                'user.company',
+                'branch',
+                'receiptItems.chartAccount'
+            ]);
+
+            // Generate PDF using DomPDF
+            $pdf = \PDF::loadView('accounting.receipt-vouchers.pdf', compact('receiptVoucher'));
+
+            // Set paper size and orientation
+            $pdf->setPaper('A4', 'portrait');
+
+            // Generate filename
+            $filename = 'receipt_voucher_' . $receiptVoucher->reference . '_' . date('Y-m-d_H-i-s') . '.pdf';
+
+            // Return PDF for download
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            return redirect()->back()->withErrors(['error' => 'Failed to export PDF: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
      * Show the form for creating a receipt from a loan.
      */
     public function createFromLoan($encodedLoanId)

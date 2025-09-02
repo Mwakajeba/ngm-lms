@@ -25,6 +25,9 @@
                         class="btn btn-primary me-2">
                         <i class="bx bx-edit me-2"></i>Edit Receipt Voucher
                     </a>
+                    <a href="{{ route('accounting.receipt-vouchers.export-pdf', Hashids::encode($receiptVoucher->id)) }}" class="btn btn-success me-2">
+                        <i class="bx bx-file me-2"></i>Export PDF
+                    </a>
                     <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-secondary">
                         <i class="bx bx-arrow-back me-2"></i>Back to Receipt Vouchers
                     </a>
@@ -51,7 +54,7 @@
                                 {{ $receiptVoucher->formatted_date }}
                             </span>
                             <span class="badge bg-light text-dark">
-                                <i class="bx bx-dollar me-1"></i>
+                                <i class="bx bx-money me-1"></i>
                                 {{ $receiptVoucher->formatted_amount }}
                             </span>
                         </div>
@@ -365,6 +368,10 @@
                                         <i class="bx bx-lock"></i> Locked
                                     </button>
                                 @endif
+                                
+                                <a href="{{ route('accounting.receipt-vouchers.export-pdf', Hashids::encode($receiptVoucher->id)) }}" class="btn btn-outline-success">
+                                    <i class="bx bx-file me-1"></i>Export PDF
+                                </a>
                             </div>
                         </div>
                     </div>

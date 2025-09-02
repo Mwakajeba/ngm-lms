@@ -15,6 +15,7 @@ class RolePermissionSeeder extends Seeder
         $permissions = [
             // Dashboard
             'view dashboard',
+            'view financial reports',
             
             // Settings
             'view settings',
@@ -48,6 +49,7 @@ class RolePermissionSeeder extends Seeder
             'create permission group',
             'edit permission group',
             'delete permission group',
+            'Assign Branches',
 
             // Customers
             'view customers',
