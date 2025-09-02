@@ -33,7 +33,7 @@ class TrialBalanceReportController extends Controller
         $endDate = $request->get('end_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         $branchId = $request->get('branch_id', $user->branch_id);
-        $layout = $request->get('layout', 'single');
+        $layout = $request->get('layout', 'single_column');
         $levelOfDetail = $request->get('level_of_detail', 'detailed');
 
         // Get comparative columns from request
@@ -61,14 +61,21 @@ class TrialBalanceReportController extends Controller
         $user = Auth::user();
         $company = $user->company;
 
-        // Get current period data
-        $currentData = $this->getPeriodData($startDate, $endDate, $reportingType, $branchId, $levelOfDetail);
+        // Get data based on layout type
+        if ($layout === 'multi_column') {
+            $currentData = $this->getMultipleColumnData($startDate, $endDate, $reportingType, $branchId, $levelOfDetail);
+        } else {
+            $currentData = $this->getPeriodData($startDate, $endDate, $reportingType, $branchId, $levelOfDetail);
+        }
 
-        // Get comparative period data
+        // Get comparative period data (only for single and double column layouts)
         $comparativeData = [];
-        foreach ($comparativeColumns as $index => $column) {
-            if (!empty($column['start_date']) && !empty($column['end_date'])) {
-                $comparativeData['Comparative ' . ($index + 1)] = $this->getPeriodData($column['start_date'], $column['end_date'], $reportingType, $branchId, $levelOfDetail);
+        if ($layout !== 'multi_column') {
+            foreach ($comparativeColumns as $index => $column) {
+                if (!empty($column['start_date']) && !empty($column['end_date'])) {
+                    $label = isset($column['name']) && trim($column['name']) !== '' ? trim($column['name']) : ('Comparative ' . ($index + 1));
+                    $comparativeData[$label] = $this->getPeriodData($column['start_date'], $column['end_date'], $reportingType, $branchId, $levelOfDetail);
+                }
             }
         }
 
@@ -121,7 +128,7 @@ class TrialBalanceReportController extends Controller
         if ($levelOfDetail === 'detailed') {
             $query->select(
                 'chart_accounts.id as account_id',
-                'chart_accounts.account_name',
+                'chart_accounts.account_name as account',
                 'chart_accounts.account_code',
                 'account_class.name as class_name',
                 'account_class_groups.name as group_name',
@@ -133,7 +140,7 @@ class TrialBalanceReportController extends Controller
             // Summary level - group by account class groups
             $query->select(
                 'account_class_groups.id as group_id',
-                'account_class_groups.name as group_name',
+                'account_class_groups.name as account',
                 'account_class.name as class_name',
                 DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
                 DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
@@ -143,9 +150,11 @@ class TrialBalanceReportController extends Controller
 
         $data = $query->get();
 
-        // Calculate running balances
+        // Calculate balances and determine nature
         $data = $data->map(function ($item) {
-            $item->balance = $item->debit_total - $item->credit_total;
+            $item->sum = $item->debit_total - $item->credit_total;
+            $item->nature = $item->sum >= 0 ? 'debit' : 'credit';
+            $item->account_code = $item->account_code ?? '';
             return $item;
         });
 
@@ -153,10 +162,205 @@ class TrialBalanceReportController extends Controller
         if ($levelOfDetail === 'detailed') {
             $data = $data->sortBy('account_code');
         } else {
-            $data = $data->sortBy('group_name');
+            $data = $data->sortBy('account');
         }
 
-        return $data;
+        // Group by class
+        $groupedData = $data->groupBy('class_name');
+
+        return $groupedData;
+    }
+
+    private function getMultipleColumnData($startDate, $endDate, $reportingType, $branchId, $levelOfDetail)
+    {
+        $user = Auth::user();
+        $company = $user->company;
+
+        // Calculate opening period (from start of year to start date)
+        $openingStartDate = Carbon::parse($startDate)->startOfYear()->format('Y-m-d');
+        $openingEndDate = Carbon::parse($startDate)->subDay()->format('Y-m-d');
+
+        // Current period is from start date to end date
+        $currentStartDate = $startDate;
+        $currentEndDate = $endDate;
+
+        // Closing period is from start of year to end date
+        $closingStartDate = Carbon::parse($startDate)->startOfYear()->format('Y-m-d');
+        $closingEndDate = $endDate;
+
+        // Get opening balances
+        $openingData = $this->getPeriodDataForMultiple($openingStartDate, $openingEndDate, $reportingType, $branchId, $levelOfDetail);
+        
+        // Get current year changes
+        $currentData = $this->getPeriodDataForMultiple($currentStartDate, $currentEndDate, $reportingType, $branchId, $levelOfDetail);
+        
+        // Get closing balances
+        $closingData = $this->getPeriodDataForMultiple($closingStartDate, $closingEndDate, $reportingType, $branchId, $levelOfDetail);
+
+        // Merge all data
+        $allAccounts = collect();
+        
+        // Collect all unique accounts
+        $openingData->each(function ($accounts, $class) use ($allAccounts) {
+            $accounts->each(function ($account) use ($allAccounts) {
+                $allAccounts->put($account->account_id ?? $account->group_id, $account);
+            });
+        });
+        
+        $currentData->each(function ($accounts, $class) use ($allAccounts) {
+            $accounts->each(function ($account) use ($allAccounts) {
+                if (!$allAccounts->has($account->account_id ?? $account->group_id)) {
+                    $allAccounts->put($account->account_id ?? $account->group_id, $account);
+                }
+            });
+        });
+        
+        $closingData->each(function ($accounts, $class) use ($allAccounts) {
+            $accounts->each(function ($account) use ($allAccounts) {
+                if (!$allAccounts->has($account->account_id ?? $account->group_id)) {
+                    $allAccounts->put($account->account_id ?? $account->group_id, $account);
+                }
+            });
+        });
+
+        // Combine data for each account
+        $combinedData = $allAccounts->map(function ($account) use ($openingData, $currentData, $closingData) {
+            $accountId = $account->account_id ?? $account->group_id;
+            
+            // Find opening data
+            $openingAccount = null;
+            $openingData->each(function ($accounts) use ($accountId, &$openingAccount) {
+                $found = $accounts->first(function ($acc) use ($accountId) {
+                    return ($acc->account_id ?? $acc->group_id) == $accountId;
+                });
+                if ($found) $openingAccount = $found;
+            });
+            
+            // Find current data
+            $currentAccount = null;
+            $currentData->each(function ($accounts) use ($accountId, &$currentAccount) {
+                $found = $accounts->first(function ($acc) use ($accountId) {
+                    return ($acc->account_id ?? $acc->group_id) == $accountId;
+                });
+                if ($found) $currentAccount = $found;
+            });
+            
+            // Find closing data
+            $closingAccount = null;
+            $closingData->each(function ($accounts) use ($accountId, &$closingAccount) {
+                $found = $accounts->first(function ($acc) use ($accountId) {
+                    return ($acc->account_id ?? $acc->group_id) == $accountId;
+                });
+                if ($found) $closingAccount = $found;
+            });
+
+            $obj = new \stdClass();
+            $obj->account = $account->account;
+            $obj->account_code = $account->account_code ?? '';
+            $obj->opening_debit = $openingAccount ? $openingAccount->debit_total : 0;
+            $obj->opening_credit = $openingAccount ? $openingAccount->credit_total : 0;
+            $obj->change_debit = $currentAccount ? $currentAccount->debit_total : 0;
+            $obj->change_credit = $currentAccount ? $currentAccount->credit_total : 0;
+            $obj->closing_debit = $closingAccount ? $closingAccount->debit_total : 0;
+            $obj->closing_credit = $closingAccount ? $closingAccount->credit_total : 0;
+            return $obj;
+        });
+
+        // Group by class - simplified approach
+        $groupedData = collect();
+        
+        foreach ($combinedData as $account) {
+            // Find the class name from the original data
+            $className = 'Unknown';
+            foreach ([$openingData, $currentData, $closingData] as $data) {
+                foreach ($data as $class => $accounts) {
+                    $found = $accounts->first(function ($acc) use ($account) {
+                        return $acc->account == $account->account;
+                    });
+                    if ($found) {
+                        $className = $class;
+                        break 2;
+                    }
+                }
+            }
+            
+            if (!$groupedData->has($className)) {
+                $groupedData->put($className, collect());
+            }
+            $groupedData->get($className)->push($account);
+        }
+
+        // Debug: Log the structure
+        \Log::info('Multiple column data structure:', [
+            'total_accounts' => $combinedData->count(),
+            'grouped_classes' => $groupedData->keys()->toArray(),
+            'sample_account' => $combinedData->first() ? (array) $combinedData->first() : null
+        ]);
+        
+        return $groupedData;
+    }
+
+    private function getPeriodDataForMultiple($startDate, $endDate, $reportingType, $branchId, $levelOfDetail)
+    {
+        $user = Auth::user();
+        $company = $user->company;
+
+        // Build the base query
+        $query = DB::table('gl_transactions')
+            ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
+            ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
+            ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
+            ->where('account_class_groups.company_id', $company->id)
+            ->whereBetween('gl_transactions.date', [$startDate, $endDate]);
+
+        // Add branch filter if specified
+        if ($branchId && $branchId != 'all') {
+            $query->where('gl_transactions.branch_id', $branchId);
+        }
+
+        // Add reporting type filter (cash vs accrual)
+        if ($reportingType === 'cash') {
+            $query->whereExists(function ($subquery) {
+                $subquery->select(DB::raw(1))
+                    ->from('gl_transactions as gl2')
+                    ->whereColumn('gl2.transaction_id', 'gl_transactions.transaction_id')
+                    ->whereColumn('gl2.transaction_type', 'gl_transactions.transaction_type')
+                    ->whereIn('gl2.chart_account_id', function($bankSubquery) {
+                        $bankSubquery->select('chart_account_id')
+                            ->from('bank_accounts');
+                    });
+            });
+        }
+
+        // Select fields based on level of detail
+        if ($levelOfDetail === 'detailed') {
+            $query->select(
+                'chart_accounts.id as account_id',
+                'chart_accounts.account_name as account',
+                'chart_accounts.account_code',
+                'account_class.name as class_name',
+                'account_class_groups.name as group_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
+            )
+            ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code', 'account_class.name', 'account_class_groups.name');
+        } else {
+            $query->select(
+                'account_class_groups.id as group_id',
+                'account_class_groups.name as account',
+                'account_class.name as class_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
+            )
+            ->groupBy('account_class_groups.id', 'account_class_groups.name', 'account_class.name');
+        }
+
+        $data = $query->get();
+
+        // Group by class
+        $groupedData = $data->groupBy('class_name');
+
+        return $groupedData;
     }
 
     public function export(Request $request)
@@ -169,7 +373,7 @@ class TrialBalanceReportController extends Controller
         $endDate = $request->get('end_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         $branchId = $request->get('branch_id', $user->branch_id);
-        $layout = $request->get('layout', 'single');
+        $layout = $request->get('layout', 'single_column');
         $levelOfDetail = $request->get('level_of_detail', 'detailed');
         $exportType = $request->get('export_type', 'pdf');
 
@@ -180,7 +384,7 @@ class TrialBalanceReportController extends Controller
         $trialBalanceData = $this->getTrialBalanceData($startDate, $endDate, $reportingType, $branchId, $layout, $levelOfDetail, $comparativeColumns);
 
         if ($exportType === 'excel') {
-            return $this->exportExcel($trialBalanceData, $company, $startDate, $endDate, $reportingType, $levelOfDetail);
+            return $this->exportExcel($trialBalanceData, $company, $startDate, $endDate, $reportingType, $levelOfDetail, $layout);
         } else {
             return $this->exportPdf($trialBalanceData, $company, $startDate, $endDate, $reportingType, $levelOfDetail);
         }
@@ -231,7 +435,7 @@ class TrialBalanceReportController extends Controller
             ->header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     }
 
-    private function exportExcel($trialBalanceData, $company, $startDate, $endDate, $reportingType, $levelOfDetail)
+    private function exportExcel($trialBalanceData, $company, $startDate, $endDate, $reportingType, $levelOfDetail, $layout = 'single_column')
     {
         $spreadsheet = new Spreadsheet();
         $worksheet = $spreadsheet->getActiveSheet();
@@ -268,8 +472,18 @@ class TrialBalanceReportController extends Controller
             $totalColumns += count($comparativeColumns) * 2; // Each comparative column adds 2 columns (Debit, Credit)
         }
 
-        // Add headers based on level of detail
-        if ($levelOfDetail === 'detailed') {
+        // Set headers
+        if ($layout === 'multi_column') {
+            $worksheet->setCellValue('A' . $row, 'Account Name');
+            $worksheet->setCellValue('B' . $row, 'Account Code');
+            $worksheet->setCellValue('C' . $row, 'Opening DR');
+            $worksheet->setCellValue('D' . $row, 'Opening CR');
+            $worksheet->setCellValue('E' . $row, 'Current DR');
+            $worksheet->setCellValue('F' . $row, 'Current CR');
+            $worksheet->setCellValue('G' . $row, 'Closing DR');
+            $worksheet->setCellValue('H' . $row, 'Closing CR');
+            $worksheet->setCellValue('I' . $row, 'Difference');
+        } elseif ($levelOfDetail === 'detailed') {
             $worksheet->setCellValue('A' . $row, 'Account Code');
             $worksheet->setCellValue('B' . $row, 'Account Name');
             $worksheet->setCellValue('C' . $row, 'Class');
@@ -307,63 +521,133 @@ class TrialBalanceReportController extends Controller
         $row++;
 
         // Add data
-        foreach ($trialBalanceData['data'] as $item) {
-            if ($levelOfDetail === 'detailed') {
-                $worksheet->setCellValue('A' . $row, $item->account_code ?? '');
-                $worksheet->setCellValue('B' . $row, $item->account_name ?? '');
-                $worksheet->setCellValue('C' . $row, $item->class_name ?? '');
-                $worksheet->setCellValue('D' . $row, $item->debit_total ?? 0);
-                $worksheet->setCellValue('E' . $row, $item->credit_total ?? 0);
-                $worksheet->setCellValue('F' . $row, $item->balance ?? 0);
-            } else {
-                $worksheet->setCellValue('A' . $row, $item->group_name ?? '');
-                $worksheet->setCellValue('B' . $row, $item->class_name ?? '');
-                $worksheet->setCellValue('C' . $row, $item->debit_total ?? 0);
-                $worksheet->setCellValue('D' . $row, $item->credit_total ?? 0);
-                $worksheet->setCellValue('E' . $row, $item->balance ?? 0);
+        if ($layout === 'multi_column') {
+            $totOpenDr = 0; $totOpenCr = 0; $totChgDr = 0; $totChgCr = 0; $totCloseDr = 0; $totCloseCr = 0; $totDiff = 0;
+            foreach ($trialBalanceData['data'] as $class => $accounts) {
+                foreach ($accounts as $account) {
+                    $a = is_array($account) ? (object)$account : $account;
+                    $openingDr = isset($a->opening_debit) ? (float)$a->opening_debit : 0.0;
+                    $openingCr = isset($a->opening_credit) ? (float)$a->opening_credit : 0.0;
+                    $changeDr  = isset($a->change_debit)  ? (float)$a->change_debit  : 0.0;
+                    $changeCr  = isset($a->change_credit) ? (float)$a->change_credit : 0.0;
+                    $closingDr = isset($a->closing_debit) ? (float)$a->closing_debit : 0.0;
+                    $closingCr = isset($a->closing_credit)? (float)$a->closing_credit: 0.0;
+                    if (($openingDr+$openingCr+$changeDr+$changeCr+$closingDr+$closingCr) == 0.0) {
+                        $sumVal = isset($a->sum) ? (float)$a->sum : 0.0;
+                        if ($sumVal !== 0.0) {
+                            $changeDr = $sumVal > 0 ? $sumVal : 0.0;
+                            $changeCr = $sumVal < 0 ? abs($sumVal) : 0.0;
+                            $closingDr = $changeDr; $closingCr = $changeCr;
+                        }
+                    }
+                    $openingDiff = $openingDr - $openingCr;
+                    $changeDiff  = $changeDr  - $changeCr;
+                    $closingDiff = $closingDr - $closingCr;
+                    $difference  = $closingDiff;
+                    if (!($openingDiff==0 && $changeDiff==0 && $closingDiff==0)) {
+                        $worksheet->setCellValue('A' . $row, ($a->account ?? $a->account_name ?? ''));
+                        $worksheet->setCellValue('B' . $row, $a->account_code ?? '');
+                        $worksheet->setCellValue('C' . $row, $openingDiff > 0 ? $openingDiff : 0);
+                        $worksheet->setCellValue('D' . $row, $openingDiff < 0 ? abs($openingDiff) : 0);
+                        $worksheet->setCellValue('E' . $row, $changeDiff  > 0 ? $changeDiff  : 0);
+                        $worksheet->setCellValue('F' . $row, $changeDiff  < 0 ? abs($changeDiff)  : 0);
+                        $worksheet->setCellValue('G' . $row, $closingDiff > 0 ? $closingDiff : 0);
+                        $worksheet->setCellValue('H' . $row, $closingDiff < 0 ? abs($closingDiff) : 0);
+                        $worksheet->setCellValue('I' . $row, abs($difference));
+                        // number formats
+                        foreach (['C','D','E','F','G','H','I'] as $c) { $worksheet->getStyle($c.$row)->getNumberFormat()->setFormatCode('#,##0.00'); }
+                        $row++;
+                    }
+                    $totOpenDr += $openingDiff > 0 ? $openingDiff : 0;
+                    $totOpenCr += $openingDiff < 0 ? abs($openingDiff) : 0;
+                    $totChgDr  += $changeDiff  > 0 ? $changeDiff  : 0;
+                    $totChgCr  += $changeDiff  < 0 ? abs($changeDiff)  : 0;
+                    $totCloseDr+= $closingDiff > 0 ? $closingDiff : 0;
+                    $totCloseCr+= $closingDiff < 0 ? abs($closingDiff) : 0;
+                    $totDiff   += $difference;
+                }
             }
-            
-            // Add comparative data
-            $col = $levelOfDetail === 'detailed' ? 'G' : 'F';
-            foreach ($comparativeColumns as $columnName) {
-                $comparativeData = $trialBalanceData['comparative'][$columnName] ?? [];
-                $comparativeItem = collect($comparativeData)->first(function($comp) use ($item, $levelOfDetail) {
-                    if (!$comp) return false;
-                    return $levelOfDetail === 'detailed' 
-                        ? (isset($comp->account_id) && isset($item->account_id) && $comp->account_id == $item->account_id)
-                        : (isset($comp->group_id) && isset($item->group_id) && $comp->group_id == $item->group_id);
-                });
-                
-                $comparativeDebit = $comparativeItem ? $comparativeItem->debit_total : 0;
-                $comparativeCredit = $comparativeItem ? $comparativeItem->credit_total : 0;
-                
-                $worksheet->setCellValue($col . $row, $comparativeDebit);
-                $col++;
-                $worksheet->setCellValue($col . $row, $comparativeCredit);
-                $col++;
+            // Totals row
+            $worksheet->setCellValue('A' . $row, 'TOTAL');
+            $worksheet->getStyle('A' . $row)->getFont()->setBold(true);
+            $worksheet->setCellValue('C' . $row, $totOpenDr);
+            $worksheet->setCellValue('D' . $row, $totOpenCr);
+            $worksheet->setCellValue('E' . $row, $totChgDr);
+            $worksheet->setCellValue('F' . $row, $totChgCr);
+            $worksheet->setCellValue('G' . $row, $totCloseDr);
+            $worksheet->setCellValue('H' . $row, $totCloseCr);
+            $worksheet->setCellValue('I' . $row, abs($totDiff));
+            foreach (['C','D','E','F','G','H','I'] as $c) { $worksheet->getStyle($c.$row)->getNumberFormat()->setFormatCode('#,##0.00'); }
+        } else {
+            foreach ($trialBalanceData['data'] as $class => $accounts) {
+                foreach ($accounts as $account) {
+                    $a = is_array($account) ? (object)$account : $account;
+                    $sumVal = isset($a->sum) ? (float)$a->sum : 0.0;
+                    if ($sumVal === 0.0) {
+                        continue;
+                    }
+                    $isCredit = isset($a->nature) ? ($a->nature === 'credit') : ($sumVal < 0);
+                    $debit = $isCredit ? 0 : abs($sumVal);
+                    $credit = $isCredit ? abs($sumVal) : 0;
+                    $balance = $sumVal;
+
+                    if ($levelOfDetail === 'detailed') {
+                        $worksheet->setCellValue('A' . $row, $a->account_code ?? '');
+                        $worksheet->setCellValue('B' . $row, ($a->account ?? $a->account_name ?? ''));
+                        $worksheet->setCellValue('C' . $row, $class);
+                        $worksheet->setCellValue('D' . $row, $debit);
+                        $worksheet->setCellValue('E' . $row, $credit);
+                        $worksheet->setCellValue('F' . $row, $balance);
+                    } else {
+                        $worksheet->setCellValue('A' . $row, $class);
+                        $worksheet->setCellValue('B' . $row, '');
+                        $worksheet->setCellValue('C' . $row, $debit);
+                        $worksheet->setCellValue('D' . $row, $credit);
+                        $worksheet->setCellValue('E' . $row, $balance);
+                    }
+
+                    // Add comparative data
+                    $col = $levelOfDetail === 'detailed' ? 'G' : 'F';
+                    foreach ($comparativeColumns as $columnName) {
+                        $compAccounts = $trialBalanceData['comparative'][$columnName][$class] ?? [];
+                        $compAccount = collect($compAccounts)->first(function($x) use ($a) {
+                            $xObj = is_array($x) ? (object)$x : $x;
+                            return isset($xObj->account_code) && $xObj->account_code == ($a->account_code ?? null);
+                        });
+                        $compSum = $compAccount ? (float)((is_array($compAccount) ? $compAccount['sum'] ?? 0 : ($compAccount->sum ?? 0))) : 0.0;
+                        $compIsCredit = $compSum < 0;
+                        $compDebit = $compIsCredit ? 0 : abs($compSum);
+                        $compCredit = $compIsCredit ? abs($compSum) : 0;
+
+                        $worksheet->setCellValue($col . $row, $compDebit);
+                        $col++;
+                        $worksheet->setCellValue($col . $row, $compCredit);
+                        $col++;
+                    }
+
+                    // Format numbers
+                    if ($levelOfDetail === 'detailed') {
+                        $worksheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                        $worksheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                        $worksheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                    } else {
+                        $worksheet->getStyle('C' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                        $worksheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                        $worksheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                    }
+
+                    // Format comparative numbers
+                    $col = $levelOfDetail === 'detailed' ? 'G' : 'F';
+                    foreach ($comparativeColumns as $columnName) {
+                        $worksheet->getStyle($col . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                        $col++;
+                        $worksheet->getStyle($col . $row)->getNumberFormat()->setFormatCode('#,##0.00');
+                        $col++;
+                    }
+
+                    $row++;
+                }
             }
-            
-            // Format numbers
-            if ($levelOfDetail === 'detailed') {
-                $worksheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $worksheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $worksheet->getStyle('F' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-            } else {
-                $worksheet->getStyle('C' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $worksheet->getStyle('D' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $worksheet->getStyle('E' . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-            }
-            
-            // Format comparative numbers
-            $col = $levelOfDetail === 'detailed' ? 'G' : 'F';
-            foreach ($comparativeColumns as $columnName) {
-                $worksheet->getStyle($col . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $col++;
-                $worksheet->getStyle($col . $row)->getNumberFormat()->setFormatCode('#,##0.00');
-                $col++;
-            }
-            
-            $row++;
         }
 
         // Add totals row
@@ -371,8 +655,14 @@ class TrialBalanceReportController extends Controller
         $worksheet->getStyle('A' . $row)->getFont()->setBold(true);
         
         // Calculate and add current period totals
-        $totalDebit = collect($trialBalanceData['data'])->sum('debit_total');
-        $totalCredit = collect($trialBalanceData['data'])->sum('credit_total');
+        $totalDebit = 0; $totalCredit = 0;
+        foreach ($trialBalanceData['data'] as $class => $accounts) {
+            foreach ($accounts as $account) {
+                $a = is_array($account) ? (object)$account : $account;
+                $sumVal = isset($a->sum) ? (float)$a->sum : 0.0;
+                if ($sumVal < 0) { $totalCredit += abs($sumVal); } else { $totalDebit += $sumVal; }
+            }
+        }
         
         if ($levelOfDetail === 'detailed') {
             $worksheet->setCellValue('D' . $row, $totalDebit);
@@ -387,13 +677,17 @@ class TrialBalanceReportController extends Controller
         // Add comparative totals
         $col = $levelOfDetail === 'detailed' ? 'G' : 'F';
         foreach ($comparativeColumns as $columnName) {
-            $comparativeData = $trialBalanceData['comparative'][$columnName] ?? [];
-            $comparativeTotalDebit = collect($comparativeData)->sum('debit_total');
-            $comparativeTotalCredit = collect($comparativeData)->sum('credit_total');
-            
-            $worksheet->setCellValue($col . $row, $comparativeTotalDebit);
+            $compTotalDebit = 0; $compTotalCredit = 0;
+            foreach (($trialBalanceData['comparative'][$columnName] ?? []) as $class => $accounts) {
+                foreach ($accounts as $account) {
+                    $a = is_array($account) ? (object)$account : $account;
+                    $sumVal = isset($a->sum) ? (float)$a->sum : 0.0;
+                    if ($sumVal < 0) { $compTotalCredit += abs($sumVal); } else { $compTotalDebit += $sumVal; }
+                }
+            }
+            $worksheet->setCellValue($col . $row, $compTotalDebit);
             $col++;
-            $worksheet->setCellValue($col . $row, $comparativeTotalCredit);
+            $worksheet->setCellValue($col . $row, $compTotalCredit);
             $col++;
         }
         

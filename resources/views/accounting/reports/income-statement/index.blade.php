@@ -83,6 +83,43 @@
                                 @endif
                             </div>
                             
+                            <div class="row">
+                                <div class="col-12 mt-2">
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <label class="form-label mb-0">Comparative Periods (optional)</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addComparative()">
+                                                <i class="bx bx-plus"></i> Add Comparative
+                                            </button>
+                                        </div>
+                                        <div id="comparatives_container">
+                                            @if(!empty($comparativeColumns))
+                                                @foreach($comparativeColumns as $idx => $col)
+                                                    <div class="row g-2 align-items-end mb-2 comparative-row">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Name</label>
+                                                            <input type="text" class="form-control" name="comparative_columns[{{ $idx }}][name]" value="{{ $col['name'] ?? ('Comparative '.($idx+1)) }}" placeholder="e.g. Previous Period">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Start Date</label>
+                                                            <input type="date" class="form-control" name="comparative_columns[{{ $idx }}][start_date]" value="{{ $col['start_date'] ?? '' }}">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">End Date</label>
+                                                            <input type="date" class="form-control" name="comparative_columns[{{ $idx }}][end_date]" value="{{ $col['end_date'] ?? '' }}">
+                                                        </div>
+                                                        <div class="col-md-3 text-end">
+                                                            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.comparative-row').remove()">
+                                                                <i class="bx bx-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
                         </form>
 
                         @if(isset($incomeStatementData))
@@ -108,43 +145,59 @@
                                     <div class="card-body">
                                         @if(isset($incomeStatementData) && (count($incomeStatementData['data']['revenues'] ?? []) > 0 || count($incomeStatementData['data']['expenses'] ?? []) > 0))
                                             <div class="table-responsive">
+                                                @php
+                                                    $comparatives = $incomeStatementData['comparative'] ?? [];
+                                                    $comparativesCount = is_array($comparatives) ? count($comparatives) : 0;
+                                                @endphp
                                                 <table class="table table-bordered table-striped">
                                                     <tbody>
                                                         <tr>
-                                                            <td colspan="4" style="text-align: center; font-weight:bold">INCOME STATEMENT</td>
+                                                            <td colspan="{{ 3 + $comparativesCount }}" style="text-align: center; font-weight:bold">INCOME STATEMENT</td>
                                                         </tr>
                                                         <tr>
                                                             <th>Financial Statement Line Item</th>
                                                             <th>Ledger Account</th>
-                                                            <th>Current Year</th>
-                                                            <th>Comparative Period</th>
+                                                            <th>Current Period</th>
+                                                            @if($comparativesCount)
+                                                                @foreach($comparatives as $label => $comp)
+                                                                    <th>{{ $label }}</th>
+                                                                @endforeach
+                                                            @endif
                                                         </tr>
                                                         <!-- Revenue Section -->
                                                         <tr class="line-item-header">
                                                             <td><b>Revenue</b></td>
-                                                            <td colspan="3"></td>
+                                                            <td colspan="{{ 2 + $comparativesCount }}"></td>
                                                         </tr>
                                                         @php
                                                             $revenueTotalCurrent = 0;
-                                                            $revenueTotalPrevious = 0;
+                                                            $compRevenueTotals = [];
                                                         @endphp
 
                                                         @foreach($incomeStatementData['data']['revenues'] as $group => $accounts)
                                                             @foreach($accounts as $account)
                                                                 @php
-                                                                    $previous = collect($incomeStatementData['data']['revenues_previous'][$group] ?? [])->firstWhere('account_id', $account['account_id'])['sum'] ?? 0;
+                                                                    $rowComps = [];
+                                                                    foreach ($comparatives as $label => $cdata) {
+                                                                        $prev = collect($cdata['revenues'][$group] ?? [])->firstWhere('account_id', $account['account_id'])['sum'] ?? 0;
+                                                                        $rowComps[$label] = $prev;
+                                                                        $compRevenueTotals[$label] = ($compRevenueTotals[$label] ?? 0) + $prev;
+                                                                    }
                                                                 @endphp
 
-                                                                @if($account['sum'] != 0 || $previous != 0)
+                                                                @if($account['sum'] != 0 || collect($rowComps)->sum() != 0)
                                                                     @php
                                                                         $revenueTotalCurrent += $account['sum'];
-                                                                        $revenueTotalPrevious += $previous;
                                                                     @endphp
                                                                     <tr>
-                                                                        <td></td>
+                                                                        <td>{{ $group }}</td>
                                                                         <td>{{ $account['account_code'] }} - {{ $account['account'] }}</td>
                                                                         <td class="right-align">{{ number_format($account['sum'], 2) }}</td>
-                                                                        <td class="right-align">{{ number_format($previous, 2) }}</td>
+                                                                        @if($comparativesCount)
+                                                                            @foreach($comparatives as $label => $ignored)
+                                                                                <td class="right-align">{{ number_format($rowComps[$label] ?? 0, 2) }}</td>
+                                                                            @endforeach
+                                                                        @endif
                                                                     </tr>
                                                                 @endif
                                                             @endforeach
@@ -154,35 +207,47 @@
                                                             <td><b>Total Revenue</b></td>
                                                             <td></td>
                                                             <td class="right-align total"><b>{{ number_format($revenueTotalCurrent, 2) }}</b></td>
-                                                            <td class="right-align total"><b>{{ number_format($revenueTotalPrevious, 2) }}</b></td>
+                                                            @if($comparativesCount)
+                                                                @foreach($comparatives as $label => $ignored)
+                                                                    <td class="right-align total"><b>{{ number_format($compRevenueTotals[$label] ?? 0, 2) }}</b></td>
+                                                                @endforeach
+                                                            @endif
                                                         </tr>
 
                                                         <!-- Expense Section -->
                                                         <tr class="line-item-header">
                                                             <td><b>Expenses</b></td>
-                                                            <td colspan="3"></td>
+                                                            <td colspan="{{ 2 + $comparativesCount }}"></td>
                                                         </tr>
                                                         @php
                                                             $expenseTotalCurrent = 0;
-                                                            $expenseTotalPrevious = 0;
+                                                            $compExpenseTotals = [];
                                                         @endphp
 
                                                         @foreach($incomeStatementData['data']['expenses'] as $group => $accounts)
                                                             @foreach($accounts as $account)
                                                                 @php
-                                                                    $previous = collect($incomeStatementData['data']['expenses_previous'][$group] ?? [])->firstWhere('account_id', $account['account_id'])['sum'] ?? 0;
+                                                                    $rowComps = [];
+                                                                    foreach ($comparatives as $label => $cdata) {
+                                                                        $prev = collect($cdata['expenses'][$group] ?? [])->firstWhere('account_id', $account['account_id'])['sum'] ?? 0;
+                                                                        $rowComps[$label] = $prev;
+                                                                        $compExpenseTotals[$label] = ($compExpenseTotals[$label] ?? 0) + $prev;
+                                                                    }
                                                                 @endphp
 
-                                                                @if($account['sum'] != 0 || $previous != 0)
+                                                                @if($account['sum'] != 0 || collect($rowComps)->sum() != 0)
                                                                     @php
                                                                         $expenseTotalCurrent += $account['sum'];
-                                                                        $expenseTotalPrevious += $previous;
                                                                     @endphp
                                                                     <tr>
-                                                                        <td></td>
+                                                                        <td>{{ $group }}</td>
                                                                         <td>{{ $account['account_code'] }} - {{ $account['account'] }}</td>
                                                                         <td class="right-align">{{ number_format($account['sum'], 2) }}</td>
-                                                                        <td class="right-align">{{ number_format($previous, 2) }}</td>
+                                                                        @if($comparativesCount)
+                                                                            @foreach($comparatives as $label => $ignored)
+                                                                                <td class="right-align">{{ number_format($rowComps[$label] ?? 0, 2) }}</td>
+                                                                            @endforeach
+                                                                        @endif
                                                                     </tr>
                                                                 @endif
                                                             @endforeach
@@ -192,19 +257,25 @@
                                                             <td><b>Total Expenses</b></td>
                                                             <td></td>
                                                             <td class="right-align total"><b>{{ number_format($expenseTotalCurrent, 2) }}</b></td>
-                                                            <td class="right-align total"><b>{{ number_format($expenseTotalPrevious, 2) }}</b></td>
+                                                            @if($comparativesCount)
+                                                                @foreach($comparatives as $label => $ignored)
+                                                                    <td class="right-align total"><b>{{ number_format($compExpenseTotals[$label] ?? 0, 2) }}</b></td>
+                                                                @endforeach
+                                                            @endif
                                                         </tr>
 
                                                         <!-- Net Income -->
                                                         <tr>
                                                             <td><b>Net Income</b></td>
                                                             <td></td>
-                                                            <td class="right-align total">
-                                                                <b>{{ number_format($revenueTotalCurrent - $expenseTotalCurrent, 2) }}</b>
-                                                            </td>
-                                                            <td class="right-align total">
-                                                                <b>{{ number_format($revenueTotalPrevious - $expenseTotalPrevious, 2) }}</b>
-                                                            </td>
+                                                            @php $netCurrent = $revenueTotalCurrent - $expenseTotalCurrent; @endphp
+                                                            <td class="right-align total"><b>{{ number_format($netCurrent, 2) }}</b></td>
+                                                            @if($comparativesCount)
+                                                                @foreach($comparatives as $label => $ignored)
+                                                                    @php $netComp = ($compRevenueTotals[$label] ?? 0) - ($compExpenseTotals[$label] ?? 0); @endphp
+                                                                    <td class="right-align total"><b>{{ number_format($netComp, 2) }}</b></td>
+                                                                @endforeach
+                                                            @endif
                                                         </tr>
                                                     </tbody>
                                                 </table>
@@ -256,6 +327,33 @@ function exportReport(type) {
     setTimeout(() => {
         Swal.close();
     }, 2000);
+}
+
+function addComparative(){
+    const container = document.getElementById('comparatives_container');
+    const idx = container.querySelectorAll('.comparative-row').length;
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-end mb-2 comparative-row';
+    row.innerHTML = `
+        <div class="col-md-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="comparative_columns[${idx}][name]" placeholder="e.g. Previous Period">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="comparative_columns[${idx}][start_date]">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" name="comparative_columns[${idx}][end_date]">
+        </div>
+        <div class="col-md-3 text-end">
+            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.comparative-row').remove()">
+                <i class="bx bx-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
 }
 </script>
 @endsection 

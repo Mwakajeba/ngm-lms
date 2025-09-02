@@ -82,9 +82,9 @@
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="layout" class="form-label">Trial Balance Layout</label>
                                     <select class="form-select" id="layout" name="layout">
-                                        <option value="single" {{ $layout === 'single' ? 'selected' : '' }}>Single Column</option>
-                                        <option value="double" {{ $layout === 'double' ? 'selected' : '' }}>Double Column</option>
-                                        <option value="multiple" {{ $layout === 'multiple' ? 'selected' : '' }}>Multiple Columns</option>
+                                        <option value="single_column" {{ $layout === 'single_column' ? 'selected' : '' }}>Single Column</option>
+                                        <option value="double_column" {{ $layout === 'double_column' ? 'selected' : '' }}>Double Column</option>
+                                        <option value="multi_column" {{ $layout === 'multi_column' ? 'selected' : '' }}>Multiple Columns</option>
                                     </select>
                                 </div>
 
@@ -96,42 +96,43 @@
                                         <option value="detailed" {{ $levelOfDetail === 'detailed' ? 'selected' : '' }}>Detailed</option>
                                     </select>
                                 </div>
-                            </div>
 
-                            <!-- Dynamic Comparative Columns -->
-                            <div class="row mb-3">
-                                <div class="col-12">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <h6 class="mb-0"><i class="bx bx-plus-circle me-2"></i>Comparative Columns</h6>
-                                        <button type="button" class="btn btn-success btn-sm" onclick="addComparativeColumn()">
-                                            <i class="bx bx-plus me-1"></i> Add Comparative Column
-                                        </button>
-                                    </div>
-                                    <small class="text-muted">Add comparative periods to compare trial balances across different time periods</small>
-                                </div>
-                            </div>
-
-                            <div id="comparativeColumnsContainer">
-                                @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
-                                    @foreach($comparativeColumns as $index => $column)
-                                        <div class="row mb-2 comparative-column" data-index="{{ $index }}">
-                                            <div class="col-md-5">
-                                                <label class="form-label">Start Date</label>
-                                                <input type="date" class="form-control" name="comparative_columns[{{ $index }}][start_date]" value="{{ $column['start_date'] }}" required>
-                                            </div>
-                                            <div class="col-md-5">
-                                                <label class="form-label">End Date</label>
-                                                <input type="date" class="form-control" name="comparative_columns[{{ $index }}][end_date]" value="{{ $column['end_date'] }}" required>
-                                            </div>
-                                            <div class="col-md-1">
-                                                <label class="form-label">&nbsp;</label>
-                                                <button type="button" class="btn btn-danger btn-sm d-block" onclick="removeComparativeColumn(this)">
-                                                    <i class="bx bx-trash me-1"></i> Remove
-                                                </button>
-                                            </div>
+                                <!-- Comparative Period (optional) -->
+                                <div class="col-12 mt-2">
+                                    <div class="border rounded p-3">
+                                        <div class="d-flex align-items-center justify-content-between mb-2">
+                                            <label class="form-label mb-0">Comparative Periods (optional)</label>
+                                            <button type="button" class="btn btn-sm btn-outline-primary" onclick="addComparative()">
+                                                <i class="bx bx-plus"></i> Add Comparative
+                                            </button>
                                         </div>
-                                    @endforeach
-                                @endif
+                                        <div id="comparatives_container">
+                                            @if(!empty($comparativeColumns))
+                                                @foreach($comparativeColumns as $idx => $col)
+                                                    <div class="row g-2 align-items-end mb-2 comparative-row">
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Name</label>
+                                                            <input type="text" class="form-control" name="comparative_columns[{{ $idx }}][name]" value="{{ $col['name'] ?? ('Comparative '.($idx+1)) }}" placeholder="e.g. Previous Period">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">Start Date</label>
+                                                            <input type="date" class="form-control" name="comparative_columns[{{ $idx }}][start_date]" value="{{ $col['start_date'] ?? '' }}">
+                                                        </div>
+                                                        <div class="col-md-3">
+                                                            <label class="form-label">End Date</label>
+                                                            <input type="date" class="form-control" name="comparative_columns[{{ $idx }}][end_date]" value="{{ $col['end_date'] ?? '' }}">
+                                                        </div>
+                                                        <div class="col-md-3 text-end">
+                                                            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.comparative-row').remove()">
+                                                                <i class="bx bx-trash"></i>
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="row">
@@ -148,208 +149,265 @@
 
                         <!-- Report Results -->
                         @if(isset($trialBalanceData))
+                        <div class="mt-5">
                         <div class="row">
                             <div class="col-12">
-                                <!-- Report Header -->
-                                <div class="text-center mb-4">
-                                    <h4 class="mb-1"><strong>{{ $user->company->name ?? 'Company Name' }}</strong></h4>
-                                    <h6 class="text-muted mb-2">TRIAL BALANCE</h6>
-                                    @if($startDate == $endDate)
-                                        <p class="mb-1">As at {{ \Carbon\Carbon::parse($startDate)->format('F d, Y') }}</p>
-                                    @else
-                                        <p class="mb-1">From {{ \Carbon\Carbon::parse($startDate)->format('F d, Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('F d, Y') }}</p>
-                                    @endif
-                                    @if($branchId && $branchId != 'all')
-                                        <p class="mb-1 text-muted">Branch: {{ $branches->where('id', $branchId)->first()->name ?? 'N/A' }}</p>
-                                    @endif
-                                    <p class="mb-0 text-muted small">
-                                        {{ ucfirst($reportingType) }} Basis | 
-                                        {{ ucfirst($layout) }} Layout |
-                                        Generated on {{ now()->format('F d, Y \a\t g:i A') }}
-                                    </p>
-                                </div>
-                                
-                                <!-- Trial Balance Table -->
-                                <div class="card">
-                                    <div class="card-body">
-                                        <div class="table-responsive">
-                                            <table class="table table-sm table-bordered">
-                                                <thead>
-                                                    <tr>
-                                                        <th>Account/Group</th>
-                                                        @if($levelOfDetail === 'detailed')
-                                                            <th>Code</th>
-                                                        @endif
-                                                        <th class="text-end">Debit</th>
-                                                        <th class="text-end">Credit</th>
-                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
-                                                            @foreach($comparativeColumns as $columnIndex => $column)
-                                                                <th class="text-end">Comparative</th>
-                                                                <th class="text-end">Comparative</th>
-                                                            @endforeach
-                                                        @endif
-                                                    </tr>
-                                                    <tr>
-                                                        <th></th>
-                                                        @if($levelOfDetail === 'detailed')
-                                                            <th></th>
-                                                        @endif
-                                                        <th class="text-end">Current Period</th>
-                                                        <th class="text-end">Current Period</th>
-                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
-                                                            @foreach($comparativeColumns as $column)
-                                                                <th class="text-end">Debit</th>
-                                                                <th class="text-end">Credit</th>
-                                                            @endforeach
-                                                        @endif
-                                                    </tr>
-                                                </thead>
-                                                <tbody>
-                                                    @php 
-                                                        $totalDebit = 0; 
-                                                        $totalCredit = 0;
-                                                    @endphp
-                                                    @foreach($trialBalanceData['data'] as $item)
-                                                        @php 
-                                                            $debitAmount = $item->debit_total;
-                                                            $creditAmount = $item->credit_total;
-                                                            $totalDebit += $debitAmount;
-                                                            $totalCredit += $creditAmount;
-                                                        @endphp
-                                                        <tr>
-                                                            <td>
-                                                                @if($levelOfDetail === 'detailed')
-                                                                    <strong>{{ $item->account_name }}</strong>
-                                                                @else
-                                                                    <strong>{{ $item->group_name }}</strong>
+                                <div class="panel-body" style="background: #fff">
+                                    <div id="printingArea">
+                                        @php
+                                            $comparatives = $trialBalanceData['comparative'] ?? [];
+                                            $comparativesCount = is_array($comparatives) ? count($comparatives) : 0;
+                                        @endphp
+                                        <table id="myTable" class="table table-bordered">
+                                            <tr>
+                                                <td colspan="{{ $layout === 'multi_column' ? 9 : ($layout === 'double_column' ? (4 + ($comparativesCount*2)) : (3 + $comparativesCount)) }}"
+                                                style="text-align: center; font-weight:bold">
+                                                {{ $user->company->name ?? 'PCCB SACCOS' }}
+                                            </td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="{{ $layout === 'multi_column' ? 9 : ($layout === 'double_column' ? (4 + ($comparativesCount*2)) : (3 + $comparativesCount)) }}"
+                                                    style="text-align: center; font-weight:bold">Trial Balance</td>
+                                            </tr>
+                                            <tr>
+                                                <td colspan="{{ $layout === 'multi_column' ? 9 : ($layout === 'double_column' ? (4 + ($comparativesCount*2)) : (3 + $comparativesCount)) }}"
+                                                    style="text-align: center; font-weight:bold">AS At {{ date('d-m-Y', strtotime($endDate)) }}
+                                                    </td>
+                                            </tr>
+
+                                            @if($layout === 'double_column')
+                                                <tr style="font-weight:bold">
+                                                    <th>ACCOUNT NAME</th>
+                                                    <th>ACCOUNT CODE</th>
+                                                    <th>DEBIT</th>
+                                                    <th>CREDIT</th>
+                                                    @if($comparativesCount)
+                                                        @foreach($comparatives as $label => $comp)
+                                                            <th>DEBIT ({{ $label }})</th>
+                                                            <th>CREDIT ({{ $label }})</th>
+                                                        @endforeach
+                                                    @endif
+                                                </tr>
+                                                @php
+                                                    $totalDebit = 0;
+                                                    $totalCredit = 0;
+                                                    $compTotals = [];
+                                                @endphp
+                                                @foreach($trialBalanceData['data'] as $class => $accounts)
+                                                    @foreach($accounts as $account)
+                                                        @if(floatval($account->sum) != 0)
+                                                            @php
+                                                                $currentDebit = $account->nature === 'debit' ? abs(floatval($account->sum)) : 0;
+                                                                $currentCredit = $account->nature === 'credit' ? abs(floatval($account->sum)) : 0;
+                                                                $totalDebit += $currentDebit;
+                                                                $totalCredit += $currentCredit;
+                                                            @endphp
+                                                            <tr>
+                                                                <td>{{ $account->account }}</td>
+                                                                <td class="account-code">{{ $account->account_code }}</td>
+                                                                <td class="balance">{{ $currentDebit ? number_format($currentDebit, 2) : '-' }}</td>
+                                                                <td class="balance">{{ $currentCredit ? number_format($currentCredit, 2) : '-' }}</td>
+                                                                @if($comparativesCount)
+                                                                    @foreach($comparatives as $label => $compData)
+                                                                        @php
+                                                                            $compAccount = collect($compData[$class] ?? [])->first(function($a) use ($account) {
+                                                                                return isset($a->account_code) && $a->account_code == $account->account_code;
+                                                                            });
+                                                                            $compDebit = $compAccount && $compAccount->nature === 'debit' ? abs(floatval($compAccount->sum)) : 0;
+                                                                            $compCredit = $compAccount && $compAccount->nature === 'credit' ? abs(floatval($compAccount->sum)) : 0;
+                                                                            $compTotals[$label]['debit'] = ($compTotals[$label]['debit'] ?? 0) + $compDebit;
+                                                                            $compTotals[$label]['credit'] = ($compTotals[$label]['credit'] ?? 0) + $compCredit;
+                                                                        @endphp
+                                                                        <td class="balance">{{ $compDebit ? number_format($compDebit, 2) : '-' }}</td>
+                                                                        <td class="balance">{{ $compCredit ? number_format($compCredit, 2) : '-' }}</td>
+                                                                    @endforeach
                                                                 @endif
-                                                            </td>
-                                                            @if($levelOfDetail === 'detailed')
-                                                                <td>{{ $item->account_code }}</td>
-                                                            @endif
-                                                            <td class="text-end">
-                                                                @if($debitAmount > 0)
-                                                                    <span class="text-danger">{{ number_format($debitAmount, 2) }}</span>
-                                                                @else
-                                                                    <span class="text-muted">-</span>
-                                                                @endif
-                                                            </td>
-                                                            <td class="text-end">
-                                                                @if($creditAmount > 0)
-                                                                    <span class="text-success">{{ number_format($creditAmount, 2) }}</span>
-                                                                @else
-                                                                    <span class="text-muted">-</span>
-                                                                @endif
-                                                            </td>
-                                                            @if($layout === 'double')
-                                                                <td class="text-end">
-                                                                    <span class="text-muted">-</span>
-                                                                </td>
-                                                                <td class="text-end">
-                                                                    <span class="text-muted">-</span>
-                                                                </td>
-                                                            @endif
-                                                            @if($layout === 'multiple')
-                                                                <td class="text-end">
-                                                                    <span class="text-muted">-</span>
-                                                                </td>
-                                                                <td class="text-end">
-                                                                    <span class="text-muted">-</span>
-                                                                </td>
-                                                                <td class="text-end">
-                                                                    <span class="text-muted">-</span>
-                                                                </td>
-                                                                <td class="text-end">
-                                                                    <span class="text-muted">-</span>
-                                                                </td>
-                                                            @endif
-                                                            @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
-                                                                @foreach($comparativeColumns as $columnIndex => $column)
-                                                                    @php
-                                                                        // Get comparative data for this column
-                                                                        $comparativeData = $trialBalanceData['comparative']['Comparative ' . ($columnIndex + 1)] ?? [];
-                                                                        $comparativeItem = collect($comparativeData)->first(function($comp) use ($item, $levelOfDetail) {
-                                                                            if (!$comp) return false;
-                                                                            return $levelOfDetail === 'detailed' 
-                                                                                ? (isset($comp->account_id) && isset($item->account_id) && $comp->account_id == $item->account_id)
-                                                                                : (isset($comp->group_id) && isset($item->group_id) && $comp->group_id == $item->group_id);
-                                                                        });
-                                                                        $comparativeDebit = $comparativeItem ? $comparativeItem->debit_total : 0;
-                                                                        $comparativeCredit = $comparativeItem ? $comparativeItem->credit_total : 0;
-                                                                    @endphp
-                                                                    <td class="text-end">
-                                                                        @if($comparativeDebit > 0)
-                                                                            <span class="text-muted">{{ number_format($comparativeDebit, 2) }}</span>
-                                                                        @else
-                                                                            <span class="text-muted">-</span>
-                                                                        @endif
-                                                                    </td>
-                                                                    <td class="text-end">
-                                                                        @if($comparativeCredit > 0)
-                                                                            <span class="text-muted">{{ number_format($comparativeCredit, 2) }}</span>
-                                                                        @else
-                                                                            <span class="text-muted">-</span>
-                                                                        @endif
-                                                                    </td>
-                                                                @endforeach
-                                                            @endif
-                                                        </tr>
+                                                            </tr>
+                                                        @endif
                                                     @endforeach
-                                                    <tr class="table-primary">
-                                                        <td><strong>TOTAL</strong></td>
-                                                        @if($levelOfDetail === 'detailed')
-                                                            <td></td>
-                                                        @endif
-                                                        <td class="text-end">
-                                                            <strong class="text-danger">{{ number_format($totalDebit, 2) }}</strong>
-                                                        </td>
-                                                        <td class="text-end">
-                                                            <strong class="text-success">{{ number_format($totalCredit, 2) }}</strong>
-                                                        </td>
-                                                        @if($layout === 'double')
-                                                            <td class="text-end">
-                                                                <strong class="text-muted">-</strong>
-                                                            </td>
-                                                            <td class="text-end">
-                                                                <strong class="text-muted">-</strong>
-                                                            </td>
-                                                        @endif
-                                                        @if($layout === 'multiple')
-                                                            <td class="text-end">
-                                                                <strong class="text-muted">-</strong>
-                                                            </td>
-                                                            <td class="text-end">
-                                                                <strong class="text-muted">-</strong>
-                                                            </td>
-                                                            <td class="text-end">
-                                                                <strong class="text-muted">-</strong>
-                                                            </td>
-                                                            <td class="text-end">
-                                                                <strong class="text-muted">-</strong>
-                                                            </td>
-                                                        @endif
-                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
-                                                            @foreach($comparativeColumns as $columnIndex => $column)
-                                                                @php
-                                                                    $comparativeData = $trialBalanceData['comparative']['Comparative ' . ($columnIndex + 1)] ?? [];
-                                                                    $comparativeTotalDebit = collect($comparativeData)->sum('debit_total');
-                                                                    $comparativeTotalCredit = collect($comparativeData)->sum('credit_total');
-                                                                @endphp
-                                                                <td class="text-end">
-                                                                    <strong class="text-muted">{{ number_format($comparativeTotalDebit, 2) }}</strong>
+                                                @endforeach
+                                                <tr style="font-weight: bold">
+                                                    <td colspan="2" style="text-align: right;">TOTAL</td>
+                                                    <td class="balance">{{ number_format($totalDebit, 2) }}</td>
+                                                    <td class="balance">{{ number_format($totalCredit, 2) }}</td>
+                                                    @if($comparativesCount)
+                                                        @foreach($comparatives as $label => $ignored)
+                                                            <td class="balance">{{ number_format($compTotals[$label]['debit'] ?? 0, 2) }}</td>
+                                                            <td class="balance">{{ number_format($compTotals[$label]['credit'] ?? 0, 2) }}</td>
+                                                        @endforeach
+                                                    @endif
+                                                </tr>
+                                                <tr style="font-weight: bold">
+                                                    <td colspan="2" style="text-align: right;">Net Balance (Debit - Credit)</td>
+                                                    <td colspan="{{ 2 + ($comparativesCount ? ($comparativesCount*2) : 0) }}" class="balance"
+                                                        style="color: {{ ($totalDebit - $totalCredit) == 0 ? 'green' : 'red' }};">
+                                                        {{ number_format($totalDebit - $totalCredit, 2) }}
+                                                    </td>
+                                                </tr>
+                                            @elseif($layout === 'single_column')
+                                                <tr style="font-weight:bold">
+                                                    <th>ACCOUNT NAME</th>
+                                                    <th>ACCOUNT CODE</th>
+                                                    <th style="text-align: right">BALANCE</th>
+                                                    @if($comparativesCount)
+                                                        @foreach($comparatives as $label => $comp)
+                                                            <th style="text-align: right">BAL ({{ $label }})</th>
+                                                        @endforeach
+                                                    @endif
+                                                </tr>
+                                                @php
+                                                    $totalDebit = 0;
+                                                    $totalCredit = 0;
+                                                    $compTotals = [];
+                                                @endphp
+                                                @foreach($trialBalanceData['data'] as $class => $accounts)
+                                                    @foreach($accounts as $account)
+                                                        @if(floatval($account->sum) != 0)
+                                                            <tr>
+                                                                <td>{{ $account->account }}</td>
+                                                                <td class="account-code">{{ $account->account_code }}</td>
+                                                                <td class="balance">
+                                                                    @if($account->nature === 'credit')
+                                                                        ({{ number_format(abs(floatval($account->sum)), 2) }})
+                                                                        @php $totalCredit += abs(floatval($account->sum)); @endphp
+                                                                    @else
+                                                                        {{ number_format(abs(floatval($account->sum)), 2) }}
+                                                                        @php $totalDebit += abs(floatval($account->sum)); @endphp
+                                                                    @endif
                                                                 </td>
-                                                                <td class="text-end">
-                                                                    <strong class="text-muted">{{ number_format($comparativeTotalCredit, 2) }}</strong>
-                                                                </td>
-                                                            @endforeach
+                                                                @if($comparativesCount)
+                                                                    @foreach($comparatives as $label => $compData)
+                                                                        @php
+                                                                            $compAccount = collect($compData[$class] ?? [])->first(function($a) use ($account) {
+                                                                                return isset($a->account_code) && $a->account_code == $account->account_code;
+                                                                            });
+                                                                            $compVal = 0;
+                                                                            if ($compAccount) {
+                                                                                if ($compAccount->nature === 'credit') {
+                                                                                    $compVal = -1 * abs(floatval($compAccount->sum));
+                                                                                } else {
+                                                                                    $compVal = abs(floatval($compAccount->sum));
+                                                                                }
+                                                                            }
+                                                                            $compTotals[$label] = ($compTotals[$label] ?? 0) + $compVal;
+                                                                        @endphp
+                                                                        <td class="balance">{{ $compVal < 0 ? '('.number_format(abs($compVal), 2).')' : number_format($compVal, 2) }}</td>
+                                                                    @endforeach
+                                                                @endif
+                                                            </tr>
                                                         @endif
-                                                    </tr>
-                                                </tbody>
-                                            </table>
-                                        </div>
+                                                    @endforeach
+                                                @endforeach
+                                                <tr style="font-weight: bold">
+                                                    <td colspan="2" style="text-align: right;">Net Balance (Debit - Credit)</td>
+                                                    <td class="balance"
+                                                        style="color: {{ ($totalDebit - $totalCredit) == 0 ? 'green' : 'red' }};">
+                                                        {{ number_format($totalDebit - $totalCredit, 2) }}
+                                                    </td>
+                                                    @if($comparativesCount)
+                                                        @foreach($comparatives as $label => $ignored)
+                                                            @php $tv = $compTotals[$label] ?? 0; @endphp
+                                                            <td class="balance" style="color: {{ $tv == 0 ? 'green' : 'red' }};">
+                                                                {{ $tv < 0 ? '('.number_format(abs($tv), 2).')' : number_format($tv, 2) }}
+                                                            </td>
+                                                        @endforeach
+                                                    @endif
+                                                </tr>
+                                            @else
+                                                <tr style="font-weight:bold">
+                                                    <th rowspan="2">ACCOUNT NAME</th>
+                                                    <th rowspan="2">ACCOUNT CODE</th>
+                                                    <th colspan="2">OPENING BALANCES</th>
+                                                    <th colspan="2">CURRENT YEAR CHANGES</th>
+                                                    <th colspan="2">CLOSING BALANCES</th>
+                                                    <th rowspan="2">DIFFERENCE</th>
+                                                </tr>
+                                                <tr style="font-weight:bold">
+                                                    <th>DR</th>
+                                                    <th>CR</th>
+                                                    <th>DR</th>
+                                                    <th>CR</th>
+                                                    <th>DR</th>
+                                                    <th>CR</th>
+                                                </tr>
+                                                
+                                                @php
+                                                    $totalOpeningDr = 0;
+                                                    $totalOpeningCr = 0;
+                                                    $totalChangeDr = 0;
+                                                    $totalChangeCr = 0;
+                                                    $totalClosingDr = 0;
+                                                    $totalClosingCr = 0;
+                                                    $totalDiff = 0;
+                                                @endphp
+                                                
+                                                @foreach($trialBalanceData['data'] as $class => $accounts)
+                                                    @foreach($accounts as $account)
+                                                        @php
+                                                            $openingDr = property_exists($account, 'opening_debit') ? floatval($account->opening_debit) : 0;
+                                                            $openingCr = property_exists($account, 'opening_credit') ? floatval($account->opening_credit) : 0;
+                                                            $changeDr  = property_exists($account, 'change_debit') ? floatval($account->change_debit) : 0;
+                                                            $changeCr  = property_exists($account, 'change_credit') ? floatval($account->change_credit) : 0;
+                                                            $closingDr = property_exists($account, 'closing_debit') ? floatval($account->closing_debit) : 0;
+                                                            $closingCr = property_exists($account, 'closing_credit') ? floatval($account->closing_credit) : 0;
+                                                
+                                                            $openingDiff = $openingDr - $openingCr;
+                                                            $changeDiff = $changeDr - $changeCr;
+                                                            $closingDiff = $closingDr - $closingCr;
+                                                            $difference = $closingDiff;
+                                                
+                                                            $totalOpeningDr += $openingDiff > 0 ? $openingDiff : 0;
+                                                            $totalOpeningCr += $openingDiff < 0 ? abs($openingDiff) : 0;
+                                                
+                                                            $totalChangeDr += $changeDiff > 0 ? $changeDiff : 0;
+                                                            $totalChangeCr += $changeDiff < 0 ? abs($changeDiff) : 0;
+                                                
+                                                            $totalClosingDr += $closingDiff > 0 ? $closingDiff : 0;
+                                                            $totalClosingCr += $closingDiff < 0 ? abs($closingDiff) : 0;
+                                                
+                                                            $totalDiff += $difference;
+                                                        @endphp
+                                                
+                                                        @if($openingDiff != 0 || $changeDiff != 0 || $closingDiff != 0)
+                                                            <tr>
+                                                                <td>{{ $account->account }}</td>
+                                                                <td class="account-code">{{ $account->account_code }}</td>
+                                                
+                                                                <td class="balance">{{ $openingDiff > 0 ? number_format(abs($openingDiff), 2) : '-' }}</td>
+                                                                <td class="balance">{{ $openingDiff < 0 ? number_format(abs($openingDiff), 2) : '-' }}</td>
+                                                
+                                                                <td class="balance">{{ $changeDiff > 0 ? number_format(abs($changeDiff), 2) : '-' }}</td>
+                                                                <td class="balance">{{ $changeDiff < 0 ? number_format(abs($changeDiff), 2) : '-' }}</td>
+                                                
+                                                                <td class="balance">{{ $closingDiff > 0 ? number_format(abs($closingDiff), 2) : '-' }}</td>
+                                                                <td class="balance">{{ $closingDiff < 0 ? number_format(abs($closingDiff), 2) : '-' }}</td>
+                                                
+                                                                <td class="balance">
+                                                                    {{ $difference != 0 ? number_format(abs($difference), 2) : '-' }}
+                                                                </td>
+                                                            </tr>
+                                                        @endif
+                                                    @endforeach
+                                                @endforeach
+                                                
+                                                <tr style="font-weight: bold">
+                                                    <td colspan="2" style="text-align: right;">TOTAL</td>
+                                                    <td class="balance">{{ number_format($totalOpeningDr, 2) }}</td>
+                                                    <td class="balance">{{ number_format($totalOpeningCr, 2) }}</td>
+                                                    <td class="balance">{{ number_format($totalChangeDr, 2) }}</td>
+                                                    <td class="balance">{{ number_format($totalChangeCr, 2) }}</td>
+                                                    <td class="balance">{{ number_format($totalClosingDr, 2) }}</td>
+                                                    <td class="balance">{{ number_format($totalClosingCr, 2) }}</td>
+                                                    <td class="balance">
+                                                        {{ $totalDiff != 0 ? number_format(abs($totalDiff), 2) : '-' }}
+                                                    </td>
+                                                </tr>
+                                            @endif
+                                        </table>
                                     </div>
                                 </div>
                             </div>
+                        </div>
                         </div>
                         @endif
                     </div>
@@ -360,63 +418,19 @@
 </div>
 
 <script>
-let comparativeColumnIndex = {{ isset($comparativeColumns) ? count($comparativeColumns) : 0 }};
-
-function addComparativeColumn() {
-    const container = document.getElementById('comparativeColumnsContainer');
-    const newColumn = document.createElement('div');
-    newColumn.className = 'row mb-2 comparative-column';
-    newColumn.setAttribute('data-index', comparativeColumnIndex);
-    
-    newColumn.innerHTML = `
-        <div class="col-md-5">
-            <label class="form-label">Start Date</label>
-            <input type="date" class="form-control" name="comparative_columns[${comparativeColumnIndex}][start_date]" required>
-        </div>
-        <div class="col-md-5">
-            <label class="form-label">End Date</label>
-            <input type="date" class="form-control" name="comparative_columns[${comparativeColumnIndex}][end_date]" required>
-        </div>
-        <div class="col-md-1">
-            <label class="form-label">&nbsp;</label>
-            <button type="button" class="btn btn-danger btn-sm d-block" onclick="removeComparativeColumn(this)">
-                <i class="bx bx-trash me-1"></i> Remove
-            </button>
-        </div>
-    `;
-    
-    container.appendChild(newColumn);
-    comparativeColumnIndex++;
-}
-
-function removeComparativeColumn(button) {
-    const columnDiv = button.closest('.comparative-column');
-    columnDiv.remove();
-}
-
 function generateReport() {
     const form = document.getElementById('trialBalanceForm');
-    // Remove any export_type parameter that might be present
-    const formData = new FormData(form);
-    formData.delete('export_type');
-    
-    // Submit the form without any loading message
     form.submit();
 }
 
 function exportReport(type) {
-    // Only show loading for actual export operations
-    if (type !== 'pdf' && type !== 'excel') {
-        return;
-    }
-    
     const form = document.getElementById('trialBalanceForm');
     const formData = new FormData(form);
     formData.append('export_type', type);
     
     const url = '{{ route("accounting.reports.trial-balance.export") }}?' + new URLSearchParams(formData);
     
-    // Show loading state only for exports
+    // Show loading state
     Swal.fire({
         title: 'Generating Report...',
         text: 'Please wait while we prepare your ' + type.toUpperCase() + ' report.',
@@ -434,5 +448,61 @@ function exportReport(type) {
         Swal.close();
     }, 2000);
 }
+
+function addComparative(){
+    const container = document.getElementById('comparatives_container');
+    const idx = container.querySelectorAll('.comparative-row').length;
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-end mb-2 comparative-row';
+    row.innerHTML = `
+        <div class="col-md-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="comparative_columns[${idx}][name]" placeholder="e.g. Previous Period">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="comparative_columns[${idx}][start_date]">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" name="comparative_columns[${idx}][end_date]">
+        </div>
+        <div class="col-md-3 text-end">
+            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.comparative-row').remove()">
+                <i class="bx bx-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
+}
 </script>
+
+<style>
+.account-code {
+    font-family: monospace;
+    font-size: 0.9em;
+}
+
+.balance {
+    text-align: right;
+    font-family: monospace;
+}
+
+#myTable {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+#myTable th,
+#myTable td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+#myTable th {
+    background-color: #f8f9fa;
+    font-weight: bold;
+}
+</style>
 @endsection 

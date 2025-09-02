@@ -26,13 +26,6 @@ class MenuSeeder extends Seeder
                 'hiddenRoutes' => [],
             ],
 
-            'Settings' => [
-                'icon' => 'bx bx-cog',
-                'visibleRoutes' => [
-                    ['name' => 'General Settings', 'route' => 'settings.index'],
-                ],
-                'hiddenRoutes' => ['settings.company', 'settings.branches', 'settings.user', 'settings.system', 'settings.backup', 'settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy', 'settings.filetypes.index', 'settings.filetypes.create', 'settings.filetypes.edit', 'settings.filetypes.destroy'],
-            ],
             'Customers' => [
                 'icon' => 'bx bx-group',
                 'visibleRoutes' => [
@@ -41,25 +34,7 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
-            'Loan Management' => [
-                'icon' => 'bx bx-credit-card',
-                'visibleRoutes' => [
-                    ['name' => 'Loan Products', 'route' => 'loan-products.index'],
-                    ['name' => 'Groups', 'route' => 'groups.index'],
-                    ['name' => 'Loans', 'route' => 'loans.index'],
-                ],
-                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
-            ],
-            'Deposit Accounts' => [
-                'icon' => 'bx bx-outline',
-                'visibleRoutes' => [
-                    ['name' => 'Cash Deposit Accounts', 'route' => 'cash_collateral_types.index'],
-                    ['name' => 'Cash Deposits', 'route' => 'cash_collaterals.index'],
-                ],
-                'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show', 'cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
-            ],
-
-            'Accounting' => [
+             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.account-class-groups.index'],
@@ -72,8 +47,8 @@ class MenuSeeder extends Seeder
                     ['name' => 'Bank reconciliation', 'route' => 'accounting.bank-reconciliation.index'],
                     ['name' => 'Bill purchases', 'route' => 'accounting.bill-purchases'],
                     ['name' => 'Budget', 'route' => 'accounting.budgets.index'],
-                    ['name' => 'Fees', 'route' => 'accounting.fees.index'],
-                    ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
+                    // ['name' => 'Fees', 'route' => 'accounting.fees.index'],
+                    // ['name' => 'Penalties', 'route' => 'accounting.penalties.index'],
                 ],
                 'hiddenRoutes' => [
                     'accounting.chart-accounts.create',
@@ -85,6 +60,24 @@ class MenuSeeder extends Seeder
                     'accounting.journals.show'
                 ],
             ],
+              'Deposit Accounts' => [
+                'icon' => 'bx bx-outline',
+                'visibleRoutes' => [
+                    ['name' => 'Cash Deposit Accounts', 'route' => 'cash_collateral_types.index'],
+                    ['name' => 'Cash Deposits', 'route' => 'cash_collaterals.index'],
+                ],
+                'hiddenRoutes' => ['cash_collateral_types.create', 'cash_collateral_types.edit', 'cash_collateral_types.destroy', 'cash_collateral_types.show', 'cash_collaterals.create', 'cash_collaterals.edit', 'cash_collaterals.destroy', 'cash_collaterals.show'],
+            ],
+            'Loan Management' => [
+                'icon' => 'bx bx-credit-card',
+                'visibleRoutes' => [
+                    ['name' => 'Loan Products', 'route' => 'loan-products.index'],
+                    ['name' => 'Groups', 'route' => 'groups.index'],
+                    ['name' => 'Loans', 'route' => 'loans.index'],
+                ],
+                'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
+            ],
+          
             'Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [
@@ -110,6 +103,14 @@ class MenuSeeder extends Seeder
                     ['name' => 'Change Branch', 'route' => 'change-branch'],
                 ],
                 'hiddenRoutes' => [],
+            ],
+
+            'Settings' => [
+                'icon' => 'bx bx-cog',
+                'visibleRoutes' => [
+                    ['name' => 'General Settings', 'route' => 'settings.index'],
+                ],
+                'hiddenRoutes' => ['settings.company', 'settings.branches', 'settings.user', 'settings.system', 'settings.backup', 'settings.branches.create', 'settings.branches.edit', 'settings.branches.destroy', 'settings.filetypes.index', 'settings.filetypes.create', 'settings.filetypes.edit', 'settings.filetypes.destroy'],
             ],
         ];
 
