@@ -162,7 +162,7 @@
                                             <tr>
                                                 <td colspan="{{ $layout === 'multi_column' ? 9 : ($layout === 'double_column' ? (4 + ($comparativesCount*2)) : (3 + $comparativesCount)) }}"
                                                 style="text-align: center; font-weight:bold">
-                                                {{ $user->company->name ?? 'PCCB SACCOS' }}
+                                                {{ $user->company->name ?? 'SMARTFINANCE' }}
                                             </td>
                                             </tr>
                                             <tr>
