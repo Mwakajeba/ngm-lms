@@ -3,8 +3,8 @@
 -- https://www.phpmyadmin.net/
 --
 -- Host: localhost:3306
--- Generation Time: Aug 26, 2025 at 01:27 PM
--- Server version: 8.0.42-0ubuntu0.24.04.1
+-- Generation Time: Sep 02, 2025 at 09:18 AM
+-- Server version: 8.0.43-0ubuntu0.24.04.1
 -- PHP Version: 8.3.6
 
 SET SQL_MODE = "NO_AUTO_VALUE_ON_ZERO";
@@ -4801,7 +4801,143 @@ INSERT INTO `activity_logs` (`id`, `user_id`, `model`, `action`, `description`, 
 (58378, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 75)', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 06:01:55', '2025-08-26 06:01:55', '2025-08-26 06:01:55'),
 (58379, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 06:01:55', '2025-08-26 06:01:55', '2025-08-26 06:01:55'),
 (58380, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 76)', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 06:07:11', '2025-08-26 06:07:11', '2025-08-26 06:07:11'),
-(58381, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 06:07:11', '2025-08-26 06:07:11', '2025-08-26 06:07:11');
+(58381, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 06:07:11', '2025-08-26 06:07:11', '2025-08-26 06:07:11'),
+(58382, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 77)', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 13:27:31', '2025-08-26 13:27:31', '2025-08-26 13:27:31'),
+(58383, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 13:27:31', '2025-08-26 13:27:31', '2025-08-26 13:27:31'),
+(58384, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 78)', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 13:45:41', '2025-08-26 13:45:41', '2025-08-26 13:45:41'),
+(58385, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-26 13:45:41', '2025-08-26 13:45:41', '2025-08-26 13:45:41'),
+(58386, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 79)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:06:11', '2025-08-27 03:06:11', '2025-08-27 03:06:11'),
+(58387, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:06:11', '2025-08-27 03:06:11', '2025-08-27 03:06:11'),
+(58389, 1, 'Repayment', 'create', 'created Repayment (ID: 23)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58390, 1, 'CashCollateral', 'update', 'updated CashCollateral (ID: 3)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58391, 1, 'Journal', 'create', 'created Journal (ID: 2)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58392, 1, 'JournalItem', 'create', 'created JournalItem (ID: 3)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58393, 1, 'JournalItem', 'create', 'created JournalItem (ID: 4)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58394, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 254)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58395, 1, 'JournalItem', 'create', 'created JournalItem (ID: 5)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58396, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 255)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:20:24', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(58397, 1, 'Repayment', 'create', 'created Repayment (ID: 24)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:29:36', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(58398, 1, 'Receipt', 'create', 'created Receipt (ID: 52438)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:29:36', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(58399, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 256)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:29:36', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(58400, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 12)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:29:36', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(58401, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 257)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:29:36', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(58402, 1, 'Repayment', 'create', 'created Repayment (ID: 25)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58403, 1, 'Receipt', 'create', 'created Receipt (ID: 52439)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58404, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 258)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58405, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 13)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58406, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 259)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58407, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 14)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58408, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 260)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(58409, 1, 'Repayment', 'create', 'created Repayment (ID: 26)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58410, 1, 'Receipt', 'create', 'created Receipt (ID: 52440)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58411, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 261)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58412, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 15)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58413, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 262)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58414, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 16)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58415, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 263)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(58416, 1, 'Repayment', 'create', 'created Repayment (ID: 27)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:43', '2025-08-27 03:48:43', '2025-08-27 03:48:43'),
+(58417, 1, 'Receipt', 'create', 'created Receipt (ID: 52441)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:43', '2025-08-27 03:48:43', '2025-08-27 03:48:43'),
+(58418, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 264)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:44', '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(58419, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 17)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:44', '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(58420, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 265)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:44', '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(58421, 1, 'ReceiptItem', 'create', 'created ReceiptItem (ID: 18)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:44', '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(58422, 1, 'GlTransaction', 'create', 'created GlTransaction (ID: 266)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 03:48:44', '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(58423, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 80)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 06:45:56', '2025-08-27 06:45:56', '2025-08-27 06:45:56'),
+(58424, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 06:45:56', '2025-08-27 06:45:56', '2025-08-27 06:45:56'),
+(58425, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 81)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 08:56:09', '2025-08-27 08:56:09', '2025-08-27 08:56:09'),
+(58426, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 08:56:09', '2025-08-27 08:56:09', '2025-08-27 08:56:09'),
+(58427, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 82)', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 14:47:08', '2025-08-27 14:47:08', '2025-08-27 14:47:08'),
+(58428, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-27 14:47:08', '2025-08-27 14:47:08', '2025-08-27 14:47:08'),
+(58429, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 83)', '127.0.0.1', 'Desktop - Firefox', '2025-08-28 11:44:30', '2025-08-28 11:44:30', '2025-08-28 11:44:30'),
+(58430, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-28 11:44:30', '2025-08-28 11:44:30', '2025-08-28 11:44:30'),
+(58431, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 84)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 05:23:37', '2025-08-29 05:23:37', '2025-08-29 05:23:37'),
+(58432, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 05:23:37', '2025-08-29 05:23:37', '2025-08-29 05:23:37'),
+(58433, 1, 'Filetype', 'create', 'created Filetype (ID: 8)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 05:26:13', '2025-08-29 05:26:13', '2025-08-29 05:26:13'),
+(58434, 1, 'Customer', 'create', 'created Customer (ID: 1798)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 05:36:13', '2025-08-29 05:36:13', '2025-08-29 05:36:13'),
+(58435, 1, 'Customer', 'delete', 'deleted Customer (ID: 1798)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 05:36:39', '2025-08-29 05:36:39', '2025-08-29 05:36:39'),
+(58436, 1, 'Customer', 'create', 'created Customer (ID: 1799)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 05:41:50', '2025-08-29 05:41:50', '2025-08-29 05:41:50'),
+(58437, 1, 'LoanProduct', 'create', 'created LoanProduct (ID: 4)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 06:49:25', '2025-08-29 06:49:25', '2025-08-29 06:49:25'),
+(58438, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 85)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 14:27:11', '2025-08-29 14:27:11', '2025-08-29 14:27:11'),
+(58439, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 14:27:11', '2025-08-29 14:27:11', '2025-08-29 14:27:11'),
+(58440, 1, 'ChartAccount', 'create', 'created ChartAccount (ID: 16)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 14:32:23', '2025-08-29 14:32:23', '2025-08-29 14:32:23'),
+(58441, 1, 'Fee', 'create', 'created Fee (ID: 9)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 14:34:01', '2025-08-29 14:34:01', '2025-08-29 14:34:01'),
+(58442, 1, 'LoanProduct', 'create', 'created LoanProduct (ID: 5)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 14:41:41', '2025-08-29 14:41:41', '2025-08-29 14:41:41'),
+(58443, 1, 'Loan', 'create', 'created Loan (ID: 113)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58444, 1, 'Loan', 'update', 'updated Loan (ID: 113)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58445, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3217)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58446, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3218)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58447, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3219)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58448, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3220)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58449, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3221)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58450, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3222)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58451, 1, 'Payment', 'create', 'created Payment (ID: 113)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58452, 1, 'PaymentItem', 'create', 'created PaymentItem (ID: 113)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(58453, 1, 'Customer', 'update', 'updated Customer (ID: 973)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:03:14', '2025-08-29 16:03:14', '2025-08-29 16:03:14'),
+(58454, 1, 'Loan', 'create', 'created Loan (ID: 114)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58455, 1, 'Loan', 'update', 'updated Loan (ID: 114)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58456, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3223)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58457, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3224)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58458, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3225)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58459, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3226)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58460, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3227)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58461, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3228)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58462, 1, 'Payment', 'create', 'created Payment (ID: 114)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58463, 1, 'PaymentItem', 'create', 'created PaymentItem (ID: 114)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(58464, 1, 'Customer', 'update', 'updated Customer (ID: 957)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:26:54', '2025-08-29 16:26:54', '2025-08-29 16:26:54'),
+(58465, 1, 'Loan', 'create', 'created Loan (ID: 115)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58466, 1, 'Loan', 'update', 'updated Loan (ID: 115)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58467, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3229)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58468, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3230)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58469, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3231)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58470, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3232)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58471, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3233)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58472, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3234)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18');
+INSERT INTO `activity_logs` (`id`, `user_id`, `model`, `action`, `description`, `ip_address`, `device`, `activity_time`, `created_at`, `updated_at`) VALUES
+(58473, 1, 'Payment', 'create', 'created Payment (ID: 115)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58474, 1, 'PaymentItem', 'create', 'created PaymentItem (ID: 115)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(58475, 1, 'Customer', 'update', 'updated Customer (ID: 922)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:51:30', '2025-08-29 16:51:30', '2025-08-29 16:51:30'),
+(58476, 1, 'Loan', 'create', 'created Loan (ID: 116)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58477, 1, 'Loan', 'update', 'updated Loan (ID: 116)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58478, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3235)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58479, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3236)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58480, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3237)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58481, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3238)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58482, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3239)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58483, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3240)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58484, 1, 'Payment', 'create', 'created Payment (ID: 116)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58485, 1, 'PaymentItem', 'create', 'created PaymentItem (ID: 116)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(58486, 1, 'Customer', 'update', 'updated Customer (ID: 1676)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:05:28', '2025-08-29 17:05:28', '2025-08-29 17:05:28'),
+(58487, 1, 'Loan', 'create', 'created Loan (ID: 117)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58488, 1, 'Loan', 'update', 'updated Loan (ID: 117)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58489, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3241)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58490, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3242)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58491, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3243)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58492, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3244)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58493, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3245)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58494, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3246)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58495, 1, 'Payment', 'create', 'created Payment (ID: 117)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58496, 1, 'PaymentItem', 'create', 'created PaymentItem (ID: 117)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(58497, 1, 'Customer', 'update', 'updated Customer (ID: 1185)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:14:14', '2025-08-29 17:14:14', '2025-08-29 17:14:14'),
+(58498, 1, 'Loan', 'create', 'created Loan (ID: 118)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58499, 1, 'Loan', 'update', 'updated Loan (ID: 118)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58500, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3247)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58501, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3248)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58502, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3249)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58503, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3250)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58504, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3251)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58505, 1, 'LoanSchedule', 'create', 'created LoanSchedule (ID: 3252)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58506, 1, 'Payment', 'create', 'created Payment (ID: 118)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58507, 1, 'PaymentItem', 'create', 'created PaymentItem (ID: 118)', '127.0.0.1', 'Desktop - Firefox', '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(58508, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 86)', '127.0.0.1', 'Desktop - Firefox', '2025-08-30 11:51:50', '2025-08-30 11:51:50', '2025-08-30 11:51:50'),
+(58509, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-30 11:51:50', '2025-08-30 11:51:50', '2025-08-30 11:51:50'),
+(58510, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 87)', '127.0.0.1', 'Desktop - Firefox', '2025-08-30 16:45:47', '2025-08-30 16:45:47', '2025-08-30 16:45:47'),
+(58511, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-30 16:45:47', '2025-08-30 16:45:47', '2025-08-30 16:45:47'),
+(58512, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 88)', '127.0.0.1', 'Desktop - Firefox', '2025-08-31 06:44:07', '2025-08-31 06:44:07', '2025-08-31 06:44:07'),
+(58513, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-08-31 06:44:07', '2025-08-31 06:44:07', '2025-08-31 06:44:07'),
+(58514, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 89)', '127.0.0.1', 'Desktop - Firefox', '2025-09-01 03:04:10', '2025-09-01 03:04:10', '2025-09-01 03:04:10'),
+(58515, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-09-01 03:04:10', '2025-09-01 03:04:10', '2025-09-01 03:04:10'),
+(58516, 1, 'LoginAttempt', 'create', 'created LoginAttempt (ID: 90)', '127.0.0.1', 'Desktop - Firefox', '2025-09-02 05:51:55', '2025-09-02 05:51:55', '2025-09-02 05:51:55'),
+(58517, 1, 'Auth', 'login_success', 'User logged in successfully', '127.0.0.1', 'Desktop - Firefox', '2025-09-02 05:51:55', '2025-09-02 05:51:55', '2025-09-02 05:51:55');
 
 -- --------------------------------------------------------
 
@@ -5043,16 +5179,16 @@ CREATE TABLE `cache` (
 --
 
 INSERT INTO `cache` (`key`, `value`, `expiration`) VALUES
-('smartfinance-cache-spatie.permission.cache', 'a:3:{s:5:\"alias\";a:6:{s:1:\"a\";s:2:\"id\";s:1:\"b\";s:4:\"name\";s:1:\"c\";s:10:\"guard_name\";s:1:\"d\";s:19:\"permission_group_id\";s:1:\"r\";s:5:\"roles\";s:1:\"j\";s:11:\"description\";}s:11:\"permissions\";a:245:{i:0;a:5:{s:1:\"a\";i:1;s:1:\"b\";s:14:\"view dashboard\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:1;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:1;a:5:{s:1:\"a\";i:2;s:1:\"b\";s:13:\"view settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:2;a:5:{s:1:\"a\";i:3;s:1:\"b\";s:13:\"edit settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:3;a:5:{s:1:\"a\";i:4;s:1:\"b\";s:22:\"manage system settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:4;a:5:{s:1:\"a\";i:5;s:1:\"b\";s:26:\"view system configurations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:5;a:5:{s:1:\"a\";i:6;s:1:\"b\";s:26:\"edit system configurations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:6;a:5:{s:1:\"a\";i:7;s:1:\"b\";s:28:\"manage system configurations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:7;a:5:{s:1:\"a\";i:8;s:1:\"b\";s:18:\"view system config\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:8;a:5:{s:1:\"a\";i:9;s:1:\"b\";s:18:\"edit system config\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:9;a:5:{s:1:\"a\";i:10;s:1:\"b\";s:20:\"manage system config\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:10;a:5:{s:1:\"a\";i:11;s:1:\"b\";s:21:\"manage interest rates\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:11;a:5:{s:1:\"a\";i:12;s:1:\"b\";s:18:\"manage fee setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:12;a:5:{s:1:\"a\";i:13;s:1:\"b\";s:24:\"manage role & permission\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:13;a:5:{s:1:\"a\";i:14;s:1:\"b\";s:22:\"manage penalty setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:14;a:5:{s:1:\"a\";i:15;s:1:\"b\";s:20:\"manage payment terms\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:15;a:5:{s:1:\"a\";i:16;s:1:\"b\";s:20:\"view backup settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:16;a:5:{s:1:\"a\";i:17;s:1:\"b\";s:23:\"manage filetype setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:17;a:5:{s:1:\"a\";i:18;s:1:\"b\";s:13:\"create backup\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:18;a:5:{s:1:\"a\";i:19;s:1:\"b\";s:14:\"restore backup\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:19;a:5:{s:1:\"a\";i:20;s:1:\"b\";s:13:\"delete backup\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:20;a:5:{s:1:\"a\";i:21;s:1:\"b\";s:19:\"manage user setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:21;a:5:{s:1:\"a\";i:22;s:1:\"b\";s:21:\"manage branch setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:22;a:5:{s:1:\"a\";i:23;s:1:\"b\";s:22:\"manage company setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:23;a:5:{s:1:\"a\";i:24;s:1:\"b\";s:11:\"delete role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:24;a:5:{s:1:\"a\";i:25;s:1:\"b\";s:9:\"edit role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:25;a:5:{s:1:\"a\";i:26;s:1:\"b\";s:9:\"view role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:26;a:5:{s:1:\"a\";i:27;s:1:\"b\";s:11:\"create role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:27;a:5:{s:1:\"a\";i:28;s:1:\"b\";s:17:\"create permission\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:28;a:5:{s:1:\"a\";i:29;s:1:\"b\";s:22:\"view permission groups\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:29;a:5:{s:1:\"a\";i:30;s:1:\"b\";s:23:\"create permission group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:30;a:5:{s:1:\"a\";i:31;s:1:\"b\";s:21:\"edit permission group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:31;a:5:{s:1:\"a\";i:32;s:1:\"b\";s:23:\"delete permission group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:32;a:5:{s:1:\"a\";i:33;s:1:\"b\";s:14:\"view customers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:33;a:5:{s:1:\"a\";i:34;s:1:\"b\";s:15:\"create customer\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:34;a:5:{s:1:\"a\";i:35;s:1:\"b\";s:13:\"edit customer\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:35;a:5:{s:1:\"a\";i:36;s:1:\"b\";s:15:\"delete customer\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:4;i:3;i:5;i:4;i:6;}}i:36;a:5:{s:1:\"a\";i:37;s:1:\"b\";s:21:\"view customer profile\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:37;a:5:{s:1:\"a\";i:38;s:1:\"b\";s:25:\"manage customer documents\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:38;a:5:{s:1:\"a\";i:39;s:1:\"b\";s:21:\"view customer history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:39;a:5:{s:1:\"a\";i:40;s:1:\"b\";s:29:\"approve customer registration\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:40;a:5:{s:1:\"a\";i:41;s:1:\"b\";s:18:\"view loan products\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:41;a:5:{s:1:\"a\";i:42;s:1:\"b\";s:19:\"create loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:42;a:5:{s:1:\"a\";i:43;s:1:\"b\";s:17:\"edit loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:43;a:5:{s:1:\"a\";i:44;s:1:\"b\";s:19:\"delete loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:44;a:5:{s:1:\"a\";i:45;s:1:\"b\";s:25:\"view loan product details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:45;a:5:{s:1:\"a\";i:46;s:1:\"b\";s:23:\"deactivate loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:46;a:5:{s:1:\"a\";i:47;s:1:\"b\";s:20:\"manage loan products\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:47;a:5:{s:1:\"a\";i:48;s:1:\"b\";s:11:\"view groups\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:48;a:5:{s:1:\"a\";i:49;s:1:\"b\";s:12:\"create group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:49;a:5:{s:1:\"a\";i:50;s:1:\"b\";s:10:\"edit group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:50;a:5:{s:1:\"a\";i:51;s:1:\"b\";s:12:\"delete group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:51;a:5:{s:1:\"a\";i:52;s:1:\"b\";s:18:\"view group details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:52;a:5:{s:1:\"a\";i:53;s:1:\"b\";s:21:\"manage group payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:53;a:5:{s:1:\"a\";i:54;s:1:\"b\";s:10:\"view loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:54;a:5:{s:1:\"a\";i:55;s:1:\"b\";s:11:\"create loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:55;a:5:{s:1:\"a\";i:56;s:1:\"b\";s:9:\"edit loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:56;a:5:{s:1:\"a\";i:57;s:1:\"b\";s:11:\"delete loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:57;a:5:{s:1:\"a\";i:58;s:1:\"b\";s:17:\"view loan details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:58;a:5:{s:1:\"a\";i:59;s:1:\"b\";s:21:\"manage loan documents\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:59;a:5:{s:1:\"a\";i:60;s:1:\"b\";s:19:\"view loan documents\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:60;a:5:{s:1:\"a\";i:61;s:1:\"b\";s:23:\"calculate loan interest\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:61;a:5:{s:1:\"a\";i:62;s:1:\"b\";s:22:\"generate loan schedule\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:62;a:5:{s:1:\"a\";i:63;s:1:\"b\";s:21:\"process loan payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:63;a:5:{s:1:\"a\";i:64;s:1:\"b\";s:16:\"manage loan fees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:64;a:5:{s:1:\"a\";i:65;s:1:\"b\";s:17:\"view loan history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:65;a:5:{s:1:\"a\";i:66;s:1:\"b\";s:18:\"view checked loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:66;a:5:{s:1:\"a\";i:67;s:1:\"b\";s:18:\"view applied loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:67;a:5:{s:1:\"a\";i:68;s:1:\"b\";s:19:\"view approved loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:68;a:5:{s:1:\"a\";i:69;s:1:\"b\";s:21:\"view authorized loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:69;a:5:{s:1:\"a\";i:70;s:1:\"b\";s:20:\"view defaulted loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:70;a:5:{s:1:\"a\";i:71;s:1:\"b\";s:19:\"view rejected loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:71;a:5:{s:1:\"a\";i:72;s:1:\"b\";s:16:\"remove guarantor\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:72;a:5:{s:1:\"a\";i:73;s:1:\"b\";s:13:\"add guarantor\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:73;a:5:{s:1:\"a\";i:74;s:1:\"b\";s:12:\"default loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:74;a:5:{s:1:\"a\";i:75;s:1:\"b\";s:12:\"approve loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:75;a:5:{s:1:\"a\";i:76;s:1:\"b\";s:11:\"reject loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:76;a:5:{s:1:\"a\";i:77;s:1:\"b\";s:13:\"disburse loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:77;a:5:{s:1:\"a\";i:78;s:1:\"b\";s:26:\"view cash collateral types\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:78;a:5:{s:1:\"a\";i:79;s:1:\"b\";s:27:\"create cash collateral type\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:79;a:5:{s:1:\"a\";i:80;s:1:\"b\";s:25:\"edit cash collateral type\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:80;a:5:{s:1:\"a\";i:81;s:1:\"b\";s:27:\"delete cash collateral type\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:81;a:5:{s:1:\"a\";i:82;s:1:\"b\";s:33:\"view cash collateral type details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:82;a:5:{s:1:\"a\";i:83;s:1:\"b\";s:21:\"view cash collaterals\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:83;a:5:{s:1:\"a\";i:84;s:1:\"b\";s:22:\"create cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:84;a:5:{s:1:\"a\";i:85;s:1:\"b\";s:20:\"edit cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:85;a:5:{s:1:\"a\";i:86;s:1:\"b\";s:22:\"delete cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:86;a:5:{s:1:\"a\";i:87;s:1:\"b\";s:28:\"view cash collateral details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:87;a:5:{s:1:\"a\";i:88;s:1:\"b\";s:23:\"deposit cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:88;a:5:{s:1:\"a\";i:89;s:1:\"b\";s:24:\"withdraw cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:89;a:5:{s:1:\"a\";i:90;s:1:\"b\";s:34:\"print cash collateral transactions\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:90;a:5:{s:1:\"a\";i:91;s:1:\"b\";s:25:\"view account class groups\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:91;a:5:{s:1:\"a\";i:92;s:1:\"b\";s:26:\"create account class group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:92;a:5:{s:1:\"a\";i:93;s:1:\"b\";s:24:\"edit account class group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:93;a:5:{s:1:\"a\";i:94;s:1:\"b\";s:26:\"delete account class group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:5;i:3;i:6;}}i:94;a:5:{s:1:\"a\";i:95;s:1:\"b\";s:32:\"view account class group details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:95;a:5:{s:1:\"a\";i:96;s:1:\"b\";s:19:\"view chart accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:96;a:5:{s:1:\"a\";i:97;s:1:\"b\";s:20:\"create chart account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:97;a:5:{s:1:\"a\";i:98;s:1:\"b\";s:18:\"edit chart account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:98;a:5:{s:1:\"a\";i:99;s:1:\"b\";s:20:\"delete chart account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:99;a:5:{s:1:\"a\";i:100;s:1:\"b\";s:26:\"view chart account details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:100;a:5:{s:1:\"a\";i:101;s:1:\"b\";s:24:\"manage chart of accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:101;a:5:{s:1:\"a\";i:102;s:1:\"b\";s:14:\"view suppliers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:102;a:5:{s:1:\"a\";i:103;s:1:\"b\";s:15:\"create supplier\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:103;a:5:{s:1:\"a\";i:104;s:1:\"b\";s:13:\"edit supplier\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:104;a:5:{s:1:\"a\";i:105;s:1:\"b\";s:15:\"delete supplier\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:105;a:5:{s:1:\"a\";i:106;s:1:\"b\";s:21:\"view supplier details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:106;a:5:{s:1:\"a\";i:107;s:1:\"b\";s:13:\"view journals\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:107;a:5:{s:1:\"a\";i:108;s:1:\"b\";s:14:\"create journal\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:108;a:5:{s:1:\"a\";i:109;s:1:\"b\";s:12:\"edit journal\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:109;a:5:{s:1:\"a\";i:110;s:1:\"b\";s:14:\"delete journal\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:110;a:5:{s:1:\"a\";i:111;s:1:\"b\";s:20:\"view journal details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:111;a:5:{s:1:\"a\";i:112;s:1:\"b\";s:22:\"create journal entries\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:112;a:5:{s:1:\"a\";i:113;s:1:\"b\";s:20:\"edit journal entries\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:113;a:5:{s:1:\"a\";i:114;s:1:\"b\";s:22:\"delete journal entries\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:114;a:5:{s:1:\"a\";i:115;s:1:\"b\";s:21:\"view payment vouchers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:115;a:5:{s:1:\"a\";i:116;s:1:\"b\";s:22:\"create payment voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:116;a:5:{s:1:\"a\";i:117;s:1:\"b\";s:20:\"edit payment voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:117;a:5:{s:1:\"a\";i:118;s:1:\"b\";s:22:\"delete payment voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:118;a:5:{s:1:\"a\";i:119;s:1:\"b\";s:28:\"view payment voucher details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:119;a:5:{s:1:\"a\";i:120;s:1:\"b\";s:21:\"view receipt vouchers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:120;a:5:{s:1:\"a\";i:121;s:1:\"b\";s:22:\"create receipt voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:121;a:5:{s:1:\"a\";i:122;s:1:\"b\";s:20:\"edit receipt voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:122;a:5:{s:1:\"a\";i:123;s:1:\"b\";s:22:\"delete receipt voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:123;a:5:{s:1:\"a\";i:124;s:1:\"b\";s:28:\"view receipt voucher details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:124;a:5:{s:1:\"a\";i:125;s:1:\"b\";s:18:\"view bank accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:125;a:5:{s:1:\"a\";i:126;s:1:\"b\";s:19:\"create bank account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:126;a:5:{s:1:\"a\";i:127;s:1:\"b\";s:17:\"edit bank account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:127;a:5:{s:1:\"a\";i:128;s:1:\"b\";s:19:\"delete bank account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:128;a:5:{s:1:\"a\";i:129;s:1:\"b\";s:25:\"view bank account details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:129;a:5:{s:1:\"a\";i:130;s:1:\"b\";s:20:\"manage bank accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:130;a:5:{s:1:\"a\";i:131;s:1:\"b\";s:32:\"manage bank account transactions\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:131;a:5:{s:1:\"a\";i:132;s:1:\"b\";s:24:\"view bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:132;a:5:{s:1:\"a\";i:133;s:1:\"b\";s:26:\"create bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:133;a:5:{s:1:\"a\";i:134;s:1:\"b\";s:24:\"edit bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:134;a:5:{s:1:\"a\";i:135;s:1:\"b\";s:26:\"delete bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:135;a:5:{s:1:\"a\";i:136;s:1:\"b\";s:32:\"view bank reconciliation details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:136;a:5:{s:1:\"a\";i:137;s:1:\"b\";s:27:\"perform bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:137;a:5:{s:1:\"a\";i:138;s:1:\"b\";s:19:\"view bill purchases\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:138;a:5:{s:1:\"a\";i:139;s:1:\"b\";s:20:\"create bill purchase\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:139;a:5:{s:1:\"a\";i:140;s:1:\"b\";s:18:\"edit bill purchase\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:140;a:5:{s:1:\"a\";i:141;s:1:\"b\";s:20:\"delete bill purchase\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:141;a:5:{s:1:\"a\";i:142;s:1:\"b\";s:26:\"view bill purchase details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:142;a:5:{s:1:\"a\";i:143;s:1:\"b\";s:12:\"view budgets\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:143;a:5:{s:1:\"a\";i:144;s:1:\"b\";s:13:\"create budget\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:144;a:5:{s:1:\"a\";i:145;s:1:\"b\";s:11:\"edit budget\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:145;a:5:{s:1:\"a\";i:146;s:1:\"b\";s:13:\"delete budget\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:146;a:5:{s:1:\"a\";i:147;s:1:\"b\";s:19:\"view budget details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:147;a:5:{s:1:\"a\";i:148;s:1:\"b\";s:9:\"view fees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:148;a:5:{s:1:\"a\";i:149;s:1:\"b\";s:10:\"create fee\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:149;a:5:{s:1:\"a\";i:150;s:1:\"b\";s:8:\"edit fee\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:150;a:5:{s:1:\"a\";i:151;s:1:\"b\";s:10:\"delete fee\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:151;a:5:{s:1:\"a\";i:152;s:1:\"b\";s:16:\"view fee details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:152;a:5:{s:1:\"a\";i:153;s:1:\"b\";s:14:\"view penalties\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:153;a:5:{s:1:\"a\";i:154;s:1:\"b\";s:14:\"create penalty\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:154;a:5:{s:1:\"a\";i:155;s:1:\"b\";s:12:\"edit penalty\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:155;a:5:{s:1:\"a\";i:156;s:1:\"b\";s:14:\"delete penalty\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:156;a:5:{s:1:\"a\";i:157;s:1:\"b\";s:20:\"view penalty details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:157;a:5:{s:1:\"a\";i:158;s:1:\"b\";s:15:\"view accounting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:158;a:5:{s:1:\"a\";i:159;s:1:\"b\";s:19:\"view general ledger\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:159;a:5:{s:1:\"a\";i:160;s:1:\"b\";s:21:\"manage financial year\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:160;a:5:{s:1:\"a\";i:161;s:1:\"b\";s:23:\"close accounting period\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:161;a:5:{s:1:\"a\";i:162;s:1:\"b\";s:18:\"delete transaction\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:162;a:5:{s:1:\"a\";i:163;s:1:\"b\";s:16:\"edit transaction\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:163;a:5:{s:1:\"a\";i:164;s:1:\"b\";s:12:\"view reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:164;a:5:{s:1:\"a\";i:165;s:1:\"b\";s:16:\"generate reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:165;a:5:{s:1:\"a\";i:166;s:1:\"b\";s:14:\"export reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:166;a:5:{s:1:\"a\";i:167;s:1:\"b\";s:23:\"view accounting reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:5;i:3;i:6;}}i:167;a:5:{s:1:\"a\";i:168;s:1:\"b\";s:17:\"view loan reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:5;i:3;i:6;}}i:168;a:5:{s:1:\"a\";i:169;s:1:\"b\";s:21:\"view customer reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:4;i:3;i:5;i:4;i:6;}}i:169;a:5:{s:1:\"a\";i:170;s:1:\"b\";s:24:\"view transaction reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:170;a:5:{s:1:\"a\";i:171;s:1:\"b\";s:26:\"view loan portfolio report\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:171;a:5:{s:1:\"a\";i:172;s:1:\"b\";s:22:\"view collection report\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:172;a:5:{s:1:\"a\";i:173;s:1:\"b\";s:23:\"view delinquency report\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:173;a:5:{s:1:\"a\";i:174;s:1:\"b\";s:25:\"view financial statements\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:174;a:5:{s:1:\"a\";i:175;s:1:\"b\";s:29:\"view financial report summary\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:175;a:5:{s:1:\"a\";i:176;s:1:\"b\";s:19:\"view client reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:176;a:5:{s:1:\"a\";i:177;s:1:\"b\";s:23:\"view branch performance\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:177;a:5:{s:1:\"a\";i:178;s:1:\"b\";s:22:\"view staff performance\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:178;a:5:{s:1:\"a\";i:179;s:1:\"b\";s:18:\"view audit reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:179;a:5:{s:1:\"a\";i:180;s:1:\"b\";s:23:\"view compliance reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:180;a:5:{s:1:\"a\";i:181;s:1:\"b\";s:9:\"view chat\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:8;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:181;a:5:{s:1:\"a\";i:182;s:1:\"b\";s:17:\"send chat message\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:182;a:5:{s:1:\"a\";i:183;s:1:\"b\";s:18:\"view chat messages\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:183;a:5:{s:1:\"a\";i:184;s:1:\"b\";s:16:\"use AI assistant\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;}}i:184;a:5:{s:1:\"a\";i:185;s:1:\"b\";s:17:\"view AI assistant\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:185;a:5:{s:1:\"a\";i:186;s:1:\"b\";s:14:\"view analytics\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:186;a:5:{s:1:\"a\";i:187;s:1:\"b\";s:15:\"view statistics\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:187;a:5:{s:1:\"a\";i:188;s:1:\"b\";s:16:\"view kpi reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:188;a:5:{s:1:\"a\";i:189;s:1:\"b\";s:10:\"view menus\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:189;a:5:{s:1:\"a\";i:190;s:1:\"b\";s:12:\"manage menus\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:190;a:5:{s:1:\"a\";i:191;s:1:\"b\";s:23:\"assign menu permissions\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:191;a:5:{s:1:\"a\";i:192;s:1:\"b\";s:10:\"view users\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:192;a:5:{s:1:\"a\";i:193;s:1:\"b\";s:11:\"create user\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:193;a:5:{s:1:\"a\";i:194;s:1:\"b\";s:9:\"edit user\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:194;a:5:{s:1:\"a\";i:195;s:1:\"b\";s:11:\"delete user\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:195;a:5:{s:1:\"a\";i:196;s:1:\"b\";s:12:\"assign roles\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:196;a:5:{s:1:\"a\";i:197;s:1:\"b\";s:17:\"view user profile\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:197;a:5:{s:1:\"a\";i:198;s:1:\"b\";s:18:\"change user status\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:198;a:5:{s:1:\"a\";i:199;s:1:\"b\";s:12:\"manage staff\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:199;a:5:{s:1:\"a\";i:200;s:1:\"b\";s:14:\"view companies\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:200;a:5:{s:1:\"a\";i:201;s:1:\"b\";s:14:\"create company\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:201;a:5:{s:1:\"a\";i:202;s:1:\"b\";s:12:\"edit company\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:202;a:5:{s:1:\"a\";i:203;s:1:\"b\";s:14:\"delete company\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:203;a:5:{s:1:\"a\";i:204;s:1:\"b\";s:23:\"manage company settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:204;a:5:{s:1:\"a\";i:205;s:1:\"b\";s:13:\"view branches\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:205;a:5:{s:1:\"a\";i:206;s:1:\"b\";s:13:\"create branch\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:206;a:5:{s:1:\"a\";i:207;s:1:\"b\";s:11:\"edit branch\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:207;a:5:{s:1:\"a\";i:208;s:1:\"b\";s:13:\"delete branch\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:208;a:5:{s:1:\"a\";i:209;s:1:\"b\";s:24:\"assign users to branches\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:209;a:5:{s:1:\"a\";i:210;s:1:\"b\";s:16:\"view collections\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:210;a:5:{s:1:\"a\";i:211;s:1:\"b\";s:17:\"create collection\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:211;a:5:{s:1:\"a\";i:212;s:1:\"b\";s:15:\"edit collection\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:212;a:5:{s:1:\"a\";i:213;s:1:\"b\";s:17:\"delete collection\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:213;a:5:{s:1:\"a\";i:214;s:1:\"b\";s:16:\"process payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:214;a:5:{s:1:\"a\";i:215;s:1:\"b\";s:20:\"record cash payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:215;a:5:{s:1:\"a\";i:216;s:1:\"b\";s:21:\"record bank transfers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:216;a:5:{s:1:\"a\";i:217;s:1:\"b\";s:24:\"manage payment schedules\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:217;a:5:{s:1:\"a\";i:218;s:1:\"b\";s:20:\"view payment history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:218;a:5:{s:1:\"a\";i:219;s:1:\"b\";s:17:\"generate receipts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:219;a:5:{s:1:\"a\";i:220;s:1:\"b\";s:20:\"manage late payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:220;a:5:{s:1:\"a\";i:221;s:1:\"b\";s:17:\"process penalties\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:221;a:5:{s:1:\"a\";i:222;s:1:\"b\";s:22:\"view chart of accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:222;a:5:{s:1:\"a\";i:223;s:1:\"b\";s:21:\"view savings accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:223;a:5:{s:1:\"a\";i:224;s:1:\"b\";s:22:\"create savings account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:224;a:5:{s:1:\"a\";i:225;s:1:\"b\";s:20:\"edit savings account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:225;a:5:{s:1:\"a\";i:226;s:1:\"b\";s:22:\"delete savings account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:226;a:5:{s:1:\"a\";i:227;s:1:\"b\";s:16:\"process deposits\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:227;a:5:{s:1:\"a\";i:228;s:1:\"b\";s:19:\"process withdrawals\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:228;a:5:{s:1:\"a\";i:229;s:1:\"b\";s:29:\"calculate interest on savings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:229;a:5:{s:1:\"a\";i:230;s:1:\"b\";s:19:\"manage savings fees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:230;a:5:{s:1:\"a\";i:231;s:1:\"b\";s:20:\"view savings history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:231;a:5:{s:1:\"a\";i:232;s:1:\"b\";s:20:\"view risk assessment\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:232;a:5:{s:1:\"a\";i:233;s:1:\"b\";s:22:\"create risk assessment\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:233;a:5:{s:1:\"a\";i:234;s:1:\"b\";s:20:\"edit risk assessment\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:234;a:5:{s:1:\"a\";i:235;s:1:\"b\";s:18:\"manage loan limits\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:235;a:5:{s:1:\"a\";i:236;s:1:\"b\";s:18:\"view credit scores\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:236;a:5:{s:1:\"a\";i:237;s:1:\"b\";s:17:\"manage collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:237;a:5:{s:1:\"a\";i:238;s:1:\"b\";s:23:\"view insurance policies\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:238;a:5:{s:1:\"a\";i:239;s:1:\"b\";s:22:\"manage loan guarantees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:239;a:5:{s:1:\"a\";i:240;s:1:\"b\";s:22:\"manage campany setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:240;a:5:{s:1:\"a\";i:241;s:1:\"b\";s:12:\"view charges\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:241;a:5:{s:1:\"a\";i:242;s:1:\"b\";s:18:\"view logs activity\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:242;a:5:{s:1:\"a\";i:243;s:1:\"b\";s:33:\"print cash collateral transations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:243;a:5:{s:1:\"a\";i:244;s:1:\"b\";s:22:\"view financial reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:1;s:1:\"r\";a:1:{i:0;i:2;}}i:244;a:5:{s:1:\"a\";i:245;s:1:\"b\";s:15:\"assign branches\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:1:{i:0;i:2;}}}s:5:\"roles\";a:6:{i:0;a:4:{s:1:\"a\";i:1;s:1:\"b\";s:11:\"super-admin\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:52:\"Full system access with all microfinance permissions\";}i:1;a:4:{s:1:\"a\";i:2;s:1:\"b\";s:5:\"admin\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:51:\"Microfinance company administrator with full access\";}i:2;a:4:{s:1:\"a\";i:3;s:1:\"b\";s:7:\"manager\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:51:\"Branch manager with operational microfinance access\";}i:3;a:4:{s:1:\"a\";i:4;s:1:\"b\";s:7:\"cashier\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:44:\"Standard microfinance user with basic access\";}i:4;a:4:{s:1:\"a\";i:5;s:1:\"b\";s:8:\"director\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:37:\"Read-only access to microfinance data\";}i:5;a:4:{s:1:\"a\";i:6;s:1:\"b\";s:10:\"accountant\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:9:\"Accountnt\";}}}', 1756283408),
-('smartfinance-cache-system_setting_locale', 's:2:\"en\";', 1756204239),
-('smartfinance-cache-system_setting_lockout_duration', 'i:15;', 1756204239),
-('smartfinance-cache-system_setting_login_attempts_limit', 'i:5;', 1756204239),
-('smartfinance-cache-system_setting_password_min_length', 'i:8;', 1756204239),
-('smartfinance-cache-system_setting_password_require_numbers', 'b:1;', 1756204239),
-('smartfinance-cache-system_setting_password_require_special', 'b:1;', 1756204239),
-('smartfinance-cache-system_setting_password_require_uppercase', 'b:1;', 1756204239),
-('smartfinance-cache-system_setting_session_lifetime', 'i:120;', 1756204239),
-('smartfinance-cache-system_setting_two_factor_enabled', 'b:0;', 1756204239);
+('smartfinance-cache-spatie.permission.cache', 'a:3:{s:5:\"alias\";a:6:{s:1:\"a\";s:2:\"id\";s:1:\"b\";s:4:\"name\";s:1:\"c\";s:10:\"guard_name\";s:1:\"d\";s:19:\"permission_group_id\";s:1:\"r\";s:5:\"roles\";s:1:\"j\";s:11:\"description\";}s:11:\"permissions\";a:246:{i:0;a:5:{s:1:\"a\";i:1;s:1:\"b\";s:14:\"view dashboard\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:1;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:1;a:5:{s:1:\"a\";i:2;s:1:\"b\";s:13:\"view settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:2;a:5:{s:1:\"a\";i:3;s:1:\"b\";s:13:\"edit settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:3;a:5:{s:1:\"a\";i:4;s:1:\"b\";s:22:\"manage system settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:4;a:5:{s:1:\"a\";i:5;s:1:\"b\";s:26:\"view system configurations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:5;a:5:{s:1:\"a\";i:6;s:1:\"b\";s:26:\"edit system configurations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:6;a:5:{s:1:\"a\";i:7;s:1:\"b\";s:28:\"manage system configurations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:7;a:5:{s:1:\"a\";i:8;s:1:\"b\";s:18:\"view system config\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:8;a:5:{s:1:\"a\";i:9;s:1:\"b\";s:18:\"edit system config\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:9;a:5:{s:1:\"a\";i:10;s:1:\"b\";s:20:\"manage system config\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:10;a:5:{s:1:\"a\";i:11;s:1:\"b\";s:21:\"manage interest rates\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:11;a:5:{s:1:\"a\";i:12;s:1:\"b\";s:18:\"manage fee setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:12;a:5:{s:1:\"a\";i:13;s:1:\"b\";s:24:\"manage role & permission\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:13;a:5:{s:1:\"a\";i:14;s:1:\"b\";s:22:\"manage penalty setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:14;a:5:{s:1:\"a\";i:15;s:1:\"b\";s:20:\"manage payment terms\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:15;a:5:{s:1:\"a\";i:16;s:1:\"b\";s:20:\"view backup settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:16;a:5:{s:1:\"a\";i:17;s:1:\"b\";s:23:\"manage filetype setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:17;a:5:{s:1:\"a\";i:18;s:1:\"b\";s:13:\"create backup\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:18;a:5:{s:1:\"a\";i:19;s:1:\"b\";s:14:\"restore backup\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:19;a:5:{s:1:\"a\";i:20;s:1:\"b\";s:13:\"delete backup\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:20;a:5:{s:1:\"a\";i:21;s:1:\"b\";s:19:\"manage user setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:21;a:5:{s:1:\"a\";i:22;s:1:\"b\";s:21:\"manage branch setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:22;a:5:{s:1:\"a\";i:23;s:1:\"b\";s:22:\"manage company setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:23;a:5:{s:1:\"a\";i:24;s:1:\"b\";s:11:\"delete role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:24;a:5:{s:1:\"a\";i:25;s:1:\"b\";s:9:\"edit role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:25;a:5:{s:1:\"a\";i:26;s:1:\"b\";s:9:\"view role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:26;a:5:{s:1:\"a\";i:27;s:1:\"b\";s:11:\"create role\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:27;a:5:{s:1:\"a\";i:28;s:1:\"b\";s:17:\"create permission\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:28;a:5:{s:1:\"a\";i:29;s:1:\"b\";s:22:\"view permission groups\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:29;a:5:{s:1:\"a\";i:30;s:1:\"b\";s:23:\"create permission group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:30;a:5:{s:1:\"a\";i:31;s:1:\"b\";s:21:\"edit permission group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:31;a:5:{s:1:\"a\";i:32;s:1:\"b\";s:23:\"delete permission group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:32;a:5:{s:1:\"a\";i:33;s:1:\"b\";s:14:\"view customers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:33;a:5:{s:1:\"a\";i:34;s:1:\"b\";s:15:\"create customer\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:34;a:5:{s:1:\"a\";i:35;s:1:\"b\";s:13:\"edit customer\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:35;a:5:{s:1:\"a\";i:36;s:1:\"b\";s:15:\"delete customer\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:4;i:3;i:5;i:4;i:6;}}i:36;a:5:{s:1:\"a\";i:37;s:1:\"b\";s:21:\"view customer profile\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:37;a:5:{s:1:\"a\";i:38;s:1:\"b\";s:25:\"manage customer documents\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:38;a:5:{s:1:\"a\";i:39;s:1:\"b\";s:21:\"view customer history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:39;a:5:{s:1:\"a\";i:40;s:1:\"b\";s:29:\"approve customer registration\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:3;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:40;a:5:{s:1:\"a\";i:41;s:1:\"b\";s:18:\"view loan products\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:41;a:5:{s:1:\"a\";i:42;s:1:\"b\";s:19:\"create loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:42;a:5:{s:1:\"a\";i:43;s:1:\"b\";s:17:\"edit loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:43;a:5:{s:1:\"a\";i:44;s:1:\"b\";s:19:\"delete loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:44;a:5:{s:1:\"a\";i:45;s:1:\"b\";s:25:\"view loan product details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:45;a:5:{s:1:\"a\";i:46;s:1:\"b\";s:23:\"deactivate loan product\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:46;a:5:{s:1:\"a\";i:47;s:1:\"b\";s:20:\"manage loan products\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:47;a:5:{s:1:\"a\";i:48;s:1:\"b\";s:11:\"view groups\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:48;a:5:{s:1:\"a\";i:49;s:1:\"b\";s:12:\"create group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:49;a:5:{s:1:\"a\";i:50;s:1:\"b\";s:10:\"edit group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:50;a:5:{s:1:\"a\";i:51;s:1:\"b\";s:12:\"delete group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:51;a:5:{s:1:\"a\";i:52;s:1:\"b\";s:18:\"view group details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:52;a:5:{s:1:\"a\";i:53;s:1:\"b\";s:21:\"manage group payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:53;a:5:{s:1:\"a\";i:54;s:1:\"b\";s:10:\"view loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:54;a:5:{s:1:\"a\";i:55;s:1:\"b\";s:11:\"create loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:55;a:5:{s:1:\"a\";i:56;s:1:\"b\";s:9:\"edit loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:56;a:5:{s:1:\"a\";i:57;s:1:\"b\";s:11:\"delete loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:57;a:5:{s:1:\"a\";i:58;s:1:\"b\";s:17:\"view loan details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:58;a:5:{s:1:\"a\";i:59;s:1:\"b\";s:21:\"manage loan documents\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:59;a:5:{s:1:\"a\";i:60;s:1:\"b\";s:19:\"view loan documents\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:60;a:5:{s:1:\"a\";i:61;s:1:\"b\";s:23:\"calculate loan interest\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:61;a:5:{s:1:\"a\";i:62;s:1:\"b\";s:22:\"generate loan schedule\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:62;a:5:{s:1:\"a\";i:63;s:1:\"b\";s:21:\"process loan payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:63;a:5:{s:1:\"a\";i:64;s:1:\"b\";s:16:\"manage loan fees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:64;a:5:{s:1:\"a\";i:65;s:1:\"b\";s:17:\"view loan history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:65;a:5:{s:1:\"a\";i:66;s:1:\"b\";s:18:\"view checked loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:66;a:5:{s:1:\"a\";i:67;s:1:\"b\";s:18:\"view applied loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:67;a:5:{s:1:\"a\";i:68;s:1:\"b\";s:19:\"view approved loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:68;a:5:{s:1:\"a\";i:69;s:1:\"b\";s:21:\"view authorized loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:69;a:5:{s:1:\"a\";i:70;s:1:\"b\";s:20:\"view defaulted loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:70;a:5:{s:1:\"a\";i:71;s:1:\"b\";s:19:\"view rejected loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:71;a:5:{s:1:\"a\";i:72;s:1:\"b\";s:16:\"remove guarantor\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:72;a:5:{s:1:\"a\";i:73;s:1:\"b\";s:13:\"add guarantor\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:73;a:5:{s:1:\"a\";i:74;s:1:\"b\";s:12:\"default loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:74;a:5:{s:1:\"a\";i:75;s:1:\"b\";s:12:\"approve loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:75;a:5:{s:1:\"a\";i:76;s:1:\"b\";s:11:\"reject loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:76;a:5:{s:1:\"a\";i:77;s:1:\"b\";s:13:\"disburse loan\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:77;a:5:{s:1:\"a\";i:78;s:1:\"b\";s:26:\"view cash collateral types\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:78;a:5:{s:1:\"a\";i:79;s:1:\"b\";s:27:\"create cash collateral type\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:79;a:5:{s:1:\"a\";i:80;s:1:\"b\";s:25:\"edit cash collateral type\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:80;a:5:{s:1:\"a\";i:81;s:1:\"b\";s:27:\"delete cash collateral type\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:81;a:5:{s:1:\"a\";i:82;s:1:\"b\";s:33:\"view cash collateral type details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:82;a:5:{s:1:\"a\";i:83;s:1:\"b\";s:21:\"view cash collaterals\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:83;a:5:{s:1:\"a\";i:84;s:1:\"b\";s:22:\"create cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:84;a:5:{s:1:\"a\";i:85;s:1:\"b\";s:20:\"edit cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:85;a:5:{s:1:\"a\";i:86;s:1:\"b\";s:22:\"delete cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:86;a:5:{s:1:\"a\";i:87;s:1:\"b\";s:28:\"view cash collateral details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:87;a:5:{s:1:\"a\";i:88;s:1:\"b\";s:23:\"deposit cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:88;a:5:{s:1:\"a\";i:89;s:1:\"b\";s:24:\"withdraw cash collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:89;a:5:{s:1:\"a\";i:90;s:1:\"b\";s:34:\"print cash collateral transactions\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:5;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:5;}}i:90;a:5:{s:1:\"a\";i:91;s:1:\"b\";s:25:\"view account class groups\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:91;a:5:{s:1:\"a\";i:92;s:1:\"b\";s:26:\"create account class group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:92;a:5:{s:1:\"a\";i:93;s:1:\"b\";s:24:\"edit account class group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:93;a:5:{s:1:\"a\";i:94;s:1:\"b\";s:26:\"delete account class group\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:5;i:3;i:6;}}i:94;a:5:{s:1:\"a\";i:95;s:1:\"b\";s:32:\"view account class group details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:95;a:5:{s:1:\"a\";i:96;s:1:\"b\";s:19:\"view chart accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:96;a:5:{s:1:\"a\";i:97;s:1:\"b\";s:20:\"create chart account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:97;a:5:{s:1:\"a\";i:98;s:1:\"b\";s:18:\"edit chart account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:98;a:5:{s:1:\"a\";i:99;s:1:\"b\";s:20:\"delete chart account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:99;a:5:{s:1:\"a\";i:100;s:1:\"b\";s:26:\"view chart account details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:100;a:5:{s:1:\"a\";i:101;s:1:\"b\";s:24:\"manage chart of accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:101;a:5:{s:1:\"a\";i:102;s:1:\"b\";s:14:\"view suppliers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:102;a:5:{s:1:\"a\";i:103;s:1:\"b\";s:15:\"create supplier\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:103;a:5:{s:1:\"a\";i:104;s:1:\"b\";s:13:\"edit supplier\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:104;a:5:{s:1:\"a\";i:105;s:1:\"b\";s:15:\"delete supplier\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:105;a:5:{s:1:\"a\";i:106;s:1:\"b\";s:21:\"view supplier details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:106;a:5:{s:1:\"a\";i:107;s:1:\"b\";s:13:\"view journals\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:107;a:5:{s:1:\"a\";i:108;s:1:\"b\";s:14:\"create journal\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:108;a:5:{s:1:\"a\";i:109;s:1:\"b\";s:12:\"edit journal\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:109;a:5:{s:1:\"a\";i:110;s:1:\"b\";s:14:\"delete journal\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:110;a:5:{s:1:\"a\";i:111;s:1:\"b\";s:20:\"view journal details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:111;a:5:{s:1:\"a\";i:112;s:1:\"b\";s:22:\"create journal entries\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:6;}}i:112;a:5:{s:1:\"a\";i:113;s:1:\"b\";s:20:\"edit journal entries\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:113;a:5:{s:1:\"a\";i:114;s:1:\"b\";s:22:\"delete journal entries\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:114;a:5:{s:1:\"a\";i:115;s:1:\"b\";s:21:\"view payment vouchers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:115;a:5:{s:1:\"a\";i:116;s:1:\"b\";s:22:\"create payment voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:116;a:5:{s:1:\"a\";i:117;s:1:\"b\";s:20:\"edit payment voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:117;a:5:{s:1:\"a\";i:118;s:1:\"b\";s:22:\"delete payment voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:118;a:5:{s:1:\"a\";i:119;s:1:\"b\";s:28:\"view payment voucher details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:119;a:5:{s:1:\"a\";i:120;s:1:\"b\";s:21:\"view receipt vouchers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:120;a:5:{s:1:\"a\";i:121;s:1:\"b\";s:22:\"create receipt voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:121;a:5:{s:1:\"a\";i:122;s:1:\"b\";s:20:\"edit receipt voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:122;a:5:{s:1:\"a\";i:123;s:1:\"b\";s:22:\"delete receipt voucher\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:123;a:5:{s:1:\"a\";i:124;s:1:\"b\";s:28:\"view receipt voucher details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:124;a:5:{s:1:\"a\";i:125;s:1:\"b\";s:18:\"view bank accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:125;a:5:{s:1:\"a\";i:126;s:1:\"b\";s:19:\"create bank account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:126;a:5:{s:1:\"a\";i:127;s:1:\"b\";s:17:\"edit bank account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:127;a:5:{s:1:\"a\";i:128;s:1:\"b\";s:19:\"delete bank account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:128;a:5:{s:1:\"a\";i:129;s:1:\"b\";s:25:\"view bank account details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:129;a:5:{s:1:\"a\";i:130;s:1:\"b\";s:20:\"manage bank accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:130;a:5:{s:1:\"a\";i:131;s:1:\"b\";s:32:\"manage bank account transactions\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:131;a:5:{s:1:\"a\";i:132;s:1:\"b\";s:24:\"view bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:6;}}i:132;a:5:{s:1:\"a\";i:133;s:1:\"b\";s:26:\"create bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:133;a:5:{s:1:\"a\";i:134;s:1:\"b\";s:24:\"edit bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:134;a:5:{s:1:\"a\";i:135;s:1:\"b\";s:26:\"delete bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:135;a:5:{s:1:\"a\";i:136;s:1:\"b\";s:32:\"view bank reconciliation details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:136;a:5:{s:1:\"a\";i:137;s:1:\"b\";s:27:\"perform bank reconciliation\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:137;a:5:{s:1:\"a\";i:138;s:1:\"b\";s:19:\"view bill purchases\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:138;a:5:{s:1:\"a\";i:139;s:1:\"b\";s:20:\"create bill purchase\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:139;a:5:{s:1:\"a\";i:140;s:1:\"b\";s:18:\"edit bill purchase\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:140;a:5:{s:1:\"a\";i:141;s:1:\"b\";s:20:\"delete bill purchase\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:141;a:5:{s:1:\"a\";i:142;s:1:\"b\";s:26:\"view bill purchase details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:142;a:5:{s:1:\"a\";i:143;s:1:\"b\";s:12:\"view budgets\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:143;a:5:{s:1:\"a\";i:144;s:1:\"b\";s:13:\"create budget\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:144;a:5:{s:1:\"a\";i:145;s:1:\"b\";s:11:\"edit budget\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:145;a:5:{s:1:\"a\";i:146;s:1:\"b\";s:13:\"delete budget\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:146;a:5:{s:1:\"a\";i:147;s:1:\"b\";s:19:\"view budget details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:147;a:5:{s:1:\"a\";i:148;s:1:\"b\";s:9:\"view fees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:148;a:5:{s:1:\"a\";i:149;s:1:\"b\";s:10:\"create fee\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:149;a:5:{s:1:\"a\";i:150;s:1:\"b\";s:8:\"edit fee\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:150;a:5:{s:1:\"a\";i:151;s:1:\"b\";s:10:\"delete fee\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:151;a:5:{s:1:\"a\";i:152;s:1:\"b\";s:16:\"view fee details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:152;a:5:{s:1:\"a\";i:153;s:1:\"b\";s:14:\"view penalties\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:153;a:5:{s:1:\"a\";i:154;s:1:\"b\";s:14:\"create penalty\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:154;a:5:{s:1:\"a\";i:155;s:1:\"b\";s:12:\"edit penalty\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:155;a:5:{s:1:\"a\";i:156;s:1:\"b\";s:14:\"delete penalty\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:156;a:5:{s:1:\"a\";i:157;s:1:\"b\";s:20:\"view penalty details\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:6;}}i:157;a:5:{s:1:\"a\";i:158;s:1:\"b\";s:15:\"view accounting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:6;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:158;a:5:{s:1:\"a\";i:159;s:1:\"b\";s:19:\"view general ledger\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:159;a:5:{s:1:\"a\";i:160;s:1:\"b\";s:21:\"manage financial year\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:160;a:5:{s:1:\"a\";i:161;s:1:\"b\";s:23:\"close accounting period\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:161;a:5:{s:1:\"a\";i:162;s:1:\"b\";s:18:\"delete transaction\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:162;a:5:{s:1:\"a\";i:163;s:1:\"b\";s:16:\"edit transaction\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:163;a:5:{s:1:\"a\";i:164;s:1:\"b\";s:12:\"view reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:164;a:5:{s:1:\"a\";i:165;s:1:\"b\";s:16:\"generate reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:165;a:5:{s:1:\"a\";i:166;s:1:\"b\";s:14:\"export reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:5;i:4;i:6;}}i:166;a:5:{s:1:\"a\";i:167;s:1:\"b\";s:23:\"view accounting reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:5;i:3;i:6;}}i:167;a:5:{s:1:\"a\";i:168;s:1:\"b\";s:17:\"view loan reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:5;i:3;i:6;}}i:168;a:5:{s:1:\"a\";i:169;s:1:\"b\";s:21:\"view customer reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:7;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:4;i:3;i:5;i:4;i:6;}}i:169;a:5:{s:1:\"a\";i:170;s:1:\"b\";s:24:\"view transaction reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:170;a:5:{s:1:\"a\";i:171;s:1:\"b\";s:26:\"view loan portfolio report\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:171;a:5:{s:1:\"a\";i:172;s:1:\"b\";s:22:\"view collection report\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:172;a:5:{s:1:\"a\";i:173;s:1:\"b\";s:23:\"view delinquency report\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:173;a:5:{s:1:\"a\";i:174;s:1:\"b\";s:25:\"view financial statements\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:174;a:5:{s:1:\"a\";i:175;s:1:\"b\";s:29:\"view financial report summary\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:175;a:5:{s:1:\"a\";i:176;s:1:\"b\";s:19:\"view client reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:176;a:5:{s:1:\"a\";i:177;s:1:\"b\";s:23:\"view branch performance\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:177;a:5:{s:1:\"a\";i:178;s:1:\"b\";s:22:\"view staff performance\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:178;a:5:{s:1:\"a\";i:179;s:1:\"b\";s:18:\"view audit reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:179;a:5:{s:1:\"a\";i:180;s:1:\"b\";s:23:\"view compliance reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:180;a:5:{s:1:\"a\";i:181;s:1:\"b\";s:9:\"view chat\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:8;s:1:\"r\";a:6:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;i:5;i:6;}}i:181;a:5:{s:1:\"a\";i:182;s:1:\"b\";s:17:\"send chat message\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:182;a:5:{s:1:\"a\";i:183;s:1:\"b\";s:18:\"view chat messages\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:183;a:5:{s:1:\"a\";i:184;s:1:\"b\";s:16:\"use AI assistant\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:4:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;}}i:184;a:5:{s:1:\"a\";i:185;s:1:\"b\";s:17:\"view AI assistant\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:185;a:5:{s:1:\"a\";i:186;s:1:\"b\";s:14:\"view analytics\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:186;a:5:{s:1:\"a\";i:187;s:1:\"b\";s:15:\"view statistics\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:187;a:5:{s:1:\"a\";i:188;s:1:\"b\";s:16:\"view kpi reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:188;a:5:{s:1:\"a\";i:189;s:1:\"b\";s:10:\"view menus\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:189;a:5:{s:1:\"a\";i:190;s:1:\"b\";s:12:\"manage menus\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:190;a:5:{s:1:\"a\";i:191;s:1:\"b\";s:23:\"assign menu permissions\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:191;a:5:{s:1:\"a\";i:192;s:1:\"b\";s:10:\"view users\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:192;a:5:{s:1:\"a\";i:193;s:1:\"b\";s:11:\"create user\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:193;a:5:{s:1:\"a\";i:194;s:1:\"b\";s:9:\"edit user\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:194;a:5:{s:1:\"a\";i:195;s:1:\"b\";s:11:\"delete user\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:195;a:5:{s:1:\"a\";i:196;s:1:\"b\";s:12:\"assign roles\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:196;a:5:{s:1:\"a\";i:197;s:1:\"b\";s:17:\"view user profile\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:197;a:5:{s:1:\"a\";i:198;s:1:\"b\";s:18:\"change user status\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:198;a:5:{s:1:\"a\";i:199;s:1:\"b\";s:12:\"manage staff\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:199;a:5:{s:1:\"a\";i:200;s:1:\"b\";s:14:\"view companies\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:200;a:5:{s:1:\"a\";i:201;s:1:\"b\";s:14:\"create company\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:201;a:5:{s:1:\"a\";i:202;s:1:\"b\";s:12:\"edit company\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:202;a:5:{s:1:\"a\";i:203;s:1:\"b\";s:14:\"delete company\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:203;a:5:{s:1:\"a\";i:204;s:1:\"b\";s:23:\"manage company settings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:204;a:5:{s:1:\"a\";i:205;s:1:\"b\";s:13:\"view branches\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:205;a:5:{s:1:\"a\";i:206;s:1:\"b\";s:13:\"create branch\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:206;a:5:{s:1:\"a\";i:207;s:1:\"b\";s:11:\"edit branch\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:207;a:5:{s:1:\"a\";i:208;s:1:\"b\";s:13:\"delete branch\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:208;a:5:{s:1:\"a\";i:209;s:1:\"b\";s:24:\"assign users to branches\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:209;a:5:{s:1:\"a\";i:210;s:1:\"b\";s:16:\"view collections\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:210;a:5:{s:1:\"a\";i:211;s:1:\"b\";s:17:\"create collection\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:211;a:5:{s:1:\"a\";i:212;s:1:\"b\";s:15:\"edit collection\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:212;a:5:{s:1:\"a\";i:213;s:1:\"b\";s:17:\"delete collection\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:213;a:5:{s:1:\"a\";i:214;s:1:\"b\";s:16:\"process payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:214;a:5:{s:1:\"a\";i:215;s:1:\"b\";s:20:\"record cash payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:215;a:5:{s:1:\"a\";i:216;s:1:\"b\";s:21:\"record bank transfers\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:216;a:5:{s:1:\"a\";i:217;s:1:\"b\";s:24:\"manage payment schedules\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:217;a:5:{s:1:\"a\";i:218;s:1:\"b\";s:20:\"view payment history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:5:{i:0;i:1;i:1;i:2;i:2;i:3;i:3;i:4;i:4;i:5;}}i:218;a:5:{s:1:\"a\";i:219;s:1:\"b\";s:17:\"generate receipts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:219;a:5:{s:1:\"a\";i:220;s:1:\"b\";s:20:\"manage late payments\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:220;a:5:{s:1:\"a\";i:221;s:1:\"b\";s:17:\"process penalties\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:3:{i:0;i:1;i:1;i:2;i:2;i:3;}}i:221;a:5:{s:1:\"a\";i:222;s:1:\"b\";s:22:\"view chart of accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:222;a:5:{s:1:\"a\";i:223;s:1:\"b\";s:21:\"view savings accounts\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:223;a:5:{s:1:\"a\";i:224;s:1:\"b\";s:22:\"create savings account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:224;a:5:{s:1:\"a\";i:225;s:1:\"b\";s:20:\"edit savings account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:225;a:5:{s:1:\"a\";i:226;s:1:\"b\";s:22:\"delete savings account\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:226;a:5:{s:1:\"a\";i:227;s:1:\"b\";s:16:\"process deposits\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:227;a:5:{s:1:\"a\";i:228;s:1:\"b\";s:19:\"process withdrawals\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:228;a:5:{s:1:\"a\";i:229;s:1:\"b\";s:29:\"calculate interest on savings\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:229;a:5:{s:1:\"a\";i:230;s:1:\"b\";s:19:\"manage savings fees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:230;a:5:{s:1:\"a\";i:231;s:1:\"b\";s:20:\"view savings history\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:231;a:5:{s:1:\"a\";i:232;s:1:\"b\";s:20:\"view risk assessment\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:232;a:5:{s:1:\"a\";i:233;s:1:\"b\";s:22:\"create risk assessment\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:233;a:5:{s:1:\"a\";i:234;s:1:\"b\";s:20:\"edit risk assessment\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:234;a:5:{s:1:\"a\";i:235;s:1:\"b\";s:18:\"manage loan limits\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:235;a:5:{s:1:\"a\";i:236;s:1:\"b\";s:18:\"view credit scores\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:236;a:5:{s:1:\"a\";i:237;s:1:\"b\";s:17:\"manage collateral\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:237;a:5:{s:1:\"a\";i:238;s:1:\"b\";s:23:\"view insurance policies\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:238;a:5:{s:1:\"a\";i:239;s:1:\"b\";s:22:\"manage loan guarantees\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:239;a:5:{s:1:\"a\";i:240;s:1:\"b\";s:22:\"manage campany setting\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:240;a:5:{s:1:\"a\";i:241;s:1:\"b\";s:12:\"view charges\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:241;a:5:{s:1:\"a\";i:242;s:1:\"b\";s:18:\"view logs activity\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:242;a:5:{s:1:\"a\";i:243;s:1:\"b\";s:33:\"print cash collateral transations\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:2:{i:0;i:1;i:1;i:2;}}i:243;a:5:{s:1:\"a\";i:244;s:1:\"b\";s:22:\"view financial reports\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:1;s:1:\"r\";a:1:{i:0;i:2;}}i:244;a:5:{s:1:\"a\";i:245;s:1:\"b\";s:15:\"assign branches\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:2;s:1:\"r\";a:1:{i:0;i:2;}}i:245;a:5:{s:1:\"a\";i:246;s:1:\"b\";s:19:\"view writeoff loans\";s:1:\"c\";s:3:\"web\";s:1:\"d\";i:4;s:1:\"r\";a:1:{i:0;i:2;}}}s:5:\"roles\";a:6:{i:0;a:4:{s:1:\"a\";i:1;s:1:\"b\";s:11:\"super-admin\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:52:\"Full system access with all microfinance permissions\";}i:1;a:4:{s:1:\"a\";i:2;s:1:\"b\";s:5:\"admin\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:51:\"Microfinance company administrator with full access\";}i:2;a:4:{s:1:\"a\";i:3;s:1:\"b\";s:7:\"manager\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:51:\"Branch manager with operational microfinance access\";}i:3;a:4:{s:1:\"a\";i:4;s:1:\"b\";s:7:\"cashier\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:44:\"Standard microfinance user with basic access\";}i:4;a:4:{s:1:\"a\";i:5;s:1:\"b\";s:8:\"director\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:37:\"Read-only access to microfinance data\";}i:5;a:4:{s:1:\"a\";i:6;s:1:\"b\";s:10:\"accountant\";s:1:\"c\";s:3:\"web\";s:1:\"j\";s:9:\"Accountnt\";}}}', 1756889530),
+('smartfinance-cache-system_setting_locale', 's:2:\"en\";', 1756806539),
+('smartfinance-cache-system_setting_lockout_duration', 'i:15;', 1756806539),
+('smartfinance-cache-system_setting_login_attempts_limit', 'i:5;', 1756806539),
+('smartfinance-cache-system_setting_password_min_length', 'i:8;', 1756806539),
+('smartfinance-cache-system_setting_password_require_numbers', 'b:1;', 1756806539),
+('smartfinance-cache-system_setting_password_require_special', 'b:1;', 1756806539),
+('smartfinance-cache-system_setting_password_require_uppercase', 'b:1;', 1756806539),
+('smartfinance-cache-system_setting_session_lifetime', 'i:120;', 1756806539),
+('smartfinance-cache-system_setting_two_factor_enabled', 'b:0;', 1756806539);
 
 -- --------------------------------------------------------
 
@@ -5090,7 +5226,7 @@ CREATE TABLE `cash_collaterals` (
 INSERT INTO `cash_collaterals` (`id`, `customer_id`, `type_id`, `branch_id`, `company_id`, `amount`, `created_at`, `updated_at`) VALUES
 (1, 355, 1, 1, 1, 0.00, '2025-08-21 09:41:18', '2025-08-21 09:41:18'),
 (2, 355, 1, 1, 1, 0.00, '2025-08-21 09:50:32', '2025-08-21 09:50:32'),
-(3, 356, 1, 1, 1, 2280000.00, '2025-08-21 09:50:46', '2025-08-24 08:15:37');
+(3, 356, 1, 1, 1, 589787.38, '2025-08-21 09:50:46', '2025-08-27 03:20:24');
 
 -- --------------------------------------------------------
 
@@ -5174,7 +5310,8 @@ INSERT INTO `chart_accounts` (`id`, `account_class_group_id`, `account_code`, `a
 (5, 8, '3003', 'Share Capital', 1, 0, '2025-08-21 09:23:59', '2025-08-21 09:23:59', 1, NULL),
 (6, 10, '4002', 'Penalty Income', 1, 0, '2025-08-21 09:23:59', '2025-08-21 09:23:59', 1, NULL),
 (7, 4, '1003', 'Penalty Receivable', 1, 0, '2025-08-21 09:23:59', '2025-08-21 09:23:59', 1, NULL),
-(15, 5, '2010', 'Customer operation account', 1, 0, '2025-08-21 09:23:59', '2025-08-21 09:23:59', 1, NULL);
+(15, 5, '2010', 'Customer operation account', 1, 0, '2025-08-21 09:23:59', '2025-08-21 09:23:59', 1, NULL),
+(16, 10, '4500', 'Car Tracking', 1, 0, '2025-08-29 14:32:23', '2025-08-29 14:32:23', 1, NULL);
 
 -- --------------------------------------------------------
 
@@ -5400,7 +5537,7 @@ INSERT INTO `customers` (`id`, `customerNo`, `name`, `description`, `work`, `wor
 (914, '100914', 'Daniel Cooper', 'ICT technician', 'Technician', 'National ICT Centre, DSM', '718901238', '', 'Borrower', 1, 'License', 'TC8901234', '1984-02-14', NULL, NULL, 1, 1, 'M', '$2y$12$sdbE7aX9KwKqE95/y1CVN.CVNgrpYikXqsoFihZDY0A0bIDaaI0we', '2025-08-19', 'Friend', NULL, NULL, 0, '2025-08-19 10:15:36', '2025-08-19 10:15:36'),
 (915, '100915', 'Madison Richardson', 'Postal clerk', 'Clerk', 'Posta HQ, DSM', '719012349', '', 'Borrower', 1, 'National ID', '432165789', '1993-10-05', NULL, NULL, 1, 1, 'F', '$2y$12$2Nct5VbGn5GRJlDnqKqZCuRU65twoq0Iv.KROU9YiZhl7BScrODj6', '2025-08-19', 'Neighbor', NULL, NULL, 0, '2025-08-19 10:15:37', '2025-08-19 10:15:37'),
 (916, '100916', 'Lucas Cox', 'Football coach', 'Coach', 'Simba SC Academy, DSM', '710123460', '753210987', 'Borrower', 1, 'Passport', 'K90123456', '1986-05-11', NULL, NULL, 1, 1, 'M', '$2y$12$Qfmy16DNhdtrTbFN1ts/IesKNa5laqWYkN1JGFjWkZu0uGZu3Xfg2', '2025-08-19', 'Cousin', NULL, NULL, 0, '2025-08-19 10:15:37', '2025-08-19 10:15:37'),
-(922, '100917', 'Abigail Howard', 'Fashion shop owner', 'Entrepreneur', 'Own Boutique, DSM', '711234571', '', 'Borrower', 1, 'License', 'EN1234567', '1990-01-17', NULL, NULL, 1, 1, 'F', '$2y$12$hJou.bBd5.v2MPAqwwuEdu30WvjlwLrpNVgOFwc5oy1L2FLa.jQ1a', '2025-08-19', 'Niece', NULL, NULL, 0, '2025-08-19 10:17:43', '2025-08-19 10:17:43'),
+(922, '100917', 'Abigail Howard', 'Fashion shop owner', 'Entrepreneur', 'Own Boutique, DSM', '711234571', NULL, 'Borrower', 1, 'License', 'EN1234567', '1990-01-17', 2, 1, 1, 1, 'F', '$2y$12$hJou.bBd5.v2MPAqwwuEdu30WvjlwLrpNVgOFwc5oy1L2FLa.jQ1a', '2025-08-19', 'Niece', NULL, NULL, 0, '2025-08-19 10:17:43', '2025-08-29 16:51:30'),
 (923, '100923', 'Peter Mwangi', 'Bus driver', 'Driver', 'Dar Express, DSM', '712400001', '752400001', 'Borrower', 1, 'License', 'DRV9001', '1987-02-14', NULL, NULL, 1, 1, 'M', '$2y$12$2CeLCyztVJroiUyZCtkVV./iZ8dn3TtJAW3IZHjqkTYsoenj4o3vu', '2025-08-19', 'Friend', NULL, NULL, 0, '2025-08-19 10:17:43', '2025-08-19 10:17:43'),
 (924, '100924', 'Mary Nyerere', 'High school teacher', 'Teacher', 'Azania Sec School, DSM', '713400002', '', 'Borrower', 1, 'National ID', 'ID1002', '1991-06-10', NULL, NULL, 1, 1, 'F', '$2y$12$ME5aJaNCEUg6mpSJgcbk2uD8Oo04y5rz.RsDABlRolRixG6b.l6jy', '2025-08-19', 'Sister', NULL, NULL, 0, '2025-08-19 10:17:43', '2025-08-19 10:17:43'),
 (925, '100925', 'George Kimaro', 'Medical doctor', 'Doctor', 'Mwananyamala Hospital, DSM', '714400003', '754400002', 'Borrower', 1, 'Passport', 'PP2003', '1984-09-18', NULL, NULL, 1, 1, 'M', '$2y$12$fSEB18TIzlqxVkIZP.HvwOzgBjs1PBWnuJeGRqLDsy/.CuCDfkwLC', '2025-08-19', 'Uncle', NULL, NULL, 0, '2025-08-19 10:17:44', '2025-08-19 10:17:44'),
@@ -5436,7 +5573,7 @@ INSERT INTO `customers` (`id`, `customerNo`, `name`, `description`, `work`, `wor
 (954, '100954', 'Sharon James', 'IT student', 'Student', 'Mbeya Univ of Science, Mbeya', '713400032', '', 'Borrower', 1, 'Student ID', 'STU1032', '1993-08-23', NULL, NULL, 1, 1, 'F', '$2y$12$2f/5SU5HYPTdHKadHWnTE.YaupAqzD68TBCyT0dosFq/oPEyezA2G', '2025-08-19', 'Niece', NULL, NULL, 0, '2025-08-19 10:17:54', '2025-08-19 10:17:54'),
 (955, '100955', 'Jackson Ally', 'Loan officer', 'Banker', 'CRDB Bank, Arusha', '714400033', '', 'Borrower', 1, 'National ID', 'ID1033', '1987-12-07', NULL, NULL, 1, 1, 'M', '$2y$12$Hyi51H4uXHASRVZ17qScHOWRYKO/9fimmC.BkA0Ewu1V5HbSrlSma', '2025-08-19', 'Brother', NULL, NULL, 0, '2025-08-19 10:17:54', '2025-08-19 10:17:54'),
 (956, '100956', 'Betty Raymond', 'Hotel chef', 'Chef', 'Sea Cliff Hotel, DSM', '715400034', '', 'Borrower', 1, 'License', 'CHE1034', '1992-10-15', NULL, NULL, 1, 1, 'F', '$2y$12$NKSRZLiRejBf6TDzVFnLbuWfevXIF9Yqdv6TEOQdhxz.Y3yVtWcd.', '2025-08-19', 'Aunt', NULL, NULL, 0, '2025-08-19 10:17:54', '2025-08-19 10:17:54'),
-(957, '100957', 'Adam Mkapa', 'Mason', 'Builder', 'Dar Homes Ltd, DSM', '716400035', '754400010', 'Borrower', 1, 'Passport', 'PP1035', '1985-03-18', NULL, NULL, 1, 1, 'M', '$2y$12$Gv8gpLTZBdZb492zeub2WevQokTfsV2I4pljvrf.LYabQVA5jZt0K', '2025-08-19', 'Neighbor', NULL, NULL, 0, '2025-08-19 10:17:55', '2025-08-19 10:17:55'),
+(957, '100957', 'Adam Mkapa', 'Mason', 'Builder', 'Dar Homes Ltd, DSM', '716400035', '754400010', 'Borrower', 1, NULL, 'PP1035', '1985-03-18', 3, 12, 1, 1, 'M', '$2y$12$Gv8gpLTZBdZb492zeub2WevQokTfsV2I4pljvrf.LYabQVA5jZt0K', '2025-08-19', 'Neighbor', NULL, NULL, 0, '2025-08-19 10:17:55', '2025-08-29 16:26:54'),
 (958, '100958', 'Veronica Andrew', 'University lecturer', 'Lecturer', 'Open Univ of Tanzania', '717400036', '', 'Borrower', 1, 'National ID', 'ID1036', '1994-07-06', NULL, NULL, 1, 1, 'F', '$2y$12$bxctRkNHu1NWcZzuGbfimOsm9wsGnFFZ/xIT7v/gIYVJuYhDZWxMO', '2025-08-19', 'Cousin', NULL, NULL, 0, '2025-08-19 10:17:55', '2025-08-19 10:17:55'),
 (959, '100959', 'Simon Joel', 'Water technician', 'Plumber', 'Ubungo Water Works, DSM', '718400037', '', 'Borrower', 1, 'License', 'PLM1037', '1988-11-11', NULL, NULL, 1, 1, 'M', '$2y$12$PDYipjjtkPUcc8sTdMhQ5e/Fq/owCY/uK5S8Xfv481DXs0oBlvX0O', '2025-08-19', 'Brother-in-law', NULL, NULL, 0, '2025-08-19 10:17:55', '2025-08-19 10:17:55'),
 (960, '100960', 'Catherine Robert', 'Office clerk', 'Clerk', 'NSSF, DSM', '719400038', '', 'Borrower', 1, 'Passport', 'PP1038', '1990-09-20', NULL, NULL, 1, 1, 'F', '$2y$12$AV58lKZtZddoKl8uE9m4XeHNvJj8PARNYj9nMtj6Zt6Wmwt5s/QiO', '2025-08-19', 'Sister-in-law', NULL, NULL, 0, '2025-08-19 10:17:56', '2025-08-19 10:17:56'),
@@ -5452,7 +5589,7 @@ INSERT INTO `customers` (`id`, `customerNo`, `name`, `description`, `work`, `wor
 (970, '100970', 'Dorothy Augustino', 'Office secretary', 'Secretary', 'UNDP, DSM', '719400048', '', 'Borrower', 1, 'License', 'SEC1048', '1992-11-27', NULL, NULL, 1, 1, 'F', '$2y$12$1LmC.pCpsD2SktTiFxsCS.hNeMAT/yhl87w.qLHExgwjVh2JABwZG', '2025-08-19', 'Aunt', NULL, NULL, 0, '2025-08-19 10:17:59', '2025-08-19 10:17:59'),
 (971, '100971', 'Elisha Musa', 'ICT engineer', 'Technician', 'Vodacom, DSM', '710400049', '753400012', 'Borrower', 1, 'National ID', 'ID1049', '1988-08-19', NULL, NULL, 1, 1, 'M', '$2y$12$/SIjKi1r4tcWjNvjZJO6E.d7pgl9DiGJXTiYV0zvytShcAeZd7yn.', '2025-08-19', 'Brother-in-law', NULL, NULL, 0, '2025-08-19 10:18:00', '2025-08-19 10:18:00'),
 (972, '100972', 'Agnes George', 'Front desk officer', 'Receptionist', 'National Museum, DSM', '711400050', '', 'Borrower', 1, 'License', 'REC1050', '1994-01-04', NULL, NULL, 1, 1, 'F', '$2y$12$3R/587zLlIQTpI4pUAfY6.u3e3dqSBv0sxuwCIXbslxHCGTGQN.fy', '2025-08-19', 'Cousin', NULL, NULL, 0, '2025-08-19 10:18:00', '2025-08-19 10:18:00'),
-(973, '100973', 'Abel Mwita', 'Long route driver', 'Driver', 'ABC Bus Co, DSM', '712500001', '752500001', 'Borrower', 1, 'License', 'DRV2001', '1988-03-14', NULL, NULL, 1, 1, 'M', '$2y$12$.VaD55vhvStEZpjmtALTbeciDr9gZGwsfo/QOHeIS6M2SV7BQdr36', '2025-08-19', 'Friend', NULL, NULL, 0, '2025-08-19 10:18:00', '2025-08-19 10:18:00'),
+(973, '100973', 'Abel Mwita', 'Long route driver', 'Driver', 'ABC Bus Co, DSM', '712500001', '752500001', 'Borrower', 1, 'License', 'DRV2001', '1988-03-14', 2, 1, 1, 1, 'M', '$2y$12$.VaD55vhvStEZpjmtALTbeciDr9gZGwsfo/QOHeIS6M2SV7BQdr36', '2025-08-19', 'Friend', NULL, NULL, 0, '2025-08-19 10:18:00', '2025-08-29 16:03:14'),
 (974, '100974', 'Maria Mushi', 'Teaches Maths', 'Teacher', 'St. Peter School, Arusha', '713500002', '', 'Borrower', 1, 'National ID', 'ID2002', '1991-09-25', NULL, NULL, 1, 1, 'F', '$2y$12$AEX0WXbFQ8PZEbr0sPTZdeBQTynsat.9qtCofxVNMJmn7nEmTt/2.', '2025-08-19', 'Sister', NULL, NULL, 0, '2025-08-19 10:18:01', '2025-08-19 10:18:01'),
 (975, '100975', 'Dennis Kalua', 'Surgeon', 'Doctor', 'Bugando Hospital, Mwanza', '714500003', '754500002', 'Borrower', 1, 'Passport', 'PP2003', '1985-07-05', NULL, NULL, 1, 1, 'M', '$2y$12$vXJn0U2tHcmrreSo2jcevOhs/a63dZcO2r5szg05xwkJsEmQL9ixS', '2025-08-19', 'Uncle', NULL, NULL, 0, '2025-08-19 10:18:01', '2025-08-19 10:18:01'),
 (976, '100976', 'Neema Mbwambo', 'Registered nurse', 'Nurse', 'KCMC, Moshi', '715500004', '', 'Borrower', 1, 'License', 'NUR2004', '1993-11-02', NULL, NULL, 1, 1, 'F', '$2y$12$RWm3YcXwI59Rb9w3hZJIM.U9fc1ehiNQjVGdkY5R7e.2eHFM8seOO', '2025-08-19', 'Aunt', NULL, NULL, 0, '2025-08-19 10:18:01', '2025-08-19 10:18:01'),
@@ -5580,7 +5717,7 @@ INSERT INTO `customers` (`id`, `customerNo`, `name`, `description`, `work`, `wor
 (1182, '101182', 'Felicia Reed MD', 'Newspaper grow behavior.', 'Wellsite geologist', 'Nguyen Ltd, Nicolebury', '7401365543', '', 'Borrower', 1, 'National ID', '443202316', '1968-03-02', NULL, NULL, 1, 1, 'F', '$2y$12$Q3TvMPMkb6AS9NfYzfi6SuAEUcdet9OSPj/9jJ1Jq2Wu/KUP0hC9q', '2025-08-19', 'Spouse', NULL, NULL, 0, '2025-08-19 10:24:34', '2025-08-19 10:24:34'),
 (1183, '101183', 'Brian Booth', 'Itself news article treat evidence.', 'Contractor', 'Williams-White, Matthewburgh', '7425464488', '7251290161', 'Borrower', 1, 'National ID', '710388338', '1984-11-11', NULL, NULL, 1, 1, 'M', '$2y$12$frxtv2M5h4igQKF2NZE9sukvbGeyKJ10f9uDCNNYsOu6iAvJZa3UO', '2025-08-19', 'Guardian', NULL, NULL, 0, '2025-08-19 10:24:35', '2025-08-19 10:24:35'),
 (1184, '101184', 'Luis Harris', 'Room summer situation our near.', 'Art gallery manager', 'Sellers LLC, Port William', '7922696367', '7174773906', 'Borrower', 1, 'National ID', '795061963', '2002-06-05', NULL, NULL, 1, 1, 'F', '$2y$12$KIaJ7GhQo9izkNYfESAk7ereVNss1ZMoPddUU8MeyeW5JcY.jmVK2', '2025-08-19', 'Parent', NULL, NULL, 0, '2025-08-19 10:24:35', '2025-08-19 10:24:35'),
-(1185, '101185', 'Adrian Zuniga', 'Card project itself skin only.', 'Health and safety inspector', 'Stephens, Ho and Anderson, Castroland', '7825696744', '7381814440', 'Borrower', 1, 'Driver\'s License', '638218720', '1966-01-27', NULL, NULL, 1, 1, 'M', '$2y$12$EpgK2NBvW3Rf64K/lksvBexJ.GnTTKAJzc2Ht/eDkTuaLQiaQTI3q', '2025-08-19', 'Guardian', NULL, NULL, 0, '2025-08-19 10:24:35', '2025-08-19 10:24:35'),
+(1185, '101185', 'Adrian Zuniga', 'Card project itself skin only.', 'Health and safety inspector', 'Stephens, Ho and Anderson, Castroland', '7825696744', '7381814440', 'Borrower', 1, NULL, '638218720', '1966-01-27', 2, 1, 1, 1, 'M', '$2y$12$EpgK2NBvW3Rf64K/lksvBexJ.GnTTKAJzc2Ht/eDkTuaLQiaQTI3q', '2025-08-19', 'Guardian', NULL, NULL, 0, '2025-08-19 10:24:35', '2025-08-29 17:14:14'),
 (1186, '101186', 'Crystal Ponce', 'Hold take discover head once.', 'Solicitor, Scotland', 'Garrett-Johnson, North Edward', '7940015219', '', 'Borrower', 1, 'Voter ID', '548960148', '1968-08-08', NULL, NULL, 1, 1, 'M', '$2y$12$LP8LeDMl4dnNxK5QH4v.4.at4NiINAkb4AtXyppbzFYPLS1mrbhB.', '2025-08-19', 'Friend', NULL, NULL, 0, '2025-08-19 10:24:36', '2025-08-19 10:24:36'),
 (1187, '101187', 'Jorge Wolf', 'Relate popular yeah.', 'Production engineer', 'Todd LLC, Caseland', '7181681093', '7610159893', 'Borrower', 1, 'License', '246341892', '1981-07-09', NULL, NULL, 1, 1, 'M', '$2y$12$.UPHawmed.D8EV.sORy.w.iVBt.FRNtXGCLh9/aqngsh0i2XRkbk6', '2025-08-19', 'Spouse', NULL, NULL, 0, '2025-08-19 10:24:36', '2025-08-19 10:24:36'),
 (1188, '101188', 'Stephen Holland', 'Entire real step campaign.', 'IT trainer', 'Daniel PLC, East Natalieland', '7908323393', '7997877333', 'Borrower', 1, 'Voter ID', '352561682', '1972-05-14', NULL, NULL, 1, 1, 'M', '$2y$12$IysLPsDyyoNW0WkDcU8AK.WKS0n3w5sqwAnD8QxfUIUCEQHL4H97K', '2025-08-19', 'Spouse', NULL, NULL, 0, '2025-08-19 10:24:36', '2025-08-19 10:24:36'),
@@ -5735,7 +5872,7 @@ INSERT INTO `customers` (`id`, `customerNo`, `name`, `description`, `work`, `wor
 (1673, '101673', 'Ester Mkapa', 'Secretary', 'Secretary', 'PSSSF HQ, DSM', '716500065', '', 'Borrower', 7, 'License', 'SEC2065', '1992-06-07', NULL, NULL, 2, 1, 'F', '$2y$12$OlsJKzMmYxmgqF/TY09J2etwaER/xPKbHR8zwnNwHSnkXx9xg.peS', '2025-08-19', 'Cousin', NULL, NULL, 0, '2025-08-19 10:30:09', '2025-08-19 10:30:09'),
 (1674, '101674', 'Richard Jackson', 'Total third three.', 'Medical physicist', 'Barker-Delgado, Clarkton', '715876479', '756096220', 'Borrower', 4, 'Driving License', '422006951', '1973-07-14', NULL, NULL, 1, 1, 'M', '$2y$12$Vf5rgPtB7Vg0JaDrTwxO.uuAlnfDW1pCMIL7JDE1HVaL/rxrEjubS', '2025-08-19', 'Brother', NULL, NULL, 0, '2025-08-19 10:30:43', '2025-08-19 10:30:43'),
 (1675, '101675', 'Donald Kline', 'Everything chance.', 'Diplomatic Services operational officer', 'Little, Williams and Burke, Lake Stephanieport', '714592399', '753196278', 'Borrower', 4, 'License', '497069152', '1974-03-12', NULL, NULL, 1, 1, 'M', '$2y$12$0WKCgSm.tjgr6P72.wm4de/woDFGZG1HOqy1Wnn2Z81jQ90ikoGeC', '2025-08-19', 'Sister', NULL, NULL, 0, '2025-08-19 10:30:43', '2025-08-19 10:30:43'),
-(1676, '101676', 'Adrian Conway', 'Popular water.', 'Theatre manager', 'Bautista, Adkins and Sullivan, West Ronald', '718165845', '755670203', 'Borrower', 4, 'Voter ID', '405411193', '1989-03-16', NULL, NULL, 1, 1, 'M', '$2y$12$HfgLxn6V7prBD2QS.TsZ2.iHa7tUmH6x4WACObKTfiVEhOfji5PjK', '2025-08-19', 'Parent', NULL, NULL, 0, '2025-08-19 10:30:43', '2025-08-19 10:30:43'),
+(1676, '101676', 'Adrian Conway', 'Popular water.', 'Theatre manager', 'Bautista, Adkins and Sullivan, West Ronald', '718165845', '755670203', 'Borrower', 1, NULL, '405411193', '1989-03-16', 2, 1, 1, 1, 'M', '$2y$12$HfgLxn6V7prBD2QS.TsZ2.iHa7tUmH6x4WACObKTfiVEhOfji5PjK', '2025-08-19', 'Parent', NULL, NULL, 0, '2025-08-19 10:30:43', '2025-08-29 17:05:28'),
 (1677, '101677', 'Jennifer Martin', 'Perform great.', 'Air broker', 'Terrell, Jackson and Rojas, Weaverfort', '718070419', '', 'Borrower', 4, 'Voter ID', '333945726', '1984-12-19', NULL, NULL, 1, 1, 'F', '$2y$12$mB4Equ8e1pi03xGvZnnkBOmcaGNRL/qbd.FopgQut8OwIwcx9UmTm', '2025-08-19', 'Daughter', NULL, NULL, 0, '2025-08-19 10:30:44', '2025-08-19 10:30:44'),
 (1678, '101678', 'Joel Anderson', 'Street I.', 'Metallurgist', 'Arnold-Mitchell, Marktown', '717877407', '754917906', 'Borrower', 4, 'Student ID', '464627246', '1985-11-25', NULL, NULL, 1, 1, 'M', '$2y$12$3Y71IApmv1GnFEOCV89DTuFYONqSXYUcq4jAz/ksb0bm650ptOium', '2025-08-19', 'Niece', NULL, NULL, 0, '2025-08-19 10:30:44', '2025-08-19 10:30:44'),
 (1679, '101679', 'Dennis Medina', 'Process fast.', 'Scientist, audiological', 'Nelson-Bennett, New Kevinberg', '712668628', '756315309', 'Borrower', 4, 'Driving License', '363887054', '1978-02-28', NULL, NULL, 1, 1, 'M', '$2y$12$YwlA1yhguzQqJv/pcwXWs.S09cRXN/Qr9OnuZuY6jJ699BG2SLrAm', '2025-08-19', 'Cousin', NULL, NULL, 0, '2025-08-19 10:30:44', '2025-08-19 10:30:44'),
@@ -5799,7 +5936,8 @@ INSERT INTO `customers` (`id`, `customerNo`, `name`, `description`, `work`, `wor
 (1737, '101737', 'Connor Warren', 'Fish individual thank across.', 'Secretary/administrator', 'Montgomery, Bradley and Hill, Nelsonstad', '717010733', '759322689', 'Borrower', 4, 'Student ID', '326065974', '1973-01-03', NULL, NULL, 1, 1, 'M', '$2y$12$LdoRU4RmEESkFngvBFnCtuW.zIzLTxA3DpAlh22KOloTDgXU1FxCS', '2025-08-19', 'Brother', NULL, NULL, 0, '2025-08-19 10:31:04', '2025-08-19 10:31:04'),
 (1738, '101738', 'Ethan Haas', 'Ready system.', 'Health and safety adviser', 'Howard LLC, North Geraldfurt', '712385066', '759548248', 'Borrower', 4, 'License', '316823389', '1973-03-11', NULL, NULL, 1, 1, 'M', '$2y$12$xJ9X0sX5nWvcbOQmv01fxOQYRswNDoMYbWzDXQ8jEgAx4SKKLC/nO', '2025-08-19', 'Sister', NULL, NULL, 0, '2025-08-19 10:31:05', '2025-08-19 10:31:05'),
 (1739, '101739', 'Jason Norman', 'Market participant.', 'Accountant, chartered public finance', 'Guerrero, Hernandez and Miller, Leonardstad', '713470554', '757174957', 'Borrower', 4, 'National ID', '406368208', '1990-02-17', NULL, NULL, 1, 1, 'M', '$2y$12$yu.6TUX/sfXOOX/TgTRkLuw7675vfLEUBz5gILwyuDAgn40Cir55W', '2025-08-19', 'Brother', NULL, NULL, 0, '2025-08-19 10:31:05', '2025-08-19 10:31:05'),
-(1797, '101740', 'Juma Lokole', NULL, NULL, NULL, '255655577803', NULL, 'Borrower', 1, NULL, NULL, '2025-08-25', 2, 1, 1, 1, 'M', '$2y$12$gJ35Or6aVqqP.eaFaVsSJuSG.smmh5wntCZ7XzJT5foKefjhEJgcy', '2025-08-25', NULL, NULL, NULL, 0, '2025-08-25 12:33:04', '2025-08-25 12:33:04');
+(1797, '101740', 'Juma Lokole', NULL, NULL, NULL, '255655577803', NULL, 'Borrower', 1, NULL, NULL, '2025-08-25', 2, 1, 1, 1, 'M', '$2y$12$gJ35Or6aVqqP.eaFaVsSJuSG.smmh5wntCZ7XzJT5foKefjhEJgcy', '2025-08-25', NULL, NULL, NULL, 0, '2025-08-25 12:33:04', '2025-08-25 12:33:04'),
+(1799, '101798', 'Jacquline', NULL, NULL, NULL, '255655577804', NULL, 'Borrower', 1, NULL, NULL, '2025-08-29', 2, 1, 1, 1, 'F', '$2y$12$LHTQwxeROMt/YBwPOGkzcukR6j1EtLK/M.6GGGAaLsSB3rdJg.Wc.', '2025-08-29', NULL, NULL, NULL, 0, '2025-08-29 05:41:50', '2025-08-29 05:41:50');
 
 -- --------------------------------------------------------
 
@@ -5835,7 +5973,14 @@ CREATE TABLE `customer_officer` (
 --
 
 INSERT INTO `customer_officer` (`id`, `customer_id`, `officer_id`, `created_at`, `updated_at`) VALUES
-(1, 1797, 1, '2025-08-25 12:33:04', '2025-08-25 12:33:04');
+(1, 1797, 1, '2025-08-25 12:33:04', '2025-08-25 12:33:04'),
+(7, 1799, 1, '2025-08-29 06:13:06', '2025-08-29 06:13:06'),
+(9, 1032, 1, '2025-08-29 15:03:43', '2025-08-29 15:03:43'),
+(10, 973, 1, '2025-08-29 16:03:14', '2025-08-29 16:03:14'),
+(11, 957, 1, '2025-08-29 16:26:54', '2025-08-29 16:26:54'),
+(12, 922, 1, '2025-08-29 16:51:30', '2025-08-29 16:51:30'),
+(13, 1676, 1, '2025-08-29 17:05:28', '2025-08-29 17:05:28'),
+(14, 1185, 1, '2025-08-29 17:14:14', '2025-08-29 17:14:14');
 
 -- --------------------------------------------------------
 
@@ -5952,7 +6097,8 @@ INSERT INTO `fees` (`id`, `name`, `chart_account_id`, `fee_type`, `amount`, `des
 (5, 'Insurance Fee', NULL, 'percentage', 1.50, 'Insurance coverage fee for loan protection', 'active', 'do_not_include_in_loan_schedule', 0, 1, 1, 1, 1, '2025-08-18 09:37:42', '2025-08-18 09:37:42', NULL),
 (6, 'Administrative Fee', NULL, 'fixed', 2000.00, 'Administrative handling fee for loan management', 'active', 'do_not_include_in_loan_schedule', 0, 1, 1, 1, 1, '2025-08-18 09:37:42', '2025-08-18 09:37:42', NULL),
 (7, 'Early Repayment Fee', NULL, 'percentage', 3.00, 'Fee charged for early loan repayment', 'inactive', 'do_not_include_in_loan_schedule', 0, 1, 1, 1, 1, '2025-08-18 09:37:42', '2025-08-18 09:37:42', NULL),
-(8, 'Consultation Fee', NULL, 'fixed', 10000.00, 'Financial consultation and advisory services fee', 'active', 'do_not_include_in_loan_schedule', 0, 1, 1, 1, 1, '2025-08-18 09:37:42', '2025-08-18 09:37:42', NULL);
+(8, 'Consultation Fee', NULL, 'fixed', 10000.00, 'Financial consultation and advisory services fee', 'active', 'do_not_include_in_loan_schedule', 0, 1, 1, 1, 1, '2025-08-18 09:37:42', '2025-08-18 09:37:42', NULL),
+(9, 'Cartrack', 16, 'fixed', 25000.00, NULL, 'active', 'charge_same_fee_to_all_repayments', 1, 1, 1, 1, 1, '2025-08-29 14:34:01', '2025-08-29 14:34:01', NULL);
 
 -- --------------------------------------------------------
 
@@ -5978,7 +6124,8 @@ INSERT INTO `filetypes` (`id`, `name`, `created_at`, `updated_at`) VALUES
 (4, 'Proof of Residence', '2025-08-18 09:37:42', '2025-08-18 09:37:42'),
 (5, 'Proof of Income', '2025-08-18 09:37:42', '2025-08-18 09:37:42'),
 (6, 'Birth Certificate', '2025-08-18 09:37:42', '2025-08-18 09:37:42'),
-(7, 'Company Registration', '2025-08-18 09:37:42', '2025-08-18 09:37:42');
+(7, 'Company Registration', '2025-08-18 09:37:42', '2025-08-18 09:37:42'),
+(8, 'xxxxx', '2025-08-29 05:26:13', '2025-08-29 05:26:13');
 
 -- --------------------------------------------------------
 
@@ -6261,7 +6408,32 @@ INSERT INTO `gl_transactions` (`id`, `chart_account_id`, `customer_id`, `supplie
 (250, 1, 356, NULL, 127659.56, 'credit', 52436, 'receipt', '2025-08-23 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-24 09:55:05', '2025-08-24 09:55:05'),
 (251, 1, 356, NULL, 1881395.58, 'debit', 52436, 'receipt', '2025-08-23 21:00:00', 'Loan repayment received - Michael Brown', 1, 1, '2025-08-24 09:55:05', '2025-08-24 09:55:05'),
 (252, 1, 356, NULL, 1720850.91, 'debit', 52437, 'receipt', '2025-08-23 21:00:00', 'Loan repayment received - Michael Brown', 1, 1, '2025-08-24 11:30:28', '2025-08-24 11:30:28'),
-(253, 1, 356, NULL, 127659.56, 'credit', 52437, 'receipt', '2025-08-23 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-24 11:30:28', '2025-08-24 11:30:28');
+(253, 1, 356, NULL, 127659.56, 'credit', 52437, 'receipt', '2025-08-23 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-24 11:30:28', '2025-08-24 11:30:28'),
+(254, 1, 356, NULL, 127659.56, 'credit', 2, 'journal repayment', '2025-08-26 21:00:00', 'Principal repayment from cash deposit - Loan #13', 1, 1, '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(255, 15, 356, NULL, 1690212.62, 'debit', 2, 'journal repayment', '2025-08-26 21:00:00', 'Loan repayment from cash deposit - Loan #13', 1, 1, '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(256, 1, 356, NULL, 1659574.32, 'debit', 52438, 'receipt', '2025-08-26 21:00:00', 'Loan repayment received - Michael Brown', 1, 1, '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(257, 1, 356, NULL, 127659.56, 'credit', 52438, 'receipt', '2025-08-26 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(258, 4, 356, NULL, 1628936.03, 'debit', 52439, 'receipt', '2025-08-26 21:00:00', 'Loan repayment received - Michael Brown', 1, 1, '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(259, 1, 356, NULL, 127659.56, 'credit', 52439, 'receipt', '2025-08-26 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(260, 2, 356, NULL, 1501276.47, 'credit', 52439, 'receipt', '2025-08-26 21:00:00', 'Interest payment for loan #13', 1, 1, '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(261, 4, 356, NULL, 1598297.73, 'debit', 52440, 'receipt', '2025-08-26 21:00:00', 'Loan repayment received - Michael Brown', 1, 1, '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(262, 1, 356, NULL, 127659.56, 'credit', 52440, 'receipt', '2025-08-26 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(263, 2, 356, NULL, 1470638.17, 'credit', 52440, 'receipt', '2025-08-26 21:00:00', 'Interest payment for loan #13', 1, 1, '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(264, 4, 356, NULL, 1567659.44, 'debit', 52441, 'receipt', '2025-08-26 21:00:00', 'Loan repayment received - Michael Brown', 1, 1, '2025-08-27 03:48:43', '2025-08-27 03:48:43'),
+(265, 1, 356, NULL, 127659.56, 'credit', 52441, 'receipt', '2025-08-26 21:00:00', 'Principal payment for loan #13', 1, 1, '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(266, 2, 356, NULL, 1439999.88, 'credit', 52441, 'receipt', '2025-08-26 21:00:00', 'Interest payment for loan #13', 1, 1, '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(267, 4, 1032, NULL, 1000000.00, 'credit', 113, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Aaron Guzman, TSHS.1000000', 1, 1, NULL, NULL),
+(268, 1, 1032, NULL, 1000000.00, 'debit', 113, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Aaron Guzman, TSHS.1000000', 1, 1, NULL, NULL),
+(269, 4, 973, NULL, 1000000.00, 'credit', 114, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Abel Mwita, TSHS.1000000', 1, 1, NULL, NULL),
+(270, 1, 973, NULL, 1000000.00, 'debit', 114, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Abel Mwita, TSHS.1000000', 1, 1, NULL, NULL),
+(271, 4, 957, NULL, 1000000.00, 'credit', 115, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adam Mkapa, TSHS.1000000', 1, 1, NULL, NULL),
+(272, 1, 957, NULL, 1000000.00, 'debit', 115, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adam Mkapa, TSHS.1000000', 1, 1, NULL, NULL),
+(273, 4, 922, NULL, 1000000.00, 'credit', 116, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Abigail Howard, TSHS.1000000', 1, 1, NULL, NULL),
+(274, 1, 922, NULL, 1000000.00, 'debit', 116, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Abigail Howard, TSHS.1000000', 1, 1, NULL, NULL),
+(275, 4, 1676, NULL, 1000000.00, 'credit', 117, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adrian Conway, TSHS.1000000', 1, 1, NULL, NULL),
+(276, 1, 1676, NULL, 1000000.00, 'debit', 117, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adrian Conway, TSHS.1000000', 1, 1, NULL, NULL),
+(277, 4, 1185, NULL, 1000000.00, 'credit', 118, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adrian Zuniga, TSHS.1000000', 1, 1, NULL, NULL),
+(278, 1, 1185, NULL, 1000000.00, 'debit', 118, 'Loan Disbursement', '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adrian Zuniga, TSHS.1000000', 1, 1, NULL, NULL);
 
 -- --------------------------------------------------------
 
@@ -6322,7 +6494,6 @@ INSERT INTO `group_members` (`id`, `group_id`, `customer_id`, `status`, `joined_
 (2, 2, 354, 'active', '2025-08-05', NULL, NULL, '2025-08-19 11:14:33', '2025-08-19 11:14:33'),
 (3, 3, 1196, 'active', '2025-08-05', NULL, NULL, '2025-08-19 11:15:17', '2025-08-19 11:15:17'),
 (4, 4, 1192, 'active', '2025-08-05', NULL, NULL, '2025-08-19 11:15:31', '2025-08-19 11:15:31'),
-(5, 2, 973, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:16:25', '2025-08-19 11:16:25'),
 (6, 1, 1019, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:16:52', '2025-08-19 11:16:52'),
 (7, 1, 385, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:16:52', '2025-08-19 11:16:52'),
 (8, 1, 887, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:16:52', '2025-08-19 11:16:52'),
@@ -6331,7 +6502,6 @@ INSERT INTO `group_members` (`id`, `group_id`, `customer_id`, `status`, `joined_
 (11, 3, 1634, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:17:08', '2025-08-19 11:17:08'),
 (12, 2, 423, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:17:22', '2025-08-19 11:17:22'),
 (13, 4, 1671, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:17:30', '2025-08-19 11:17:30'),
-(14, 2, 957, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:17:37', '2025-08-19 11:17:37'),
 (15, 2, 879, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:17:54', '2025-08-19 11:17:54'),
 (16, 3, 1671, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:18:02', '2025-08-19 11:18:02'),
 (17, 3, 1664, 'active', '2025-08-19', NULL, NULL, '2025-08-19 11:18:02', '2025-08-19 11:18:02'),
@@ -6350,9 +6520,6 @@ INSERT INTO `group_members` (`id`, `group_id`, `customer_id`, `status`, `joined_
 (30, 5, 1046, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:14:34', '2025-08-19 12:14:34'),
 (31, 5, 365, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:14:55', '2025-08-19 12:14:55'),
 (32, 5, 954, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:15:12', '2025-08-19 12:15:12'),
-(33, 5, 973, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:15:25', '2025-08-19 12:15:25'),
-(34, 5, 957, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:15:48', '2025-08-19 12:15:48'),
-(35, 5, 1185, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:16:09', '2025-08-19 12:16:09'),
 (36, 5, 949, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:16:25', '2025-08-19 12:16:25'),
 (37, 6, 358, 'active', '2025-08-05', NULL, NULL, '2025-08-19 12:16:31', '2025-08-19 12:16:31'),
 (38, 5, 879, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:17:03', '2025-08-19 12:17:03'),
@@ -6382,7 +6549,14 @@ INSERT INTO `group_members` (`id`, `group_id`, `customer_id`, `status`, `joined_
 (62, 5, 935, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:25:05', '2025-08-19 12:25:05'),
 (63, 5, 890, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:25:24', '2025-08-19 12:25:24'),
 (64, 5, 1189, 'active', '2025-08-19', NULL, NULL, '2025-08-19 12:25:41', '2025-08-19 12:25:41'),
-(65, 5, 1797, 'active', '2025-08-25', NULL, NULL, '2025-08-25 12:33:04', '2025-08-25 12:33:04');
+(65, 5, 1797, 'active', '2025-08-25', NULL, NULL, '2025-08-25 12:33:04', '2025-08-25 12:33:04'),
+(67, 5, 1799, 'active', '2025-08-29', NULL, NULL, '2025-08-29 05:41:50', '2025-08-29 05:41:50'),
+(68, 5, 1032, 'active', '2025-08-29', NULL, NULL, '2025-08-29 15:03:43', '2025-08-29 15:03:43'),
+(69, 5, 973, 'active', '2025-08-29', NULL, NULL, '2025-08-29 16:03:14', '2025-08-29 16:03:14'),
+(70, 5, 957, 'active', '2025-08-29', NULL, NULL, '2025-08-29 16:26:54', '2025-08-29 16:26:54'),
+(71, 5, 922, 'active', '2025-08-29', NULL, NULL, '2025-08-29 16:51:30', '2025-08-29 16:51:30'),
+(72, 5, 1676, 'active', '2025-08-29', NULL, NULL, '2025-08-29 17:05:28', '2025-08-29 17:05:28'),
+(73, 5, 1185, 'active', '2025-08-29', NULL, NULL, '2025-08-29 17:14:14', '2025-08-29 17:14:14');
 
 -- --------------------------------------------------------
 
@@ -6444,7 +6618,8 @@ CREATE TABLE `journals` (
 --
 
 INSERT INTO `journals` (`id`, `date`, `reference`, `reference_type`, `customer_id`, `description`, `user_id`, `attachment`, `branch_id`, `created_at`, `updated_at`) VALUES
-(1, '2025-08-18 22:00:00', 'JRN-000001', 'Journal', NULL, 'Share Capital', 1, NULL, 1, '2025-08-19 10:49:36', '2025-08-19 10:49:36');
+(1, '2025-08-18 22:00:00', 'JRN-000001', 'Journal', NULL, 'Share Capital', 1, NULL, 1, '2025-08-19 10:49:36', '2025-08-19 10:49:36'),
+(2, '2025-08-26 21:00:00', '23', 'Withdrawal', 356, 'Loan repayment from cash deposit for Michael Brown - Loan #13', 1, NULL, 1, '2025-08-27 03:20:24', '2025-08-27 03:20:24');
 
 -- --------------------------------------------------------
 
@@ -6469,7 +6644,10 @@ CREATE TABLE `journal_items` (
 
 INSERT INTO `journal_items` (`id`, `journal_id`, `chart_account_id`, `amount`, `nature`, `description`, `created_at`, `updated_at`) VALUES
 (1, 1, 5, 50000000.00, 'credit', 'Share Capital', '2025-08-19 10:49:36', '2025-08-19 10:49:36'),
-(2, 1, 4, 50000000.00, 'debit', 'Share Capital', '2025-08-19 10:49:36', '2025-08-19 10:49:36');
+(2, 1, 4, 50000000.00, 'debit', 'Share Capital', '2025-08-19 10:49:36', '2025-08-19 10:49:36'),
+(3, 2, 15, 1690212.62, 'debit', 'Loan repayment from cash deposit', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(4, 2, 1, 127659.56, 'credit', 'Principal repayment for loan #13', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(5, 2, 15, 1690212.62, 'debit', 'Loan repayment from cash deposit', '2025-08-27 03:20:24', '2025-08-27 03:20:24');
 
 -- --------------------------------------------------------
 
@@ -6525,7 +6703,7 @@ INSERT INTO `loans` (`id`, `customer_id`, `group_id`, `product_id`, `loan_office
 (15, 360, 5, 1, 1, 9573925.00, 23.00, 41838052.25, 51411977.25, 37, 1, 2, '2025-06-08', '2025-06-27', '2025-07-27', '2028-07-27', 'Monthly', 'active', 'Agriculture', 'SF-1000014', NULL, '2025-08-22 11:46:51', '2025-08-22 11:46:51'),
 (16, 361, 3, 1, 2, 3409088.00, 13.00, 3767042.24, 7176130.24, 16, 1, 2, '2025-08-19', '2025-09-08', '2025-12-08', '2029-09-08', 'Quarterly', 'active', 'Agriculture', 'SF-1000015', NULL, '2025-08-22 11:46:51', '2025-08-22 11:46:51'),
 (17, 362, 3, 3, 4, 5884129.00, 16.00, 14121909.60, 20006038.60, 15, 1, 1, '2025-05-20', '2025-06-18', '2025-07-18', '2026-09-18', 'Monthly', 'active', 'Transport', 'SF-1000016', NULL, '2025-08-22 11:46:51', '2025-08-22 11:46:51'),
-(18, 363, 4, 3, 4, 7551721.00, 15.00, 39646535.25, 47198256.25, 35, 1, 1, '2025-05-19', '2025-05-26', '2025-06-26', '2028-04-26', 'Monthly', 'active', 'Services', 'SF-1000017', NULL, '2025-08-22 11:46:51', '2025-08-22 11:46:51'),
+(18, 363, 4, 3, 4, 7551721.00, 15.00, 39646535.25, 47198256.25, 35, 1, 1, '2025-05-19', '2025-05-26', '2025-06-26', '2028-04-26', 'Monthly', 'written_off', 'Services', 'SF-1000017', NULL, '2025-08-22 11:46:51', '2025-08-22 11:46:51'),
 (19, 364, 1, 1, 8, 1777850.00, 13.00, 6240253.50, 8018103.50, 53, 1, 2, '2025-04-19', '2025-05-02', '2025-08-02', '2038-08-02', 'Quarterly', 'active', 'Services', 'SF-1000018', NULL, '2025-08-22 11:46:52', '2025-08-22 11:46:52'),
 (20, 365, 4, 1, 5, 8971525.00, 22.00, 55264594.00, 64236119.00, 55, 1, 2, '2025-03-20', '2025-03-27', '2025-04-27', '2029-10-27', 'Monthly', 'active', 'Manufacturing', 'SF-1000019', NULL, '2025-08-22 11:46:52', '2025-08-22 11:46:52'),
 (21, 366, 4, 3, 6, 7378589.00, 21.00, 74376177.12, 81754766.12, 48, 1, 1, '2025-07-19', '2025-07-31', '2025-10-31', '2037-07-31', 'Quarterly', 'active', 'Education', 'SF-1000020', NULL, '2025-08-22 11:46:52', '2025-08-22 11:46:52'),
@@ -6619,7 +6797,13 @@ INSERT INTO `loans` (`id`, `customer_id`, `group_id`, `product_id`, `loan_office
 (109, 883, 2, 2, 1, 6807012.00, 18.00, 24505243.20, 31312255.20, 39, 1, 2, '2025-04-08', '2025-04-30', '2025-07-30', '2035-01-30', 'Quarterly', 'active', 'Education', 'SF-1000108', NULL, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (110, 884, 5, 3, 3, 7660954.00, 12.00, 5515886.88, 13176840.88, 6, 1, 2, '2025-07-05', '2025-07-23', '2025-07-30', '2025-09-03', 'Weekly', 'active', 'Agriculture', 'SF-1000109', NULL, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (111, 885, 5, 2, 5, 5539854.00, 17.00, 14597515.29, 20137369.29, 30, 1, 2, '2025-04-11', '2025-05-05', '2025-05-12', '2025-12-01', 'Weekly', 'active', 'Manufacturing', 'SF-1000110', NULL, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
-(112, 886, 6, 2, 1, 1785633.00, 23.00, 2258825.75, 4044458.75, 10, 1, 2, '2025-03-29', '2025-04-25', '2025-05-02', '2025-07-04', 'Weekly', 'active', 'Trade', 'SF-1000111', NULL, '2025-08-22 11:47:00', '2025-08-22 11:47:00');
+(112, 886, 6, 2, 1, 1785633.00, 23.00, 2258825.75, 4044458.75, 10, 1, 2, '2025-03-29', '2025-04-25', '2025-05-02', '2025-07-04', 'Weekly', 'active', 'Trade', 'SF-1000111', NULL, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
+(113, 1032, 5, 5, 1, 1000000.00, 3.50, 122500.00, 1122500.00, 6, 1, 1, '2025-08-29', '2025-08-29', '2025-09-29', '2026-03-01', 'monthly', 'active', 'Business', 'SF-1000112', NULL, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(114, 973, 5, 5, 1, 1000000.00, 3.50, 122500.00, 1122500.00, 6, 1, 1, '2025-08-29', '2025-08-29', '2025-09-29', '2026-03-01', 'monthly', 'active', 'Business', 'SF-1000113', NULL, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(115, 957, 5, 5, 1, 1000000.00, 3.50, 122500.00, 1122500.00, 6, 1, 1, '2025-08-29', '2025-08-29', '2025-09-29', '2026-03-01', 'monthly', 'active', 'Business', 'SF-1000114', NULL, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(116, 922, 5, 5, 1, 1000000.00, 3.50, 122500.00, 1122500.00, 6, 1, 1, '2025-08-29', '2025-08-29', '2025-09-29', '2026-03-01', 'monthly', 'active', 'Business', 'SF-1000115', NULL, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(117, 1676, 5, 5, 1, 1000000.00, 3.50, 122500.00, 1122500.00, 6, 1, 1, '2025-08-29', '2025-08-29', '2025-09-29', '2026-03-01', 'monthly', 'active', 'Business', 'SF-1000116', NULL, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(118, 1185, 5, 5, 1, 1000000.00, 3.50, 122500.00, 1122500.00, 6, 1, 1, '2025-08-29', '2025-08-29', '2025-09-29', '2026-03-01', 'monthly', 'active', 'Education', 'SF-1000117', NULL, '2025-08-29 17:15:04', '2025-08-29 17:15:04');
 
 -- --------------------------------------------------------
 
@@ -6747,8 +6931,9 @@ CREATE TABLE `loan_products` (
   `maximum_period` int NOT NULL,
   `grace_period` int DEFAULT NULL,
   `penalt_deduction_criteria` enum('daily_bases','full_amount') CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
-  `top_up_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci NOT NULL,
-  `top_up_type_value` decimal(15,2) NOT NULL,
+  `top_up_type` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `top_up_type_value` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL,
+  `allow_push_to_ess` tinyint(1) NOT NULL DEFAULT '0',
   `has_cash_collateral` tinyint(1) NOT NULL DEFAULT '0',
   `cash_collateral_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `cash_collateral_value_type` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
@@ -6763,17 +6948,22 @@ CREATE TABLE `loan_products` (
   `repayment_order` varchar(255) CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci DEFAULT NULL,
   `is_active` tinyint(1) NOT NULL DEFAULT '1',
   `created_at` timestamp NULL DEFAULT NULL,
-  `updated_at` timestamp NULL DEFAULT NULL
+  `updated_at` timestamp NULL DEFAULT NULL,
+  `direct_writeoff_account_id` bigint UNSIGNED DEFAULT NULL,
+  `provision_writeoff_account_id` bigint UNSIGNED DEFAULT NULL,
+  `income_provision_account_id` bigint UNSIGNED DEFAULT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 --
 -- Dumping data for table `loan_products`
 --
 
-INSERT INTO `loan_products` (`id`, `name`, `product_type`, `minimum_interest_rate`, `maximum_interest_rate`, `interest_cycle`, `interest_method`, `minimum_principal`, `maximum_principal`, `minimum_period`, `maximum_period`, `grace_period`, `penalt_deduction_criteria`, `top_up_type`, `top_up_type_value`, `has_cash_collateral`, `cash_collateral_type`, `cash_collateral_value_type`, `cash_collateral_value`, `has_approval_levels`, `approval_levels`, `principal_receivable_account_id`, `interest_receivable_account_id`, `interest_revenue_account_id`, `fees_ids`, `penalty_ids`, `repayment_order`, `is_active`, `created_at`, `updated_at`) VALUES
-(1, 'Chap Chap Products', 'business', 5.00, 17.00, 'weekly', 'reducing_balance_with_equal_principal', 500000.00, 1000000.00, 1, 4, 20, 'daily_bases', 'percentage', 50.00, 0, NULL, NULL, NULL, 1, '5,4,6', 1, 3, 2, '[\"1\", \"3\"]', '[\"1\"]', 'penalties,fees,interest,principal', 1, '2025-08-19 10:45:40', '2025-08-24 11:28:07'),
-(2, 'Elimu Loan', 'personal', 2.00, 7.00, 'semi_annually', 'reducing_balance_with_equal_principal', 500000.00, 1000000.00, 6, 12, 7, 'full_amount', 'fixed_amount', 200000.00, 0, NULL, 'percentage', NULL, 1, '5,3', 1, 3, 2, '[\"1\"]', '[\"1\"]', 'penalties,fees,interest,principal', 1, '2025-08-19 10:55:05', '2025-08-22 11:29:17'),
-(3, 'DEVELOPMENT LOAN', 'business', 6.00, 20.00, 'monthly', 'flat_rate', 3000000.00, 20000000.00, 5, 7, 13, 'daily_bases', 'percentage', 50.00, 0, NULL, NULL, NULL, 1, '3,5', 1, 3, 2, '[\"2\", \"1\"]', '[\"1\"]', 'fees,penalties,interest,principal', 1, '2025-08-19 10:58:00', '2025-08-22 11:29:17');
+INSERT INTO `loan_products` (`id`, `name`, `product_type`, `minimum_interest_rate`, `maximum_interest_rate`, `interest_cycle`, `interest_method`, `minimum_principal`, `maximum_principal`, `minimum_period`, `maximum_period`, `grace_period`, `penalt_deduction_criteria`, `top_up_type`, `top_up_type_value`, `allow_push_to_ess`, `has_cash_collateral`, `cash_collateral_type`, `cash_collateral_value_type`, `cash_collateral_value`, `has_approval_levels`, `approval_levels`, `principal_receivable_account_id`, `interest_receivable_account_id`, `interest_revenue_account_id`, `fees_ids`, `penalty_ids`, `repayment_order`, `is_active`, `created_at`, `updated_at`, `direct_writeoff_account_id`, `provision_writeoff_account_id`, `income_provision_account_id`) VALUES
+(1, 'Chap Chap Products', 'business', 5.00, 17.00, 'weekly', 'reducing_balance_with_equal_principal', 500000.00, 1000000.00, 1, 4, 20, 'daily_bases', 'percentage', '50.00', 0, 0, NULL, NULL, NULL, 1, '5,4,6', 1, 3, 2, '[\"1\", \"3\"]', '[\"1\"]', 'penalties,fees,interest,principal', 1, '2025-08-19 10:45:40', '2025-08-24 11:28:07', NULL, NULL, NULL),
+(2, 'Elimu Loan', 'personal', 2.00, 7.00, 'semi_annually', 'reducing_balance_with_equal_principal', 500000.00, 1000000.00, 6, 12, 7, 'full_amount', 'fixed_amount', '200000.00', 0, 0, NULL, 'percentage', NULL, 1, '5,3', 1, 3, 2, '[\"1\"]', '[\"1\"]', 'penalties,fees,interest,principal', 1, '2025-08-19 10:55:05', '2025-08-22 11:29:17', NULL, NULL, NULL),
+(3, 'DEVELOPMENT LOAN', 'business', 6.00, 20.00, 'monthly', 'flat_rate', 3000000.00, 20000000.00, 5, 7, 13, 'daily_bases', 'percentage', '50.00', 0, 0, NULL, NULL, NULL, 1, '3,5', 1, 3, 2, '[\"2\", \"1\"]', '[\"1\"]', 'fees,penalties,interest,principal', 1, '2025-08-19 10:58:00', '2025-08-22 11:29:17', NULL, NULL, NULL),
+(4, 'Biashara', 'business', 3.50, 5.00, 'monthly', 'reducing_balance_with_equal_principal', 100000.00, 50000000.00, 1, 12, 0, 'full_amount', 'number_of_installments', '3.00', 0, 0, NULL, NULL, NULL, 0, NULL, 1, 3, 2, '[]', '[]', NULL, 1, '2025-08-29 06:49:25', '2025-08-29 06:49:25', 15, 6, 5),
+(5, 'Biashara Loan', 'business', 3.50, 3.50, 'monthly', 'reducing_balance_with_equal_principal', 100000.00, 10000000.00, 1, 12, 3, 'full_amount', NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, 1, 3, 2, '[\"9\"]', '[]', NULL, 1, '2025-08-29 14:41:41', '2025-08-29 14:41:41', 1, 3, 2);
 
 -- --------------------------------------------------------
 
@@ -10026,7 +10216,61 @@ INSERT INTO `loan_schedules` (`id`, `loan_id`, `due_date`, `end_grace_date`, `en
 (3213, 112, '2025-11-02', '2025-11-09', '2025-11-07', NULL, 886, 178563.30, 164278.24, 0.00, 0.00, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (3214, 112, '2025-12-02', '2025-12-09', '2025-12-07', NULL, 886, 178563.30, 123208.68, 0.00, 0.00, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (3215, 112, '2026-01-02', '2026-01-09', '2026-01-07', NULL, 886, 178563.30, 82139.12, 0.00, 0.00, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
-(3216, 112, '2026-02-02', '2026-02-09', '2026-02-07', NULL, 886, 178563.30, 41069.56, 0.00, 0.00, '2025-08-22 11:47:00', '2025-08-22 11:47:00');
+(3216, 112, '2026-02-02', '2026-02-09', '2026-02-07', NULL, 886, 178563.30, 41069.56, 0.00, 0.00, '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
+(3217, 113, '2025-09-29', '2025-10-02', '2025-10-04', NULL, 1032, 166666.67, 35000.00, 0.00, 0.00, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(3218, 113, '2025-10-29', '2025-11-01', '2025-11-03', NULL, 1032, 166666.67, 29166.67, 0.00, 0.00, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(3219, 113, '2025-11-29', '2025-12-02', '2025-12-04', NULL, 1032, 166666.67, 23333.33, 0.00, 0.00, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(3220, 113, '2025-12-29', '2026-01-01', '2026-01-03', NULL, 1032, 166666.67, 17500.00, 0.00, 0.00, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(3221, 113, '2026-01-29', '2026-02-01', '2026-02-03', NULL, 1032, 166666.67, 11666.67, 0.00, 0.00, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(3222, 113, '2026-03-01', '2026-03-04', '2026-03-06', NULL, 1032, 166666.67, 5833.33, 0.00, 0.00, '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(3223, 114, '2025-09-29', '2025-10-02', '2025-10-04', NULL, 973, 166666.67, 35000.00, 0.00, 0.00, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(3224, 114, '2025-10-29', '2025-11-01', '2025-11-03', NULL, 973, 166666.67, 29166.67, 0.00, 0.00, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(3225, 114, '2025-11-29', '2025-12-02', '2025-12-04', NULL, 973, 166666.67, 23333.33, 0.00, 0.00, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(3226, 114, '2025-12-29', '2026-01-01', '2026-01-03', NULL, 973, 166666.67, 17500.00, 0.00, 0.00, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(3227, 114, '2026-01-29', '2026-02-01', '2026-02-03', NULL, 973, 166666.67, 11666.67, 0.00, 0.00, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(3228, 114, '2026-03-01', '2026-03-04', '2026-03-06', NULL, 973, 166666.67, 5833.33, 0.00, 0.00, '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(3229, 115, '2025-09-29', '2025-10-02', '2025-10-04', NULL, 957, 166666.67, 35000.00, 0.00, 0.00, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(3230, 115, '2025-10-29', '2025-11-01', '2025-11-03', NULL, 957, 166666.67, 29166.67, 0.00, 0.00, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(3231, 115, '2025-11-29', '2025-12-02', '2025-12-04', NULL, 957, 166666.67, 23333.33, 0.00, 0.00, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(3232, 115, '2025-12-29', '2026-01-01', '2026-01-03', NULL, 957, 166666.67, 17500.00, 0.00, 0.00, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(3233, 115, '2026-01-29', '2026-02-01', '2026-02-03', NULL, 957, 166666.67, 11666.67, 0.00, 0.00, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(3234, 115, '2026-03-01', '2026-03-04', '2026-03-06', NULL, 957, 166666.67, 5833.33, 0.00, 0.00, '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(3235, 116, '2025-09-29', '2025-10-02', '2025-10-04', NULL, 922, 166666.67, 35000.00, 0.00, 0.00, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(3236, 116, '2025-10-29', '2025-11-01', '2025-11-03', NULL, 922, 166666.67, 29166.67, 0.00, 0.00, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(3237, 116, '2025-11-29', '2025-12-02', '2025-12-04', NULL, 922, 166666.67, 23333.33, 0.00, 0.00, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(3238, 116, '2025-12-29', '2026-01-01', '2026-01-03', NULL, 922, 166666.67, 17500.00, 0.00, 0.00, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(3239, 116, '2026-01-29', '2026-02-01', '2026-02-03', NULL, 922, 166666.67, 11666.67, 0.00, 0.00, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(3240, 116, '2026-03-01', '2026-03-04', '2026-03-06', NULL, 922, 166666.67, 5833.33, 0.00, 0.00, '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(3241, 117, '2025-09-29', '2025-10-02', '2025-10-04', NULL, 1676, 166666.67, 35000.00, 0.00, 0.00, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(3242, 117, '2025-10-29', '2025-11-01', '2025-11-03', NULL, 1676, 166666.67, 29166.67, 0.00, 0.00, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(3243, 117, '2025-11-29', '2025-12-02', '2025-12-04', NULL, 1676, 166666.67, 23333.33, 0.00, 0.00, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(3244, 117, '2025-12-29', '2026-01-01', '2026-01-03', NULL, 1676, 166666.67, 17500.00, 0.00, 0.00, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(3245, 117, '2026-01-29', '2026-02-01', '2026-02-03', NULL, 1676, 166666.67, 11666.67, 0.00, 0.00, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(3246, 117, '2026-03-01', '2026-03-04', '2026-03-06', NULL, 1676, 166666.67, 5833.33, 0.00, 0.00, '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(3247, 118, '2025-09-29', '2025-10-02', '2025-10-04', NULL, 1185, 166666.67, 35000.00, 0.00, 0.00, '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(3248, 118, '2025-10-29', '2025-11-01', '2025-11-03', NULL, 1185, 166666.67, 29166.67, 0.00, 0.00, '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(3249, 118, '2025-11-29', '2025-12-02', '2025-12-04', NULL, 1185, 166666.67, 23333.33, 0.00, 0.00, '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(3250, 118, '2025-12-29', '2026-01-01', '2026-01-03', NULL, 1185, 166666.67, 17500.00, 0.00, 0.00, '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(3251, 118, '2026-01-29', '2026-02-01', '2026-02-03', NULL, 1185, 166666.67, 11666.67, 0.00, 0.00, '2025-08-29 17:15:04', '2025-08-29 17:15:04'),
+(3252, 118, '2026-03-01', '2026-03-04', '2026-03-06', NULL, 1185, 166666.67, 5833.33, 0.00, 0.00, '2025-08-29 17:15:04', '2025-08-29 17:15:04');
+
+-- --------------------------------------------------------
+
+--
+-- Table structure for table `loan_writeoffs`
+--
+
+CREATE TABLE `loan_writeoffs` (
+  `id` bigint UNSIGNED NOT NULL,
+  `loan_id` bigint UNSIGNED NOT NULL,
+  `customer_id` bigint UNSIGNED NOT NULL,
+  `outstanding` decimal(15,2) NOT NULL,
+  `reason` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `writeoff_type` varchar(255) COLLATE utf8mb4_unicode_ci NOT NULL,
+  `createdby` bigint UNSIGNED NOT NULL,
+  `created_at` timestamp NULL DEFAULT NULL,
+  `updated_at` timestamp NULL DEFAULT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
 -- --------------------------------------------------------
 
@@ -10050,10 +10294,7 @@ CREATE TABLE `login_attempts` (
 --
 
 INSERT INTO `login_attempts` (`id`, `phone`, `ip_address`, `user_agent`, `success`, `attempted_at`, `created_at`, `updated_at`) VALUES
-(73, '2556555778030', '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 1, '2025-08-26 05:45:10', '2025-08-26 05:45:10', '2025-08-26 05:45:10'),
-(74, '2556555778030', '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 1, '2025-08-26 05:54:21', '2025-08-26 05:54:21', '2025-08-26 05:54:21'),
-(75, '2556555778030', '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 1, '2025-08-26 06:01:55', '2025-08-26 06:01:55', '2025-08-26 06:01:55'),
-(76, '2556555778030', '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 1, '2025-08-26 06:07:11', '2025-08-26 06:07:11', '2025-08-26 06:07:11');
+(90, '2556555778030', '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 1, '2025-09-02 05:51:55', '2025-09-02 05:51:55', '2025-09-02 05:51:55');
 
 -- --------------------------------------------------------
 
@@ -10386,7 +10627,12 @@ INSERT INTO `migrations` (`id`, `migration`, `batch`) VALUES
 (81, '2025_08_13_180658_add_file_fields_to_chat_messages_table', 1),
 (82, '2025_08_22_101913_create_loan_collaterals_table', 2),
 (83, '2025_08_23_154715_create_sms_logs_table', 3),
-(84, '2025_08_23_175443_create_branch_user_table', 4);
+(84, '2025_08_23_175443_create_branch_user_table', 4),
+(85, '2025_08_26_000001_add_writeoff_accounts_to_loan_products_table', 5),
+(86, '2025_08_26_000002_create_loan_writeoffs_table', 6),
+(87, '2025_08_27_000003_add_allow_push_to_ess_to_loan_products_table', 6),
+(88, '2025_08_29_094801_add_income_provision_account_id_to_loan_products_table', 7),
+(89, '2025_08_29_000002_make_top_up_type_nullable_in_loan_products_table', 8);
 
 -- --------------------------------------------------------
 
@@ -10608,7 +10854,13 @@ INSERT INTO `payments` (`id`, `reference`, `reference_type`, `reference_number`,
 (109, '109', 'Loan Payment', NULL, 6807012.00, '2025-04-29 21:00:00', 'Being disbursement for loan of Elimu Loan, paid to Logan Hall, TSHS.6807012', 1, NULL, 1, NULL, NULL, NULL, 883, NULL, 2, 1, 1, '2025-08-22 11:47:00', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (110, '110', 'Loan Payment', NULL, 7660954.00, '2025-07-22 21:00:00', 'Being disbursement for loan of DEVELOPMENT LOAN, paid to Harper Allen, TSHS.7660954', 3, NULL, 1, NULL, NULL, NULL, 884, NULL, 2, 1, 3, '2025-08-22 11:47:00', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (111, '111', 'Loan Payment', NULL, 5539854.00, '2025-05-04 21:00:00', 'Being disbursement for loan of Elimu Loan, paid to Jacob Young, TSHS.5539854', 5, NULL, 1, NULL, NULL, NULL, 885, NULL, 2, 1, 5, '2025-08-22 11:47:00', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
-(112, '112', 'Loan Payment', NULL, 1785633.00, '2025-04-24 21:00:00', 'Being disbursement for loan of Elimu Loan, paid to Ava King, TSHS.1785633', 1, NULL, 1, NULL, NULL, NULL, 886, NULL, 2, 1, 1, '2025-08-22 11:47:00', '2025-08-22 11:47:00', '2025-08-22 11:47:00');
+(112, '112', 'Loan Payment', NULL, 1785633.00, '2025-04-24 21:00:00', 'Being disbursement for loan of Elimu Loan, paid to Ava King, TSHS.1785633', 1, NULL, 1, NULL, NULL, NULL, 886, NULL, 2, 1, 1, '2025-08-22 11:47:00', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
+(113, '113', 'Loan Payment', NULL, 1000000.00, '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Aaron Guzman, TSHS.1000000', 1, NULL, 1, NULL, NULL, NULL, 1032, NULL, 1, 1, 1, '2025-08-29 15:05:49', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(114, '114', 'Loan Payment', NULL, 1000000.00, '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Abel Mwita, TSHS.1000000', 1, NULL, 1, NULL, NULL, NULL, 973, NULL, 1, 1, 1, '2025-08-29 16:04:17', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(115, '115', 'Loan Payment', NULL, 1000000.00, '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adam Mkapa, TSHS.1000000', 1, NULL, 1, NULL, NULL, NULL, 957, NULL, 1, 1, 1, '2025-08-29 16:28:18', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(116, '116', 'Loan Payment', NULL, 1000000.00, '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Abigail Howard, TSHS.1000000', 1, NULL, 1, NULL, NULL, NULL, 922, NULL, 1, 1, 1, '2025-08-29 16:52:38', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(117, '117', 'Loan Payment', NULL, 1000000.00, '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adrian Conway, TSHS.1000000', 1, NULL, 1, NULL, NULL, NULL, 1676, NULL, 1, 1, 1, '2025-08-29 17:06:16', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(118, '118', 'Loan Payment', NULL, 1000000.00, '2025-08-28 21:00:00', 'Being disbursement for loan of Biashara Loan, paid to Adrian Zuniga, TSHS.1000000', 1, NULL, 1, NULL, NULL, NULL, 1185, NULL, 1, 1, 1, '2025-08-29 17:15:04', '2025-08-29 17:15:04', '2025-08-29 17:15:04');
 
 -- --------------------------------------------------------
 
@@ -10742,7 +10994,13 @@ INSERT INTO `payment_items` (`id`, `payment_id`, `chart_account_id`, `amount`, `
 (109, 109, 1, 6807012.00, 'Being disbursement for loan of Elimu Loan, paid to Logan Hall, TSHS.6807012', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (110, 110, 1, 7660954.00, 'Being disbursement for loan of DEVELOPMENT LOAN, paid to Harper Allen, TSHS.7660954', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
 (111, 111, 1, 5539854.00, 'Being disbursement for loan of Elimu Loan, paid to Jacob Young, TSHS.5539854', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
-(112, 112, 1, 1785633.00, 'Being disbursement for loan of Elimu Loan, paid to Ava King, TSHS.1785633', '2025-08-22 11:47:00', '2025-08-22 11:47:00');
+(112, 112, 1, 1785633.00, 'Being disbursement for loan of Elimu Loan, paid to Ava King, TSHS.1785633', '2025-08-22 11:47:00', '2025-08-22 11:47:00'),
+(113, 113, 1, 1000000.00, 'Being disbursement for loan of Biashara Loan, paid to Aaron Guzman, TSHS.1000000', '2025-08-29 15:05:49', '2025-08-29 15:05:49'),
+(114, 114, 1, 1000000.00, 'Being disbursement for loan of Biashara Loan, paid to Abel Mwita, TSHS.1000000', '2025-08-29 16:04:17', '2025-08-29 16:04:17'),
+(115, 115, 1, 1000000.00, 'Being disbursement for loan of Biashara Loan, paid to Adam Mkapa, TSHS.1000000', '2025-08-29 16:28:18', '2025-08-29 16:28:18'),
+(116, 116, 1, 1000000.00, 'Being disbursement for loan of Biashara Loan, paid to Abigail Howard, TSHS.1000000', '2025-08-29 16:52:38', '2025-08-29 16:52:38'),
+(117, 117, 1, 1000000.00, 'Being disbursement for loan of Biashara Loan, paid to Adrian Conway, TSHS.1000000', '2025-08-29 17:06:16', '2025-08-29 17:06:16'),
+(118, 118, 1, 1000000.00, 'Being disbursement for loan of Biashara Loan, paid to Adrian Zuniga, TSHS.1000000', '2025-08-29 17:15:04', '2025-08-29 17:15:04');
 
 -- --------------------------------------------------------
 
@@ -11039,7 +11297,8 @@ INSERT INTO `permissions` (`id`, `name`, `guard_name`, `permission_group_id`, `c
 (242, 'view logs activity', 'web', 2, '2025-08-18 09:37:38', '2025-08-18 09:37:38'),
 (243, 'print cash collateral transations', 'web', 2, '2025-08-18 09:37:38', '2025-08-18 09:37:39'),
 (244, 'view financial reports', 'web', 1, '2025-08-19 13:13:46', '2025-08-19 13:13:46'),
-(245, 'assign branches', 'web', 2, '2025-08-23 15:24:01', '2025-08-23 15:24:01');
+(245, 'assign branches', 'web', 2, '2025-08-23 15:24:01', '2025-08-23 15:24:01'),
+(246, 'view writeoff loans', 'web', 4, '2025-08-27 14:53:31', '2025-08-27 14:53:31');
 
 -- --------------------------------------------------------
 
@@ -11114,7 +11373,11 @@ INSERT INTO `receipts` (`id`, `reference`, `reference_type`, `reference_number`,
 (12, '3', 'Deposit', NULL, 1000000.00, '2025-08-23 21:00:00', 'Deposit', 1, NULL, 1, NULL, NULL, NULL, 1, 1, 1, '2025-08-24 08:15:37', '2025-08-24 08:15:37', '2025-08-24 08:15:37'),
 (52435, 'LOAN-REPAY-13-1756039421', 'loan_repayment', '17', 1914484.94, '2025-08-23 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-24 09:43:41', '2025-08-24 09:43:41', '2025-08-24 09:43:41'),
 (52436, 'LOAN-REPAY-13-1756040105', 'loan_repayment', '20', 1881395.58, '2025-08-23 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-24 09:55:05', '2025-08-24 09:55:05', '2025-08-24 09:55:05'),
-(52437, 'LOAN-REPAY-13-1756045828', 'loan_repayment', '21', 1720850.91, '2025-08-23 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-24 11:30:28', '2025-08-24 11:30:28', '2025-08-24 11:30:28');
+(52437, 'LOAN-REPAY-13-1756045828', 'loan_repayment', '21', 1720850.91, '2025-08-23 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-24 11:30:28', '2025-08-24 11:30:28', '2025-08-24 11:30:28'),
+(52438, 'LOAN-REPAY-13-1756276176', 'loan_repayment', '24', 1659574.32, '2025-08-26 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-27 03:29:36', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(52439, 'LOAN-REPAY-13-1756276579', 'loan_repayment', '25', 1628936.03, '2025-08-26 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-27 03:36:19', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(52440, 'LOAN-REPAY-13-1756277112', 'loan_repayment', '26', 1598297.73, '2025-08-26 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-27 03:45:12', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(52441, 'LOAN-REPAY-13-1756277323', 'loan_repayment', '27', 1567659.44, '2025-08-26 21:00:00', 'Loan repayment for Michael Brown - Loan #13', 1, NULL, 1, 'customer', 356, 'Michael Brown', 1, 1, 1, '2025-08-27 03:48:43', '2025-08-27 03:48:43', '2025-08-27 03:48:43');
 
 -- --------------------------------------------------------
 
@@ -11147,7 +11410,14 @@ INSERT INTO `receipt_items` (`id`, `receipt_id`, `chart_account_id`, `amount`, `
 (8, 12, 15, 1000000.00, 'Deposit', '2025-08-24 08:15:37', '2025-08-24 08:15:37'),
 (9, 52435, 1, 127659.56, 'Principal payment for loan #13', '2025-08-24 09:43:41', '2025-08-24 09:43:41'),
 (10, 52436, 1, 127659.56, 'Principal payment for loan #13', '2025-08-24 09:55:05', '2025-08-24 09:55:05'),
-(11, 52437, 1, 127659.56, 'Principal payment for loan #13', '2025-08-24 11:30:28', '2025-08-24 11:30:28');
+(11, 52437, 1, 127659.56, 'Principal payment for loan #13', '2025-08-24 11:30:28', '2025-08-24 11:30:28'),
+(12, 52438, 1, 127659.56, 'Principal payment for loan #13', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(13, 52439, 1, 127659.56, 'Principal payment for loan #13', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(14, 52439, 2, 1501276.47, 'Interest payment for loan #13', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(15, 52440, 1, 127659.56, 'Principal payment for loan #13', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(16, 52440, 2, 1470638.17, 'Interest payment for loan #13', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(17, 52441, 1, 127659.56, 'Principal payment for loan #13', '2025-08-27 03:48:44', '2025-08-27 03:48:44'),
+(18, 52441, 2, 1439999.88, 'Interest payment for loan #13', '2025-08-27 03:48:44', '2025-08-27 03:48:44');
 
 -- --------------------------------------------------------
 
@@ -11230,7 +11500,12 @@ INSERT INTO `repayments` (`id`, `customer_id`, `loan_id`, `loan_schedule_id`, `b
 (9, 356, 13, 46, 1, 127659.56, 1685106.24, 134808.50, 0.00, '2025-08-24', 1947574.30, '2025-06-05', '2025-08-24 06:01:30', '2025-08-24 06:01:30'),
 (17, 356, 13, 47, 1, 127659.56, 1654467.94, 132357.44, 0.00, '2025-08-24', 1914484.94, '2025-07-05', '2025-08-24 09:43:41', '2025-08-24 09:43:41'),
 (20, 356, 13, 48, 1, 127659.56, 1623829.65, 129906.37, 0.00, '2025-08-24', 1881395.58, '2025-08-05', '2025-08-24 09:55:05', '2025-08-24 09:55:05'),
-(21, 356, 13, 49, 1, 127659.56, 1593191.35, 0.00, 0.00, '2025-08-24', 1720850.91, '2025-09-05', '2025-08-24 11:30:28', '2025-08-24 11:30:28');
+(21, 356, 13, 49, 1, 127659.56, 1593191.35, 0.00, 0.00, '2025-08-24', 1720850.91, '2025-09-05', '2025-08-24 11:30:28', '2025-08-24 11:30:28'),
+(23, 356, 13, 50, 1, 127659.56, 1562553.06, 0.00, 0.00, '2025-08-27', 1690212.62, '2025-10-05', '2025-08-27 03:20:24', '2025-08-27 03:20:24'),
+(24, 356, 13, 51, 1, 127659.56, 1531914.76, 0.00, 0.00, '2025-08-27', 1659574.32, '2025-11-05', '2025-08-27 03:29:36', '2025-08-27 03:29:36'),
+(25, 356, 13, 52, 1, 127659.56, 1501276.47, 0.00, 0.00, '2025-08-27', 1628936.03, '2025-12-05', '2025-08-27 03:36:19', '2025-08-27 03:36:19'),
+(26, 356, 13, 53, 1, 127659.56, 1470638.17, 0.00, 0.00, '2025-08-27', 1598297.73, '2026-01-05', '2025-08-27 03:45:12', '2025-08-27 03:45:12'),
+(27, 356, 13, 54, 1, 127659.56, 1439999.88, 0.00, 0.00, '2025-08-27', 1567659.44, '2026-02-05', '2025-08-27 03:48:43', '2025-08-27 03:48:43');
 
 -- --------------------------------------------------------
 
@@ -11763,6 +12038,7 @@ INSERT INTO `role_has_permissions` (`permission_id`, `role_id`) VALUES
 (243, 2),
 (244, 2),
 (245, 2),
+(246, 2),
 (1, 3),
 (2, 3),
 (16, 3),
@@ -12153,7 +12429,9 @@ CREATE TABLE `sessions` (
 --
 
 INSERT INTO `sessions` (`id`, `user_id`, `ip_address`, `user_agent`, `payload`, `last_activity`) VALUES
-('I10fXd1ZQaG6gYG6Q8IbpdHQfMZqpetfRUldv1ZC', 1, '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiS0IxdnNYVEVkWWN3dVF3dEM2aGhhdWNnaGx5VkRkaGdtZEY4a3hMayI7czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6Mjk6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9yZXBvcnRzIjt9czo2OiJfZmxhc2giO2E6Mjp7czozOiJvbGQiO2E6MDp7fXM6MzoibmV3IjthOjA6e319czo5OiJicmFuY2hfaWQiO3M6MToiMSI7czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTt9', 1756201784);
+('Cyl56saae9cAI9ZCwa2VVpN8D2m2CqkDsvdWDBUP', 1, '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiTTFFTFoybkxsTG9ZcDM5d0Fidzh5ZXFpSFlqZFJiMFUwZTN3Ukg4UCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NTY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQvZGVsaW5xdWVuY3ktbG9hbi1idWNrZXRzIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6ImJyYW5jaF9pZCI7czoxOiIxIjt9', 1756706666),
+('La99DnncShLm2ihTp21HtxuTO2nhbQvX71oQQcvb', 1, '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoiOWtiWEw4QllvcEZ4U3F3enNqQmJJV2FjeDZyRW9xUjJUQmRvVk1wbSI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NDI6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9sb2FuLXByb2R1Y3RzL2NyZWF0ZSI7fXM6NTA6ImxvZ2luX3dlYl81OWJhMzZhZGRjMmIyZjk0MDE1ODBmMDE0YzdmNThlYTRlMzA5ODlkIjtpOjE7czo5OiJicmFuY2hfaWQiO3M6MToiMSI7fQ==', 1756803665),
+('MdUjlNvOeSHfaxvdsWoksIBzqpl81LYI0SJLreZS', 1, '127.0.0.1', 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:142.0) Gecko/20100101 Firefox/142.0', 'YTo1OntzOjY6Il90b2tlbiI7czo0MDoieGhrQVV0MXlhbjlneVlMUlhzVzhrSjVMOTBPRkRQa2l3UFNzaTRxbCI7czo2OiJfZmxhc2giO2E6Mjp7czozOiJuZXciO2E6MDp7fXM6Mzoib2xkIjthOjA6e319czo5OiJfcHJldmlvdXMiO2E6MTp7czozOiJ1cmwiO3M6NTY6Imh0dHA6Ly8xMjcuMC4wLjE6ODAwMC9kYXNoYm9hcmQvZGVsaW5xdWVuY3ktbG9hbi1idWNrZXRzIjt9czo1MDoibG9naW5fd2ViXzU5YmEzNmFkZGMyYjJmOTQwMTU4MGYwMTRjN2Y1OGVhNGUzMDk4OWQiO2k6MTtzOjk6ImJyYW5jaF9pZCI7czoxOiIxIjt9', 1756638491);
 
 -- --------------------------------------------------------
 
@@ -12643,7 +12921,9 @@ ALTER TABLE `loan_products`
   ADD PRIMARY KEY (`id`),
   ADD KEY `loan_products_principal_receivable_account_id_foreign` (`principal_receivable_account_id`),
   ADD KEY `loan_products_interest_receivable_account_id_foreign` (`interest_receivable_account_id`),
-  ADD KEY `loan_products_interest_revenue_account_id_foreign` (`interest_revenue_account_id`);
+  ADD KEY `loan_products_interest_revenue_account_id_foreign` (`interest_revenue_account_id`),
+  ADD KEY `loan_products_direct_writeoff_account_id_foreign` (`direct_writeoff_account_id`),
+  ADD KEY `loan_products_provision_writeoff_account_id_foreign` (`provision_writeoff_account_id`);
 
 --
 -- Indexes for table `loan_schedules`
@@ -12652,6 +12932,15 @@ ALTER TABLE `loan_schedules`
   ADD PRIMARY KEY (`id`),
   ADD KEY `loan_schedules_loan_id_foreign` (`loan_id`),
   ADD KEY `loan_schedules_customer_id_foreign` (`customer_id`);
+
+--
+-- Indexes for table `loan_writeoffs`
+--
+ALTER TABLE `loan_writeoffs`
+  ADD PRIMARY KEY (`id`),
+  ADD KEY `loan_writeoffs_loan_id_foreign` (`loan_id`),
+  ADD KEY `loan_writeoffs_customer_id_foreign` (`customer_id`),
+  ADD KEY `loan_writeoffs_createdby_foreign` (`createdby`);
 
 --
 -- Indexes for table `login_attempts`
@@ -12867,7 +13156,7 @@ ALTER TABLE `account_class_groups`
 -- AUTO_INCREMENT for table `activity_logs`
 --
 ALTER TABLE `activity_logs`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58382;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=58518;
 
 --
 -- AUTO_INCREMENT for table `backups`
@@ -12951,7 +13240,7 @@ ALTER TABLE `cash_flow_categories`
 -- AUTO_INCREMENT for table `chart_accounts`
 --
 ALTER TABLE `chart_accounts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=16;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=17;
 
 --
 -- AUTO_INCREMENT for table `chat_messages`
@@ -12969,7 +13258,7 @@ ALTER TABLE `companies`
 -- AUTO_INCREMENT for table `customers`
 --
 ALTER TABLE `customers`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1798;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=1800;
 
 --
 -- AUTO_INCREMENT for table `customer_file_types`
@@ -12981,7 +13270,7 @@ ALTER TABLE `customer_file_types`
 -- AUTO_INCREMENT for table `customer_officer`
 --
 ALTER TABLE `customer_officer`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=15;
 
 --
 -- AUTO_INCREMENT for table `districts`
@@ -13005,19 +13294,19 @@ ALTER TABLE `failed_jobs`
 -- AUTO_INCREMENT for table `fees`
 --
 ALTER TABLE `fees`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=10;
 
 --
 -- AUTO_INCREMENT for table `filetypes`
 --
 ALTER TABLE `filetypes`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=8;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=9;
 
 --
 -- AUTO_INCREMENT for table `gl_transactions`
 --
 ALTER TABLE `gl_transactions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=254;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=279;
 
 --
 -- AUTO_INCREMENT for table `groups`
@@ -13029,7 +13318,7 @@ ALTER TABLE `groups`
 -- AUTO_INCREMENT for table `group_members`
 --
 ALTER TABLE `group_members`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=66;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=74;
 
 --
 -- AUTO_INCREMENT for table `jobs`
@@ -13041,19 +13330,19 @@ ALTER TABLE `jobs`
 -- AUTO_INCREMENT for table `journals`
 --
 ALTER TABLE `journals`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=2;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
 
 --
 -- AUTO_INCREMENT for table `journal_items`
 --
 ALTER TABLE `journal_items`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `loans`
 --
 ALTER TABLE `loans`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
 
 --
 -- AUTO_INCREMENT for table `loan_approvals`
@@ -13083,19 +13372,25 @@ ALTER TABLE `loan_guarantor`
 -- AUTO_INCREMENT for table `loan_products`
 --
 ALTER TABLE `loan_products`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=4;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=6;
 
 --
 -- AUTO_INCREMENT for table `loan_schedules`
 --
 ALTER TABLE `loan_schedules`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3217;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=3253;
+
+--
+-- AUTO_INCREMENT for table `loan_writeoffs`
+--
+ALTER TABLE `loan_writeoffs`
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT;
 
 --
 -- AUTO_INCREMENT for table `login_attempts`
 --
 ALTER TABLE `login_attempts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=77;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=91;
 
 --
 -- AUTO_INCREMENT for table `menus`
@@ -13113,7 +13408,7 @@ ALTER TABLE `menu_role`
 -- AUTO_INCREMENT for table `migrations`
 --
 ALTER TABLE `migrations`
-  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=85;
+  MODIFY `id` int UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=90;
 
 --
 -- AUTO_INCREMENT for table `otp_codes`
@@ -13125,13 +13420,13 @@ ALTER TABLE `otp_codes`
 -- AUTO_INCREMENT for table `payments`
 --
 ALTER TABLE `payments`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
 
 --
 -- AUTO_INCREMENT for table `payment_items`
 --
 ALTER TABLE `payment_items`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=113;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=119;
 
 --
 -- AUTO_INCREMENT for table `penalties`
@@ -13143,7 +13438,7 @@ ALTER TABLE `penalties`
 -- AUTO_INCREMENT for table `permissions`
 --
 ALTER TABLE `permissions`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=246;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=247;
 
 --
 -- AUTO_INCREMENT for table `permission_groups`
@@ -13155,13 +13450,13 @@ ALTER TABLE `permission_groups`
 -- AUTO_INCREMENT for table `receipts`
 --
 ALTER TABLE `receipts`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52438;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=52442;
 
 --
 -- AUTO_INCREMENT for table `receipt_items`
 --
 ALTER TABLE `receipt_items`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=12;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=19;
 
 --
 -- AUTO_INCREMENT for table `regions`
@@ -13173,7 +13468,7 @@ ALTER TABLE `regions`
 -- AUTO_INCREMENT for table `repayments`
 --
 ALTER TABLE `repayments`
-  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=22;
+  MODIFY `id` bigint UNSIGNED NOT NULL AUTO_INCREMENT, AUTO_INCREMENT=28;
 
 --
 -- AUTO_INCREMENT for table `roles`
@@ -13446,9 +13741,11 @@ ALTER TABLE `loan_guarantor`
 -- Constraints for table `loan_products`
 --
 ALTER TABLE `loan_products`
+  ADD CONSTRAINT `loan_products_direct_writeoff_account_id_foreign` FOREIGN KEY (`direct_writeoff_account_id`) REFERENCES `chart_accounts` (`id`),
   ADD CONSTRAINT `loan_products_interest_receivable_account_id_foreign` FOREIGN KEY (`interest_receivable_account_id`) REFERENCES `chart_accounts` (`id`),
   ADD CONSTRAINT `loan_products_interest_revenue_account_id_foreign` FOREIGN KEY (`interest_revenue_account_id`) REFERENCES `chart_accounts` (`id`),
-  ADD CONSTRAINT `loan_products_principal_receivable_account_id_foreign` FOREIGN KEY (`principal_receivable_account_id`) REFERENCES `chart_accounts` (`id`);
+  ADD CONSTRAINT `loan_products_principal_receivable_account_id_foreign` FOREIGN KEY (`principal_receivable_account_id`) REFERENCES `chart_accounts` (`id`),
+  ADD CONSTRAINT `loan_products_provision_writeoff_account_id_foreign` FOREIGN KEY (`provision_writeoff_account_id`) REFERENCES `chart_accounts` (`id`);
 
 --
 -- Constraints for table `loan_schedules`
@@ -13456,6 +13753,14 @@ ALTER TABLE `loan_products`
 ALTER TABLE `loan_schedules`
   ADD CONSTRAINT `loan_schedules_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`) ON DELETE CASCADE,
   ADD CONSTRAINT `loan_schedules_loan_id_foreign` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`) ON DELETE CASCADE;
+
+--
+-- Constraints for table `loan_writeoffs`
+--
+ALTER TABLE `loan_writeoffs`
+  ADD CONSTRAINT `loan_writeoffs_createdby_foreign` FOREIGN KEY (`createdby`) REFERENCES `users` (`id`),
+  ADD CONSTRAINT `loan_writeoffs_customer_id_foreign` FOREIGN KEY (`customer_id`) REFERENCES `customers` (`id`),
+  ADD CONSTRAINT `loan_writeoffs_loan_id_foreign` FOREIGN KEY (`loan_id`) REFERENCES `loans` (`id`);
 
 --
 -- Constraints for table `menus`
