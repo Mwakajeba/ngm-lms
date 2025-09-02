@@ -16,7 +16,10 @@
                             ]" />
                         </div>
                         @can('create payment voucher')
-                        <div class="ms-auto">
+                        <div class="ms-auto d-flex gap-2">
+                            <a href="{{ route('accounting.payment-vouchers.pending-approvals') }}" class="btn btn-warning">
+                                <i class="bx bx-check-shield"></i> Pending Approvals
+                            </a>
                             <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
                                 <i class="bx bx-plus"></i> New Payment Voucher
                             </a>
@@ -88,13 +91,14 @@
                                     <thead>
                                         <tr>
                                             <th width="10%">Date</th>
-                                            <th width="15%">Reference</th>
-                                            <th width="15%">Bank Account</th>
-                                            <th width="15%">Payee</th>
-                                            <th width="15%">Description</th>
+                                            <th width="12%">Reference</th>
+                                            <th width="12%">Type</th>
+                                            <th width="12%">Bank Account</th>
+                                            <th width="12%">Payee</th>
+                                            <th width="12%">Description</th>
                                             <th width="10%">Amount</th>
                                             <th width="10%">Status</th>
-                                            <th width="10%">Actions</th>
+                                            <th width="8%">Actions</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -133,6 +137,7 @@
                 columns: [
                     { data: 'formatted_date', name: 'date', title: 'Date', orderable: true, searchable: true },
                     { data: 'reference_link', name: 'reference', title: 'Reference', orderable: true, searchable: true },
+                    { data: 'reference_type_badge', name: 'reference_type', title: 'Type', orderable: true, searchable: true },
                     { data: 'bank_account_name', name: 'bankAccount.name', title: 'Bank Account', orderable: true, searchable: true },
                     { data: 'payee_info', name: 'payee_info', title: 'Payee', orderable: false, searchable: false },
                     { data: 'description_limited', name: 'description', title: 'Description', orderable: false, searchable: true },

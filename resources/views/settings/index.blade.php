@@ -134,7 +134,7 @@
                             </div>
                             @endcan
 
-                            <!-- AI Assistant -->
+                            <!-- AI Assistant
                             @can('use AI assistant')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-purple">
@@ -151,7 +151,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @endcan
+                            @endcan -->
 
                             <!-- Roles & Permissions -->
                             @can('manage role & permission')
@@ -259,6 +259,48 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Subscription Management -->
+                            @can('manage subscription')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-credit-card fs-1 text-warning"></i>
+                                        </div>
+                                        <h5 class="card-title">Subscription Management</h5>
+                                        <p class="card-text">
+                                            Manage your subscription plans, billing information, and payment history.
+                                            Upgrade, downgrade, or cancel your subscription as needed.
+                                        </p>
+                                        <a href="{{ route('settings.subscription') }}" class="btn btn-warning">
+                                            <i class="bx bx-credit-card me-1"></i> Manage Subscription
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
+
+                            <!-- Payment Voucher Approval Process -->
+                            @can('manage payment voucher approval')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-check-shield fs-1 text-info"></i>
+                                        </div>
+                                        <h5 class="card-title">Payment Voucher Approval</h5>
+                                        <p class="card-text">
+                                            Configure approval workflows for payment vouchers.
+                                            Set up approval levels, approvers, and approval thresholds.
+                                        </p>
+                                        <a href="{{ route('settings.payment-voucher-approval') }}" class="btn btn-info">
+                                            <i class="bx bx-check-shield me-1"></i> Configure Approval
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
 
                             @endcan
                         </div>

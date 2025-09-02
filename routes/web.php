@@ -18,11 +18,11 @@ use App\Http\Controllers\AccountClassGroupController;
 use App\Http\Controllers\ChartAccountController;
 use App\Http\Controllers\Accounting\SupplierController;
 use App\Http\Controllers\Accounting\PaymentVoucherController;
-use App\Http\Controllers\BillPurchaseController;
+use App\Http\Controllers\Accounting\BillPurchaseController;
 use App\Http\Controllers\Accounting\ReceiptVoucherController;
 use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Accounting\BankReconciliationController;
-use App\Http\Controllers\Accounting\BankReconciliationReportController;
+use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
 use App\Http\Controllers\Accounting\BudgetController;
 use App\Http\Controllers\Accounting\FeeController;
 use App\Http\Controllers\Accounting\PenaltyController;
@@ -215,6 +215,14 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // Fees Settings
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
     Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');
+
+    // Subscription Settings
+    Route::get('/subscription', [SettingsController::class, 'subscriptionSettings'])->name('subscription');
+    Route::put('/subscription', [SettingsController::class, 'updateSubscriptionSettings'])->name('subscription.update');
+
+    // Payment Voucher Approval Settings
+    Route::get('/payment-voucher-approval', [SettingsController::class, 'paymentVoucherApprovalSettings'])->name('payment-voucher-approval');
+    Route::put('/payment-voucher-approval', [SettingsController::class, 'updatePaymentVoucherApprovalSettings'])->name('payment-voucher-approval.update');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -257,6 +265,14 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:su
 Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(function () {
     // Account Class Groups
     Route::get('/account-class-groups', [AccountClassGroupController::class, 'index'])->name('account-class-groups.index');
+
+    // Payment Voucher Approval Routes
+    Route::prefix('payment-vouchers')->name('payment-vouchers.')->group(function () {
+        Route::get('/pending-approvals', [PaymentVoucherController::class, 'pendingApprovals'])->name('pending-approvals');
+        Route::get('/{paymentVoucher}/approval', [PaymentVoucherController::class, 'showApproval'])->name('approval');
+        Route::post('/{paymentVoucher}/approve', [PaymentVoucherController::class, 'approve'])->name('approve');
+        Route::post('/{paymentVoucher}/reject', [PaymentVoucherController::class, 'reject'])->name('reject');
+    });
     Route::get('/account-class-groups/create', [AccountClassGroupController::class, 'create'])->name('account-class-groups.create');
     Route::post('/account-class-groups', [AccountClassGroupController::class, 'store'])->name('account-class-groups.store');
     Route::get('/account-class-groups/{encodedId}', [AccountClassGroupController::class, 'show'])->name('account-class-groups.show');
