@@ -86,24 +86,58 @@
         <div class="report-period">Basis: {{ ucfirst($incomeStatementData['reporting_type']) }}</div>
     </div>
 
+    @php
+        $comparatives = $incomeStatementData['comparative'] ?? [];
+        $comparativesCount = is_array($comparatives) ? count($comparatives) : 0;
+    @endphp
+
     <table>
+        <tr>
+            <th>Financial Statement Line Item</th>
+            <th>Ledger Account</th>
+            <th class="text-right">Current Period</th>
+            @if($comparativesCount)
+                @foreach($comparatives as $label => $comp)
+                    <th class="text-right">{{ $label }}</th>
+                @endforeach
+            @endif
+        </tr>
+
         <tr class="section-header">
-            <td colspan="2">INCOME</td>
+            <td colspan="{{ 3 + $comparativesCount }}">INCOME</td>
         </tr>
         
-        @php $sumRevenue = 0; @endphp
+        @php 
+            $sumRevenue = 0; 
+            $compRevenueTotals = [];
+        @endphp
         @foreach($incomeStatementData['data']['revenues'] as $groupName => $accounts)
             @php $groupTotal = collect($accounts)->sum('sum'); @endphp
             @if($groupTotal != 0)
                 <tr class="group-header">
-                    <td colspan="2">{{ $groupName }}</td>
+                    <td colspan="{{ 3 + $comparativesCount }}">{{ $groupName }}</td>
                 </tr>
                 @foreach($accounts as $chartAccountRevenue)
-                    @if($chartAccountRevenue['sum'] != 0)
+                    @php
+                        // Build comparative row values for this account by matching on account_id within the same group
+                        $rowComps = [];
+                        foreach ($comparatives as $label => $cdata) {
+                            $prev = collect($cdata['revenues'][$groupName] ?? [])->firstWhere('account_id', $chartAccountRevenue['account_id'])['sum'] ?? 0;
+                            $rowComps[$label] = $prev;
+                            $compRevenueTotals[$label] = ($compRevenueTotals[$label] ?? 0) + $prev;
+                        }
+                    @endphp
+                    @if($chartAccountRevenue['sum'] != 0 || collect($rowComps)->sum() != 0)
                         @php $sumRevenue += $chartAccountRevenue['sum']; @endphp
                         <tr>
+                            <td>{{ $groupName }}</td>
                             <td>{{ $chartAccountRevenue['account'] }}</td>
                             <td class="text-right">{{ number_format($chartAccountRevenue['sum'], 2) }}</td>
+                            @if($comparativesCount)
+                                @foreach($comparatives as $label => $ignored)
+                                    <td class="text-right">{{ number_format($rowComps[$label] ?? 0, 2) }}</td>
+                                @endforeach
+                            @endif
                         </tr>
                     @endif
                 @endforeach
@@ -112,26 +146,49 @@
         
         <tr class="total-row">
             <td><strong>TOTAL INCOME</strong></td>
+            <td></td>
             <td class="text-right"><strong>{{ number_format($sumRevenue, 2) }}</strong></td>
+            @if($comparativesCount)
+                @foreach($comparatives as $label => $ignored)
+                    <td class="text-right"><strong>{{ number_format($compRevenueTotals[$label] ?? 0, 2) }}</strong></td>
+                @endforeach
+            @endif
         </tr>
 
         <tr class="section-header">
-            <td colspan="2">LESS EXPENSES</td>
+            <td colspan="{{ 3 + $comparativesCount }}">LESS EXPENSES</td>
         </tr>
         
-        @php $sumExpense = 0; @endphp
+        @php 
+            $sumExpense = 0; 
+            $compExpenseTotals = [];
+        @endphp
         @foreach($incomeStatementData['data']['expenses'] as $groupName => $accounts)
             @php $groupTotal = collect($accounts)->sum('sum'); @endphp
             @if($groupTotal != 0)
                 <tr class="group-header">
-                    <td colspan="2">{{ $groupName }}</td>
+                    <td colspan="{{ 3 + $comparativesCount }}">{{ $groupName }}</td>
                 </tr>
                 @foreach($accounts as $chartAccountExpenses)
-                    @if($chartAccountExpenses['sum'] != 0)
+                    @php
+                        $rowComps = [];
+                        foreach ($comparatives as $label => $cdata) {
+                            $prev = collect($cdata['expenses'][$groupName] ?? [])->firstWhere('account_id', $chartAccountExpenses['account_id'])['sum'] ?? 0;
+                            $rowComps[$label] = $prev;
+                            $compExpenseTotals[$label] = ($compExpenseTotals[$label] ?? 0) + $prev;
+                        }
+                    @endphp
+                    @if($chartAccountExpenses['sum'] != 0 || collect($rowComps)->sum() != 0)
                         @php $sumExpense += $chartAccountExpenses['sum']; @endphp
                         <tr>
+                            <td>{{ $groupName }}</td>
                             <td>{{ $chartAccountExpenses['account'] }}</td>
                             <td class="text-right">{{ number_format(abs($chartAccountExpenses['sum']), 2) }}</td>
+                            @if($comparativesCount)
+                                @foreach($comparatives as $label => $ignored)
+                                    <td class="text-right">{{ number_format($rowComps[$label] ?? 0, 2) }}</td>
+                                @endforeach
+                            @endif
                         </tr>
                     @endif
                 @endforeach
@@ -140,12 +197,26 @@
         
         <tr class="total-row">
             <td><strong>TOTAL EXPENSES</strong></td>
+            <td></td>
             <td class="text-right"><strong>{{ number_format(abs($sumExpense), 2) }}</strong></td>
+            @if($comparativesCount)
+                @foreach($comparatives as $label => $ignored)
+                    <td class="text-right"><strong>{{ number_format(abs($compExpenseTotals[$label] ?? 0), 2) }}</strong></td>
+                @endforeach
+            @endif
         </tr>
         
         <tr class="profit-loss-row">
             <td><strong>PROFIT / LOSS</strong></td>
-            <td class="text-right"><strong>{{ number_format($sumRevenue - abs($sumExpense), 2) }}</strong></td>
+            <td></td>
+            @php $netCurrent = $sumRevenue - abs($sumExpense); @endphp
+            <td class="text-right"><strong>{{ number_format($netCurrent, 2) }}</strong></td>
+            @if($comparativesCount)
+                @foreach($comparatives as $label => $ignored)
+                    @php $netComp = ($compRevenueTotals[$label] ?? 0) - abs($compExpenseTotals[$label] ?? 0); @endphp
+                    <td class="text-right"><strong>{{ number_format($netComp, 2) }}</strong></td>
+                @endforeach
+            @endif
         </tr>
     </table>
 

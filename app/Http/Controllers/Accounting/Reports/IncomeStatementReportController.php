@@ -25,11 +25,14 @@ class IncomeStatementReportController extends Controller
         $branchId = $request->get('branch_id', 'all');
         $layout = $request->get('layout', 'standard');
 
+        // Comparative columns
+        $comparativeColumns = $request->get('comparative_columns', []);
+
         // Get branches for filter
         $branches = $company->branches;
 
         // Get income statement data
-        $incomeStatementData = $this->getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout);
+        $incomeStatementData = $this->getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout, $comparativeColumns);
 
         return view('accounting.reports.income-statement.index', compact(
             'incomeStatementData',
@@ -39,36 +42,38 @@ class IncomeStatementReportController extends Controller
             'branchId',
             'layout',
             'branches',
-            'user'
+            'user',
+            'comparativeColumns'
         ));
     }
 
-    private function getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout)
+    private function getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout, $comparativeColumns = [])
     {
         $user = Auth::user();
         $company = $user->company;
 
-        // Get current year data
+        // Get current period data
         $currentYearData = $this->getYearData($startDate, $endDate, $reportingType, $branchId);
         
-        // Get previous year data for comparison
-        $previousYearStart = Carbon::parse($startDate)->subYear()->format('Y-m-d');
-        $previousYearEnd = Carbon::parse($endDate)->subYear()->format('Y-m-d');
-        $previousYearData = $this->getYearData($previousYearStart, $previousYearEnd, $reportingType, $branchId);
+        // Build comparative datasets keyed by provided names
+        $comparativeData = [];
+        foreach ($comparativeColumns as $index => $column) {
+            if (!empty($column['start_date']) && !empty($column['end_date'])) {
+                $label = isset($column['name']) && trim($column['name']) !== '' ? trim($column['name']) : ('Comparative ' . ($index + 1));
+                $comp = $this->getYearData($column['start_date'], $column['end_date'], $reportingType, $branchId);
+                $comparativeData[$label] = $comp;
+            }
+        }
 
         return [
             'data' => [
                 'revenues' => $currentYearData['revenues'],
                 'expenses' => $currentYearData['expenses'],
-                'revenues_previous' => $previousYearData['revenues'],
-                'expenses_previous' => $previousYearData['expenses'],
                 'total_revenue' => $currentYearData['total_revenue'],
                 'total_expenses' => $currentYearData['total_expenses'],
-                'total_revenue_previous' => $previousYearData['total_revenue'],
-                'total_expenses_previous' => $previousYearData['total_expenses'],
                 'profit_loss' => $currentYearData['total_revenue'] - $currentYearData['total_expenses'],
-                'profit_loss_previous' => $previousYearData['total_revenue'] - $previousYearData['total_expenses']
             ],
+            'comparative' => $comparativeData,
             'start_date' => $startDate,
             'end_date' => $endDate,
             'reporting_type' => $reportingType,
@@ -138,11 +143,9 @@ class IncomeStatementReportController extends Controller
             'chart_accounts.account_name',
             'chart_accounts.account_code',
             'account_class.name as class_name',
-            'account_class_groups.name as group_name',
-            DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total'),
-            DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total')
+            DB::raw("SUM(CASE WHEN gl_transactions.nature = 'credit' THEN gl_transactions.amount ELSE -gl_transactions.amount END) as sum")
         )
-        ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code', 'account_class.name', 'account_class_groups.name');
+        ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code', 'account_class.name');
 
         // Select fields for expenses
         $expenseQuery->select(
@@ -150,52 +153,39 @@ class IncomeStatementReportController extends Controller
             'chart_accounts.account_name',
             'chart_accounts.account_code',
             'account_class.name as class_name',
-            'account_class_groups.name as group_name',
-            DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as debit_total'),
-            DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as credit_total')
+            DB::raw("SUM(CASE WHEN gl_transactions.nature = 'debit' THEN gl_transactions.amount ELSE -gl_transactions.amount END) as sum")
         )
-        ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code', 'account_class.name', 'account_class_groups.name');
+        ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'chart_accounts.account_code', 'account_class.name');
 
-        $incomeData = $incomeQuery->get();
-        $expenseData = $expenseQuery->get();
-
-        // Process income data
-        $incomeData = $incomeData->map(function ($item) {
-            $item->balance = $item->credit_total - $item->debit_total; // Income: credit increases, debit decreases
-            return $item;
-        });
-
-        // Process expense data
-        $expenseData = $expenseData->map(function ($item) {
-            $item->balance = $item->debit_total - $item->credit_total; // Expenses: debit increases, credit decreases
-            return $item;
-        });
+        $incomeAccounts = $incomeQuery->get();
+        $expenseAccounts = $expenseQuery->get();
 
         // Group by account class groups
-        $chartAccountsRevenues = [];
-        $chartAccountsExpenses = [];
-
-        foreach ($incomeData as $account) {
-            if ($account->balance != 0) {
-                $chartAccountsRevenues[$account->group_name][] = [
-                    'account_id' => $account->account_id,
-                    'account' => $account->account_name,
-                    'account_code' => $account->account_code,
-                    'sum' => $account->balance
+        $chartAccountsRevenues = $incomeAccounts->groupBy(function ($item) {
+            return $item->class_name;
+        })->map(function ($group) {
+            return $group->map(function ($item) {
+                return [
+                    'account_id' => $item->account_id,
+                    'account' => $item->account_name,
+                    'account_code' => $item->account_code,
+                    'sum' => (float) $item->sum
                 ];
-            }
-        }
+            })->values()->toArray();
+        })->toArray();
 
-        foreach ($expenseData as $account) {
-            if ($account->balance != 0) {
-                $chartAccountsExpenses[$account->group_name][] = [
-                    'account_id' => $account->account_id,
-                    'account' => $account->account_name,
-                    'account_code' => $account->account_code,
-                    'sum' => $account->balance
+        $chartAccountsExpenses = $expenseAccounts->groupBy(function ($item) {
+            return $item->class_name;
+        })->map(function ($group) {
+            return $group->map(function ($item) {
+                return [
+                    'account_id' => $item->account_id,
+                    'account' => $item->account_name,
+                    'account_code' => $item->account_code,
+                    'sum' => (float) $item->sum
                 ];
-            }
-        }
+            })->values()->toArray();
+        })->toArray();
 
         // Calculate totals
         $totalRevenue = collect($chartAccountsRevenues)->flatten(1)->sum('sum');
@@ -222,8 +212,11 @@ class IncomeStatementReportController extends Controller
         $layout = $request->get('layout', 'standard');
         $exportType = $request->get('export_type', 'pdf');
 
+        // Comparative columns
+        $comparativeColumns = $request->get('comparative_columns', []);
+
         // Get income statement data
-        $incomeStatementData = $this->getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout);
+        $incomeStatementData = $this->getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout, $comparativeColumns);
 
         if ($exportType === 'pdf') {
             return $this->exportPdf($incomeStatementData, $company, $startDate, $endDate, $reportingType);
