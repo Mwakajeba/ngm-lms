@@ -15,6 +15,7 @@
         <h6 class="mb-0 text-uppercase">{{ __('app.edit_budget') }}</h6>
         <hr />
 
+        @can('edit budget')
         <!-- Edit Budget Form -->
         <div class="row">
             <div class="col-12">

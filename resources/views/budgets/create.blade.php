@@ -13,6 +13,7 @@
         <h6 class="mb-0 text-uppercase">{{ __('app.create_budget') }}</h6>
         <hr />
 
+        @can('create budget')
         <div class="row">
             <div class="col-12">
                 <div class="card">
@@ -143,6 +144,12 @@
                 </div>
             </div>
         </div>
+        @else
+        <div class="alert alert-warning">
+            <i class="bx bx-lock-open me-2"></i>
+            {{ __('app.create_budget_permission_message') }}
+        </div>
+        @endcan
     </div>
 </div>
 

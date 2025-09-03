@@ -16,9 +16,11 @@
                         ]" />
                     </div>
                     <div class="ms-auto">
+                        @can('create budget')
                         <a href="{{ route('accounting.budgets.create') }}" class="btn btn-primary">
                             <i class="bx bx-plus"></i> {{ __('app.create_budget') }}
                         </a>
+                        @endcan
                     </div>
                 </div>
             </div>
@@ -151,9 +153,11 @@
                             <div class="col-md-2">
                                 <label class="form-label fw-semibold">&nbsp;</label>
                                 <div>
+                                    @can('create budget')
                                     <a href="{{ route('accounting.budgets.create') }}" class="btn btn-success w-100">
                                         <i class="bx bx-plus"></i> {{ __('app.budget_new_budget') }}
                                     </a>
+                                    @endcan
                                 </div>
                             </div>
                         </form>
@@ -269,16 +273,20 @@
                                                    title="View Budget">
                                                     <i class="bx bx-show"></i>
                                                 </a>
+                                                @can('edit budget')
                                                 <a href="{{ route('accounting.budgets.edit', $budget) }}" 
                                                    class="btn btn-sm btn-warning" title="Edit Budget">
                                                     <i class="bx bx-edit"></i>
                                                 </a>
+                                                @endcan
+                                                @can('delete budget')
                                                 <button type="button" class="btn btn-sm btn-danger delete-budget-btn" 
                                                         data-budget-id="{{ $budget->id }}" 
                                                         data-budget-name="{{ $budget->name }}"
                                                         title="Delete Budget">
                                                     <i class="bx bx-trash"></i>
                                                 </button>
+                                                @endcan
                                             </div>
                                         </td>
                                     </tr>
@@ -321,9 +329,11 @@
                                         <i class="bx bx-refresh me-1"></i> {{ __('app.budget_clear_filters') }}
                                     </a>
                                 @endif
+                                @can('create budget')
                                 <a href="{{ route('accounting.budgets.create') }}" class="btn btn-primary">
                                     <i class="bx bx-plus me-1"></i> {{ __('app.budget_create_first') }}
                                 </a>
+                                @endcan
                             </div>
                         </div>
                     </div>
