@@ -462,21 +462,27 @@
                                     $totalPnL = $balanceSheetData['profit_loss'];
                                     $totalEquity = $baseEquity + $totalPnL;
                                     $rightSide = $totalLiabilities + $totalEquity;
+                                    
+                                    // Use a tolerance to account for rounding/floating differences
+                                    $difference = $totalAssets - $rightSide;
+                                    $isBalanced = abs($difference) < 0.01; // tolerance of 1 cent
                                 @endphp
-                                <div class="alert alert-{{ ($totalAssets == $rightSide) ? 'success' : 'danger' }}">
+                                <div class="alert alert-{{ $isBalanced ? 'success' : 'danger' }}">
                                     <div class="d-flex align-items-center">
-                                        <i class="bx {{ ($totalAssets == $rightSide) ? 'bx-check-circle' : 'bx-error' }} me-2"></i>
+                                        <i class="bx {{ $isBalanced ? 'bx-check-circle' : 'bx-error' }} me-2"></i>
                                         <div>
                                             <strong>Balance Check:</strong>
-                                            Assets ({{ number_format($totalAssets, 2) }}) = 
-                                            Liabilities ({{ number_format($totalLiabilities, 2) }}) + 
+                                            Assets ({{ number_format($totalAssets, 2) }}) =
+                                            Liabilities ({{ number_format($totalLiabilities, 2) }}) +
                                             Equity ({{ number_format($totalEquity, 2) }})
-                                            <br><small>Where Equity includes P&L ({{ number_format($totalPnL, 2) }})</small>
-                                            = {{ number_format($rightSide, 2) }}
-                                            @if($totalAssets == $rightSide)
+                                            <br>
+                                            <small>Where Equity includes P&L ({{ number_format($totalPnL, 2) }})</small>
+                                            <br>
+                                            <strong>= {{ number_format($rightSide, 2) }}</strong>
+                                            @if($isBalanced)
                                                 <br><small>✅ Balance sheet is balanced</small>
                                             @else
-                                                <br><small>⚠️ Balance sheet is not balanced</small>
+                                                <br><small>⚠️ Balance sheet is not balanced. Difference: {{ number_format($difference, 2) }}</small>
                                             @endif
                                         </div>
                                     </div>

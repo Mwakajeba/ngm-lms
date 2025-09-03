@@ -67,7 +67,7 @@
                             </div>
                             <div class="bot-meta-row">
                                 <div class="bot-meta-cell bot-meta-label">MSP CODE</div>
-                                <div class="bot-meta-cell">{{ auth()->user()->company->code ?? '—' }}</div>
+                                <div class="bot-meta-cell">{{ auth()->user()->company->msp_code ?? '—' }}</div>
                             </div>
                             <div class="bot-meta-row">
                                 <div class="bot-meta-cell bot-meta-label">DATE</div>

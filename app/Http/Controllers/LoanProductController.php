@@ -141,7 +141,7 @@ class LoanProductController extends Controller
             'fees_id.*' => 'nullable|exists:fees,id',
             'penalty_id' => 'nullable|array',
             'penalty_id.*' => 'nullable|exists:penalties,id',
-            'repayment_order' => 'nullable|string|max:500',
+            'repayment_order' => 'nullable',
             'allow_push_to_ess' => 'nullable|boolean',
         ]);
 
@@ -151,31 +151,26 @@ class LoanProductController extends Controller
                 ->withInput();
         }
 
-
-        if ($request->has('has_approval_levels') && $request->approval_levels) {
-            $approvalRoles = explode(',', $request->approval_levels);
-            $validRoles = Role::pluck('id')->toArray();
-
-            foreach ($approvalRoles as $roleId) {
-                // Remove any whitespace from the role ID before validation
-                $roleId = trim($roleId);
-                if (!empty($roleId) && !in_array((int) $roleId, $validRoles)) {
-                    return redirect()->back()
-                        ->withErrors(['approval_levels' => 'Invalid role ID "' . $roleId . '" in approval levels.'])
-                        ->withInput();
-                }
-            }
+        // Normalize repayment_order for validation and save
+        $repaymentOrderInput = $request->input('repayment_order');
+        $repaymentOrderHidden = $request->input('repayment_order_hidden');
+        
+        if (is_array($repaymentOrderInput) && !empty($repaymentOrderInput)) {
+            $repaymentComponents = $repaymentOrderInput;
+        } elseif (is_string($repaymentOrderInput) && strlen(trim($repaymentOrderInput)) > 0) {
+            $repaymentComponents = array_map('trim', explode(',', $repaymentOrderInput));
+        } elseif (is_string($repaymentOrderHidden) && strlen(trim($repaymentOrderHidden)) > 0) {
+            // Fallback to hidden field if main input is empty
+            $repaymentComponents = array_map('trim', explode(',', $repaymentOrderHidden));
+        } else {
+            $repaymentComponents = []; // Allow empty selection
         }
 
-        // Custom validation for repayment order
-        if ($request->repayment_order) {
-            $repaymentComponents = explode(',', $request->repayment_order);
+        // Validate components if provided
+        if (!empty($repaymentComponents)) {
             $validComponents = ['principal', 'interest', 'fees', 'penalties'];
-
             foreach ($repaymentComponents as $component) {
-                // Remove any whitespace from the component before validation
-                $component = trim($component);
-                if (!empty($component) && !in_array($component, $validComponents)) {
+                if (!in_array($component, $validComponents, true)) {
                     return redirect()->back()
                         ->withErrors(['repayment_order' => 'Invalid component "' . $component . '" in repayment order.'])
                         ->withInput();
@@ -190,15 +185,23 @@ class LoanProductController extends Controller
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 
+            // Persist normalized repayment order as comma-separated string
+            $data['repayment_order'] = !empty($repaymentComponents)
+                ? implode(',', $repaymentComponents)
+                : null; // Allow null/empty repayment order
+
             // Handle top up configuration
             if (!$request->has('has_top_up')) {
                 $data['top_up_type'] = null;
-                $data['top_up_type_value'] = null;
+                $data['top_up_type_value'] = 0; // coalesce null to 0
             } else {
-                // If has_top_up is checked but top_up_type is not provided, set it to null
+                // If has_top_up is checked but top_up_type is not provided, set it to null and 0 value
                 if (!$request->filled('top_up_type')) {
                     $data['top_up_type'] = null;
-                    $data['top_up_type_value'] = null;
+                    $data['top_up_type_value'] = 0;
+                } else {
+                    // top_up_type provided but value may be empty
+                    $data['top_up_type_value'] = $request->filled('top_up_type_value') ? $request->top_up_type_value : 0;
                 }
             }
 
@@ -372,7 +375,7 @@ class LoanProductController extends Controller
             'fees_id.*' => 'nullable|exists:fees,id',
             'penalty_id' => 'nullable|array',
             'penalty_id.*' => 'nullable|exists:penalties,id',
-            'repayment_order' => 'nullable|string|max:500',
+            'repayment_order' => 'nullable',
             'allow_push_to_ess' => 'nullable|boolean',
         ]);
 
@@ -382,31 +385,26 @@ class LoanProductController extends Controller
                 ->withInput();
         }
 
-        // Custom validation for approval levels
-        if ($request->has('has_approval_levels') && $request->approval_levels) {
-            $approvalRoles = explode(',', $request->approval_levels);
-            $validRoles = Role::pluck('id')->toArray();
-
-            foreach ($approvalRoles as $roleId) {
-                // Remove any whitespace from the role ID before validation
-                $roleId = trim($roleId);
-                if (!empty($roleId) && !in_array((int) $roleId, $validRoles)) {
-                    return redirect()->back()
-                        ->withErrors(['approval_levels' => 'Invalid role ID "' . $roleId . '" in approval levels.'])
-                        ->withInput();
-                }
-            }
+        // Normalize repayment_order for validation and save
+        $repaymentOrderInput = $request->input('repayment_order');
+        $repaymentOrderHidden = $request->input('repayment_order_hidden');
+        
+        if (is_array($repaymentOrderInput) && !empty($repaymentOrderInput)) {
+            $repaymentComponents = $repaymentOrderInput;
+        } elseif (is_string($repaymentOrderInput) && strlen(trim($repaymentOrderInput)) > 0) {
+            $repaymentComponents = array_map('trim', explode(',', $repaymentOrderInput));
+        } elseif (is_string($repaymentOrderHidden) && strlen(trim($repaymentOrderHidden)) > 0) {
+            // Fallback to hidden field if main input is empty
+            $repaymentComponents = array_map('trim', explode(',', $repaymentOrderHidden));
+        } else {
+            $repaymentComponents = []; // Allow empty selection
         }
 
-        // Custom validation for repayment order
-        if ($request->repayment_order) {
-            $repaymentComponents = explode(',', $request->repayment_order);
+        // Validate components if provided
+        if (!empty($repaymentComponents)) {
             $validComponents = ['principal', 'interest', 'fees', 'penalties'];
-
             foreach ($repaymentComponents as $component) {
-                // Remove any whitespace from the component before validation
-                $component = trim($component);
-                if (!empty($component) && !in_array($component, $validComponents)) {
+                if (!in_array($component, $validComponents, true)) {
                     return redirect()->back()
                         ->withErrors(['repayment_order' => 'Invalid component "' . $component . '" in repayment order.'])
                         ->withInput();
@@ -421,15 +419,23 @@ class LoanProductController extends Controller
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 
+            // Persist normalized repayment order as comma-separated string
+            $data['repayment_order'] = !empty($repaymentComponents)
+                ? implode(',', $repaymentComponents)
+                : null; // Allow null/empty repayment order
+
             // Handle top up configuration
             if (!$request->has('has_top_up')) {
                 $data['top_up_type'] = null;
-                $data['top_up_type_value'] = null;
+                $data['top_up_type_value'] = 0; // coalesce null to 0
             } else {
-                // If has_top_up is checked but top_up_type is not provided, set it to null
+                // If has_top_up is checked but top_up_type is not provided, set it to null and 0 value
                 if (!$request->filled('top_up_type')) {
                     $data['top_up_type'] = null;
-                    $data['top_up_type_value'] = null;
+                    $data['top_up_type_value'] = 0;
+                } else {
+                    // top_up_type provided but value may be empty
+                    $data['top_up_type_value'] = $request->filled('top_up_type_value') ? $request->top_up_type_value : 0;
                 }
             }
 

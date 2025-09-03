@@ -29,6 +29,7 @@ class CompanyController extends Controller
             'address'   => 'nullable|string',
             'bg_color'  => 'nullable|string',
             'txt_color' => 'nullable|string',
+            'msp_code'  => 'nullable|string|max:50',
             'logo'      => 'nullable|image|max:2048',
         ]);
 
@@ -55,6 +56,7 @@ class CompanyController extends Controller
             'address'   => 'nullable|string',
             'bg_color'  => 'nullable|string',
             'txt_color' => 'nullable|string',
+            'msp_code'  => 'nullable|string|max:50',
             'logo'      => 'nullable|image|max:2048',
         ]);
 

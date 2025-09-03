@@ -595,8 +595,8 @@
         <div class="col-12">
             <div class="card border">
                 <div class="card-body">
-                    <h6 class="card-title mb-3">Repayment Order Configuration</h6>
-                    <p class="text-muted small mb-3">Select repayment components from the left and move them to the
+                    <h5 class="card-title mb-4">Repayment Order Configuration</h5>
+                    <p class="text-muted">Configure the order in which loan repayments will be allocated. You have the
                         right to define the order of payment allocation. The first component will be paid first.</p>
 
                     <div class="row">
@@ -604,45 +604,35 @@
                         <div class="col-md-5">
                             <label class="form-label">Available Components</label>
                             <select id="available_repayment_components" class="form-select" size="6" multiple>
-                                @if(isset($loanProduct) && $loanProduct->repayment_order)
-                                    @php
-                                        $selectedComponents = explode(',', $loanProduct->repayment_order);
-                                        $selectedComponentArray = array_map('trim', $selectedComponents);
+                                @php
+                                    $allComponents = ['principal', 'interest', 'fees', 'penalties'];
+                                    $selectedComponents = [];
+                                    if (isset($loanProduct) && $loanProduct->repayment_order) {
+                                        $selectedComponents = array_map('trim', explode(',', $loanProduct->repayment_order));
+                                    }
+                                    $availableComponents = array_diff($allComponents, $selectedComponents);
                                     @endphp
-                                    @if(!in_array('principal', $selectedComponentArray))
-                                        <option value="principal" data-description="Principal amount of the loan">
-                                            Principal
+                                
+                                @foreach($availableComponents as $component)
+                                    @php
+                                        $componentLabels = [
+                                            'principal' => 'Principal',
+                                            'interest' => 'Interest',
+                                            'fees' => 'Fees',
+                                            'penalties' => 'Penalties'
+                                        ];
+                                        $componentDescriptions = [
+                                            'principal' => 'Principal amount of the loan',
+                                            'interest' => 'Interest charges on the loan',
+                                            'fees' => 'Additional fees and charges',
+                                            'penalties' => 'Late payment penalties'
+                                        ];
+                                    @endphp
+                                    <option value="{{ $component }}" 
+                                            data-description="{{ $componentDescriptions[$component] }}">
+                                        {{ $componentLabels[$component] }}
                                         </option>
-                                    @endif
-                                    @if(!in_array('interest', $selectedComponentArray))
-                                        <option value="interest" data-description="Interest charges on the loan">
-                                            Interest
-                                        </option>
-                                    @endif
-                                    @if(!in_array('fees', $selectedComponentArray))
-                                        <option value="fees" data-description="Additional fees and charges">
-                                            Fees
-                                        </option>
-                                    @endif
-                                    @if(!in_array('penalties', $selectedComponentArray))
-                                        <option value="penalties" data-description="Late payment penalties">
-                                            Penalties
-                                        </option>
-                                    @endif
-                                @else
-                                    <option value="principal" data-description="Principal amount of the loan">
-                                        Principal
-                                    </option>
-                                    <option value="interest" data-description="Interest charges on the loan">
-                                        Interest
-                                    </option>
-                                    <option value="fees" data-description="Additional fees and charges">
-                                        Fees
-                                    </option>
-                                    <option value="penalties" data-description="Late payment penalties">
-                                        Penalties
-                                    </option>
-                                @endif
+                                @endforeach
                             </select>
                             <small class="text-muted">Hold Ctrl/Cmd to select multiple components</small>
                         </div>
@@ -660,15 +650,14 @@
                         <!-- Selected Components (Right) -->
                         <div class="col-md-5">
                             <label class="form-label">Repayment Order</label>
-                            <select id="selected_repayment_components" name="repayment_order"
+                            <select id="selected_repayment_components" name="repayment_order[]"
                                 class="form-select @error('repayment_order') is-invalid @enderror" size="6" multiple>
                                 @if(isset($loanProduct) && $loanProduct->repayment_order)
                                     @php
-                                        $selectedComponents = explode(',', $loanProduct->repayment_order);
+                                        $selectedComponents = array_map('trim', explode(',', $loanProduct->repayment_order));
                                     @endphp
                                     @foreach($selectedComponents as $component)
                                         @php
-                                            $component = trim($component);
                                             $componentLabels = [
                                                 'principal' => 'Principal',
                                                 'interest' => 'Interest',
@@ -692,6 +681,10 @@
                                 @endif
                             </select>
                             <small class="text-muted">Drag to reorder payment sequence</small>
+                            
+                            <!-- Hidden input to ensure data is always sent -->
+                            <input type="hidden" id="repayment_order_hidden" name="repayment_order_hidden" 
+                                   value="{{ isset($loanProduct) && $loanProduct->repayment_order ? $loanProduct->repayment_order : 'principal,interest,fees,penalties' }}">
                         </div>
                     </div>
 
@@ -843,65 +836,75 @@
 <script>
 (function(){
     function byId(id){ return document.getElementById(id); }
+
+  // Function to move selected options from one select to another
     function moveSelected(fromSel, toSel){
         const selected = Array.from(fromSel.selectedOptions);
+    if (selected.length === 0) return;
+    
         selected.forEach(opt => {
             const exists = Array.from(toSel.options).some(o => o.value === opt.value);
             if (!exists) {
                 const clone = opt.cloneNode(true);
                 toSel.add(clone);
+      }
+    });
+    
+    // Remove from source
+    selected.forEach(opt => {
                 fromSel.remove(opt.index);
-            }
-        });
-        updateRoleDescription();
+    });
+    
+    updateDescription();
+    updateHiddenField();
+  }
+
+  // Function to ensure at least one component is always selected
+  function ensureMinimumSelection(){
+    const selected = byId('selected_repayment_components');
+    const avail = byId('available_repayment_components');
+    
+    if (selected && selected.options.length === 0 && avail && avail.options.length > 0) {
+      // If no components are selected, add the first available one
+      const firstOption = avail.options[0];
+      if (firstOption) {
+        const clone = firstOption.cloneNode(true);
+        selected.add(clone);
+        avail.remove(firstOption.index);
+        updateDescription();
+        updateHiddenField();
+      }
     }
+  }
+  
+  // Function to remove selected options from one select and add to another
     function removeSelected(fromSel, toSel){
-        const selected = Array.from(toSel.selectedOptions);
+    const selected = Array.from(fromSel.selectedOptions);
+    if (selected.length === 0) return;
+    
         selected.forEach(opt => {
-            const exists = Array.from(fromSel.options).some(o => o.value === opt.value);
+      const exists = Array.from(toSel.options).some(o => o.value === opt.value);
             if (!exists) {
                 const clone = opt.cloneNode(true);
-                fromSel.add(clone);
+        toSel.add(clone);
             }
-            toSel.remove(opt.index);
-        });
-        updateRoleDescription();
-    }
-    function enableDragReorder(selectEl){
-        let dragStartIndex = null;
-        selectEl.addEventListener('dragstart', function(e){
-            const target = e.target;
-            if (target.tagName === 'OPTION'){
-                dragStartIndex = Array.from(selectEl.options).indexOf(target);
-                e.dataTransfer.effectAllowed = 'move';
-            }
-        });
-        selectEl.addEventListener('dragover', function(e){ e.preventDefault(); });
-        selectEl.addEventListener('drop', function(e){
-            e.preventDefault();
-            const opt = document.elementFromPoint(e.clientX, e.clientY);
-            let dropIndex = -1;
-            if (opt && opt.tagName === 'OPTION'){
-                dropIndex = Array.from(selectEl.options).indexOf(opt);
-            } else {
-                dropIndex = selectEl.options.length - 1;
-            }
-            if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex){
-                const moving = selectEl.options[dragStartIndex];
-                const clone = moving.cloneNode(true);
-                selectEl.remove(dragStartIndex);
-                selectEl.add(clone, dropIndex);
-                selectEl.selectedIndex = dropIndex;
-                updateRoleDescription();
-            }
-            dragStartIndex = null;
-        });
-        Array.from(selectEl.options).forEach(opt => opt.draggable = true);
-    }
-    function updateRoleDescription(){
-        const sel = byId('selected_roles');
-        const box = byId('role_description');
-        const text = byId('description_text');
+    });
+    
+    // Remove from source
+    selected.forEach(opt => {
+      fromSel.remove(opt.index);
+    });
+    
+    updateDescription();
+    // Always update hidden field after removal
+    setTimeout(updateHiddenField, 10);
+  }
+
+  // Function to update the description display
+  function updateDescription(){
+    const sel = byId('selected_repayment_components');
+    const box = byId('repayment_component_description');
+    const text = byId('repayment_description_text');
         const opt = sel && sel.options[sel.selectedIndex];
         if (opt && opt.dataset && opt.dataset.description){
             text.textContent = opt.dataset.description;
@@ -910,81 +913,42 @@
             text.textContent = '';
             box.style.display = 'none';
         }
+    
+    // Update hidden field with current selection
+    updateHiddenField();
+  }
+  
+  // Function to update the hidden field with current repayment order
+  function updateHiddenField(){
+    const selected = byId('selected_repayment_components');
+    const hidden = byId('repayment_order_hidden');
+    
+    if (selected && hidden) {
+      const values = Array.from(selected.options).map(opt => opt.value);
+      // Allow empty selection - don't force default
+      hidden.value = values.join(',');
+      
+      // Debug logging
+      console.log('Updated hidden field:', hidden.value, 'Selected count:', values.length);
     }
-    document.addEventListener('DOMContentLoaded', function(){
-        const avail = byId('available_roles');
-        const selected = byId('selected_roles');
-        const addBtn = byId('move_right');
-        const removeBtn = byId('move_left');
-        if (addBtn && removeBtn && avail && selected){
-            addBtn.addEventListener('click', function(){ moveSelected(avail, selected); });
-            removeBtn.addEventListener('click', function(){ removeSelected(avail, selected); });
-            selected.addEventListener('change', updateRoleDescription);
-            avail.addEventListener('change', function(){
-                const opt = avail.options[avail.selectedIndex];
+  }
+
+  // Function to update the role description display
+  function updateRoleDescription(){
+    const sel = byId('selected_roles');
                 const box = byId('role_description');
                 const text = byId('description_text');
-                if (opt && opt.dataset.description){
+    const opt = sel && sel.options[sel.selectedIndex];
+    if (opt && opt.dataset && opt.dataset.description){
                     text.textContent = opt.dataset.description;
                     box.style.display = '';
                 } else {
                     text.textContent = '';
                     box.style.display = 'none';
                 }
-            });
-            enableDragReorder(selected);
-            updateRoleDescription();
-        }
-    });
-})();
-</script>
-@endpush
-
-@push('scripts')
-<script>
-(function(){
-  function byId(id){ return document.getElementById(id); }
-
-  function moveSelected(fromSel, toSel){
-    const selected = Array.from(fromSel.selectedOptions);
-    selected.forEach(opt => {
-      const exists = Array.from(toSel.options).some(o => o.value === opt.value);
-      if (!exists) {
-        const clone = opt.cloneNode(true);
-        toSel.add(clone);
-        fromSel.remove(opt.index);
-      }
-    });
-    updateDescription();
   }
 
-  function removeSelected(fromSel, toSel){
-    const selected = Array.from(toSel.selectedOptions);
-    selected.forEach(opt => {
-      const exists = Array.from(fromSel.options).some(o => o.value === opt.value);
-      if (!exists) {
-        const clone = opt.cloneNode(true);
-        fromSel.add(clone);
-      }
-      toSel.remove(opt.index);
-    });
-    updateDescription();
-  }
-
-  function updateDescription(){
-    const sel = byId('selected_repayment_components');
-    const box = byId('repayment_component_description');
-    const text = byId('repayment_description_text');
-    const opt = sel && sel.options[sel.selectedIndex];
-    if (opt && opt.dataset && opt.dataset.description){
-      text.textContent = opt.dataset.description;
-      box.style.display = '';
-    } else {
-      text.textContent = '';
-      box.style.display = 'none';
-    }
-  }
-
+  // Function to enable drag and drop reordering
   function enableDragReorder(selectEl){
     let dragStartIndex = null;
 
@@ -1013,7 +977,44 @@
         selectEl.remove(dragStartIndex);
         selectEl.add(clone, dropIndex);
         selectEl.selectedIndex = dropIndex;
-        updateDescription();
+    updateDescription();
+  }
+      dragStartIndex = null;
+    });
+
+    Array.from(selectEl.options).forEach(opt => opt.draggable = true);
+  }
+
+  // Function to enable drag and drop reordering for roles
+  function enableDragReorderRoles(selectEl){
+    let dragStartIndex = null;
+
+    selectEl.addEventListener('dragstart', function(e){
+      const target = e.target;
+      if (target.tagName === 'OPTION'){
+        dragStartIndex = Array.from(selectEl.options).indexOf(target);
+        e.dataTransfer.effectAllowed = 'move';
+      }
+    });
+
+    selectEl.addEventListener('dragover', function(e){ e.preventDefault(); });
+
+    selectEl.addEventListener('drop', function(e){
+      e.preventDefault();
+      const at = document.elementFromPoint(e.clientX, e.clientY);
+      let dropIndex = -1;
+      if (at && at.tagName === 'OPTION'){
+        dropIndex = Array.from(selectEl.options).indexOf(at);
+      } else {
+        dropIndex = selectEl.options.length - 1;
+      }
+      if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex){
+        const moving = selectEl.options[dragStartIndex];
+        const clone = moving.cloneNode(true);
+        selectEl.remove(dragStartIndex);
+        selectEl.add(clone, dropIndex);
+        selectEl.selectedIndex = dropIndex;
+        updateRoleDescription();
       }
       dragStartIndex = null;
     });
@@ -1021,15 +1022,18 @@
     Array.from(selectEl.options).forEach(opt => opt.draggable = true);
   }
 
+  // Initialize form when DOM is loaded
   document.addEventListener('DOMContentLoaded', function(){
+    // Initialize repayment components
     const avail = byId('available_repayment_components');
     const selected = byId('selected_repayment_components');
     const addBtn = byId('move_repayment_right');
     const removeBtn = byId('move_repayment_left');
+    const form = document.querySelector('form');
 
     if (addBtn && removeBtn && avail && selected){
       addBtn.addEventListener('click', function(){ moveSelected(avail, selected); });
-      removeBtn.addEventListener('click', function(){ removeSelected(avail, selected); });
+      removeBtn.addEventListener('click', function(){ removeSelected(selected, avail); });
 
       selected.addEventListener('change', updateDescription);
 
@@ -1048,8 +1052,61 @@
 
       enableDragReorder(selected);
       updateDescription();
+      
+      // Initialize form state for editing
+      initializeFormState();
+    }
+
+    // Initialize approval levels (roles)
+    const availRoles = byId('available_roles');
+    const selectedRoles = byId('selected_roles');
+    const addRoleBtn = byId('move_right');
+    const removeRoleBtn = byId('move_left');
+
+    if (addRoleBtn && removeRoleBtn && availRoles && selectedRoles){
+      addRoleBtn.addEventListener('click', function(){ moveSelected(availRoles, selectedRoles); });
+      removeRoleBtn.addEventListener('click', function(){ removeSelected(selectedRoles, availRoles); });
+
+      selectedRoles.addEventListener('change', updateRoleDescription);
+
+      availRoles.addEventListener('change', function(){
+        const opt = availRoles.options[availRoles.selectedIndex];
+        const box = byId('role_description');
+        const text = byId('description_text');
+        if (opt && opt.dataset.description){
+          text.textContent = opt.dataset.description;
+          box.style.display = '';
+        } else {
+          text.textContent = '';
+          box.style.display = 'none';
+        }
+      });
+
+      enableDragReorderRoles(selectedRoles);
+      updateRoleDescription();
+    }
+    
+    // Ensure hidden field is updated before form submission
+    if (form) {
+      form.addEventListener('submit', function(e) {
+        updateHiddenField();
+      });
     }
   });
+  
+  function initializeFormState() {
+    const avail = byId('available_repayment_components');
+    const selected = byId('selected_repayment_components');
+    
+    // If we're editing and have selected components, ensure they're properly displayed
+    if (selected && selected.options.length > 0) {
+      // Update description for the first selected component
+      if (selected.options[0]) {
+        selected.selectedIndex = 0;
+        updateDescription();
+      }
+    }
+  }
 })();
 </script>
 @endpush

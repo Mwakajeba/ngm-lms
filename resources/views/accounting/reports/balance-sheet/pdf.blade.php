@@ -357,36 +357,7 @@
         @endif
     </div>
 
-    <!-- Balance Check -->
-    <div class="balance-check">
-        <strong>Balance Check:</strong><br>
-        @php
-            $totalAssets = $balanceSheetData['current']['assets']->sum(function($item) {
-                return $item->debit_total - $item->credit_total;
-            });
-            $totalLiabilities = $balanceSheetData['current']['liabilities']->sum(function($item) {
-                return $item->credit_total - $item->debit_total;
-            });
-            $baseEquity = $balanceSheetData['current']['equity']->sum(function($item) {
-                return $item->credit_total - $item->debit_total;
-            });
-            
-            // Always use with P&L logic
-            $totalPnL = $balanceSheetData['profit_loss'];
-            $totalEquity = $baseEquity + $totalPnL;
-            $rightSide = $totalLiabilities + $totalEquity;
-        @endphp
-        Assets ({{ number_format($totalAssets, 2) }}) = 
-        Liabilities ({{ number_format($totalLiabilities, 2) }}) + 
-        Equity ({{ number_format($totalEquity, 2) }})
-        <br><small>Where Equity includes P&L ({{ number_format($totalPnL, 2) }})</small>
-        = {{ number_format($rightSide, 2) }}
-        @if($totalAssets == $rightSide)
-            <br><strong>✅ Balance sheet is balanced</strong>
-        @else
-            <br><strong>⚠️ Balance sheet is not balanced</strong>
-        @endif
-    </div>
+
 
     <div class="footer">
         <p>This is a computer generated document. No signature is required.</p>
