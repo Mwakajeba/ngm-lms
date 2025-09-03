@@ -1008,12 +1008,12 @@ use Vinkla\Hashids\Facades\Hashids;
         </div>
         @endcan
 
-        <!-- Send Bulk SMS Button -->
+        <!-- Send Bulk SMS Button
         <div class="d-flex justify-content-end mb-3">
             <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#bulkSmsModal">
                 <i class="bx bx-envelope"></i> Send Bulk SMS
             </button>
-        </div>
+        </div> -->
 
         <!-- Bulk SMS Modal -->
         <div class="modal fade" id="bulkSmsModal" tabindex="-1" aria-labelledby="bulkSmsModalLabel" aria-hidden="true">
