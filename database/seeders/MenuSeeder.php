@@ -84,7 +84,7 @@ class MenuSeeder extends Seeder
                     ['name' => 'Accounting Reports', 'route' => 'reports.index'],
                     ['name' => 'Loans Reports', 'route' => 'reports.loans'],
                     ['name' => 'Customer Reports', 'route' => 'reports.customers'],
-                    ['name' => 'Transaction Reports', 'route' => 'reports.transactions'],
+                    ['name' => 'Bot Reports', 'route' => 'reports.bot'],
                 ],
                 'hiddenRoutes' => [],
             ],
