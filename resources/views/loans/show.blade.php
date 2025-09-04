@@ -4,6 +4,7 @@
 
 @section('content')
     <div class="page-wrapper">
+    <input type="hidden" id="loan_id" value="{{ $loan->id }}">
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
@@ -2145,10 +2146,15 @@
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Send AJAX request to remove penalty
+                    // Ensure penaltyAmount is a plain number
+                    const numericPenaltyAmount = parseFloat(String(penaltyAmount).replace(/[^\d.]/g, '')) || 0;
                     $.ajax({
                         url: `/repayments/remove-penalty/${scheduleId}`,
                         method: 'POST',
                         data: {
+                            amount: numericPenaltyAmount,
+                            loan_id: $('#loan_id').val() || window.loanId || '',
+                            schedule_id: scheduleId,
                             reason: result.value.reason,
                             _token: $('meta[name="csrf-token"]').attr('content')
                         },

@@ -291,11 +291,55 @@ class LoanRepaymentService
         ]);
 
         // Get chart accounts for components and log them
+
+        // Handle fee chart account by exploding fee_ids and fetching from fees table
+        $feeAccountId = null;
+        Log::info('fees_ids existence check', [
+            'isset' => isset($loan->product->fees_ids),
+            'value' => $loan->product->fees_ids ?? null
+        ]);
+        if (isset($loan->product->fees_ids)) {
+            $feeIds = is_array($loan->product->fees_ids) ? $loan->product->fees_ids : json_decode($loan->product->fees_ids, true);
+            Log::info('Processing fees_ids', ['fees_ids' => $feeIds]);
+            if (is_array($feeIds)) {
+                foreach ($feeIds as $feeId) {
+                    // Fetch fee from DB
+                    $fee = \DB::table('fees')->where('id', $feeId)->first();
+                    Log::info('Fetched fee for fee_id', ['fee_id' => $feeId, 'fee' => $fee]);
+                    if ($fee && $fee->include_in_schedule == 1 && $fee->chart_account_id) {
+                        $feeAccountId = $fee->chart_account_id;
+                        break;
+                    }
+                }
+            }
+        }
+        // Fallback to fee_income_account_id if no valid fee found
+        if (!$feeAccountId) {
+            $feeAccountId = null;
+        }
+        // Handle penalty chart account by exploding penalty_ids and fetching from penalties table
+        $penaltyAccountId = null;
+        if (isset($loan->product->penalty_ids)) {
+            $penaltyIds = is_array($loan->product->penalty_ids) ? $loan->product->penalty_ids : json_decode($loan->product->penalty_ids, true);
+            Log::info('Processing penalty_ids', ['penalty_ids' => $penaltyIds]);
+            if (is_array($penaltyIds)) {
+                foreach ($penaltyIds as $penaltyId) {
+                    // Fetch penalty from DB
+                    $penalty = \DB::table('penalties')->where('id', $penaltyId)->first();
+                    Log::info('Fetched penalty for penalty_id', ['penalty_id' => $penaltyId, 'penalty' => $penalty]);
+                    if ($penalty && $penalty->penalty_receivables_account_id) {
+                        $penaltyAccountId = $penalty->penalty_receivables_account_id;
+                        break;
+                    }
+                }
+            }
+        }
+
         $chartAccounts = [
             'principal' => $loan->product->principal_receivable_account_id ?? null,
             'interest' => $loan->product->interest_revenue_account_id ?? null,
-            'fee_amount' => $loan->product->fee_income_account_id ?? null,
-            'penalty_amount' => $loan->product->penalty_receivables_account_id ?? null
+            'fee_amount' => $feeAccountId,
+            'penalty_amount' => $penaltyAccountId ?? null
         ];
         Log::info('GL Chart Accounts for Receipt', $chartAccounts);
 
@@ -594,7 +638,7 @@ class LoanRepaymentService
     /**
      * Remove penalty from schedule (for pardon functionality)
      */
-    public function removePenalty($scheduleId, $reason = null)
+    public function removePenalty($scheduleId, $reason = null, $amount = null, $loanId = null)
     {
         DB::beginTransaction();
 
@@ -604,21 +648,24 @@ class LoanRepaymentService
             // Get the current penalty amount before removing it
             $currentPenaltyAmount = $schedule->penalty_amount;
 
-            Log::info("Removing penalty for schedule ID: {$scheduleId}, current penalty amount: {$currentPenaltyAmount}", [
+            Log::info("Reducing penalty for schedule ID: {$scheduleId}, current penalty amount: {$currentPenaltyAmount}", [
                 'schedule_id' => $scheduleId,
                 'customer_id' => $schedule->customer_id,
                 'penalty_amount' => $currentPenaltyAmount,
-                'reason' => $reason
+                'reason' => $reason,
+                'remove_amount' => $amount,
+                'loan_id' => $loanId
             ]);
 
-            // Remove the penalty-related GL transactions
-            // Using only transaction_id and transaction_type for reliable matching
-            // (customer_id can sometimes be inconsistent due to data entry issues)
-            $deletedCount = GlTransaction::where('transaction_id', $scheduleId)
+            // Subtract the penalty amount from GL transactions for this loan
+            $updatedCount = GlTransaction::where('transaction_id', $loanId)
                 ->whereIn('transaction_type', ['Penalty', 'penalty', 'Loan Penalty'])
-                ->delete();
+                ->where('amount', '>', 0)
+                ->update([
+                    'amount' => DB::raw('amount - ' . floatval($amount))
+                ]);
 
-            Log::info("Deleted {$deletedCount} penalty GL transactions for schedule ID: {$scheduleId}");
+            Log::info("Subtracted penalty amount ({$amount}) from {$updatedCount} GL transactions for loan ID: {$loanId}");
 
             // Update schedule to remove penalty (ensure it's 0)
             $schedule->update([
@@ -629,7 +676,7 @@ class LoanRepaymentService
 
             return [
                 'success' => true,
-                'message' => "Penalty removed successfully from schedule and {$deletedCount} GL transactions deleted"
+                'message' => "Penalty removed successfully from schedule and subtracted amount from {$updatedCount} GL transactions"
             ];
 
         } catch (\Exception $e) {
@@ -666,8 +713,14 @@ class LoanRepaymentService
                     'customer_id' => $schedule->customer_id
                 ]);
 
-                // Remove penalty from schedule and GL transactions
-                $this->removePenalty($schedule->id, "Automatic penalty removal - payment made on/before due date ({$paymentDate->format('Y-m-d')})");
+
+                // Remove penalty from schedule and GL transactions with all required parameters
+                $this->removePenalty(
+                    $schedule->id,
+                    'Paid earlier or on due date',
+                    $schedule->penalty_amount,
+                    $schedule->loan_id
+                );
 
                 // Refresh the schedule model to get updated penalty_amount
                 $schedule->refresh();

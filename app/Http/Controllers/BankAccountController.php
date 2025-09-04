@@ -61,10 +61,9 @@ class BankAccountController extends Controller
     public function create()
     {
         $chartAccounts = ChartAccount::with('accountClassGroup.accountClass')
-            ->whereHas('accountClassGroup.accountClass', function($q) {
-                $q->where('name', 'Assets');
+            ->whereHas('accountClassGroup.accountClass', function ($q) {
+                $q->whereIn('name', ['Assets', 'Equity']);
             })
-            ->orderBy('account_name')
             ->get();
 
         return view('bank-accounts.create', compact('chartAccounts'));

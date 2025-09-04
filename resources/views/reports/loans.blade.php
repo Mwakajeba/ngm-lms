@@ -21,6 +21,7 @@
                         <p class="text-muted">Loans reports functionality will be implemented here.</p>
 
                         <div class="row">
+                            @can('view loan portfolio report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-primary">
                                     <div class="card-body text-center">
@@ -35,7 +36,8 @@
                                     </div>
                                 </div>
                             </div>
-
+                            @endcan
+                            @can('view loan performance report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-success">
                                     <div class="card-body text-center">
@@ -50,7 +52,8 @@
                                     </div>
                                 </div>
                             </div>
-
+                            @endcan
+                            @can('view loan delinquency report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
                                     <div class="card-body text-center">
@@ -64,7 +67,8 @@
                                         </a>
                                     </div>
                                 </div>
-                            </div>
+                            @endcan
+                            @can('view loan disbursement report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-primary">
                                     <div class="card-body text-center">
@@ -79,7 +83,8 @@
                                     </div>
                                 </div>
                             </div>
-
+                            @endcan
+                            @can('view loan repayments report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-success">
                                     <div class="card-body text-center">
@@ -94,7 +99,11 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
+                            
 
+                             <!-- Additional Loan Reports -->
+                            @can('view loan aging report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
                                     <div class="card-body text-center">
@@ -109,7 +118,8 @@
                                     </div>
                                 </div>
                             </div>
-                            
+                            @endcan
+                            @can('view loan aging installment report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-dark">
                                     <div class="card-body text-center">
@@ -124,7 +134,8 @@
                                     </div>
                                 </div>
                             </div>
-                            
+                            @endcan
+                            @can('view loan outstanding report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-info">
                                     <div class="card-body text-center">
@@ -139,7 +150,11 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
                             
+
+                             <!-- More Loan Reports -->
+                            @can('view loan arrears report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
                                     <div class="card-body text-center">
@@ -154,6 +169,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
                             
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-primary">
@@ -168,7 +184,6 @@
                                         </a>
                                     </div>
                                 </div>
-                            </div>
                             
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
@@ -179,7 +194,6 @@
                                         <h5 class="card-title">Portfolio at Risk (PAR) Report</h5>
                                         <p class="card-text">Assess portfolio risk with PAR analysis showing loans past due and risk indicators.</p>
                                         <a href="{{ route('accounting.loans.reports.portfolio_at_risk') }}" class="btn btn-danger">
-                                            <i class="bx bx-file me-1"></i> Generate Report
                                         </a>
                                     </div>
                                 </div>
