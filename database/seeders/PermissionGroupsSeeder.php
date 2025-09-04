@@ -98,7 +98,14 @@ class PermissionGroupsSeeder extends Seeder
         $groupMapping = [
             'dashboard' => [
                 'view dashboard',
-                'view financial report'
+                'view financial report',
+                'view charges',
+                'view journals',
+                'view payments',
+                'view receipts',
+                'view loans',
+                'view graphs',
+                'view recent activities'
             ],
             
             'settings' => [
@@ -181,8 +188,26 @@ class PermissionGroupsSeeder extends Seeder
             ],
             
             'reports' => [
-                'view reports', 'generate reports', 'export reports', 'view financial reports', 
-                'view customer reports', 'view loan reports', 'view collection reports', 'view accounting reports'
+                'view reports', 
+                'generate reports', 
+                'export reports', 
+                'view financial reports', 
+                'view customer reports', 
+                'view loan reports', 
+                'view collection reports', 
+                'view accounting reports',
+                'view loan portfolio report',
+                'view loan performance report',
+                'view loan delinquency report',
+                'view loan disbursement report',
+                'view loan repayments report',
+                'view loan aging report',
+                'view loan aging installment report',
+                'view loan outstanding report',
+                'view arrears',
+                'view expected vs collected',
+                'view portfolio at risk',
+                'view non perfoming loans'
             ],
             
             'chat' => [

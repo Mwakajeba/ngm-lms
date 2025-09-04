@@ -500,6 +500,83 @@ class Loan extends Model
                 'interest' => round($interestAmount / $period, 2)
             ]);
 
+
+        // === Fees on release date ===
+        $product = $this->product;
+        $bankAccountId = $this->bank_account_id;
+        $bankAccount = $bankAccountId ? \App\Models\BankAccount::find($bankAccountId) : null;
+        $bankChartAccountId = $bankAccount ? $bankAccount->chart_account_id : null;
+
+        $releaseFeeIds = [];
+        if ($product && $product->fees_ids) {
+            $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+            if (is_array($feeIds)) {
+                $releaseFeeIds = \DB::table('fees')
+                    ->whereIn('id', $feeIds)
+                    ->where('deduction_criteria', 'charge_fee_on_release_date')
+                    ->where('status', 'active')
+                    ->pluck('id')
+                    ->toArray();
+            }
+        }
+
+        if (!empty($releaseFeeIds)) {
+            $releaseFees = \DB::table('fees')->whereIn('id', $releaseFeeIds)->get();
+            foreach ($releaseFees as $releaseFee) {
+                $feeAmount = (float) $releaseFee->amount;
+                $feeType = $releaseFee->fee_type;
+                $chartAccountId = $releaseFee->chart_account_id;
+
+                if ($chartAccountId && $bankChartAccountId) {
+                    $totalFee = $feeType === 'percentage'
+                        ? ((float) $principal * (float) $feeAmount / 100)
+                        : (float) $feeAmount;
+                    $totalFeeFloat = (float) $totalFee;
+
+                    // Create journal and GL transaction for release fee
+                    $journal = \App\Models\Journal::create([
+                        'reference' => $this->id,
+                        'reference_type' => 'Loan Disbursement',
+                        'customer_id' => $this->customer_id,
+                        'description' => "Release fee for loan #{$this->id}",
+                        'branch_id' => $this->branch_id,
+                        'user_id' => auth()->id(),
+                        'date' => $this->disbursed_on,
+                    ]);
+
+                    // Credit fee income account
+                    \App\Models\JournalItem::create([
+                        'journal_id' => $journal->id,
+                        'chart_account_id' => $chartAccountId,
+                        'amount' => $totalFeeFloat,
+                        'description' => "Release fee for loan #{$this->id}",
+                        'nature' => 'credit',
+                    ]);
+                    // Debit bank account chart account
+                    \App\Models\JournalItem::create([
+                        'journal_id' => $journal->id,
+                        'chart_account_id' => $bankChartAccountId,
+                        'amount' => $totalFeeFloat,
+                        'description' => "Release fee for loan #{$this->id}",
+                        'nature' => 'debit',
+                    ]);
+
+                    \App\Models\GlTransaction::create([
+                        'chart_account_id' => $chartAccountId,
+                        'customer_id' => $this->customer_id,
+                        'amount' => $totalFeeFloat,
+                        'nature' => 'credit',
+                        'transaction_id' => $this->id,
+                        'transaction_type' => 'Loan Disbursement',
+                        'date' => $this->disbursed_on,
+                        'description' => "Release fee for loan #{$this->id}",
+                        'branch_id' => $this->branch_id,
+                        'user_id' => auth()->id(),
+                    ]);
+                }
+            }
+        }
+
         foreach ($schedule as $i => $row) {
             $dueDate = $startDate->copy()->addMonths($i);
             $endDate = $dueDate->copy()->addDays(5);
@@ -542,8 +619,11 @@ class Loan extends Model
                             $loanFee = $i === ($period - 1) ? round($totalFeeFloat, 2) : 0;
                             break;
 
-                        case 'do_not_include_in_loan_schedule':
                         case 'charge_fee_on_release_date':
+                            $loanFee = 0; // Already handled above
+                            break;    
+
+                        case 'do_not_include_in_loan_schedule':
                         default:
                             $loanFee = 0; // Not applied on schedule rows
                             break;

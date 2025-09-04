@@ -281,10 +281,18 @@ class LoanRepaymentController extends Controller
     {
         try {
             $request->validate([
+                'amount' => 'required|numeric|min:0',
+                'loan_id' => 'required|exists:loans,id',
+                'schedule_id' => 'required|exists:loan_schedules,id',
                 'reason' => 'nullable|string|max:500',
             ]);
 
-            $result = $this->repaymentService->removePenalty($scheduleId, $request->reason);
+            $result = $this->repaymentService->removePenalty(
+                $request->schedule_id,
+                $request->reason,
+                $request->amount,
+                $request->loan_id
+            );
 
             return response()->json($result);
 

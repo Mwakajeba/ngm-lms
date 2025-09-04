@@ -129,6 +129,7 @@ use Vinkla\Hashids\Facades\Hashids;
             @endcan
 
 
+            @can('view journals')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -143,6 +144,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
+            @can('view payments')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -157,6 +160,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
+            @can('view receipts')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -171,7 +176,9 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
             <!-- Loan Stats Cards -->
+            @can('view loans')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -185,6 +192,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
+            @can('view loans')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -199,6 +208,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
+            @can('view loans')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -213,6 +224,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
+            @can('view loans')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
@@ -227,9 +240,11 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
+            @endcan
         </div>
         <!--end row-->
 
+        @can('view graphs')
         <!-- Loan Product Disbursement Chart -->
         <div class="row">
             <div class="col-5">
@@ -237,7 +252,7 @@ use Vinkla\Hashids\Facades\Hashids;
                     <div class="card-body">
                         <h5 class="mb-3">Delinquency Loan Buckets (This Year)</h5>
                         <canvas id="delinquencyLoanChart"></canvas>
-                   </div>
+                    </div>
                 </div>
             </div>
             <div class="col-7">
@@ -249,6 +264,7 @@ use Vinkla\Hashids\Facades\Hashids;
                 </div>
             </div>
         </div>
+        @endcan
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
@@ -439,12 +455,12 @@ use Vinkla\Hashids\Facades\Hashids;
                 });
         </script>
         <!--end row-->
-
+        @can('view graphs')
         <!-- Balance Sheet Overview -->
         <div class="row">
             <div class="col-12 col-lg-8 d-lg-flex align-items-lg-stretch">
                 <div class="card radius-10 w-100">
-                    <div class="card-body">
+                    <div class="card-body">                
                         <div id="chart3"></div>
                         <div class="mt-4">
                             <div class="card border-0 shadow-sm" style="background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);">
@@ -505,8 +521,9 @@ use Vinkla\Hashids\Facades\Hashids;
             </div>
         </div>
         <!--end row-->
-
+        @endcan
         <!-- Recent Activities -->
+        @can('view recent activities') 
         <div class="row row-cols-1 row-cols-lg-3">
             <div class="col">
                 <div class="card radius-10">
@@ -578,7 +595,7 @@ use Vinkla\Hashids\Facades\Hashids;
                 </div>
             </div>
         </div>
-
+        @endcan
         <!-- Financial Report Summary -->
         @can('view financial reports')
         <div class="row">

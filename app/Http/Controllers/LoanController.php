@@ -591,11 +591,37 @@ class LoanController extends Controller
         ]);
 
         // GL Transactions
+        // Calculate sum of release-date fees
+        $releaseFeeTotal = 0;
+        if ($product && $product->fees_ids) {
+            info('fees_ids: ' . $product->fees_ids);
+            $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+            if (is_array($feeIds)) {
+                $releaseFees = \DB::table('fees')
+                    ->whereIn('id', $feeIds)
+                    ->where('deduction_criteria', 'charge_fee_on_release_date')
+                    ->where('status', 'active')
+                    ->get();
+                foreach ($releaseFees as $fee) {
+                    $feeAmount = (float) $fee->amount;
+                    $feeType = $fee->fee_type;
+                    $releaseFeeTotal += $feeType === 'percentage'
+                        ? ((float) $validated['amount'] * (float) $feeAmount / 100)
+                        : (float) $feeAmount;
+                   \Log::info("Fee: {$fee->name}, Type: $feeType, Amount: $feeAmount, Calculated: " . ($feeType === 'percentage' ? ((float) $validated['amount'] * (float) $feeAmount / 100) : (float) $feeAmount));
+                }
+            }
+        }
+
+        \Log::info("Total release fees: $releaseFeeTotal");
+
+        $disbursementAmount = $validated['amount'] - $releaseFeeTotal;
+
         GlTransaction::insert([
             [
                 'chart_account_id' => $bankAccount->chart_account_id,
                 'customer_id' => $loan->customer_id,
-                'amount' => $validated['amount'],
+                'amount' => $disbursementAmount,
                 'nature' => 'credit',
                 'transaction_id' => $loan->id,
                 'transaction_type' => 'Loan Disbursement',
@@ -864,12 +890,40 @@ class LoanController extends Controller
                     'description' => $notes,
                 ]);
 
+                $releaseFeeTotal = 0;
+                if ($product && $product->fees_ids) {
+                    \Log::info('fees_ids: ' . json_encode($product->fees_ids));
+                    $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+                    \Log::info('Decoded feeIds:', ['feeIds' => $feeIds]);
+                    if (is_array($feeIds)) {
+                        $releaseFees = \DB::table('fees')
+                            ->whereIn('id', $feeIds)
+                            ->where('deduction_criteria', 'charge_fee_on_release_date')
+                            ->where('status', 'active')
+                            ->get();
+                        \Log::info('Release fees found:', ['count' => count($releaseFees), 'fees' => json_encode($releaseFees)]);
+                        foreach ($releaseFees as $fee) {
+                            $feeAmount = (float) $fee->amount;
+                            $feeType = $fee->fee_type;
+                            $calculatedFee = $feeType === 'percentage'
+                                ? ((float) $validated['amount'] * (float) $feeAmount / 100)
+                                : (float) $feeAmount;
+                            $releaseFeeTotal += $calculatedFee;
+                            \Log::info("Fee: {$fee->name}, Type: $feeType, Amount: $feeAmount, Calculated: $calculatedFee");
+                        }
+                    }
+                }
+
+                \Log::info("Total release fees: $releaseFeeTotal");
+
+                $disbursementAmount = $validated['amount'] - $releaseFeeTotal;
+
                 // Step 6: GL Transactions
                 GlTransaction::insert([
                     [
                         'chart_account_id' => $bankAccount->chart_account_id,
                         'customer_id' => $loan->customer_id,
-                        'amount' => $validated['amount'],
+                        'amount' => $disbursementAmount,
                         'nature' => 'credit',
                         'transaction_id' => $loan->id,
                         'transaction_type' => 'Loan Disbursement',
