@@ -28,10 +28,10 @@ class ReportsController extends Controller
         return view('reports.customers', compact('user'));
     }
 
-    public function transactions()
+    public function bot()
     {
         $user = Auth::user();
         
-        return view('reports.transactions', compact('user'));
+        return view('reports.bot', compact('user'));
     }
 } 

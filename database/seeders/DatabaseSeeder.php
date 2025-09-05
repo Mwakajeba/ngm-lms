@@ -36,6 +36,7 @@ class DatabaseSeeder extends Seeder
       FiletypeSeeder::class,
       PermissionGroupSeeder::class,
       BranchUserSeeder::class,
+      GroupSeeder::class,
     ]);
   }
 }

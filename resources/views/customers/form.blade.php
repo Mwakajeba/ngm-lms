@@ -317,25 +317,7 @@ $isEdit = isset($customer);
                     </div>
                 @endif
 
-                {{-- Always show one empty row for new uploads --}}
-                <div class="row mb-2 file-type-upload-row">
-                    <div class="col-md-5">
-                        <select name="filetypes[]" class="form-select" required>
-                            <option value="">Select File Type</option>
-                            @foreach($filetypes as $type)
-                            <option value="{{ $type->id }}">{{ $type->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="col-md-5">
-                        <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
-                    </div>
-                    <div class="col-md-2 d-flex align-items-center">
-                        <button type="button" class="btn btn-danger btn-sm remove-filetype-row">
-                            <i class="bx bx-trash"></i>
-                        </button>
-                    </div>
-                </div>
+
             </div>
 
             <button type="button" class="btn btn-outline-primary btn-sm" id="add-filetype-row">
@@ -472,6 +454,11 @@ $isEdit = isset($customer);
     document.addEventListener('DOMContentLoaded', function() {
         const container = document.getElementById('file-type-upload-container');
         const addBtn = document.getElementById('add-filetype-row');
+
+        // Ensure there's always at least one row for new customers
+        if (!container.querySelector('.file-type-upload-row')) {
+            addBtn.click(); // This will add the first row
+        }
 
         addBtn.addEventListener('click', function() {
             const row = document.querySelector('.file-type-upload-row');

@@ -75,8 +75,8 @@ class BalanceSheetReportController extends Controller
             $organizedComparativeData[$columnName] = $this->organizeDataByClass($data);
         }
 
-        // Calculate profit/loss for current period
-        $profitLoss = $this->calculateProfitLoss($organizedCurrentData);
+        // Calculate profit/loss for current period using same filters to ensure balance
+        $profitLoss = $this->calculateProfitLoss($asOfDate, $reportingType, $branchId);
 
         return [
             'current' => $organizedCurrentData,
@@ -180,19 +180,37 @@ class BalanceSheetReportController extends Controller
         return $organized;
     }
 
-    private function calculateProfitLoss($organizedData)
+    private function calculateProfitLoss($asOfDate, $reportingType, $branchId)
     {
         $user = Auth::user();
         $company = $user->company;
 
-        // Get revenue and expense data
-        $revenueExpenseData = DB::table('gl_transactions')
+        $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
             ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
             ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
             ->where('account_class_groups.company_id', $company->id)
-            ->whereIn('account_class.name', ['income', 'revenue', 'expenses', 'expense'])
-            ->select(
+            ->where('gl_transactions.date', '<=', $asOfDate)
+            ->whereIn('account_class.name', ['income', 'revenue', 'expenses', 'expense']);
+
+        if ($branchId && $branchId != 'all') {
+            $query->where('gl_transactions.branch_id', $branchId);
+        }
+
+        if ($reportingType === 'cash') {
+            $query->whereExists(function ($subquery) {
+                $subquery->select(DB::raw(1))
+                    ->from('gl_transactions as gl2')
+                    ->whereColumn('gl2.transaction_id', 'gl_transactions.transaction_id')
+                    ->whereColumn('gl2.transaction_type', 'gl_transactions.transaction_type')
+                    ->whereIn('gl2.chart_account_id', function($bankSubquery) {
+                        $bankSubquery->select('chart_account_id')
+                            ->from('bank_accounts');
+                    });
+            });
+        }
+
+        $revenueExpenseData = $query->select(
                 'account_class.name as class_name',
                 DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as revenue_total'),
                 DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as expense_total')
@@ -205,7 +223,6 @@ class BalanceSheetReportController extends Controller
 
         foreach ($revenueExpenseData as $item) {
             $class_name = strtolower($item->class_name);
-            
             if (in_array($class_name, ['income', 'revenue'])) {
                 $totalRevenue += $item->revenue_total;
             } elseif (in_array($class_name, ['expenses', 'expense'])) {

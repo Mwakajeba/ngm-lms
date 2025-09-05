@@ -21,17 +21,17 @@ class BudgetController extends Controller
     {
         $user = Auth::user();
         $query = Budget::with(['user', 'branch', 'company', 'budgetLines']);
-
+        
         // Filter by company scope
         if ($user->company_id) {
             $query->byCompany($user->company_id);
         }
-
+        
         // Filter by branch scope
         if ($user->branch_id) {
             $query->byBranch($user->branch_id);
         }
-
+        
         // Apply search filters
         if ($request->filled('search')) {
             $search = $request->search;
@@ -40,17 +40,17 @@ class BudgetController extends Controller
                   ->orWhere('year', 'like', "%{$search}%");
             });
         }
-
+        
         if ($request->filled('year')) {
             $query->byYear($request->year);
         }
-
+        
         $budgets = $query->orderBy('created_at', 'desc')->paginate(15);
-
-
+        
+        
         return view('budgets.index', compact('budgets'));
     }
-
+    
     /**
      * Show the form for creating a new resource.
      */
@@ -60,10 +60,10 @@ class BudgetController extends Controller
         $accounts = ChartAccount::whereHas('accountClassGroup', function ($query) {
             $query->where('company_id', Auth::user()->company_id);
         })->get();
-
+        
         return view('budgets.create', compact('accounts'));
     }
-
+    
     /**
      * Store a newly created resource in storage.
      */
@@ -78,10 +78,10 @@ class BudgetController extends Controller
             'budget_lines.*.amount' => 'required|numeric|min:0',
             'budget_lines.*.category' => 'required|in:Revenue,Expense,Capital Expenditure',
         ]);
-
+        
         try {
             DB::beginTransaction();
-
+            
             $budget = Budget::create([
                 'name' => $request->name,
                 'year' => $request->year,
@@ -90,7 +90,7 @@ class BudgetController extends Controller
                 'branch_id' => Auth::user()->branch_id,
                 'company_id' => Auth::user()->company_id,
             ]);
-
+            
             // Create budget lines
             foreach ($request->budget_lines as $line) {
                 $budget->budgetLines()->create([
@@ -99,9 +99,9 @@ class BudgetController extends Controller
                     'category' => $line['category'],
                 ]);
             }
-
+            
             DB::commit();
-
+            
             return redirect()->route('accounting.budgets.index')
                 ->with('success', 'Budget created successfully.');
         } catch (\Exception $e) {
@@ -109,11 +109,11 @@ class BudgetController extends Controller
             return back()->withInput()->with('error', 'Failed to create budget: ' . $e->getMessage());
         }
     }
-
+    
     /**
      * Display the specified resource.
      */
-    public function show(Budget $budget)
+public function show(Budget $budget)
     {
         // Ensure user can only access budgets from their branch
         if ($budget->branch_id !== Auth::user()->branch_id) {
@@ -124,7 +124,7 @@ class BudgetController extends Controller
         
         return view('budgets.show', compact('budget'));
     }
-
+    
     /**
      * Show the form for editing the specified resource.
      */
@@ -138,12 +138,12 @@ class BudgetController extends Controller
         $accounts = ChartAccount::whereHas('accountClassGroup', function ($query) {
             $query->where('company_id', Auth::user()->company_id);
         })->get();
-
+        
         $budget->load('budgetLines');
-
+        
         return view('budgets.edit', compact('budget', 'accounts'));
     }
-
+    
     /**
      * Update the specified resource in storage.
      */
@@ -162,20 +162,20 @@ class BudgetController extends Controller
             'budget_lines.*.amount' => 'required|numeric|min:0',
             'budget_lines.*.category' => 'required|in:Revenue,Expense,Capital Expenditure',
         ]);
-
+        
         try {
             DB::beginTransaction();
-
+            
             $budget->update([
                 'name' => $request->name,
                 'year' => $request->year,
                 'description' => $request->description,
                 'branch_id' => Auth::user()->branch_id,
             ]);
-
+            
             // Delete existing budget lines
             $budget->budgetLines()->delete();
-
+            
             // Create new budget lines
             foreach ($request->budget_lines as $line) {
                 $budget->budgetLines()->create([
@@ -184,9 +184,9 @@ class BudgetController extends Controller
                     'category' => $line['category'],
                 ]);
             }
-
+            
             DB::commit();
-
+            
             return redirect()->route('accounting.budgets.index')
                 ->with('success', 'Budget updated successfully.');
         } catch (\Exception $e) {
@@ -194,16 +194,13 @@ class BudgetController extends Controller
             return back()->withInput()->with('error', 'Failed to update budget: ' . $e->getMessage());
         }
     }
-
+    
     /**
      * Remove the specified resource from storage.
      */
     public function destroy(Budget $budget)
     {
         // Ensure user can only delete budgets from their branch
-        if ($budget->branch_id !== Auth::user()->branch_id) {
-            abort(403, 'You can only delete budgets from your own branch.');
-        }
         
         try {
             $budget->delete();

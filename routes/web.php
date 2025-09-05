@@ -39,6 +39,16 @@ use App\Http\Controllers\CashCollateralController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\Reports\BotBalanceSheetController;
+use App\Http\Controllers\Reports\BotIncomeStatementController;
+use App\Http\Controllers\Reports\BotSectoralLoansController;
+use App\Http\Controllers\Reports\BotInterestRatesController;
+use App\Http\Controllers\Reports\BotLiquidAssetsController;
+use App\Http\Controllers\Reports\BotComplaintsReportController;
+use App\Http\Controllers\Reports\BotDepositsBorrowingsController;
+use App\Http\Controllers\Reports\BotAgentBankingController;
+use App\Http\Controllers\Reports\BotLoansDisbursedController;
+use App\Http\Controllers\Reports\BotGeographicalDistributionController;
 // Add other main app routes here
 Route::get('/dashboard/loan-product-disbursement', [DashboardController::class, 'loanProductDisbursement'])->middleware('auth');
 Route::get('/dashboard/delinquency-loan-buckets', [DashboardController::class, 'delinquencyLoanBuckets'])->middleware('auth');
@@ -103,7 +113,30 @@ Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->nam
 Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->middleware('auth')->name('reports.index');
 Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'loans'])->middleware('auth')->name('reports.loans');
 Route::get('/reports/customers', [App\Http\Controllers\ReportsController::class, 'customers'])->middleware('auth')->name('reports.customers');
-Route::get('/reports/transactions', [App\Http\Controllers\ReportsController::class, 'transactions'])->middleware('auth')->name('reports.transactions');
+Route::get('/reports/bot', [App\Http\Controllers\ReportsController::class, 'bot'])->middleware('auth')->name('reports.bot');
+// BOT Balance Sheet & Income Statement
+Route::prefix('reports/bot')->middleware('auth')->name('reports.bot.')->group(function () {
+    Route::get('/balance-sheet', [BotBalanceSheetController::class, 'index'])->name('balance-sheet');
+    Route::get('/balance-sheet/export', [BotBalanceSheetController::class, 'export'])->name('balance-sheet.export');
+    Route::get('/income-statement', [BotIncomeStatementController::class, 'index'])->name('income-statement');
+    Route::get('/income-statement/export', [BotIncomeStatementController::class, 'export'])->name('income-statement.export');
+    Route::get('/sectoral-loans', [BotSectoralLoansController::class, 'index'])->name('sectoral-loans');
+    Route::get('/sectoral-loans/export', [BotSectoralLoansController::class, 'export'])->name('sectoral-loans.export');
+    Route::get('/interest-rates', [BotInterestRatesController::class, 'index'])->name('interest-rates');
+    Route::get('/interest-rates/export', [BotInterestRatesController::class, 'export'])->name('interest-rates.export');
+    Route::get('/liquid-assets', [BotLiquidAssetsController::class, 'index'])->name('liquid-assets');
+    Route::get('/liquid-assets/export', [BotLiquidAssetsController::class, 'export'])->name('liquid-assets.export');
+    Route::get('/complaints', [BotComplaintsReportController::class, 'index'])->name('complaints');
+    Route::get('/complaints/export', [BotComplaintsReportController::class, 'export'])->name('complaints.export');
+    Route::get('/deposits-borrowings', [BotDepositsBorrowingsController::class, 'index'])->name('deposits-borrowings');
+    Route::get('/deposits-borrowings/export', [BotDepositsBorrowingsController::class, 'export'])->name('deposits-borrowings.export');
+    Route::get('/agent-banking', [BotAgentBankingController::class, 'index'])->name('agent-banking');
+    Route::get('/agent-banking/export', [BotAgentBankingController::class, 'export'])->name('agent-banking.export');
+    Route::get('/loans-disbursed', [BotLoansDisbursedController::class, 'index'])->name('loans-disbursed');
+    Route::get('/loans-disbursed/export', [BotLoansDisbursedController::class, 'export'])->name('loans-disbursed.export');
+    Route::get('/geographical-distribution', [BotGeographicalDistributionController::class, 'index'])->name('geographical-distribution');
+    Route::get('/geographical-distribution/export', [BotGeographicalDistributionController::class, 'export'])->name('geographical-distribution.export');
+});
 
 ////////////////////////////////////////ROLES & PERMISSIONSMANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
@@ -223,6 +256,11 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // Payment Voucher Approval Settings
     Route::get('/payment-voucher-approval', [SettingsController::class, 'paymentVoucherApprovalSettings'])->name('payment-voucher-approval');
     Route::put('/payment-voucher-approval', [SettingsController::class, 'updatePaymentVoucherApprovalSettings'])->name('payment-voucher-approval.update');
+
+    // Bulk Email Settings
+    Route::get('/bulk-email', [\App\Http\Controllers\BulkEmailController::class, 'index'])->name('bulk-email');
+    Route::post('/bulk-email/send', [\App\Http\Controllers\BulkEmailController::class, 'send'])->name('bulk-email.send');
+    Route::get('/bulk-email/recipients', [\App\Http\Controllers\BulkEmailController::class, 'getRecipients'])->name('bulk-email.recipients');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -710,7 +748,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat/unread-count', [App\Http\Controllers\ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
     Route::post('/chat/clear', [App\Http\Controllers\ChatController::class, 'clearChat'])->name('chat.clear');
     Route::get('/chat/online-users', [App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('chat.online-users');
-    Route::get('/chat/download/{messageId}', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.download');
+Route::get('/chat/download/{messageId}', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.download');
+});
+
+// Calendar Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
+Route::get('/loan-messages', [App\Http\Controllers\LoanMessagesController::class, 'getMessages'])->name('loan-messages.get');
 });
 
 Route::post('sms/bulk', [App\Http\Controllers\DashboardController::class, 'sendBulkSms'])->name('sms.bulk');
