@@ -161,6 +161,9 @@ class BotLoansDisbursedController extends Controller
             'total_data' => $totalData
         ]);
 
+        // Get company information for the report header
+        $company = $user->company;
+        
         return view('reports.bot.loans-disbursed', compact(
             'user', 
             'asOfDate', 
@@ -169,12 +172,15 @@ class BotLoansDisbursedController extends Controller
             'totalData',
             'quarter',
             'quarterStart',
-            'quarterEnd'
+            'quarterEnd',
+            'company'
         ));
     }
 
     public function export(Request $request): StreamedResponse
     {
+        $user = Auth::user();
+        $company = $user->company;
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $filename = 'BOT_Loans_Disbursed_' . $asOfDate . '.xls';
         $fullPath = base_path('resources/views/reports/bot-loans-disbursed.xls');

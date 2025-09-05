@@ -30,7 +30,7 @@
                                             <h5 class="card-title">Balance Sheet Report</h5>
                                             <p class="card-text">All the assets and liabilities of the company.</p>
                                             <a class="btn btn-primary" href="{{ route('reports.bot.balance-sheet') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -45,7 +45,7 @@
                                             <h5 class="card-title">Statement of Income and Expense</h5>
                                             <p class="card-text">All the income and expenses of the company.</p>
                                             <a class="btn btn-success" href="{{ route('reports.bot.income-statement') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -60,7 +60,7 @@
                                             <h5 class="card-title">Sectoral Classification Of MICROFINANCE Loans</h5>
                                             <p class="card-text">All the loans of the company.</p>
                                             <a class="btn btn-warning" href="{{ route('reports.bot.sectoral-loans') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -75,7 +75,7 @@
                                             <h5 class="card-title">Interest Rate Structure</h5>
                                             <p class="card-text">Weighted averages and ranges for straight line and reducing balance.</p>
                                             <a class="btn btn-info" href="{{ route('reports.bot.interest-rates') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -90,7 +90,7 @@
                                             <h5 class="card-title">Computation of Liquid Assets</h5>
                                             <p class="card-text">Quarterly computation and ratios.</p>
                                             <a class="btn btn-warning" href="{{ route('reports.bot.liquid-assets') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -105,7 +105,7 @@
                                             <h5 class="card-title">Complaint Report</h5>
                                             <p class="card-text">Quarterly complaints status and nature.</p>
                                             <a class="btn btn-secondary" href="{{ route('reports.bot.complaints') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -120,7 +120,7 @@
                                             <h5 class="card-title">Deposits & Borrowings (Banks & FIs)</h5>
                                             <p class="card-text">Quarterly deposits and borrowings by institution.</p>
                                             <a class="btn btn-dark" href="{{ route('reports.bot.deposits-borrowings') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -135,7 +135,7 @@
                                             <h5 class="card-title">Agent Banking Balances</h5>
                                             <p class="card-text">Quarterly agent banking balances in banks & FIs.</p>
                                             <a class="btn btn-primary" href="{{ route('reports.bot.agent-banking') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -150,7 +150,7 @@
                                             <h5 class="card-title">Loans Disbursed by Sector, Gender & Amount</h5>
                                             <p class="card-text">Quarterly loan disbursements by sector and gender.</p>
                                             <a class="btn btn-success" href="{{ route('reports.bot.loans-disbursed') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>
@@ -165,7 +165,7 @@
                                             <h5 class="card-title">Geographical Distribution</h5>
                                             <p class="card-text">Branches, employees & loans by age & gender.</p>
                                             <a class="btn btn-info" href="{{ route('reports.bot.geographical-distribution') }}">
-                                                <i class="bx bx-file me-1"></i> Open
+                                                <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
                                     </div>

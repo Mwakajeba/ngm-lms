@@ -37,7 +37,7 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5 class="mb-0">Chart of Accounts - Account Class Groups</h5>
-                        @can('create account class groups')
+                        @can('create account class group')
                         <div>
                             <a href="{{ route('accounting.account-class-groups.create') }}" class="btn btn-primary ms-2">
                                 <i class="bx bx-plus"></i> Add New Group
