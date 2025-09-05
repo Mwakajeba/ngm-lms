@@ -93,6 +93,39 @@ class LoanController extends Controller
                 ->where('status', $status)
                 ->select('loans.*');
 
+            // Use DataTables search value for global search
+            $searchValue = $request->input('search.value');
+            if (!empty($searchValue)) {
+                $loans = $loans->where(function ($query) use ($searchValue) {
+                    $query->where('loans.amount', 'like', "%$searchValue%")
+                        ->orWhere('loans.amount_total', 'like', "%$searchValue%")
+                        ->orWhere('loans.interest', 'like', "%$searchValue%")
+                        ->orWhere('loans.loanNo', 'like', "%$searchValue%")
+                        ->orWhereHas('customer', function ($q) use ($searchValue) {
+                            $q->where('name', 'like', "%$searchValue%")
+                                ->orWhere('customerNo', 'like', "%$searchValue%")
+                                ->orWhere('phone1', 'like', "%$searchValue%")
+                                ->orWhere('phone2', 'like', "%$searchValue%")
+                                ->orWhere('idNumber', 'like', "%$searchValue%")
+                                ->orWhere('work', 'like', "%$searchValue%")
+                                ->orWhere('workAddress', 'like', "%$searchValue%")
+                                ->orWhere('description', 'like', "%$searchValue%")
+                                ;
+                        })
+                        ->orWhereHas('product', function ($q) use ($searchValue) {
+                            $q->where('name', 'like', "%$searchValue%")
+                                ->orWhere('product_type', 'like', "%$searchValue%")
+                                ;
+                        })
+                        ->orWhereHas('branch', function ($q) use ($searchValue) {
+                            $q->where('name', 'like', "%$searchValue%")
+                                ->orWhere('location', 'like', "%$searchValue%")
+                                ->orWhere('manager_name', 'like', "%$searchValue%")
+                                ;
+                        });
+                });
+            }
+
             return DataTables::eloquent($loans)
                 ->addColumn('customer_name', function ($loan) {
                     $customerName = optional($loan->customer)->name ?? 'N/A';
@@ -1226,16 +1259,63 @@ class LoanController extends Controller
 
             // Fetch the loan
             $loan = Loan::findOrFail($decoded[0]);
+            $loanId = $loan->id;
 
-            // Check if loan can be deleted - prevent deletion of active or authorized loans
-            if (in_array($loan->status, ['active', 'authorized'])) {
-                return redirect()->route('loans.list')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
+            // Check for repayments
+            $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
+            if ($repaymentCount > 0) {
+                return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
             }
 
-            // Delete the loan
-            $loan->delete();
+            \DB::transaction(function () use ($loan, $loanId) {
+                // ...existing code...
+                // Delete GL Transactions for this loan
+                \DB::table('gl_transactions')
+                    ->where('transaction_id', $loanId)
+                    ->where('transaction_type', 'Loan Disbursement')
+                    ->delete();
 
-            return redirect()->route('loans.list')->with('success', 'Loan deleted successfully.');
+                // Delete Payments and PaymentItems for this loan
+                $payments = \DB::table('payments')
+                    ->where('reference', $loanId)
+                    ->where('reference_type', 'Loan Payment')
+                    ->get();
+                $paymentIds = $payments->pluck('id')->toArray();
+                if (!empty($paymentIds)) {
+                    \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
+                }
+                \DB::table('payments')
+                    ->where('reference', $loanId)
+                    ->where('reference_type', 'Loan Payment')
+                    ->delete();
+
+                // Delete Loan Schedule
+                \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
+
+                // Delete Journals and JournalItems if table exists
+                if (\Schema::hasTable('journals')) {
+                    // Find journals by reference_type and either reference (loanId) or reference_number (JRN-...)
+                    $journals = \DB::table('journals')
+                        ->where('reference_type', 'Loan Disbursement')
+                        ->where(function($query) use ($loanId) {
+                            $query->where('reference', $loanId);
+                        })
+                        ->get();
+                    $journalIds = $journals->pluck('id')->toArray();
+                    if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
+                        \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
+                    }
+                    \DB::table('journals')
+                        ->where('reference_type', 'Loan Disbursement')
+                        ->where('reference',$loanId)
+                        ->delete();
+                }
+
+                // Delete the loan itself
+                $loan->delete();
+            });
+
+            return redirect()->route('loans.list')->with('success', 'Loan and related records deleted successfully.');
         } catch (\Throwable $e) {
             return redirect()->route('loans.list')->withErrors(['error' => 'Failed to delete loan: ' . $e->getMessage()]);
         }
