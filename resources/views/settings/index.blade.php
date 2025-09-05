@@ -261,7 +261,7 @@
                             </div>
 
                             <!-- Subscription Management -->
-                            @can('manage subscription')
+                            <!-- @can('manage subscription')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
                                     <div class="card-body text-center">
@@ -279,7 +279,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @endcan
+                            @endcan -->
 
                             <!-- Payment Voucher Approval Process -->
                             @can('manage payment voucher approval')
@@ -301,6 +301,27 @@
                                 </div>
                             </div>
                             @endcan
+
+                            <!-- Bulk Email Management
+                            @can('manage system configurations')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-purple">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-envelope fs-1 text-purple"></i>
+                                        </div>
+                                        <h5 class="card-title">Bulk Email Management</h5>
+                                        <p class="card-text">
+                                            Send bulk emails to multiple recipients with customizable templates.
+                                            Manage email campaigns and track delivery status.
+                                        </p>
+                                        <a href="{{ route('settings.bulk-email') }}" class="btn btn-purple">
+                                            <i class="bx bx-envelope me-1"></i> Send Bulk Emails
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan -->
 
                             @endcan
                         </div>

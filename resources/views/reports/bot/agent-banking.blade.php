@@ -42,15 +42,12 @@
                             <div class="col-md-6">
                                 <div class="mb-2">
                                     <strong>NAME OF INSTITUTION:</strong> 
-                                    <span class="text-muted">[Your Institution Name]</span>
+                                    <span class="text-muted">{{ $company->name ?? 'Company Name Not Set' }}</span>
                                 </div>
                                 <div class="mb-2">
                                     <strong>MSP CODE:</strong> 
-                                    <span class="text-muted">[Your MSP Code]</span>
+                                    <span class="text-muted">{{ $company->msp_code ?? 'MSP Code Not Set' }}</span>
                                 </div>
-                            </div>
-                            <div class="col-md-6 text-end">
-                                <span class="badge bg-warning">TESTING MSP</span>
                             </div>
                         </div>
                         

@@ -11,7 +11,7 @@
                 ['label' => 'BOT Reports', 'url' => route('reports.bot'), 'icon' => 'bx bx-transfer'],
                 ['label' => 'Deposits & Borrowings', 'url' => '#', 'icon' => 'bx bx-list-ul']
             ]" />
-            <h6 class="mb-0 text-uppercase">BOT Deposits and Borrowings from Banks and Financial Institutions for the Quarter Ended</h6>
+            <h6 class="mb-0 text-uppercase">BOT Deposits and Borrowings from Banks and Financial Institutions for the Quarter Ended {{ \Carbon\Carbon::parse($asOfDate)->format('d/m/Y') }}</h6>
             <hr />
 
             <style>
@@ -57,7 +57,7 @@
                 <div class="card-body bot-container">
                     <div class="bot-header">
                         <div>
-                            <div class="bot-title">NAME OF INSTITUTION:</div>
+                            <div class="bot-title">NAME OF INSTITUTION: {{ $company->name ?? 'Company Name Not Set' }}</div>
                             <div class="bot-sub" style="margin-top: 6px;">BOT FORM MSP2-07 to be submitted Quarterly (Amount in TZS)</div>
                         </div>
                         <div class="bot-meta">

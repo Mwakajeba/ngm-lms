@@ -49,9 +49,6 @@
                                     <span class="text-muted">[Your MSP Code]</span>
                                 </div>
                             </div>
-                            <div class="col-md-6 text-end">
-                                <span class="badge bg-warning">TESTING MSP</span>
-                            </div>
                         </div>
                         
                         <h4 class="text-center my-3">GEOGRAPHICAL DISTRIBUTION OF BRANCHES, EMPLOYEES AND LOANS BY AGE FOR QUARTER</h4>

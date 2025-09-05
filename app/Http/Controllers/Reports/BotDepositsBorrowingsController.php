@@ -65,13 +65,15 @@ class BotDepositsBorrowingsController extends Controller
         
         // Get bank accounts and their balances from GL transactions
         $bankAccounts = BankAccount::all();
-        $bankAccountsWithBalance = $bankAccounts->map(function($account) {
+        $bankAccountsWithBalance = $bankAccounts->map(function($account) use ($asOfDate) {
             $debitTotal = \DB::table('gl_transactions')
                 ->where('chart_account_id', $account->chart_account_id)
+                ->whereDate('date', '<=', $asOfDate)
                 ->where('nature', 'debit')
                 ->sum('amount');
             $creditTotal = \DB::table('gl_transactions')
                 ->where('chart_account_id', $account->chart_account_id)
+                ->whereDate('date', '<=', $asOfDate)
                 ->where('nature', 'credit')
                 ->sum('amount');
             $balance = $debitTotal - $creditTotal;
@@ -139,7 +141,10 @@ class BotDepositsBorrowingsController extends Controller
             'quarter_end' => $quarterEnd
         ];
 
-        return view('reports.bot.deposits-borrowings', compact('user', 'asOfDate', 'banksTz', 'mfsp', 'mnos', 'data'));
+        // Get company information for the report header
+        $company = $user->company;
+        
+        return view('reports.bot.deposits-borrowings', compact('user', 'asOfDate', 'banksTz', 'mfsp', 'mnos', 'data', 'company'));
     }
     
     /**
@@ -209,6 +214,8 @@ class BotDepositsBorrowingsController extends Controller
 
     public function export(Request $request): StreamedResponse
     {
+        $user = Auth::user();
+        $company = $user->company;
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $filename = 'BOT_Deposits_Borrowings_' . $asOfDate . '.xlsx';
         
@@ -218,13 +225,15 @@ class BotDepositsBorrowingsController extends Controller
         
         // Get bank accounts and their balances
         $bankAccounts = BankAccount::all();
-        $bankAccountsWithBalance = $bankAccounts->map(function($account) {
+        $bankAccountsWithBalance = $bankAccounts->map(function($account) use ($asOfDate) {
             $debitTotal = \DB::table('gl_transactions')
                 ->where('chart_account_id', $account->chart_account_id)
+                ->whereDate('date', '<=', $asOfDate)
                 ->where('nature', 'debit')
                 ->sum('amount');
             $creditTotal = \DB::table('gl_transactions')
                 ->where('chart_account_id', $account->chart_account_id)
+                ->whereDate('date', '<=', $asOfDate)
                 ->where('nature', 'credit')
                 ->sum('amount');
             $balance = $debitTotal - $creditTotal;
@@ -273,22 +282,24 @@ class BotDepositsBorrowingsController extends Controller
         $mfsp = ['SELF MICROFINANCE'];
         $mnos = ['AIRTEL MONEY','TIGO PESA','HALOPESA','M-PESA','TTCL PESA'];
         
-        return response()->streamDownload(function () use ($banksTz, $mfsp, $mnos, $totalDepositsTz, $totalDepositsForeign, $totalDeposits, $totalBorrowingsTz, $totalBorrowingsForeign, $totalBorrowings, $asOfDate, $bankAccountsWithBalance) {
-            $this->generateExcelContent($banksTz, $mfsp, $mnos, $totalDepositsTz, $totalDepositsForeign, $totalDeposits, $totalBorrowingsTz, $totalBorrowingsForeign, $totalBorrowings, $asOfDate, $bankAccountsWithBalance);
+        return response()->streamDownload(function () use ($banksTz, $mfsp, $mnos, $totalDepositsTz, $totalDepositsForeign, $totalDeposits, $totalBorrowingsTz, $totalBorrowingsForeign, $totalBorrowings, $asOfDate, $bankAccountsWithBalance, $company) {
+            $this->generateExcelContent($banksTz, $mfsp, $mnos, $totalDepositsTz, $totalDepositsForeign, $totalDeposits, $totalBorrowingsTz, $totalBorrowingsForeign, $totalBorrowings, $asOfDate, $bankAccountsWithBalance, $company);
         }, $filename, [
             'Content-Type' => 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
         ]);
     }
     
-    private function generateExcelContent($banksTz, $mfsp, $mnos, $totalDepositsTz, $totalDepositsForeign, $totalDeposits, $totalBorrowingsTz, $totalBorrowingsForeign, $totalBorrowings, $asOfDate, $bankAccountsWithBalance)
+    private function generateExcelContent($banksTz, $mfsp, $mnos, $totalDepositsTz, $totalDepositsForeign, $totalDeposits, $totalBorrowingsTz, $totalBorrowingsForeign, $totalBorrowings, $asOfDate, $bankAccountsWithBalance, $company)
     {
         $output = fopen('php://output', 'w');
         
         // Header
-        fputcsv($output, ['BOT DEPOSITS AND BORROWINGS FROM BANKS AND FINANCIAL INSTITUTIONS']);
+        fputcsv($output, ['BOT DEPOSITS AND BORROWINGS FROM BANKS AND FINANCIAL INSTITUTIONS FOR THE QUARTER ENDED: ' . \Carbon\Carbon::parse($asOfDate)->format('d/m/Y')]);
+        fputcsv($output, ['']);
+        fputcsv($output, ['NAME OF INSTITUTION: ' . ($company->name ?? 'Company Name Not Set')]);
+        fputcsv($output, ['MSP CODE: ' . ($company->msp_code ?? 'MSP Code Not Set')]);
         fputcsv($output, ['']);
         fputcsv($output, ['BOT FORM MSP2-07: To be submitted Quarterly (Amount in TZS)']);
-        fputcsv($output, ['FOR THE QUARTER ENDED: ' . \Carbon\Carbon::parse($asOfDate)->format('d/m/Y')]);
         fputcsv($output, ['']);
         
         // Main Table Header

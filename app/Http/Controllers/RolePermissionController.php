@@ -8,6 +8,8 @@ use App\Models\Permission;
 use App\Models\User;
 use App\Models\Menu;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Spatie\Permission\PermissionRegistrar;
 
 class RolePermissionController extends Controller
 {
@@ -256,21 +258,56 @@ class RolePermissionController extends Controller
 
     public function createPermission(Request $request)
     {
+        // Normalize inputs to avoid false duplicates
+        $normalizedName = strtolower(trim((string) $request->input('name')));
+        $guardName = $request->input('guard_name', 'web');
+        $request->merge([
+            'name' => $normalizedName,
+            'guard_name' => $guardName,
+        ]);
+
+        // If already exists, return idempotent success to avoid blocking UX with 422
+        $existing = Permission::where('name', $normalizedName)
+            ->where('guard_name', $guardName)
+            ->first();
+        if ($existing) {
+            // Clear cached permissions so UI reflects latest list
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Permission already exists.',
+                    'permission' => $existing,
+                ]);
+            }
+            return back()->with('success', 'Permission already exists.');
+        }
+
         $request->validate([
-            'name' => 'required|string|max:255|unique:permissions,name',
+            'name' => [
+                'required',
+                'string',
+                'max:255',
+                Rule::unique('permissions', 'name')->where(function ($query) use ($guardName) {
+                    return $query->where('guard_name', $guardName);
+                }),
+            ],
             'permission_group_id' => 'nullable|exists:permission_groups,id',
             'description' => 'nullable|string|max:500',
+            'guard_name' => 'required|string|max:255',
         ]);
 
         try {
             $permission = Permission::create([
-                'name' => strtolower($request->name),
+                'name' => $normalizedName,
+                'guard_name' => $guardName,
                 'description' => $request->description,
                 'permission_group_id' => $request->permission_group_id,
             ]);
 
-            // Store group information in a custom field or use the name pattern
-            // For now, we'll use the group to organize permissions in the UI
+            // Clear cached permissions so UI fetches the new one
+            app(PermissionRegistrar::class)->forgetCachedPermissions();
 
             if ($request->wantsJson()) {
                 return response()->json([

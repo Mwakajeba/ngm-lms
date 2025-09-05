@@ -49,7 +49,7 @@ class RolePermissionSeeder extends Seeder
             'create permission group',
             'edit permission group',
             'delete permission group',
-            'Assign Branches',
+            'assign branches',
 
             // Customers
             'view customers',
@@ -119,7 +119,7 @@ class RolePermissionSeeder extends Seeder
             'print cash collateral transactions',
 
             // Accounting
-            'view account class groups',
+            'view account class group',
             'create account class group',
             'edit account class group',
             'delete account class group',

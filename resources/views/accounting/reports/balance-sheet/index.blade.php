@@ -472,8 +472,8 @@
                                         <i class="bx {{ $isBalanced ? 'bx-check-circle' : 'bx-error' }} me-2"></i>
                                         <div>
                                             <strong>Balance Check:</strong>
-                                            Assets ({{ number_format($totalAssets, 2) }}) =
-                                            Liabilities ({{ number_format($totalLiabilities, 2) }}) +
+                                            Assets ({{ number_format($totalAssets, 2) }}) = 
+                                            Liabilities ({{ number_format($totalLiabilities, 2) }}) + 
                                             Equity ({{ number_format($totalEquity, 2) }})
                                             <br>
                                             <small>Where Equity includes P&L ({{ number_format($totalPnL, 2) }})</small>

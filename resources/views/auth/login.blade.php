@@ -81,3 +81,28 @@
 
 @endsection
 
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        var container = document.querySelector('#show_hide_password');
+        if (!container) return;
+        var input = container.querySelector('input');
+        var toggle = container.querySelector('a');
+        var icon = container.querySelector('i');
+        if (!input || !toggle || !icon) return;
+        toggle.addEventListener('click', function (e) {
+            e.preventDefault();
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('bx-hide');
+                icon.classList.add('bx-show');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('bx-show');
+                icon.classList.add('bx-hide');
+            }
+        });
+    });
+</script>
+@endpush
+
