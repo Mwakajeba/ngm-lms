@@ -389,7 +389,7 @@ class LoanController extends Controller
 
                     // Edit action
                     if (auth()->user()->can('edit loan')) {
-                        $actions .= '<a href="' . route('loans.edit', $loan->id) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
+                        $actions .= '<a href="' . route('loans.edit', $encodedId) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
                     }
 
                     // Receipt action for applied loans
@@ -1034,7 +1034,7 @@ class LoanController extends Controller
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
                     'status' => 'active',
-                    'interest_cycle' => $product->interest_cycle, // Get from product
+                    'interest_cycle' => $validated['interest_cycle'], // Use cycle from form
                     'loan_officer_id' => $validated['loan_officer'],
                 ]);
                 info('loaan-->' . $loan);
@@ -1216,13 +1216,12 @@ class LoanController extends Controller
 
     public function edit($encodedId)
     {
-        // Decode the ID
-        $decoded = $encodedId;//Hashids::decode($encodedId);
-        if (empty($decoded)) {
-            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
-        }
-
-        $loan = Loan::findOrFail($decoded[0]);
+    $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+    if (empty($decoded)) {
+        abort(404, 'Invalid loan ID');
+    }
+    $loanId = $decoded[0];
+    $loan = Loan::findOrFail($loanId);
         // Log::info("=== LOAN EDIT METHOD ===", ["encoded_id" => $encodedId, "loan_id" => $loan->id, "loan_data" => ["amount" => $loan->amount, "interest" => $loan->interest, "period" => $loan->period, "interest_cycle" => $loan->interest_cycle, "customer_id" => $loan->customer_id, "group_id" => $loan->group_id, "product_id" => $loan->product_id, "bank_account_id" => $loan->bank_account_id, "loan_officer_id" => $loan->loan_officer_id, "sector" => $loan->sector]]);
         $loanOfficers = User::whereHas('roles', function ($query) {
             $query->whereIn('name', ['loan-officer', 'admin']);
@@ -1266,7 +1265,11 @@ class LoanController extends Controller
         
 
         \Log::info('LoanController@update reached');
-        $loanId = $encodedId; // Now $encodedId is plain loan ID
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Invalid loan ID.']);
+        }
+        $loanId = $decoded[0];
         $loan = Loan::find($loanId);
         if (!$loan) {
             return redirect()->route('loans.list')->withErrors(['Loan not found.']);
@@ -1371,7 +1374,7 @@ class LoanController extends Controller
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
                     'disbursed_on' => $validated['date_applied'],
-                    'interest_cycle' => $product->interest_cycle,
+                    'interest_cycle' => $validated['interest_cycle'], // Use cycle from form
                     'loan_officer_id' => $validated['loan_officer'],
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
