@@ -15,8 +15,15 @@ class RolePermissionSeeder extends Seeder
         $permissions = [
             // Dashboard
             'view dashboard',
-            'view financial reports',
-            
+            'view financial report',
+            'view charges',
+            'view journals',
+            'view payments',
+            'view receipts',
+            'view loans',
+            'view graphs',
+            'view recent activities',
+
             // Settings
             'view settings',
             'edit settings',
@@ -69,14 +76,14 @@ class RolePermissionSeeder extends Seeder
             'view loan product details',
             'deactivate loan product',
             'manage loan products',
-            
+
             'view groups',
             'create group',
             'edit group',
             'delete group',
             'view group details',
             'manage group payments',
-            
+
             'view loans',
             'create loan',
             'edit loan',
@@ -108,7 +115,7 @@ class RolePermissionSeeder extends Seeder
             'edit cash collateral type',
             'delete cash collateral type',
             'view cash collateral type details',
-            
+
             'view cash collaterals',
             'create cash collateral',
             'edit cash collateral',
@@ -124,14 +131,14 @@ class RolePermissionSeeder extends Seeder
             'edit account class group',
             'delete account class group',
             'view account class group details',
-            
+
             'view chart accounts',
             'create chart account',
             'edit chart account',
             'delete chart account',
             'view chart account details',
             'manage chart of accounts',
-            
+
             'view suppliers',
             'create supplier',
             'edit supplier',
@@ -139,7 +146,7 @@ class RolePermissionSeeder extends Seeder
             'view supplier details',
             'change supplier status',
             'manage supplier documents',
-            
+
             'view journals',
             'create journal',
             'edit journal',
@@ -152,7 +159,7 @@ class RolePermissionSeeder extends Seeder
             'reject journal entry',
             'post journal entry',
             'reverse journal entry',
-            
+
             'view payment vouchers',
             'create payment voucher',
             'edit payment voucher',
@@ -160,7 +167,7 @@ class RolePermissionSeeder extends Seeder
             'view payment voucher details',
             'approve payment voucher',
             'reject payment voucher',
-            
+
             'view receipt vouchers',
             'create receipt voucher',
             'edit receipt voucher',
@@ -168,7 +175,7 @@ class RolePermissionSeeder extends Seeder
             'view receipt voucher details',
             'approve receipt voucher',
             'reject receipt voucher',
-            
+
             'view bank accounts',
             'create bank account',
             'edit bank account',
@@ -176,38 +183,38 @@ class RolePermissionSeeder extends Seeder
             'view bank account details',
             'manage bank accounts',
             'manage bank account transactions',
-            
+
             'view bank reconciliation',
             'create bank reconciliation',
             'edit bank reconciliation',
             'delete bank reconciliation',
             'view bank reconciliation details',
             'perform bank reconciliation',
-            
+
             'view bill purchases',
             'create bill purchase',
             'edit bill purchase',
             'delete bill purchase',
             'view bill purchase details',
-            
+
             'view budgets',
             'create budget',
             'edit budget',
             'delete budget',
             'view budget details',
-            
+
             'view fees',
             'create fee',
             'edit fee',
             'delete fee',
             'view fee details',
-            
+
             'view penalties',
             'create penalty',
             'edit penalty',
             'delete penalty',
             'view penalty details',
-            
+
             // General Accounting
             'view accounting',
             'view general ledger',
