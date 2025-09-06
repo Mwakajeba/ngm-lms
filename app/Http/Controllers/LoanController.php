@@ -13,6 +13,7 @@ use App\Models\LoanApproval;
 use App\Models\LoanFile;
 use App\Models\LoanProduct;
 use App\Models\LoanSchedule;
+use App\Models\ChartAccount;
 use App\Models\Payment;
 use App\Models\PaymentItem;
 use App\Models\Role;
@@ -25,6 +26,185 @@ use Yajra\DataTables\Facades\DataTables;
 
 class LoanController extends Controller
 {
+
+    /**
+     * Show Loan Fees Receipt
+     */
+    public function feesReceipt($encodedId)
+    {
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $loan = Loan::with('customer', 'product')->find($decoded[0]);
+        if (!$loan) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        // Get release-date fees for this loan product
+        $fees = [];
+        $totalFees = 0;
+        if ($loan->product && $loan->product->fees_ids) {
+            $feeIds = is_array($loan->product->fees_ids) ? $loan->product->fees_ids : json_decode($loan->product->fees_ids, true);
+            if (is_array($feeIds)) {
+                $releaseFees = \DB::table('fees')
+                    ->whereIn('id', $feeIds)
+                    ->where('deduction_criteria', 'charge_fee_on_release_date')
+                    ->where('status', 'active')
+                    ->get();
+                foreach ($releaseFees as $fee) {
+                    $amount = (float) $fee->amount;
+                    $calculated = $fee->fee_type === 'percentage'
+                        ? ($loan->amount * $amount / 100)
+                        : $amount;
+                    $fees[] = (object) [
+                        'name' => $fee->name,
+                        'fee_type' => $fee->fee_type,
+                        'calculated_amount' => $calculated
+                    ];
+                    $totalFees += $calculated;
+                }
+            }
+        }
+
+        // Fetch required data for the receipt form
+        $bankAccounts = BankAccount::all();
+        $customers = Customer::all();
+            // Get fees with deduction_criteria = 'do_not_include_in_loan_schedule'
+            $excludedFees = \DB::table('fees')
+                ->where('deduction_criteria', 'do_not_include_in_loan_schedule')
+                ->where('status', 'active')
+                ->get();
+
+            // Prepare chart accounts with calculated fee amount/percent
+            $chartAccounts = collect();
+            foreach ($excludedFees as $fee) {
+                if (!$fee->chart_account_id) continue;
+                $account = \App\Models\ChartAccount::find($fee->chart_account_id);
+                if (!$account) continue;
+                $amount = (float) $fee->amount;
+                $calculated = $fee->fee_type === 'percentage'
+                    ? ($loan->amount * $amount / 100)
+                    : $amount;
+                $chartAccounts->push((object) [
+                    'id' => $account->id,
+                    'account_name' => $account->account_name,
+                    'account_code' => $account->account_code,
+                    'fee_name' => $fee->name,
+                    'fee_type' => $fee->fee_type,
+                    'fee_amount' => $calculated
+                ]);
+            }
+
+            return view('loans.fees_receipt', compact('loan', 'fees', 'totalFees', 'bankAccounts', 'customers', 'chartAccounts'));
+    }
+
+    /**
+     * Store Loan Fees Receipt
+     */
+    public function storeReceipt(Request $request, $encodedId)
+    {
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $loan = Loan::find($decoded[0]);
+        if (!$loan) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $validated = $request->validate([
+            'date' => 'required|date',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'payee_type' => 'required|string',
+            'customer_id' => 'nullable|exists:customers,id',
+            'payee_name' => 'nullable|string',
+            'description' => 'nullable|string',
+            'attachment' => 'nullable|file|mimes:pdf|max:2048',
+            'line_items' => 'required|array|min:1',
+            'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
+            'line_items.*.amount' => 'required|numeric|min:0.01',
+            'line_items.*.description' => 'nullable|string',
+        ]);
+
+        // Handle file upload
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $attachmentPath = $request->file('attachment')->store('receipts', 'public');
+        }
+
+        DB::beginTransaction();
+        try {
+            // Create receipt
+            $receipt = new \App\Models\Receipt();
+            $receipt->reference = 'LOAN-' . $loan->id;
+            $receipt->reference_type = 'Loan Disbursement';
+            $receipt->reference_number = $loan->loanNo ?? $loan->id;
+            $receipt->date = $validated['date'];
+            $receipt->bank_account_id = $validated['bank_account_id'];
+            $receipt->payee_type = $validated['payee_type'];
+            $receipt->payee_id = $validated['customer_id'] ?? null;
+            $receipt->payee_name = $validated['payee_name'] ?? null;
+            $receipt->description = $validated['description'] ?? null;
+            $receipt->attachment = $attachmentPath;
+            $receipt->user_id = auth()->id();
+            $receipt->branch_id = $loan->branch_id;
+            $receipt->save();
+
+            // Save receipt items
+            foreach ($validated['line_items'] as $item) {
+                $receiptItem = new \App\Models\ReceiptItem();
+                $receiptItem->receipt_id = $receipt->id;
+                $receiptItem->chart_account_id = $item['chart_account_id'];
+                $receiptItem->amount = $item['amount'];
+                $receiptItem->description = $item['description'] ?? null;
+                $receiptItem->save();
+            }
+                // GL Transactions
+                // Debit Bank Account (total amount)
+                $bankAccount = \App\Models\BankAccount::find($validated['bank_account_id']);
+                $branchId = $loan->branch_id;
+                $customerId = $loan->customer_id;
+                $userId = auth()->id();
+                $totalAmount = collect($validated['line_items'])->sum('amount');
+                \App\Models\GlTransaction::create([
+                    'chart_account_id' => $bankAccount->chart_account_id,
+                    'customer_id' => $customerId,
+                    'amount' => $totalAmount,
+                    'nature' => 'debit',
+                    'transaction_id' => $receipt->id,
+                    'transaction_type' => 'receipt',
+                    'date' => $validated['date'],
+                    'description' => 'Loan Fees Receipt for Loan #' . ($loan->loanNo ?? $loan->id),
+                    'branch_id' => $branchId,
+                    'user_id' => $userId,
+                ]);
+
+                // Credit each chart account in line items
+                foreach ($validated['line_items'] as $item) {
+                    \App\Models\GlTransaction::create([
+                        'chart_account_id' => $item['chart_account_id'],
+                        'customer_id' => $customerId,
+                        'amount' => $item['amount'],
+                        'nature' => 'credit',
+                        'transaction_id' => $receipt->id,
+                        'transaction_type' => 'receipt',
+                        'date' => $validated['date'],
+                        'description' => $item['description'] ?? ('Loan Fee for Loan #' . ($loan->loanNo ?? $loan->id)),
+                        'branch_id' => $branchId,
+                        'user_id' => $userId,
+                    ]);
+                }
+
+            DB::commit();
+            return redirect()->route('loans.list')->with('success', 'Receipt created successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['error' => 'Failed to create receipt: ' . $e->getMessage()]);
+        }
+    }
     // Ajax endpoint for DataTables: Written Off Loans
 
     public function getWrittenOffLoansData(Request $request)
@@ -209,7 +389,7 @@ class LoanController extends Controller
                     
                     // Edit action
                     if (auth()->user()->can('edit loan')) {
-                        $actions .= '<a href="' . route('loans.edit', $encodedId) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
+                        $actions .= '<a href="' . route('loans.edit', $loan->id) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
                     }
                     
                     // Receipt action for applied loans
@@ -900,29 +1080,6 @@ class LoanController extends Controller
                     throw new \Exception('Principal receivable account not set for this loan product.');
                 }
 
-                $payment = Payment::create([
-                    'reference' => $loan->id,
-                    'reference_type' => 'Loan Payment',
-                    'reference_number' => null,
-                    'date' => $validated['date_applied'],
-                    'amount' => $validated['amount'],
-                    'description' => $notes,
-                    'user_id' => $userId,
-                    'customer_id' => $validated['customer_id'],
-                    'bank_account_id' => $validated['account_id'],
-                    'branch_id' => $branchId,
-                    'approved' => true,
-                    'approved_by' => $userId,
-                    'approved_at' => now(),
-                ]);
-
-                PaymentItem::create([
-                    'payment_id' => $payment->id,
-                    'chart_account_id' => $principalReceivable,
-                    'amount' => $validated['amount'],
-                    'description' => $notes,
-                ]);
-
                 $releaseFeeTotal = 0;
                 if ($product && $product->fees_ids) {
                     \Log::info('fees_ids: ' . json_encode($product->fees_ids));
@@ -950,6 +1107,29 @@ class LoanController extends Controller
                 \Log::info("Total release fees: $releaseFeeTotal");
 
                 $disbursementAmount = $validated['amount'] - $releaseFeeTotal;
+
+                $payment = Payment::create([
+                    'reference' => $loan->id,
+                    'reference_type' => 'Loan Payment',
+                    'reference_number' => null,
+                    'date' => $validated['date_applied'],
+                    'amount' => $disbursementAmount,
+                    'description' => $notes,
+                    'user_id' => $userId,
+                    'customer_id' => $validated['customer_id'],
+                    'bank_account_id' => $validated['account_id'],
+                    'branch_id' => $branchId,
+                    'approved' => true,
+                    'approved_by' => $userId,
+                    'approved_at' => now(),
+                ]);
+
+                PaymentItem::create([
+                    'payment_id' => $payment->id,
+                    'chart_account_id' => $principalReceivable,
+                    'amount' => $validated['amount'],
+                    'description' => $notes,
+                ]);
 
                 // Step 6: GL Transactions
                 GlTransaction::insert([
@@ -1032,7 +1212,7 @@ class LoanController extends Controller
     public function edit($encodedId)
     {
         // Decode the ID
-        $decoded = Hashids::decode($encodedId);
+        $decoded = $encodedId;//Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Loan not found.']);
         }
@@ -1053,7 +1233,12 @@ class LoanController extends Controller
 
         // Fetch supporting data
         $customers = Customer::all();
-        $groups = Group::all();
+        // Only fetch groups where this customer is a member
+        $groups = \DB::table('groups')
+            ->join('group_members', 'groups.id', '=', 'group_members.group_id')
+            ->where('group_members.customer_id', $loan->customer_id)
+            ->select('groups.*')
+            ->get();
         $products = LoanProduct::all();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // You can move this to config if reusable
@@ -1072,12 +1257,20 @@ class LoanController extends Controller
 
     public function update(Request $request, $encodedId)
     {
-        $decoded = Hashids::decode($encodedId);
-        if (empty($decoded)) {
-            return redirect()->route('loans.index')->withErrors(['Loan not found.']);
+        
+
+        \Log::info('LoanController@update reached');
+        $loanId = $encodedId; // Now $encodedId is plain loan ID
+        $loan = Loan::find($loanId);
+        if (!$loan) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
         }
 
-        $loan = Loan::findOrFail($decoded[0]);
+        \Log::info('Updating loan application', [
+            'loan_id' => $loan->id,
+            'user_id' => auth()->id(),
+            'data' => $request->all()
+        ]);
 
         $validated = $request->validate([
             'product_id' => 'required|exists:loan_products,id',
@@ -1114,9 +1307,65 @@ class LoanController extends Controller
 
         try {
             DB::transaction(function () use ($loan, $validated, $product, $userId, $branchId) {
+                $loanId = $loan->id;
+                // Check for repayments
+                $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
+                if ($repaymentCount > 0) {
+                    throw new \Exception('This loan has repayments. Please delete repayments first before updating the loan.');
+                }
+                // Check for receipts
+                $receiptCount = \DB::table('receipts')
+                    ->where('reference_number', $loanId)
+                    ->where('reference_type', 'Loan Disbursement')
+                    ->count();
+                if ($receiptCount > 0) {
+                    throw new \Exception('This loan has receipts. Please delete receipts first before updating the loan.');
+                }
 
-                // Step 1: Update base loan fields
-                $loan->update([
+                // Delete related records (same as destroy)
+                // Delete GL Transactions for this loan
+                \DB::table('gl_transactions')
+                    ->where('transaction_id', $loanId)
+                    ->where('transaction_type', 'Loan Disbursement')
+                    ->delete();
+
+                // Delete Payments and PaymentItems for this loan
+                $payments = \DB::table('payments')
+                    ->where('reference', $loanId)
+                    ->where('reference_type', 'Loan Payment')
+                    ->get();
+                $paymentIds = $payments->pluck('id')->toArray();
+                if (!empty($paymentIds)) {
+                    \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
+                }
+                \DB::table('payments')
+                    ->where('reference', $loanId)
+                    ->where('reference_type', 'Loan Payment')
+                    ->delete();
+
+                // Delete Loan Schedule
+                \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
+
+                // Delete Journals and JournalItems if table exists
+                if (\Schema::hasTable('journals')) {
+                    $journals = \DB::table('journals')
+                        ->where('reference_type', 'Loan Disbursement')
+                        ->where(function($query) use ($loanId) {
+                            $query->where('reference', $loanId);
+                        })
+                        ->get();
+                    $journalIds = $journals->pluck('id')->toArray();
+                    if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
+                        \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
+                    }
+                    \DB::table('journals')
+                        ->where('reference_type', 'Loan Disbursement')
+                        ->where('reference',$loanId)
+                        ->delete();
+                }
+
+                // Now update loan and proceed with transactions (like store)
+                $loan->fill([
                     'product_id' => $validated['product_id'],
                     'period' => $validated['period'],
                     'interest' => $validated['interest'],
@@ -1126,37 +1375,25 @@ class LoanController extends Controller
                     'bank_account_id' => $validated['account_id'],
                     'date_applied' => $validated['date_applied'],
                     'disbursed_on' => $validated['date_applied'],
-                    'interest_cycle' => $product->interest_cycle, // Get from product
+                    'interest_cycle' => $product->interest_cycle,
                     'loan_officer_id' => $validated['loan_officer'],
                     'sector' => $validated['sector'],
                     'branch_id' => $branchId,
                 ]);
 
-                // Step 2: Calculate interest and repayment dates
+                // Calculate interest and repayment dates
                 $interestAmount = $loan->calculateInterestAmount($validated['interest']);
                 $repaymentDates = $loan->getRepaymentDates();
-
-                $loan->update([
+                $loan->fill([
                     'interest_amount' => $interestAmount,
                     'amount_total' => $loan->amount + $interestAmount,
                     'first_repayment_date' => $repaymentDates['first_repayment_date'],
                     'last_repayment_date' => $repaymentDates['last_repayment_date'],
                 ]);
-
-                // Step 3: Clear and regenerate loan schedule
-                $loan->schedule()->delete();
+                $loan->save();
                 $loan->generateRepaymentSchedule($validated['interest']);
 
-                // Step 4: Clear previous payment + GL records
-                Payment::where('reference', $loan->id)->delete();
-                PaymentItem::whereHas('payment', function ($query) use ($loan) {
-                    $query->where('reference', $loan->id);
-                })->delete();
-                GlTransaction::where('transaction_id', $loan->id)
-                    ->where('transaction_type', 'Loan Disbursement')
-                    ->delete();
-
-                // Step 5: Create payment record
+                // Create payment record
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
                 $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
                 $principalReceivable = optional($product->principalReceivableAccount)->id;
@@ -1164,13 +1401,33 @@ class LoanController extends Controller
                     throw new \Exception('Principal receivable account not set for this loan product.');
                 }
 
+                $releaseFeeTotal = 0;
+                if ($product && $product->fees_ids) {
+                    $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+                    if (is_array($feeIds)) {
+                        $releaseFees = \DB::table('fees')
+                            ->whereIn('id', $feeIds)
+                            ->where('deduction_criteria', 'charge_fee_on_release_date')
+                            ->where('status', 'active')
+                            ->get();
+                        foreach ($releaseFees as $fee) {
+                            $feeAmount = (float) $fee->amount;
+                            $feeType = $fee->fee_type;
+                            $calculatedFee = $feeType === 'percentage'
+                                ? ((float) $validated['amount'] * (float) $feeAmount / 100)
+                                : (float) $feeAmount;
+                            $releaseFeeTotal += $calculatedFee;
+                        }
+                    }
+                }
+                $disbursementAmount = $validated['amount'] - $releaseFeeTotal;
 
                 $payment = Payment::create([
                     'reference' => $loan->id,
                     'reference_type' => 'Loan Payment',
                     'reference_number' => null,
                     'date' => $validated['date_applied'],
-                    'amount' => $validated['amount'],
+                    'amount' => $disbursementAmount,
                     'description' => $notes,
                     'user_id' => $userId,
                     'customer_id' => $validated['customer_id'],
@@ -1188,11 +1445,11 @@ class LoanController extends Controller
                     'description' => $notes,
                 ]);
 
-                // Step 6: Create GL entries
+                // GL Transactions
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
                     'customer_id' => $loan->customer_id,
-                    'amount' => $validated['amount'],
+                    'amount' => $disbursementAmount,
                     'nature' => 'credit',
                     'transaction_id' => $loan->id,
                     'transaction_type' => 'Loan Disbursement',
@@ -1201,7 +1458,6 @@ class LoanController extends Controller
                     'branch_id' => $branchId,
                     'user_id' => $userId,
                 ]);
-
                 GlTransaction::create([
                     'chart_account_id' => $principalReceivable,
                     'customer_id' => $loan->customer_id,
@@ -1215,11 +1471,10 @@ class LoanController extends Controller
                     'user_id' => $userId,
                 ]);
             });
-
-            return redirect()->route('loans.index')->with('success', 'Loan updated successfully.');
-        } catch (\Throwable $th) {
+            return redirect()->route('loans.list')->with('success', 'Loan updated successfully.');
+        } catch (\Exception $e) {
             return back()->withErrors([
-                'error' => 'Failed to update loan: ' . $th->getMessage()
+                'error' => $e->getMessage()
             ])->withInput();
         }
     }
@@ -1265,6 +1520,15 @@ class LoanController extends Controller
             $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
             if ($repaymentCount > 0) {
                 return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
+            }
+
+            // Check for receipts with reference_number = loanId and reference_type = 'Loan Disbursement'
+            $receiptCount = \DB::table('receipts')
+                ->where('reference_number', $loanId)
+                ->where('reference_type', 'Loan Disbursement')
+                ->count();
+            if ($receiptCount > 0) {
+                return redirect()->route('loans.list')->withErrors(['error' => 'This loan has receipts. Please delete receipts first before deleting the loan.']);
             }
 
             \DB::transaction(function () use ($loan, $loanId) {

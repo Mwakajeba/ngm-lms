@@ -626,6 +626,7 @@ Route::middleware(['auth'])->group(function () {
 
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
+    Route::get('loans/{encodedId}/fees-receipt', [LoanController::class, 'feesReceipt'])->name('loans.fees_receipt');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
     Route::get('loans/writtenoff/data', [LoanController::class, 'getWrittenOffLoansData'])->name('loans.writtenoff.data');
     Route::get('loans/writtenoff', function() {
