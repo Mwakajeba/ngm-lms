@@ -330,7 +330,7 @@ class LoanController extends Controller
                     return '' . number_format($loan->amount_total, 2);
                 })
                 ->addColumn('interest_display', function ($loan) {
-                    return $loan->interest . '%';
+                    return round($loan->interest,2) . '%';
                 })
                 ->addColumn('status_badge', function ($loan) {
                     $badgeClass = '';
@@ -943,9 +943,8 @@ class LoanController extends Controller
         $customers = Customer::with('groups')->where('category', 'Borrower')->get();
         info($customers);
         $products = LoanProduct::all();
-        $loanOfficers = User::whereHas('roles', function ($query) {
-            $query->whereIn('name', ['loan-officer', 'admin']);
-        })->get();
+
+        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
 
         $interestCycles = [
             'daily' => 'Daily',
@@ -1223,9 +1222,7 @@ class LoanController extends Controller
     $loanId = $decoded[0];
     $loan = Loan::findOrFail($loanId);
         // Log::info("=== LOAN EDIT METHOD ===", ["encoded_id" => $encodedId, "loan_id" => $loan->id, "loan_data" => ["amount" => $loan->amount, "interest" => $loan->interest, "period" => $loan->period, "interest_cycle" => $loan->interest_cycle, "customer_id" => $loan->customer_id, "group_id" => $loan->group_id, "product_id" => $loan->product_id, "bank_account_id" => $loan->bank_account_id, "loan_officer_id" => $loan->loan_officer_id, "sector" => $loan->sector]]);
-        $loanOfficers = User::whereHas('roles', function ($query) {
-            $query->whereIn('name', ['loan-officer', 'admin']);
-        })->get();
+     $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
 
         $interestCycles = [
             'daily' => 'Daily',
