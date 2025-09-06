@@ -326,7 +326,7 @@ class Loan extends Model
     }
 
 
-    public function calculateInterestAmount(float $rate = null, bool $returnSchedule = false): float|array
+    public function calculateInterestAmount(?float $rate = null, bool $returnSchedule = false): float|array
     {
         $product = $this->product;
         if (!$product)
@@ -345,7 +345,7 @@ class Loan extends Model
 
         switch ($method) {
             case 'flat_rate':
-                $interestAmount = $principal * $ratePerPeriod * $period;
+                $interestAmount = $principal * $ratePerPeriod; // Flat rate: interest on principal only
                 if ($returnSchedule) {
                     $monthlyPrincipal = $principal / $period;
                     $monthlyInterest = $interestAmount / $period;
@@ -412,7 +412,7 @@ class Loan extends Model
                 break;
 
             default:
-                $interestAmount = $principal * $ratePerPeriod * $period;
+                $interestAmount = $principal * $ratePerPeriod; // Flat rate: interest on principal only
                 break;
         }
 
@@ -429,32 +429,32 @@ class Loan extends Model
 
         // 1. Get first repayment date
         switch ($cycle) {
-            case 'Daily':
+            case 'daily':
                 $first = $disbursedOn->copy()->addDay();
                 $last = $first->copy()->addDays($period - 1);
                 break;
 
-            case 'Weekly':
+            case 'weekly':
                 $first = $disbursedOn->copy()->addWeek();
                 $last = $first->copy()->addWeeks($period - 1);
                 break;
 
-            case 'Monthly':
+            case 'monthly':
                 $first = $disbursedOn->copy()->addMonth();
                 $last = $first->copy()->addMonths($period - 1);
                 break;
 
-            case 'Quarterly':
+            case 'quarterly':
                 $first = $disbursedOn->copy()->addMonths(3);
                 $last = $first->copy()->addMonths(3 * ($period - 1));
                 break;
 
-            case 'Semi Annually':
+            case 'semi_annually':
                 $first = $disbursedOn->copy()->addMonths(6);
                 $last = $first->copy()->addMonths(6 * ($period - 1));
                 break;
 
-            case 'Annually':
+            case 'annually':
                 $first = $disbursedOn->copy()->addYear();
                 $last = $first->copy()->addYears($period - 1);
                 break;
@@ -469,6 +469,57 @@ class Loan extends Model
             'first_repayment_date' => $first->toDateString(),
             'last_repayment_date' => $last->toDateString(),
         ];
+    }
+
+    
+    /**
+     * Get the date increment method based on interest cycle
+     */
+    public function getDateIncrementMethod(): string
+    {
+        $cycle = strtolower($this->interest_cycle);
+        
+        switch ($cycle) {
+            case 'daily':
+                return 'addDay';
+            case 'weekly':
+                return 'addWeek';
+            case 'monthly':
+                return 'addMonth';
+            case 'quarterly':
+                return 'addMonths';
+            case 'semi_annually':
+                return 'addMonths';
+            case 'annually':
+                return 'addYear';
+            default:
+                return 'addMonth';
+        }
+    }
+
+    /**
+     * Get the date increment value based on interest cycle
+     */
+    public function getDateIncrementValue(int $index): int
+    {
+        $cycle = strtolower($this->interest_cycle);
+        
+        switch ($cycle) {
+            case 'daily':
+                return $index;
+            case 'weekly':
+                return $index;
+            case 'monthly':
+                return $index;
+            case 'quarterly':
+                return $index * 3; // 3 months per quarter
+            case 'semi_annually':
+                return $index * 6; // 6 months per semi-annual period
+            case 'annually':
+                return $index;
+            default:
+                return $index;
+        }
     }
 
     public function generateRepaymentSchedule(float $rate)
@@ -540,7 +591,7 @@ class Loan extends Model
                         'customer_id' => $this->customer_id,
                         'description' => "Release fee for loan #{$this->id}",
                         'branch_id' => $this->branch_id,
-                        'user_id' => auth()->id(),
+                        'user_id' => auth()->id() ?? 1,
                         'date' => $this->disbursed_on,
                     ]);
 
@@ -571,14 +622,14 @@ class Loan extends Model
                         'date' => $this->disbursed_on,
                         'description' => "Release fee for loan #{$this->id}",
                         'branch_id' => $this->branch_id,
-                        'user_id' => auth()->id(),
+                        'user_id' => auth()->id() ?? 1,
                     ]);
                 }
             }
         }
 
         foreach ($schedule as $i => $row) {
-            $dueDate = $startDate->copy()->addMonths($i);
+            $dueDate = $startDate->copy()->{$this->getDateIncrementMethod()}($this->getDateIncrementValue($i));
             $endDate = $dueDate->copy()->addDays(5);
             $endGraceDate = $dueDate->copy()->addDays($gracePeriod);
 
@@ -937,5 +988,55 @@ class Loan extends Model
         }
 
         return round($totalAmount / $totalInstallments, 2);
+    }
+
+    /**
+     * Get the period unit based on interest cycle
+     */
+    public function getPeriodUnit(): string
+    {
+        $cycle = strtolower($this->interest_cycle);
+        
+        switch ($cycle) {
+            case 'daily':
+                return 'days';
+            case 'weekly':
+                return 'weeks';
+            case 'monthly':
+                return 'months';
+            case 'quarterly':
+                return 'quarters';
+            case 'semi_annually':
+                return 'semi-annual periods';
+            case 'annually':
+                return 'years';
+            default:
+                return 'months';
+        }
+    }
+
+    /**
+     * Get the installment unit based on interest cycle
+     */
+    public function getInstallmentUnit(): string
+    {
+        $cycle = strtolower($this->interest_cycle);
+        
+        switch ($cycle) {
+            case 'daily':
+                return 'Daily';
+            case 'weekly':
+                return 'Weekly';
+            case 'monthly':
+                return 'Monthly';
+            case 'quarterly':
+                return 'Quarterly';
+            case 'semi_annually':
+                return 'Semi-Annual';
+            case 'annually':
+                return 'Annual';
+            default:
+                return 'Monthly';
+        }
     }
 }

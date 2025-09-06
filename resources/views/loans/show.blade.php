@@ -323,10 +323,10 @@
                                         </tr>
                                         <tr>
                                             <td class="fw-bold text-muted ps-4">Loan Period</td>
-                                            <td class="text-dark">{{ $loan->period }} months</td>
+                                            <td class="text-dark">{{ $loan->period }} {{ $loan->getPeriodUnit() }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold text-muted ps-4">Monthly Installment</td>
+                                            <td class="fw-bold text-muted ps-4">{{ $loan->getInstallmentUnit() }} Installment</td>
                                             <td class="text-dark">TZS
                                                 {{ number_format($loan->amount_total / $loan->period, 2) }}
                                             </td>

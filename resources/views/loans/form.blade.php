@@ -15,7 +15,7 @@ $isEdit = isset($loan);
 </div>
 @endif
 
-<form action="{{ $isEdit ? route('loans.update', $loan) : route('loans.store') }}"
+<form action="{{ $isEdit ? route('loans.update', Hashids::encode($loan->id)) : route('loans.store') }}"
     method="POST" enctype="multipart/form-data">
     @csrf
     @if($isEdit) @method('PUT') @endif
@@ -53,7 +53,7 @@ $isEdit = isset($loan);
                 class="form-select  select2-single @error('loan_officer') is-invalid @enderror" required>
                 <option value="">-- Select Loan Officer --</option>
                 @foreach($loanOfficers as $officer)
-                <option value="{{ $officer->id }}" {{ old('loan_officer_id') == $officer->loan_officer_id ? 'selected' : '' }}>
+                <option value="{{ $officer->id }}" {{ old('loan_officer', $loan->loan_officer_id ?? '') == $officer->id ? 'selected' : '' }}>
                     {{ $officer->name }} ({{ $officer->email }})
                 </option>
                 @endforeach
@@ -109,7 +109,7 @@ $isEdit = isset($loan);
             <label class="form-label">Amount <span class="text-danger">*</span>
                 <small id="amountRangeLabel" class="text-muted ms-2"></small>
             </label>
-            <input type="number" id="amountInput" step="0.01" name="amount" class="form-control @error('amount') is-invalid @enderror"
+            <input type="number" id="amountInput" step="0.000000000000001" name="amount" class="form-control @error('amount') is-invalid @enderror"
                 value="{{ old('amount', $loan->amount ?? '') }}" placeholder="Enter loan amount" required>
             @error('amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
@@ -119,7 +119,7 @@ $isEdit = isset($loan);
                 Interest Rate (%) <span class="text-danger">*</span>
                 <small id="interestRangeLabel" class="text-muted ms-2"></small>
             </label>
-            <input type="number" id="interestInput" step="0.01" name="interest" class="form-control @error('interest') is-invalid @enderror"
+            <input type="number" id="interestInput" step="0.000000000000001" name="interest" class="form-control @error('interest') is-invalid @enderror"
                 value="{{ old('interest', $loan->interest ?? '') }}" placeholder="Enter interest in %" required>
             @error('interest') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
@@ -130,7 +130,7 @@ $isEdit = isset($loan);
             <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
                 <option value="">-- Select Interest Cycle --</option>
                 @foreach($interestCycles as $key => $value)
-                <option value="{{ $key }}" {{ old('interest_cycle', $value->interest_cycle ?? '') == $key ? 'selected' : '' }}>
+                <option value="{{ $key }}" {{ old('interest_cycle', $loan->interest_cycle ?? '') == $key ? 'selected' : '' }}>
                     {{ $value }}
                 </option>
                 @endforeach
@@ -208,7 +208,7 @@ $isEdit = isset($loan);
 
                 amountInput.min = product.minimum_principal;
                 amountInput.max = product.maximum_principal;
-                amountRangeLabel.innerText = `(min: ${product.minimum_principal}%, max: ${product.maximum_principal}%)`;
+                amountRangeLabel.innerText = `(min: ${product.minimum_principal}, max: ${product.maximum_principal})`;
 
             } else {
                 periodInput.removeAttribute('min');

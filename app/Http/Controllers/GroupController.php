@@ -115,6 +115,11 @@ class GroupController extends Controller
 
             return redirect()->route('groups.index')->with('success', 'Group created successfully!');
         } catch (\Exception $e) {
+            \Log::error("Group update failed", [
+                "group_id" => $group->id,
+                "error" => $e->getMessage(),
+                "request_data" => $request->all()
+            ]);
             DB::rollBack();
             \Log::error('Group creation failed: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to create group. Please try again.')->withInput();
@@ -219,7 +224,7 @@ class GroupController extends Controller
             $group->update([
                 'name' => $request->name,
                 'loan_officer' => $request->loan_officer,
-                'branch_id' => $request->branch_id,
+                'branch_id' => Auth::user()->branch_id,
                 'minimum_members' => $request->minimum_members,
                 'maximum_members' => $request->maximum_members,
                 'group_leader' => $request->group_leader,
@@ -236,7 +241,12 @@ class GroupController extends Controller
 
             return redirect()->route('groups.index')->with('success', 'Group updated successfully!');
         } catch (\Exception $e) {
-            return redirect()->back()->with('error', 'Failed to update group. Please try again.')->withInput();
+            \Log::error("Group update failed", [
+                "group_id" => $group->id,
+                "error" => $e->getMessage(),
+                "request_data" => $request->all()
+            ]);
+            return redirect()->back()->with('error', 'Failed to update group: ' . $e->getMessage())->withInput();
         }
     }
 
@@ -264,6 +274,11 @@ class GroupController extends Controller
             $group->delete();
             return redirect()->route('groups.index')->with('success', 'Group deleted successfully!');
         } catch (\Exception $e) {
+            \Log::error("Group update failed", [
+                "group_id" => $group->id,
+                "error" => $e->getMessage(),
+                "request_data" => $request->all()
+            ]);
             return redirect()->back()->with('error', 'Failed to delete group. Please try again.');
         }
     }
@@ -597,6 +612,11 @@ class GroupController extends Controller
             DB::commit();
             return redirect()->route('groups.show', $encodedId)->with('success', 'Group repayment processed successfully!');
         } catch (\Exception $e) {
+            \Log::error("Group update failed", [
+                "group_id" => $group->id,
+                "error" => $e->getMessage(),
+                "request_data" => $request->all()
+            ]);
             DB::rollBack();
             return back()->with('error', 'Failed to process repayment. ' . $e->getMessage());
         }

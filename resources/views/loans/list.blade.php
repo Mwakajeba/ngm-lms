@@ -238,6 +238,27 @@ use Vinkla\Hashids\Facades\Hashids;
 @push('scripts')
 <script>
     $(document).ready(function() {
+        // Show SweetAlert for success messages
+        @if(session('success'))
+            Swal.fire({
+                icon: 'success',
+                title: 'Success!',
+                text: '{{ session('success') }}',
+                timer: 3000,
+                showConfirmButton: false
+            });
+        @endif
+
+        // Show SweetAlert for error messages
+        @if($errors->any())
+            Swal.fire({
+                icon: 'error',
+                title: 'Error!',
+                text: '{{ $errors->first() }}',
+                timer: 5000,
+                showConfirmButton: true
+            });
+        @endif
         const currentStatus = '{{ $status ?? "active" }}';
         
         // Initialize DataTable with Ajax
@@ -255,7 +276,7 @@ use Vinkla\Hashids\Facades\Hashids;
                 }
             },
             columns: [
-                { data: 'customer_name', name: 'customer_name', orderable: false },
+                { data: 'customer_name', name: 'customer_name', orderable: true, searchable: true},
                 { data: 'product_name', name: 'product_name' },
                 { data: 'formatted_amount', name: 'amount' },
                 { data: 'interest_display', name: 'interest' },
