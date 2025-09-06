@@ -51,12 +51,14 @@
         </div>
 
         <!-- Interest Rate Range -->
+
         <div class="col-md-6 mb-3">
             <label class="form-label">Minimum Interest Rate (%) <span class="text-danger">*</span></label>
             <input type="number" name="minimum_interest_rate" step="0.000000000000001" min="0" max="100"
                 class="form-control @error('minimum_interest_rate') is-invalid @enderror"
                 value="{{ old('minimum_interest_rate', $loanProduct->minimum_interest_rate ?? '') }}"
                 placeholder="0.00">
+            <small class="text-muted">Up to 16 digits before and 15 after decimal</small>
             @error('minimum_interest_rate') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -66,6 +68,7 @@
                 class="form-control @error('maximum_interest_rate') is-invalid @enderror"
                 value="{{ old('maximum_interest_rate', $loanProduct->maximum_interest_rate ?? '') }}"
                 placeholder="0.00">
+            <small class="text-muted">Up to 16 digits before and 15 after decimal</small>
             @error('maximum_interest_rate') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
