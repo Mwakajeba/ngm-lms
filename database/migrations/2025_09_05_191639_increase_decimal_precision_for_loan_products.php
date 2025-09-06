@@ -22,7 +22,7 @@ return new class extends Migration
             
             // Increase decimal precision for top up and collateral values
             $table->decimal('top_up_type_value', 25, 15)->change();
-            $table->decimal('cash_collateral_value', 25, 15)->change();
+            //$table->decimal('cash_collateral_value', 25, 15)->change();
         });
     }
 

@@ -170,7 +170,12 @@
                                 </div>
                             </div>
                             @endcan
+
+
+                            @can('view loan expected vs collected report')
                             
+
+                             <!-- Expected vs Collected Report -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-primary">
                                     <div class="card-body text-center">
@@ -184,7 +189,12 @@
                                         </a>
                                     </div>
                                 </div>
+                            </div>
+                            @endcan    
+                            @can('view loan portfolio at risk report')
                             
+
+                             <!-- Portfolio at Risk Report -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
                                     <div class="card-body text-center">
@@ -198,6 +208,11 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
+                            
+
+                             <!-- Internal Portfolio Analysis Report -->    
+                            @can('view loan internal portfolio analysis report')  
                             
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-info">
@@ -213,7 +228,9 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
                              <!-- Non Performing Loan Report -->
+                            @can('view loan non performing loan report')  
                             <div class="col-lg-4 col-md-6 mb-4">
                                 <div class="card h-100">
                                     <div class="card-body text-center">
@@ -228,6 +245,7 @@
                                     </div>
                                 </div>
                             </div>
+                            @endcan
                         </div>
                     </div>
                 </div>

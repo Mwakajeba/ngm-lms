@@ -93,7 +93,7 @@ $isEdit = isset($loan);
 
         <!-- Date Applied -->
         <div class="col-md-6 mb-3">
-            <label class="form-label">Date Applied <span class="text-danger">*</span></label>
+            <label class="form-label">Date Disbursed <span class="text-danger">*</span></label>
             <input
                 type="date"
                 name="date_applied"
