@@ -206,6 +206,18 @@ class LoanProductController extends Controller
             }
 
             // Handle fees and penalties arrays
+
+            // Handle cash collateral configuration
+            if (!$request->has('has_cash_collateral')) {
+                $data['cash_collateral_type'] = null;
+                $data['cash_collateral_value_type'] = null;
+                $data['cash_collateral_value'] = 0; // Set to 0 instead of null
+            } else {
+                // If has_cash_collateral is checked but values are not provided, set defaults
+                if (!$request->filled('cash_collateral_value')) {
+                    $data['cash_collateral_value'] = 0;
+                }
+            }
             $data['fees_ids'] = $request->fees_id ? array_filter($request->fees_id) : null;
             $data['penalty_ids'] = $request->penalty_id ? array_filter($request->penalty_id) : null;
 
@@ -440,6 +452,18 @@ class LoanProductController extends Controller
             }
 
             // Handle fees and penalties arrays
+
+            // Handle cash collateral configuration
+            if (!$request->has('has_cash_collateral')) {
+                $data['cash_collateral_type'] = null;
+                $data['cash_collateral_value_type'] = null;
+                $data['cash_collateral_value'] = 0; // Set to 0 instead of null
+            } else {
+                // If has_cash_collateral is checked but values are not provided, set defaults
+                if (!$request->filled('cash_collateral_value')) {
+                    $data['cash_collateral_value'] = 0;
+                }
+            }
             $data['fees_ids'] = $request->fees_id ? array_filter($request->fees_id) : null;
             $data['penalty_ids'] = $request->penalty_id ? array_filter($request->penalty_id) : null;
 

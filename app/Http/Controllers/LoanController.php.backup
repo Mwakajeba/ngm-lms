@@ -267,10 +267,7 @@ class LoanController extends Controller
                 // For old loans, get bank accounts linked to equity chart accounts
                 $accounts = \App\Models\BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
                     $query->where('name', 'LIKE', '%equity%')
-                        ->orWhere('name', 'LIKE', '%Equity%')
-                        ->orWhere('name', 'LIKE', '%Retained Earnings%')
-                        ->orWhere('name', 'LIKE', '%Business Capital%')
-                        ->orWhere('name', 'LIKE', '%Capital%');
+                        ->orWhere('name', 'LIKE', '%Equity%');
                 })
                     ->with('chartAccount')
                     ->select('id', 'name', 'account_number')

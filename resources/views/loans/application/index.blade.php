@@ -65,7 +65,7 @@
                                             <strong>TZS {{ number_format($application->amount, 2) }}</strong>
                                         </td>
                                         <td>
-                                            <span class="badge bg-secondary">{{ $application->period }} months</span>
+                                            <span class="badge bg-secondary">{{ $application->period }} {{ $application->getPeriodUnit() }}</span>
                                         </td>
                                         <td>
                                             <span class="badge bg-warning">{{ $application->interest ?? 'N/A' }}%</span>

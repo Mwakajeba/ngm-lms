@@ -196,7 +196,7 @@
                                                 </tr>
                                                 <tr>
                                                     <td class="fw-bold bg-light">Loan Term</td>
-                                                    <td>{{ $loanApplication->period }} Months</td>
+                                                    <td>{{ $loanApplication->period }} {{ $loanApplication->getPeriodUnit() }}</td>
                                                 </tr>
                                                 <tr>
                                                     <td class="fw-bold bg-light">Disbursement Date</td>

@@ -171,7 +171,7 @@
 
                                         <td>{{ $disbursement->customer->customerNo ?? 'N/A' }} - {{ $disbursement->loanNo ?? 'N/A' }}</td>
                                         <td>{{ \Carbon\Carbon::parse($disbursement->disbursed_on)->format('M d, Y') }}</td>
-                                        <td>{{ $disbursement->period }} Months</td>
+                                        <td>{{ $disbursement->period }} {{ $disbursement->getPeriodUnit() }}</td>
                                         <td>{{ $disbursement->loanOfficer->name ?? 'N/A' }}</td>
                                         <td>{{ $disbursement->customer->name ?? 'N/A' }}</td>
                                         <td>{{ $disbursement->customer->customerNo ?? 'N/A' }}</td>

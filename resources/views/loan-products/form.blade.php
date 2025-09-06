@@ -53,7 +53,7 @@
         <!-- Interest Rate Range -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Minimum Interest Rate (%) <span class="text-danger">*</span></label>
-            <input type="number" name="minimum_interest_rate" step="0.01" min="0" max="100"
+            <input type="number" name="minimum_interest_rate" step="0.000000000000001" min="0" max="100"
                 class="form-control @error('minimum_interest_rate') is-invalid @enderror"
                 value="{{ old('minimum_interest_rate', $loanProduct->minimum_interest_rate ?? '') }}"
                 placeholder="0.00">
@@ -62,7 +62,7 @@
 
         <div class="col-md-6 mb-3">
             <label class="form-label">Maximum Interest Rate (%) <span class="text-danger">*</span></label>
-            <input type="number" name="maximum_interest_rate" step="0.01" min="0" max="100"
+            <input type="number" name="maximum_interest_rate" step="0.000000000000001" min="0" max="100"
                 class="form-control @error('maximum_interest_rate') is-invalid @enderror"
                 value="{{ old('maximum_interest_rate', $loanProduct->maximum_interest_rate ?? '') }}"
                 placeholder="0.00">
@@ -99,7 +99,7 @@
         <!-- Principal Range -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Minimum Principal <span class="text-danger">*</span></label>
-            <input type="number" name="minimum_principal" step="0.01" min="0"
+            <input type="number" name="minimum_principal" step="0.000000000000001" min="0"
                 class="form-control @error('minimum_principal') is-invalid @enderror"
                 value="{{ old('minimum_principal', $loanProduct->minimum_principal ?? '') }}" placeholder="0.00">
             @error('minimum_principal') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -107,7 +107,7 @@
 
         <div class="col-md-6 mb-3">
             <label class="form-label">Maximum Principal <span class="text-danger">*</span></label>
-            <input type="number" name="maximum_principal" step="0.01" min="0"
+            <input type="number" name="maximum_principal" step="0.000000000000001" min="0"
                 class="form-control @error('maximum_principal') is-invalid @enderror"
                 value="{{ old('maximum_principal', $loanProduct->maximum_principal ?? '') }}" placeholder="0.00">
             @error('maximum_principal') <div class="invalid-feedback">{{ $message }}</div> @enderror
@@ -243,7 +243,7 @@
 
         <div class="col-md-6 mb-3" id="cash_collateral_value_div" style="display: none;">
             <label class="form-label">Cash Deposit Value</label>
-            <input type="number" name="cash_collateral_value" step="0.01" min="0"
+            <input type="number" name="cash_collateral_value" step="0.000000000000001" min="0"
                 class="form-control @error('cash_collateral_value') is-invalid @enderror"
                 value="{{ old('cash_collateral_value', $loanProduct->cash_collateral_value ?? '') }}"
                 placeholder="0.00">

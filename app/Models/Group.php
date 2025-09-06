@@ -23,6 +23,11 @@ class Group extends Model
 
     protected $casts = [
         'meeting_time' => 'datetime:H:i',
+        'minimum_members' => 'integer',
+        'maximum_members' => 'integer',
+        'group_leader' => 'integer',
+        'loan_officer' => 'integer',
+        'branch_id' => 'integer',
     ];
 
     public function loans()
@@ -38,6 +43,21 @@ class Group extends Model
         return $this->belongsTo(User::class, 'loan_officer');
     }
 
+    /**
+     * Get the branch for this group.
+     */
+    public function branch()
+    {
+        return $this->belongsTo(Branch::class);
+    }
+
+    /**
+     * Get the group leader (customer) for this group.
+     */
+    public function groupLeader()
+    {
+        return $this->belongsTo(Customer::class, 'group_leader');
+    }
 
     /**
      * Accessor to get the count of loans for this group.
@@ -47,119 +67,117 @@ class Group extends Model
     {
         return $this->loans()->count();
     }
-    /**
-     * Get the branch for this group.
-     */
-    public function branch()
-    {
-        return $this->belongsTo(Branch::class);
-    }
-    public function customers()
-    {
-        return $this->belongsToMany(Customer::class, 'group_members', 'group_id', 'customer_id');
-    }
-
-
-    /**
-     * Get the group leader (user) for this group.
-     */
-    public function groupLeader()
-    {
-        return $this->belongsTo(Customer::class, 'group_leader');
-    }
 
     /**
      * Get the members of this group.
      */
     public function members()
     {
-        return $this->hasMany(GroupMember::class);
+        return $this->belongsToMany(Customer::class, 'group_members', 'group_id', 'customer_id');
     }
 
     /**
-     * Get the active members of this group.
+     * Get the count of members in this group.
      */
-    public function activeMembers()
+    public function getMembersCountAttribute()
     {
-        return $this->hasMany(GroupMember::class)->where('status', 'active');
+        return $this->members()->count();
     }
 
     /**
-     * Get the loans associated with this group.
+     * Check if the group has reached its maximum member limit.
      */
-    // TODO: Uncomment when Loan model is properly set up
-    // public function loans()
-    // {
-    //     return $this->hasMany(Loan::class);
-    // }
-
-    /**
-     * Get the current member count.
-     */
-    public function getCurrentMemberCountAttribute()
+    public function hasReachedMaxMembers()
     {
-        return $this->activeMembers()->count();
-    }
-
-    /**
-     * Get the current member count.
-     */
-    public function getCurrentMemberCount()
-    {
-        return $this->activeMembers()->count();
-    }
-
-    /**
-     * Check if group can accept more members.
-     */
-    public function canAcceptMoreMembers()
-    {
-        return $this->getCurrentMemberCount() < $this->maximum_members;
-    }
-
-    /**
-     * Check if group has minimum required members.
-     */
-    public function hasMinimumMembers()
-    {
-        return $this->getCurrentMemberCount() >= $this->minimum_members;
-    }
-
-    /**
-     * Check if group has a valid meeting schedule.
-     */
-    public function hasValidMeetingSchedule()
-    {
-        return !empty($this->meeting_day) && !empty($this->meeting_time);
-    }
-
-    /**
-     * Check if group has a leader assigned.
-     */
-    public function hasLeader()
-    {
-        return !empty($this->group_leader);
-    }
-
-    /**
-     * Check if group is at maximum capacity.
-     */
-    public function isAtMaxCapacity()
-    {
-        return $this->getCurrentMemberCount() >= $this->maximum_members;
-    }
-
-    /**
-     * Get the status of the group based on member count.
-     */
-    public function getStatus()
-    {
-        if ($this->getCurrentMemberCount() < $this->minimum_members) {
-            return 'Incomplete';
-        } elseif ($this->isAtMaxCapacity()) {
-            return 'Full';
-        } else {
-            return 'Active';
+        if (!$this->maximum_members) {
+            return false;
         }
+        
+        return $this->members_count >= $this->maximum_members;
+    }
+
+    /**
+     * Check if the group has reached its minimum member requirement.
+     */
+    public function hasReachedMinMembers()
+    {
+        if (!$this->minimum_members) {
+            return true;
+        }
+        
+        return $this->members_count >= $this->minimum_members;
+    }
+
+    /**
+     * Get the next meeting date based on meeting_day and meeting_time.
+     */
+    public function getNextMeetingDate()
+    {
+        if (!$this->meeting_day || !$this->meeting_time) {
+            return null;
+        }
+
+        $today = now();
+        $meetingTime = $this->meeting_time;
+
+        switch ($this->meeting_day) {
+            case 'every_day':
+                $nextMeeting = $today->copy()->setTimeFromTimeString($meetingTime);
+                if ($nextMeeting->isPast()) {
+                    $nextMeeting->addDay();
+                }
+                break;
+            case 'every_week':
+                $nextMeeting = $today->copy()->nextWeekday()->setTimeFromTimeString($meetingTime);
+                break;
+            case 'every_month':
+                $nextMeeting = $today->copy()->addMonth()->setTimeFromTimeString($meetingTime);
+                break;
+            default:
+                $dayOfWeek = strtolower($this->meeting_day);
+                $nextMeeting = $today->copy()->next($dayOfWeek)->setTimeFromTimeString($meetingTime);
+                break;
+        }
+
+        return $nextMeeting;
+    }
+
+    /**
+     * Scope to filter groups by branch.
+     */
+    public function scopeByBranch($query, $branchId)
+    {
+        return $query->where('branch_id', $branchId);
+    }
+
+    /**
+     * Scope to filter groups by loan officer.
+     */
+    public function scopeByLoanOfficer($query, $loanOfficerId)
+    {
+        return $query->where('loan_officer', $loanOfficerId);
+    }
+
+    /**
+     * Scope to filter groups that have reached minimum members.
+     */
+    public function scopeWithMinMembers($query)
+    {
+        return $query->whereHas('members', function ($q) {
+            $q->havingRaw('COUNT(*) >= groups.minimum_members');
+        });
+    }
+
+    /**
+     * Scope to filter groups that haven't reached maximum members.
+     */
+    public function scopeNotMaxMembers($query)
+    {
+        return $query->where(function ($q) {
+            $q->whereNull('maximum_members')
+              ->orWhereHas('members', function ($subQ) {
+                  $subQ->havingRaw('COUNT(*) < groups.maximum_members');
+              });
+        });
     }
 }
