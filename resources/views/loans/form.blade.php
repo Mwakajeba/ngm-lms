@@ -79,16 +79,16 @@ $isEdit = isset($loan);
 
         <!----account from --->
         <div class="col-md-6 mb-3">
-            <label class="form-label">From Account</label>
-            <select name="account_id" class="form-select @error('account_id') is-invalid @enderror">
-                <option value="">Select Account From</option>
-                @foreach($bankAccounts as $bankAccount)
-                <option value="{{ $bankAccount->id }}" {{ old('bankAccount_id', $loan->bankAccount_id ?? '') == $bankAccount->id ? 'selected' : '' }}>
-                    {{ $bankAccount->name }}
-                </option>
-                @endforeach
-            </select>
-            @error('bankAccount_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                <label class="form-label">From Account</label>
+                    <select name="account_id" class="form-select @error('account_id') is-invalid @enderror">
+                        <option value="">Select Account From</option>
+                        @foreach($bankAccounts as $bankAccount)
+                        <option value="{{ $bankAccount->id }}" {{ old('account_id', $loan->bank_account_id ?? '') == $bankAccount->id ? 'selected' : '' }}>
+                            {{ $bankAccount->name }}
+                        </option>
+                        @endforeach
+                    </select>
+                    @error('account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
         <!-- Date Applied -->
@@ -239,27 +239,33 @@ $isEdit = isset($loan);
             const selectedCustomer = customers.find(c => c.id == customerId);
             groupIdInput.value = '';
             groupNameDisplay.value = '';
-            if (selectedCustomer && selectedCustomer.groups.length > 0) {
+            if (selectedCustomer && selectedCustomer.groups && selectedCustomer.groups.length > 0) {
                 const group = selectedCustomer.groups[0];
                 groupIdInput.value = group.id;
                 groupNameDisplay.value = group.name;
             }
         }
-        if (window.jQuery) {
-            $('#customer_id').on('change', function() {
-                updateGroupForCustomer(this.value);
-            });
-            // Trigger on page load (for edit form or old values)
-            $('#customer_id').trigger('change');
-        } else {
-            const customerSelect = document.getElementById('customer_id');
-            customerSelect.addEventListener('change', function() {
-                updateGroupForCustomer(this.value);
-            });
-            // Trigger on page load
-            if (customerSelect.value) {
-                updateGroupForCustomer(customerSelect.value);
+
+        // On edit, set group from $loan if available
+        @if($isEdit && isset($loan) && isset($loan->group))
+            groupIdInput.value = '{{ $loan->group_id }}';
+            groupNameDisplay.value = '{{ $loan->group->name }}';
+        @else
+            // Otherwise, use customer selection logic
+            if (window.jQuery) {
+                $('#customer_id').on('change', function() {
+                    updateGroupForCustomer(this.value);
+                });
+                $('#customer_id').trigger('change');
+            } else {
+                const customerSelect = document.getElementById('customer_id');
+                customerSelect.addEventListener('change', function() {
+                    updateGroupForCustomer(this.value);
+                });
+                if (customerSelect.value) {
+                    updateGroupForCustomer(customerSelect.value);
+                }
             }
-        }
+        @endif
     });
 </script>

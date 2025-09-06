@@ -58,8 +58,6 @@ class LoanProduct extends Model
     }
 
     protected $casts = [
-        'minimum_interest_rate' => 'decimal:2',
-        'maximum_interest_rate' => 'decimal:2',
         'minimum_principal' => 'decimal:2',
         'maximum_principal' => 'decimal:2',
         'top_up_type_value' => 'decimal:2',

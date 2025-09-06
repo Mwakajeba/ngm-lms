@@ -28,6 +28,8 @@
                                 <i class="bx bx-plus-circle me-2"></i>Top-Up Not Available
                             </button>
                         @endif
+                        <a href="{{ route('loans.fees_receipt', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
+                            class="btn btn-success"><i class="bx bx-plus-circle me-2"></i> Loan Fees Receipt</a>
                     </div>
                 </div>
                 <div class="d-flex gap-2">
