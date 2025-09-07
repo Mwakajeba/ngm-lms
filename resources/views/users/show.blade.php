@@ -20,10 +20,12 @@
                         <div class="card-body">
                             <div class="text-center">
                                 <div class="avatar-lg mx-auto mb-4">
-                                    <div class="avatar-title bg-soft-primary text-primary rounded-circle font-size-24">
-                                        {{ strtoupper(substr($user->name, 0, 1)) }}
-                                    </div>
-                                </div>
+                                <img
+                                    src="{{ $user->photo ? asset('storage/' . $user->photo) : asset('assets/images/avatars/avatar-2.png') }}"
+                                    alt="{{ $user->name }}"
+                                    class="rounded-circle p-1 bg-primary"
+                                    width="110" />
+                            </div>
                                 <h5 class="font-size-16 mb-1 text-truncate">{{ $user->name }}</h5>
                                 <p class="text-muted text-truncate mb-3">{{ $user->email ?? 'No email' }}</p>
 
@@ -43,7 +45,7 @@
                                 <div class="table-responsive">
                                     <table class="table table-borderless mb-0">
                                         <tbody>
-                                            <tr>
+                                           <tr>
                                                 <th scope="row">User ID :</th>
                                                 <td>{{ $user->user_id }}</td>
                                             </tr>

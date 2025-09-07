@@ -183,6 +183,38 @@
                                         </div>
                                     </div>
                                 </div>
+
+                                <!-- Fees Report -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-primary">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-money fs-1 text-primary"></i>
+                                            </div>
+                                            <h5 class="card-title">Fees Report</h5>
+                                            <p class="card-text">Generate comprehensive reports on all loan fees collected and their breakdowns.</p>
+                                            <a href="{{ route('accounting.reports.fees') }}" class="btn btn-primary">
+                                                <i class="bx bx-file me-1"></i> Generate Report
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Penalties Report -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-dark">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-error-circle fs-1 text-dark"></i>
+                                            </div>
+                                            <h5 class="card-title">Penalties Report</h5>
+                                            <p class="card-text">Track and analyze penalty charges applied to loans and their collection status.</p>
+                                            <a href="{{ route('accounting.reports.penalties') }}" class="btn btn-dark">
+                                                <i class="bx bx-file me-1"></i> Generate Report
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -190,4 +222,4 @@
             </div>
         </div>
     </div>
-@endsection 
+@endsection
