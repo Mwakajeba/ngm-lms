@@ -68,6 +68,7 @@ Route::get('group-loans-ajax/{group}', [\App\Http\Controllers\GroupLoanAjaxContr
 Route::post('/loans/{hashid}/writeoff', [\App\Http\Controllers\LoanController::class, 'confirmWriteoff'])->name('loans.writeoff.confirm');
 Route::get('/loans/{hashid}/writeoff', [\App\Http\Controllers\LoanController::class, 'writeoff'])->name('loans.writeoff');
 // // ...existing code...
+
 Route::get('loans/data', [LoanController::class, 'getLoansData'])->name('loans.data');
 // Group Members AJAX
 Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxController::class, 'index'])->name('group.members.ajax');
@@ -77,9 +78,12 @@ Route::get('arrears-loans/pdf', [\App\Http\Controllers\ArrearsLoanController::cl
 
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
 
+
+Route::get('/login', [AuthController::class, 'showLoginForm']);
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+
+Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::get('/verify-sms', [AuthController::class, 'showVerificationForm'])->name('verify-sms');
@@ -742,11 +746,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loans/{encodedId}/authorize', [LoanController::class, 'authorizeLoan'])->name('loans.authorize');
     Route::post('/loans/{encodedId}/disburse', [LoanController::class, 'disburseLoan'])->name('loans.disburse');
     Route::post('/loans/{encodedId}/reject', [LoanController::class, 'rejectLoan'])->name('loans.reject');
-        Route::get("/data", [PaymentVoucherController::class, "getPaymentVouchersData"])->name("data");
-        Route::resource("", PaymentVoucherController::class)->parameters(["" => "paymentVoucher"]);
-        Route::get("/{paymentVoucher}/download-attachment", [PaymentVoucherController::class, "downloadAttachment"])->name("download-attachment");
-        Route::delete("/{paymentVoucher}/remove-attachment", [PaymentVoucherController::class, "removeAttachment"])->name("remove-attachment");
-        Route::get("/{paymentVoucher}/export-pdf", [PaymentVoucherController::class, "exportPdf"])->name("export-pdf");
     Route::post('/loans/{encodedId}/default', [LoanController::class, 'defaultLoan'])->name('loans.default');
 });
 
