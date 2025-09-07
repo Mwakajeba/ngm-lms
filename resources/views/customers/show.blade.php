@@ -160,7 +160,7 @@
                         <div class="text-center">
                             <div class="avatar-lg mx-auto mb-4">
                                 <img
-                                    src="{{ $customer->photo ? asset('storage/' . $customer->photo) : asset('assets/images/avatars/default.png') }}"
+                                    src="{{ $customer->photo ? asset('storage/' . $customer->photo) : asset('assets/images/avatars/avatar-2.png') }}"
                                     alt="{{ $customer->name }}"
                                     class="rounded-circle p-1 bg-primary"
                                     width="110" />
