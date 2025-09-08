@@ -345,7 +345,7 @@ class Loan extends Model
 
         switch ($method) {
             case 'flat_rate':
-                $interestAmount = $principal * $ratePerPeriod; // Flat rate: interest on principal only
+                $interestAmount = $principal * $ratePerPeriod * $period; // Flat rate: interest on principal only
                 if ($returnSchedule) {
                     $monthlyPrincipal = $principal / $period;
                     $monthlyInterest = $interestAmount / $period;

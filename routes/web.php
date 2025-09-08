@@ -32,6 +32,7 @@ use App\Http\Controllers\LoanProductController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
 use App\Http\Controllers\LoanController;
+use App\Http\Controllers\LoanTopUpController;
 use App\Http\Controllers\LoanReportController;
 use App\Http\Controllers\LoanRepaymentController;
 use App\Http\Controllers\LoanCollateralController;
@@ -700,6 +701,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
     Route::get('loans/{encodedId}/edit', [LoanController::class, 'edit'])->name('loans.edit');
     Route::put('loans/{encodedId}', [LoanController::class, 'update'])->name('loans.update');
+    Route::get('loans/{encodedId}/top-up', [LoanTopUpController::class, 'show'])->name('loans.top_up');
+    Route::post('loans/{encodedId}/top-up', [LoanTopUpController::class, 'store'])->name('loans.top_up.store');
     Route::delete('loans/{loan}', [LoanController::class, 'destroy'])->name('loans.destroy');
     Route::get('loans/applist', [LoanController::class, 'appList'])->name('loans.applist');
     Route::get('loans/appcreate', [LoanController::class, 'appCreate'])->name('loans.appcreate');

@@ -20,9 +20,11 @@
                             class="btn btn-danger">Write Off Loans</a>
 
                         @if($loan->isEligibleForTopUp())
-                            <button type="button" class="btn btn-success" onclick="showTopUpModal()">
+                            <!-- <button type="button" class="btn btn-success" onclick="showTopUpModal()">
                                 <i class="bx bx-plus-circle me-2"></i>Apply for Top-Up
-                            </button>
+                            </button> -->
+                            <a href="{{ route('loans.top_up', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
+                            class="btn btn-info"><i class="bx bx-plus me-2"></i> Loan Top-Up</a>
                         @else
                             <button type="button" class="btn btn-secondary" disabled title="Loan not eligible for top-up">
                                 <i class="bx bx-plus-circle me-2"></i>Top-Up Not Available
@@ -30,6 +32,7 @@
                         @endif
                         <a href="{{ route('loans.fees_receipt', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
                             class="btn btn-success"><i class="bx bx-plus-circle me-2"></i> Loan Fees Receipt</a>
+                            
                     </div>
                 </div>
                 <div class="d-flex gap-2">
@@ -3231,35 +3234,35 @@
             Swal.fire({
                 title: 'Apply for Top-Up Loan',
                 html: `
-                                                                                            <div class="text-start">
-                                                                                                                                             <div class="alert alert-info">
-                                                                             <i class="bx bx-info-circle me-2"></i>
-                                                                             <strong>Customer:</strong> ${loan.customer.name}
-                                                                         </div>
+                            <div class="text-start">
+                                                                                <div class="alert alert-info">
+                <i class="bx bx-info-circle me-2"></i>
+                <strong>Customer:</strong> ${loan.customer.name}
+            </div>
 
-                                                                                                <div class="mb-3">
-                                                                                                    <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
-                                                                                                    <input type="number" class="form-control" id="topup_amount" 
-                                                                                                           placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
-                                                                                                    <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
-                                                                                                </div>
+                                <div class="mb-3">
+                                    <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
+                                    <input type="number" class="form-control" id="topup_amount" 
+                                            placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
+                                    <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
+                                </div>
 
-                                                                                                <div class="mb-3">
-                                                                                                    <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
-                                                                                                    <textarea class="form-control" id="topup_purpose" rows="3" 
-                                                                                                              placeholder="Please describe the purpose of this top-up loan..."></textarea>
-                                                                                                </div>
+                                <div class="mb-3">
+                                    <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
+                                    <textarea class="form-control" id="topup_purpose" rows="3" 
+                                                placeholder="Please describe the purpose of this top-up loan..."></textarea>
+                                </div>
 
-                                                                                                <div class="mb-3">
-                                                                                                    <label for="topup_period" class="form-label">Additional Period (Months)</label>
-                                                                                                    <input type="number" class="form-control" id="topup_period" 
-                                                                                                           value="12" min="1" max="60" required>
-                                                                                                    <small class="text-muted">How many additional months do you need?</small>
-                                                                                                </div>
+                                <div class="mb-3">
+                                    <label for="topup_period" class="form-label">Additional Period</label>
+                                    <input type="number" class="form-control" id="topup_period" 
+                                            value="12" min="1" max="60" required>
+                                    <small class="text-muted">How many additional periods do you need?</small>
+                                </div>
 
 
-                                                                                            </div>
-                                                                                        `,
+                            </div>
+                        `,
                 showCancelButton: true,
                 confirmButtonText: 'Apply for Top-Up',
                 cancelButtonText: 'Cancel',
