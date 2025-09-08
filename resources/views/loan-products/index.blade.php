@@ -110,12 +110,12 @@ use Vinkla\Hashids\Facades\Hashids;
                                         </td>
                                         <td class="text-center text-nowrap">
                                             <div class="btn-group" role="group">
-                                                @can('view product details')
+                                                @canany(['view product details', 'admin'])
                                                 <a href="{{ route('loan-products.show', Hashids::encode($product->id)) }}"
                                                     class="btn btn-sm btn-outline-info" title="View Details">
                                                     view
                                                 </a>
-                                                @endcan
+                                                @endcanany
 
                                                 @can('edit loan product')
                                                 <a href="{{ route('loan-products.edit', Hashids::encode($product->id)) }}"
