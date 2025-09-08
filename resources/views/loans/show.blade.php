@@ -20,9 +20,11 @@
                             class="btn btn-danger">Write Off Loans</a>
 
                         @if($loan->isEligibleForTopUp())
-                            <button type="button" class="btn btn-success" onclick="showTopUpModal()">
+                            <!-- <button type="button" class="btn btn-success" onclick="showTopUpModal()">
                                 <i class="bx bx-plus-circle me-2"></i>Apply for Top-Up
-                            </button>
+                            </button> -->
+                            <a href="{{ route('loans.top_up', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
+                            class="btn btn-info"><i class="bx bx-plus me-2"></i> Loan Top-Up</a>
                         @else
                             <button type="button" class="btn btn-secondary" disabled title="Loan not eligible for top-up">
                                 <i class="bx bx-plus-circle me-2"></i>Top-Up Not Available
@@ -30,6 +32,7 @@
                         @endif
                         <a href="{{ route('loans.fees_receipt', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
                             class="btn btn-success"><i class="bx bx-plus-circle me-2"></i> Loan Fees Receipt</a>
+                            
                     </div>
                 </div>
                 <div class="d-flex gap-2">
