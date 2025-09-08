@@ -17,9 +17,6 @@
                         </div>
                         @can('create payment voucher')
                         <div class="ms-auto d-flex gap-2">
-                            <a href="{{ route('accounting.payment-vouchers.pending-approvals') }}" class="btn btn-warning">
-                                <i class="bx bx-check-shield"></i> Pending Approvals
-                            </a>
                             <a href="{{ route('accounting.payment-vouchers.create') }}" class="btn btn-primary">
                                 <i class="bx bx-plus"></i> New Payment Voucher
                             </a>
@@ -114,7 +111,7 @@
     </div>
 @endsection
 
-@push('scripts')
+@push("scripts")
     <script>
         $(document).ready(function () {
             // Initialize DataTable with Ajax
@@ -214,33 +211,39 @@
                         });
 
                         // Use AJAX instead of form submission to maintain loading state
+                        console.log("Deleting payment with ID:", paymentId);
+                        console.log("Delete URL:", `/accounting/payment-vouchers/${paymentId}`);
+                        
                         $.ajax({
                             url: `/accounting/payment-vouchers/${paymentId}`,
-                            type: 'DELETE',
+                            type: "DELETE",
                             data: {
-                                _token: '{{ csrf_token() }}'
+                                _token: "{{ csrf_token() }}"
                             },
                             success: function(response) {
+                                console.log("Delete success:", response);
                                 Swal.fire({
-                                    title: 'Deleted!',
-                                    text: 'Payment voucher has been deleted successfully.',
-                                    icon: 'success',
-                                    confirmButtonText: 'OK'
+                                    title: "Deleted!",
+                                    text: "Payment voucher has been deleted successfully.",
+                                    icon: "success",
+                                    confirmButtonText: "OK"
                                 }).then(() => {
                                     table.ajax.reload(null, false); // Reload table without resetting pagination
                                 });
                             },
                             error: function(xhr) {
-                                let errorMessage = 'An error occurred while deleting the payment voucher.';
+                                console.log("Delete error:", xhr);
+                                console.log("Response:", xhr.responseText);
+                                let errorMessage = "An error occurred while deleting the payment voucher.";
                                 if (xhr.responseJSON && xhr.responseJSON.message) {
                                     errorMessage = xhr.responseJSON.message;
                                 }
                                 
                                 Swal.fire({
-                                    title: 'Error!',
+                                    title: "Error!",
                                     text: errorMessage,
-                                    icon: 'error',
-                                    confirmButtonText: 'OK'
+                                    icon: "error",
+                                    confirmButtonText: "OK"
                                 });
                             }
                         });
@@ -335,4 +338,4 @@
             border-color: #dee2e6;
         }
     </style>
-@endpush 
+@endpush

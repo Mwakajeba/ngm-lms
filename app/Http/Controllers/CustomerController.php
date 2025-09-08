@@ -22,6 +22,35 @@ use Yajra\DataTables\Facades\DataTables;
 
 class CustomerController extends Controller
 {
+    /**
+     * Format phone number to standard format
+     * - If starts with 0, remove 0 and add 255
+     * - If starts with +255, remove +
+     * - Otherwise return as is
+     */
+    private function formatPhoneNumber($phoneNumber)
+    {
+        if (empty($phoneNumber)) {
+            return $phoneNumber;
+        }
+        
+        // Remove any spaces, dashes, or special characters except +
+        $phoneNumber = preg_replace("/[^0-9+]/", "", $phoneNumber);
+        
+        // If starts with 0, remove 0 and add 255
+        if (substr($phoneNumber, 0, 1) === "0") {
+            return "255" . substr($phoneNumber, 1);
+        }
+        
+        // If starts with +255, remove +
+        if (substr($phoneNumber, 0, 4) === "+255") {
+            return substr($phoneNumber, 1);
+        }
+        
+        // Return as is if already in correct format
+        return $phoneNumber;
+    }
+
     // Display all customers
     public function index()
     {
@@ -159,6 +188,16 @@ class CustomerController extends Controller
 
         // Prepare customer data
     $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents', 'group_id']);
+        // Format phone numbers
+        $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
+        if (!empty($data["phone2"])) {
+            $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
+        }
+        // Format phone numbers
+        $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
+        if (!empty($data["phone2"])) {
+            $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
+        }
         $data['category'] = $request->category;
         $password = 12345;
         $date = now()->toDateString();
@@ -317,6 +356,16 @@ class CustomerController extends Controller
         ]);
 
         $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id']);
+        // Format phone numbers
+        $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
+        if (!empty($data["phone2"])) {
+            $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
+        }
+        // Format phone numbers
+        $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
+        if (!empty($data["phone2"])) {
+            $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
+        }
         $data['category'] = $request->category;
 
         // Set these from logged-in user
@@ -512,6 +561,9 @@ class CustomerController extends Controller
 
                     // Create customer data
                     $customerData = [
+                        // Format phone numbers
+                        "phone1" => $this->formatPhoneNumber(trim($rowData["phone1"])),
+                        "phone2" => !empty($rowData["phone2"]) ? $this->formatPhoneNumber(trim($rowData["phone2"])) : "",
                         'name' => trim($rowData['name']),
                         'phone1' => trim($rowData['phone1']),
                         'phone2' => trim($rowData['phone2'] ?? ''),

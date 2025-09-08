@@ -69,6 +69,7 @@ Route::get('group-loans-ajax/{group}', [\App\Http\Controllers\GroupLoanAjaxContr
 Route::post('/loans/{hashid}/writeoff', [\App\Http\Controllers\LoanController::class, 'confirmWriteoff'])->name('loans.writeoff.confirm');
 Route::get('/loans/{hashid}/writeoff', [\App\Http\Controllers\LoanController::class, 'writeoff'])->name('loans.writeoff');
 // // ...existing code...
+
 Route::get('loans/data', [LoanController::class, 'getLoansData'])->name('loans.data');
 // Group Members AJAX
 Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxController::class, 'index'])->name('group.members.ajax');
@@ -78,9 +79,12 @@ Route::get('arrears-loans/pdf', [\App\Http\Controllers\ArrearsLoanController::cl
 
 
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
-Route::post('/login', [AuthController::class, 'login']);
 
+
+Route::get('/login', [AuthController::class, 'showLoginForm']);
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+
+Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
 
 Route::get('/verify-sms', [AuthController::class, 'showVerificationForm'])->name('verify-sms');
@@ -114,9 +118,32 @@ Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->nam
 Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->middleware('auth')->name('reports.index');
 Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'loans'])->middleware('auth')->name('reports.loans');
 Route::get('/reports/customers', [App\Http\Controllers\ReportsController::class, 'customers'])->middleware('auth')->name('reports.customers');
+Route::get("/reports/customers/list", [App\Http\Controllers\Reports\CustomerListReportController::class, "index"])->middleware("auth")->name("reports.customers.list");
+Route::get("/reports/customers/list/export", [App\Http\Controllers\Reports\CustomerListReportController::class, "export"])->middleware("auth")->name("reports.customers.list.export");
+Route::get("/reports/customers/list/export-pdf", [App\Http\Controllers\Reports\CustomerListReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.list.export-pdf");
+Route::get("/reports/customers/activity", [App\Http\Controllers\Reports\CustomerActivityReportController::class, "index"])->middleware("auth")->name("reports.customers.activity");
+Route::get("/reports/customers/activity/export", [App\Http\Controllers\Reports\CustomerActivityReportController::class, "export"])->middleware("auth")->name("reports.customers.activity.export");
+Route::get("/reports/customers/activity/export-pdf", [App\Http\Controllers\Reports\CustomerActivityReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.activity.export-pdf");
+Route::get("/reports/customers/performance", [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, "index"])->middleware("auth")->name("reports.customers.performance");
+Route::get("/reports/customers/performance/export", [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, "export"])->middleware("auth")->name("reports.customers.performance.export");
+Route::get("/reports/customers/performance/export-pdf", [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.performance.export-pdf");
+Route::get("/reports/customers/demographics", [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, "index"])->middleware("auth")->name("reports.customers.demographics");
+Route::get("/reports/customers/demographics/export", [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, "export"])->middleware("auth")->name("reports.customers.demographics.export");
+Route::get("/reports/customers/demographics/export-pdf", [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.demographics.export-pdf");
+Route::get("/reports/customers/risk-assessment", [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, "index"])->middleware("auth")->name("reports.customers.risk-assessment");
+Route::get("/reports/customers/risk-assessment/export", [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, "export"])->middleware("auth")->name("reports.customers.risk-assessment.export");
+Route::get("/reports/customers/risk-assessment/export-pdf", [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.risk-assessment.export-pdf");
+Route::get("/reports/customers/communication", [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, "index"])->middleware("auth")->name("reports.customers.communication");
+Route::get("/reports/customers/communication/export", [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, "export"])->middleware("auth")->name("reports.customers.communication.export");
+Route::get("/reports/customers/communication/export-pdf", [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.communication.export-pdf");
 Route::get('/reports/bot', [App\Http\Controllers\ReportsController::class, 'bot'])->middleware('auth')->name('reports.bot');
 // BOT Balance Sheet & Income Statement
 Route::prefix('reports/bot')->middleware('auth')->name('reports.bot.')->group(function () {
+
+        // Accounting Reports Index
+        Route::get("/accounting-reports", function() {
+            return view("reports.index");
+        })->name("index");
     Route::get('/balance-sheet', [BotBalanceSheetController::class, 'index'])->name('balance-sheet');
     Route::get('/balance-sheet/export', [BotBalanceSheetController::class, 'export'])->name('balance-sheet.export');
     Route::get('/income-statement', [BotIncomeStatementController::class, 'index'])->name('income-statement');
@@ -311,6 +338,12 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/{paymentVoucher}/approval', [PaymentVoucherController::class, 'showApproval'])->name('approval');
         Route::post('/{paymentVoucher}/approve', [PaymentVoucherController::class, 'approve'])->name('approve');
         Route::post('/{paymentVoucher}/reject', [PaymentVoucherController::class, 'reject'])->name('reject');
+        Route::get("/data", [PaymentVoucherController::class, "getPaymentVouchersData"])->name("data");
+        Route::resource("", PaymentVoucherController::class)->parameters(["" => "paymentVoucher"]);
+        Route::get("/{paymentVoucher}/download-attachment", [PaymentVoucherController::class, "downloadAttachment"])->name("download-attachment");
+        Route::delete("/{paymentVoucher}/remove-attachment", [PaymentVoucherController::class, "removeAttachment"])->name("remove-attachment");
+        Route::get("/{paymentVoucher}/export-pdf", [PaymentVoucherController::class, "exportPdf"])->name("export-pdf");
+
     });
     Route::get('/account-class-groups/create', [AccountClassGroupController::class, 'create'])->name('account-class-groups.create');
     Route::post('/account-class-groups', [AccountClassGroupController::class, 'store'])->name('account-class-groups.store');
@@ -340,12 +373,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::patch('/suppliers/{encodedId}/status', [SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
     Route::delete('/suppliers/{encodedId}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
 
-    // Payment Vouchers
-    Route::get('/payment-vouchers/data', [PaymentVoucherController::class, 'getPaymentVouchersData'])->name('payment-vouchers.data');
-    Route::resource('payment-vouchers', PaymentVoucherController::class);
-    Route::get('/payment-vouchers/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('payment-vouchers.download-attachment');
-    Route::delete('/payment-vouchers/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('payment-vouchers.remove-attachment');
-    Route::get('/payment-vouchers/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('payment-vouchers.export-pdf');
 
     // Bill and Payment PDF Export Routes
     Route::get('/bill-purchases/{billPurchase}/export-pdf', [BillPurchaseController::class, 'exportPdf'])->name('bill-purchases.export-pdf');
@@ -454,6 +481,11 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
+
+        // Accounting Reports Index
+        Route::get("/accounting-reports", function() {
+            return view("reports.index");
+        })->name("index");
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');
         // Trial Balance Report
         Route::get('/trial-balance', [App\Http\Controllers\Accounting\Reports\TrialBalanceReportController::class, 'index'])->name('trial-balance');
@@ -482,6 +514,17 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/budget-report', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'index'])->name('budget-report');
         Route::get('/budget-report/export', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'export'])->name('budget-report.export');
         Route::get('/budget-report/export-pdf', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'exportPdf'])->name('budget-report.export-pdf');
+
+        // Fees Report
+        Route::get("/fees", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "index"])->name("fees");
+        Route::get("/fees/export", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "export"])->name("fees.export");
+
+        Route::get("/fees/export-pdf", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "exportPdf"])->name("fees.export-pdf");
+        
+        // Penalties Report
+        Route::get("/penalties", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "index"])->name("penalties");
+        Route::get("/penalties/export", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "export"])->name("penalties.export");
+        Route::get("/penalties/export-pdf", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "exportPdf"])->name("penalties.export-pdf");
     });
 
     // Transaction Routes
