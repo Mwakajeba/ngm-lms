@@ -535,8 +535,8 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        $fee = $product->schedule_fee;
-        \Log::info('[LoanSchedule] Fee: ' . $fee);
+        $fees = $product->fees;
+        \Log::info('[LoanSchedule] Fees: ' . json_encode($fees));
         $penalty = $product->penalty;
 
         $isReducing = in_array($method, [
@@ -635,52 +635,56 @@ class Loan extends Model
 
             // === Fees ===
             $loanFee = 0;
-            if ($fee) {
-                $feeAmount = (float) $fee->amount;
-                $feeType = $fee->fee_type;
-                $criteria = $fee->deduction_criteria;
-                $includeInSchedule = $fee->include_in_schedule;
-                $status = $fee->status;
+            if (!empty($fees) && is_iterable($fees)) {
+                foreach ($fees as $fee) {
+                    $feeAmount = (float) $fee->amount;
+                    $feeType = $fee->fee_type;
+                    $criteria = $fee->deduction_criteria;
+                    $includeInSchedule = $fee->include_in_schedule;
+                    $status = $fee->status;
 
-                \Log::info('[LoanSchedule] Repayment #' . $i . ' Fee ID: ' . $fee->id . ' include_in_schedule: ' . ($includeInSchedule ? 'true' : 'false') . ', status: ' . $status);
+                    \Log::info('[LoanSchedule] Repayment #' . $i . ' Fee ID: ' . $fee->id . ' include_in_schedule: ' . ($includeInSchedule ? 'true' : 'false') . ', status: ' . $status);
 
-                if ($includeInSchedule && $status === 'active') {
-                    // Total fee basis (for distribution or per-installment use)
-                    $totalFee = $feeType === 'percentage'
-                        ? ((float) $principal * (float) $feeAmount / 100)
-                        : (float) $feeAmount;
-                    $totalFeeFloat = (float) $totalFee;
+                    if ($includeInSchedule && $status === 'active') {
+                        // Total fee basis (for distribution or per-installment use)
+                        $totalFee = $feeType === 'percentage'
+                            ? ((float) $principal * (float) $feeAmount / 100)
+                            : (float) $feeAmount;
+                        $totalFeeFloat = (float) $totalFee;
 
-                    switch ($criteria) {
-                        case 'distribute_fee_evenly_to_all_repayments':
-                            // Spread the total fee evenly across all installments
-                            $loanFee = round($totalFeeFloat / max(1, $period), 2);
-                            break;
+                        $feeValue = 0;
+                        switch ($criteria) {
+                            case 'distribute_fee_evenly_to_all_repayments':
+                                // Spread the total fee evenly across all installments
+                                $feeValue = round($totalFeeFloat / max(1, $period), 2);
+                                break;
 
-                        case 'charge_same_fee_to_all_repayments':
-                            // Charge the same fee amount on every installment (no division)
-                            $loanFee = round($totalFeeFloat, 2);
-                            break;
+                            case 'charge_same_fee_to_all_repayments':
+                                // Charge the same fee amount on every installment (no division)
+                                $feeValue = round($totalFeeFloat, 2);
+                                break;
 
-                        case 'charge_fee_on_first_repayment':
-                            $loanFee = $i === 0 ? round($totalFeeFloat, 2) : 0;
-                            break;
+                            case 'charge_fee_on_first_repayment':
+                                $feeValue = $i === 0 ? round($totalFeeFloat, 2) : 0;
+                                break;
 
-                        case 'charge_fee_on_last_repayment':
-                            $loanFee = $i === ($period - 1) ? round($totalFeeFloat, 2) : 0;
-                            break;
+                            case 'charge_fee_on_last_repayment':
+                                $feeValue = $i === ($period - 1) ? round($totalFeeFloat, 2) : 0;
+                                break;
 
-                        case 'charge_fee_on_release_date':
-                            $loanFee = 0; // Already handled above
-                            break;    
+                            case 'charge_fee_on_release_date':
+                                $feeValue = 0; // Already handled above
+                                break;
 
-                        case 'do_not_include_in_loan_schedule':
-                        default:
-                            $loanFee = 0; // Not applied on schedule rows
-                            break;
+                            case 'do_not_include_in_loan_schedule':
+                            default:
+                                $feeValue = 0; // Not applied on schedule rows
+                                break;
+                        }
+
+                        $loanFee += $feeValue;
+                        \Log::info('[LoanSchedule] Repayment #' . $i . ' Fee criteria: ' . $criteria . ' Applied amount: ' . $feeValue);
                     }
-
-                    \Log::info('[LoanSchedule] Repayment #' . $i . ' Fee criteria: ' . $criteria . ' Applied amount: ' . $loanFee);
                 }
             }
 

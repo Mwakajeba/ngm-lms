@@ -152,18 +152,11 @@ class LoanProductController extends Controller
         }
 
         // Normalize repayment_order for validation and save
-        $repaymentOrderInput = $request->input('repayment_order');
         $repaymentOrderHidden = $request->input('repayment_order_hidden');
-        
-        if (is_array($repaymentOrderInput) && !empty($repaymentOrderInput)) {
-            $repaymentComponents = $repaymentOrderInput;
-        } elseif (is_string($repaymentOrderInput) && strlen(trim($repaymentOrderInput)) > 0) {
-            $repaymentComponents = array_map('trim', explode(',', $repaymentOrderInput));
-        } elseif (is_string($repaymentOrderHidden) && strlen(trim($repaymentOrderHidden)) > 0) {
-            // Fallback to hidden field if main input is empty
+        if (is_string($repaymentOrderHidden) && strlen(trim($repaymentOrderHidden)) > 0) {
             $repaymentComponents = array_map('trim', explode(',', $repaymentOrderHidden));
         } else {
-            $repaymentComponents = []; // Allow empty selection
+            $repaymentComponents = [];
         }
 
         // Validate components if provided
@@ -398,18 +391,11 @@ class LoanProductController extends Controller
         }
 
         // Normalize repayment_order for validation and save
-        $repaymentOrderInput = $request->input('repayment_order');
         $repaymentOrderHidden = $request->input('repayment_order_hidden');
-        
-        if (is_array($repaymentOrderInput) && !empty($repaymentOrderInput)) {
-            $repaymentComponents = $repaymentOrderInput;
-        } elseif (is_string($repaymentOrderInput) && strlen(trim($repaymentOrderInput)) > 0) {
-            $repaymentComponents = array_map('trim', explode(',', $repaymentOrderInput));
-        } elseif (is_string($repaymentOrderHidden) && strlen(trim($repaymentOrderHidden)) > 0) {
-            // Fallback to hidden field if main input is empty
+        if (is_string($repaymentOrderHidden) && strlen(trim($repaymentOrderHidden)) > 0) {
             $repaymentComponents = array_map('trim', explode(',', $repaymentOrderHidden));
         } else {
-            $repaymentComponents = []; // Allow empty selection
+            $repaymentComponents = [];
         }
 
         // Validate components if provided

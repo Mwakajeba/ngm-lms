@@ -67,6 +67,7 @@
                                         </a>
                                     </div>
                                 </div>
+                            </div>    
                             @endcan
                             @can('view loan disbursement report')
                             <div class="col-md-6 col-lg-4 mb-4">

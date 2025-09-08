@@ -619,11 +619,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
 
     // Parameterized routes (must come after specific routes)
+    Route::post('customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
-    Route::post('customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
+    
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////

@@ -12,11 +12,11 @@
         ]" />
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0 text-uppercase">Customer Profile</h6>
-            @can('create loan')
+            <!-- @can('create loan')
             <a href="#" class="btn btn-sm btn-primary">
                 <i class="bx bx-plus"></i> Apply for Loan
             </a>
-            @endcan
+            @endcan -->
         </div>
         <div class="row">
             <!-- Total Loans -->
@@ -465,6 +465,7 @@
         </footer>
 
         <!-- Send Message Modal -->
+        <!-- Send SMS Modal -->
         <div class="modal fade" id="sendMessageModal" tabindex="-1" aria-labelledby="sendMessageModalLabel" aria-hidden="true">
             <div class="modal-dialog modal-dialog-centered">
                 <div class="modal-content">
@@ -474,18 +475,19 @@
                         </h5>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                     </div>
+
+                    <!-- Important: action attribute points to the correct route -->
                     <form id="sendMessageForm" action="{{ route('customers.send-message', Hashids::encode($customer->id)) }}" method="POST">
                         @csrf
                         <div class="modal-body">
                             <div class="mb-3">
                                 <label for="phone_number" class="form-label">Phone Number</label>
-                                <input type="text" class="form-control" id="phone_number" name="phone_number" 
-                                       value="{{ $customer->phone1 }}" readonly>
+                                <input type="text" class="form-control" id="phone_number" name="phone_number" value="{{ $customer->phone1 }}" readonly>
                                 <div class="form-text">Message will be sent to this number</div>
                             </div>
-                            
+
                             <div class="mb-3">
-                                <label for="message_template" class="form-label">Message Template</label>
+                                <label for="message_template" id="message_template" class="form-label">Message Template</label>
                                 <select class="form-select" id="message_template" name="message_template">
                                     <option value="">Select a template...</option>
                                     <option value="payment_reminder">Payment Reminder</option>
@@ -494,21 +496,19 @@
                                     <option value="custom">Custom Message</option>
                                 </select>
                             </div>
-                            
+
                             <div class="mb-3">
                                 <label for="message_content" class="form-label">Message Content</label>
-                                <textarea class="form-control" id="message_content" name="message_content" 
-                                          rows="4" placeholder="Type your message here..." required></textarea>
-                                <div class="form-text">
-                                    <span id="character_count">0</span>/160 characters
-                                </div>
+                                <textarea class="form-control" id="message_content" name="message_content" rows="4" placeholder="Type your message here..." required></textarea>
+                                <div class="form-text"><span id="character_count">0</span>/160 characters</div>
                             </div>
-                            
+
                             <div class="alert alert-info">
                                 <i class="bx bx-info-circle me-2"></i>
                                 <strong>Note:</strong> SMS charges may apply. Please ensure the message is appropriate and professional.
                             </div>
                         </div>
+
                         <div class="modal-footer">
                             <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                 <i class="bx bx-x me-1"></i>Cancel
@@ -521,6 +521,7 @@
                 </div>
             </div>
         </div>
+
 
         <!-- TEST BUTTON FOR LOADING STATE AND SWEETALERT -->
 
@@ -829,23 +830,6 @@
 
         // Character counter
         function updateCharacterCount() {
-            const messageContent = document.getElementById('message_content');
-            const characterCount = document.getElementById('character_count');
-            const count = messageContent.value.length;
-            
-            characterCount.textContent = count;
-            
-            if (count > 160) {
-                characterCount.style.color = 'red';
-            } else if (count > 140) {
-                characterCount.style.color = 'orange';
-            } else {
-                characterCount.style.color = 'green';
-            }
-        }
-
-        // Ensure character counter always works
-        function updateCharacterCount() {
             var messageContent = document.getElementById('message_content');
             var characterCount = document.getElementById('character_count');
             if (messageContent && characterCount) {
@@ -872,39 +856,62 @@
         var sendMessageModal = document.getElementById('sendMessageModal');
         if (sendMessageModal) {
             sendMessageModal.addEventListener('shown.bs.modal', function () {
-                var messageContent = document.getElementById('message_content');
-                if (messageContent) {
-                    updateCharacterCount();
-                }
+                updateCharacterCount();
             });
         }
 
         // Form submission
-        document.getElementById('sendMessageForm').addEventListener('submit', function(e) {
-            e.preventDefault();
-            const form = this;
+       
+        document.addEventListener("DOMContentLoaded", function() {
+        const messageTemplate = document.getElementById('message_template');
+        const messageContent = document.getElementById('message_content');
+        const characterCount = document.getElementById('character_count');
+
+        // Define messages for templates
+        const templateMessages = {
+            payment_reminder: "Dear customer, this is a friendly reminder to pay your loan installment on time.",
+            loan_approved: "Congratulations! Your loan has been approved. Please check your account for details.",
+            loan_disbursed: "Your loan has been disbursed successfully. Thank you for choosing our services."
+        };
+
+        if (messageTemplate && messageContent && characterCount) {
+            // When template changes, fill textarea
+            messageTemplate.addEventListener('change', function() {
+                const value = this.value;
+                if (value === 'custom') {
+                    messageContent.value = '';
+                } else {
+                    messageContent.value = templateMessages[value] || '';
+                }
+                characterCount.innerText = messageContent.value.length;
+            });
+
+            // Update character count as user types
+            messageContent.addEventListener('input', function() {
+                characterCount.innerText = this.value.length;
+            });
+        }
+    
+        const form = document.getElementById('sendMessageForm');
+        if (!form) return;
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault(); // stop normal submission
+
             const sendBtn = document.getElementById('sendMessageBtn');
             const originalText = sendBtn.innerHTML;
-            const messageContent = document.getElementById('message_content').value.trim();
             const phoneNumber = document.getElementById('phone_number').value.trim();
+            const messageContent = document.getElementById('message_content').value.trim();
             const modal = document.getElementById('sendMessageModal');
             const formElements = modal.querySelectorAll('input, textarea, select, button');
             const closeBtn = modal.querySelector('.btn-close');
+            const modalBody = modal.querySelector('.modal-body');
 
-            if (!messageContent) {
+            if (!phoneNumber || !messageContent) {
                 Swal.fire({
                     icon: 'warning',
-                    title: 'Message Required',
-                    text: 'Please enter a message to send.',
-                    confirmButtonColor: '#3085d6'
-                });
-                return;
-            }
-            if (!phoneNumber) {
-                Swal.fire({
-                    icon: 'warning',
-                    title: 'Phone Number Required',
-                    text: 'Phone number is required to send SMS.',
+                    title: 'Required Fields',
+                    text: 'Please fill in phone number and message.',
                     confirmButtonColor: '#3085d6'
                 });
                 return;
@@ -913,122 +920,132 @@
             Swal.fire({
                 icon: 'question',
                 title: 'Confirm SMS Sending',
-                html: `
-                    <div class="text-start">
-                        <p><strong>To:</strong> ${phoneNumber}</p>
-                        <p><strong>Message:</strong></p>
-                        <div class="border p-2 rounded bg-light" style="max-height: 100px; overflow-y: auto;">
-                            ${messageContent}
-                        </div>
-                        <small class="text-muted">SMS charges may apply</small>
-                    </div>
-                `,
+                html: `<p><strong>To:</strong> ${phoneNumber}</p>
+                    <p><strong>Message:</strong></p>
+                    <div class="border p-2 rounded bg-light" style="max-height:100px; overflow-y:auto;">
+                    ${messageContent}</div>
+                    <small class="text-muted">SMS charges may apply</small>`,
                 showCancelButton: true,
                 confirmButtonColor: '#28a745',
                 cancelButtonColor: '#6c757d',
-                confirmButtonText: 'Yes, Send SMS',
-                cancelButtonText: 'Cancel'
-            }).then((result) => {
-                if (result.isConfirmed) {
-                    // Loading state
-                    sendBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Sending...';
-                    sendBtn.disabled = true;
-                    formElements.forEach(element => { element.disabled = true; });
-                    if (closeBtn) closeBtn.disabled = true;
-                    const modalBody = modal.querySelector('.modal-body');
-                    modalBody.style.opacity = '0.7';
+            // SMS Modal JS Cleanup
+            function updateCharacterCount() {
+                var messageContent = document.getElementById('message_content');
+                var characterCount = document.getElementById('character_count');
+                if (messageContent && characterCount) {
+                    var count = messageContent.value.length;
+                    characterCount.textContent = count;
+                    if (count > 160) {
+                        characterCount.style.color = 'red';
+                    } else if (count > 140) {
+                        characterCount.style.color = 'orange';
+                    } else {
+                        characterCount.style.color = 'green';
+                    }
+                }
+            }
 
-                    // Submit via AJAX
-                    fetch(form.action, {
-                        method: 'POST',
-                        body: new FormData(form),
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+            document.addEventListener('DOMContentLoaded', function() {
+                var messageContent = document.getElementById('message_content');
+                var characterCount = document.getElementById('character_count');
+                var form = document.getElementById('sendMessageForm');
+
+                // Attach input event every time modal is shown
+                var sendMessageModal = document.getElementById('sendMessageModal');
+                if (sendMessageModal) {
+                    sendMessageModal.addEventListener('shown.bs.modal', function () {
+                        if (messageContent) {
+                            messageContent.removeEventListener('input', updateCharacterCount);
+                            messageContent.addEventListener('input', updateCharacterCount);
+                            updateCharacterCount();
                         }
-                    })
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
+                    });
+                }
+
+                // Initial count on page load
+                if (messageContent && characterCount) {
+                    messageContent.addEventListener('input', updateCharacterCount);
+                    updateCharacterCount();
+                }
+
+                if (form) {
+                    form.addEventListener('submit', function(e) {
+                        e.preventDefault();
+                        const sendBtn = document.getElementById('sendMessageBtn');
+                        const originalText = sendBtn.innerHTML;
+                        const phoneNumber = document.getElementById('phone_number').value.trim();
+                        const msg = messageContent.value.trim();
+                        const modal = document.getElementById('sendMessageModal');
+                        const formElements = modal.querySelectorAll('input, textarea, select, button');
+                        const closeBtn = modal.querySelector('.btn-close');
+                        const modalBody = modal.querySelector('.modal-body');
+
+                        if (!phoneNumber || !msg) {
                             Swal.fire({
-                                icon: 'success',
-                                title: 'Message Sent Successfully!',
-                                text: data.message || 'SMS has been sent.',
-                                confirmButtonColor: '#28a745',
-                                timer: 3000,
+                                icon: 'warning',
+                                title: 'Required Fields',
+                                text: 'Please fill in phone number and message.',
+                                confirmButtonColor: '#3085d6'
+                            });
+                            return;
+                        }
+
+                        sendBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Sending...';
+                        sendBtn.disabled = true;
+                        formElements.forEach(el => el.disabled = true);
+                        if (closeBtn) closeBtn.disabled = true;
+                        modalBody.style.opacity = '0.7';
+
+                        fetch(form.action, {
+                            method: 'POST',
+                            body: new FormData(form),
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                            }
+                        })
+                        .then(res => res.json())
+                        .then(data => {
+                            Swal.fire({
+                                toast: true,
+                                position: 'top-end',
+                                icon: data.success ? 'success' : 'error',
+                                title: data.message || (data.success ? 'SMS sent successfully' : 'Failed to send SMS'),
+                                showConfirmButton: false,
+                                timer: 2500,
                                 timerProgressBar: true
                             });
-                            document.getElementById('message_template').value = '';
-                            document.getElementById('message_content').value = '';
-                            updateCharacterCount();
-                            const modalInstance = bootstrap.Modal.getInstance(modal);
-                            modalInstance.hide();
-                        } else {
+                            if (data.success) {
+                                form.reset();
+                                updateCharacterCount();
+                                // Hide modal
+                                const modalInstance = bootstrap.Modal.getInstance(modal);
+                                modalInstance.hide();
+                            }
+                        })
+                        .catch(err => {
+                            console.error(err);
                             Swal.fire({
+                                toast: true,
+                                position: 'top-end',
                                 icon: 'error',
-                                title: 'Failed to Send Message',
-                                text: data.message || 'Unknown error occurred',
-                                confirmButtonColor: '#dc3545',
-                                footer: 'Please try again or contact support if the problem persists.'
+                                title: 'Connection Error',
+                                text: 'Could not send SMS. Check your internet connection.',
+                                showConfirmButton: false,
+                                timer: 2500,
+                                timerProgressBar: true
                             });
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error:', error);
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Connection Error',
-                            text: 'Failed to send message due to connection issues.',
-                            confirmButtonColor: '#dc3545',
-                            footer: 'Please check your internet connection and try again.'
+                        })
+                        .finally(() => {
+                            sendBtn.innerHTML = originalText;
+                            sendBtn.disabled = false;
+                            formElements.forEach(el => el.disabled = false);
+                            if (closeBtn) closeBtn.disabled = false;
+                            modalBody.style.opacity = '1';
                         });
-                    })
-                    .finally(() => {
-                        // Reset button state and re-enable all form elements
-                        sendBtn.innerHTML = originalText;
-                        sendBtn.disabled = false;
-                        formElements.forEach(element => { element.disabled = false; });
-                        if (closeBtn) closeBtn.disabled = false;
-                        modalBody.style.opacity = '1';
                     });
                 }
             });
-        });
-
-        function sendSMS() {
-            const sendBtn = document.getElementById('sendMessageBtn');
-            const originalText = sendBtn.innerHTML;
-            const modal = document.getElementById('sendMessageModal');
-            const formElements = modal.querySelectorAll('input, textarea, select, button');
-            const closeBtn = modal.querySelector('.btn-close');
-            const form = document.getElementById('sendMessageForm');
-
-            // Show loading state and disable all form elements
-            sendBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Sending Message...';
-            sendBtn.disabled = true;
-            formElements.forEach(element => { element.disabled = true; });
-            if (closeBtn) closeBtn.disabled = true;
-
-            // Add loading overlay to modal body
-            const modalBody = modal.querySelector('.modal-body');
-            modalBody.style.position = 'relative';
-            modalBody.style.opacity = '0.7';
-
-            // Submit the form
-            fetch(form.action, {
-                method: 'POST',
-                body: new FormData(form),
-                headers: {
-                    'X-Requested-With': 'XMLHttpRequest',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                }
-            })
-            .then(response => response.json())
-            .then(data => {
-                let responseMsg = '';
-                if (typeof data.response === 'string') {
-                    try {
-                        const parsed = JSON.parse(data.response);
                         responseMsg = parsed.message || data.message || '';
                     } catch (e) {
                         responseMsg = data.response || data.message || '';

@@ -490,6 +490,22 @@ class CustomerController extends Controller
         $decoded = Hashids::decode($id)[0] ?? null;
         try {
             $customer = Customer::findOrFail($decoded);
+
+            // Check for existing loans or cash collaterals
+            $hasLoans = $customer->loans()->exists();
+            $hasCollaterals = $customer->collaterals()->exists();
+
+            if ($hasLoans || $hasCollaterals) {
+                $msg = 'Cannot delete customer: ';
+                if ($hasLoans) {
+                    $msg .= 'Customer has existing loans. ';
+                }
+                if ($hasCollaterals) {
+                    $msg .= 'Customer has cash collaterals.';
+                }
+                return redirect()->route('customers.index')->with('error', $msg);
+            }
+
             $customer->delete();
             return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
         } catch (\Exception $e) {
@@ -741,10 +757,10 @@ class CustomerController extends Controller
                 'updated_at' => now(),
             ]);
             
+            // Return a simple success message for SweetAlert or toast notification
             return response()->json([
                 'success' => true,
-                'message' => 'SMS sent successfully to ' . $customer->name,
-                'response' => $smsResponse
+                'message' => 'Successfully sent SMS to ' . $customer->name
             ]);
             
         } catch (\Illuminate\Validation\ValidationException $e) {
