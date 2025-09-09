@@ -715,6 +715,11 @@ class LoanController extends Controller
                 return ['error' => "Row $rowNumber: Invalid date_applied"];
             }
 
+            $validCycles = ['daily','weekly','monthly','quarterly','semi_annually','annually'];
+            if (!in_array(strtolower($rowData['interest_cycle']), $validCycles, true)) {
+                return ['error' => "Row $rowNumber: Invalid interest_cycle"];
+            }
+
             if (!is_numeric($rowData['loan_officer']) || !User::find($rowData['loan_officer'])) {
                 return ['error' => "Row $rowNumber: Invalid loan_officer"];
             }
@@ -723,18 +728,18 @@ class LoanController extends Controller
                 return ['error' => "Row $rowNumber: Invalid group_id"];
             }
 
-            return [
-                'customer_id' => $customer->id, // Return the actual customer ID
-                'customer_no' => $rowData['customer_no'], // Keep customer number for reference
-                'amount' => (float) $rowData['amount'],
-                'period' => (int) $rowData['period'],
-                'interest' => (float) $rowData['interest'],
-                'date_applied' => $rowData['date_applied'],
-                'interest_cycle' => $rowData['interest_cycle'],
-                'loan_officer' => $rowData['loan_officer'],
-                'group_id' => $rowData['group_id'],
-                'sector' => $rowData['sector'],
-            ];
+                            return [
+                    'customer_id' => $customer->id,
+                    'customer_no' => $rowData['customer_no'],
+                    'amount' => (float) $rowData['amount'],
+                    'period' => (int) $rowData['period'],
+                    'interest' => (float) $rowData['interest'],
+                    'date_applied' => $rowData['date_applied'],
+                    'interest_cycle' => strtolower($rowData['interest_cycle']),
+                    'loan_officer' => (int) $rowData['loan_officer'],
+                    'group_id' => (int) $rowData['group_id'],
+                    'sector' => $rowData['sector'],
+                ];
         } catch (\Exception $e) {
             return ['error' => "Row $rowNumber: Validation error - " . $e->getMessage()];
         }
@@ -756,7 +761,7 @@ class LoanController extends Controller
             'sector' => $validated['sector'],
             'branch_id' => $branchId,
             'status' => 'active',
-            'interest_cycle' => $product->interest_cycle,
+            'interest_cycle' => $validated['interest_cycle'],
             'loan_officer_id' => $validated['loan_officer'],
         ]);
 
@@ -812,7 +817,7 @@ class LoanController extends Controller
         // Calculate sum of release-date fees
         $releaseFeeTotal = 0;
         if ($product && $product->fees_ids) {
-            info('fees_ids: ' . $product->fees_ids);
+            info('fees_ids: ' . json_encode($product->fees_ids));
             $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
             if (is_array($feeIds)) {
                 $releaseFees = \DB::table('fees')
@@ -1538,16 +1543,16 @@ class LoanController extends Controller
 
                 // Delete Payments and PaymentItems for this loan
                 $payments = \DB::table('payments')
-                    ->where('reference', $loanId)
                     ->where('reference_type', 'Loan Payment')
+                    ->where('reference', $loanId)
                     ->get();
                 $paymentIds = $payments->pluck('id')->toArray();
                 if (!empty($paymentIds)) {
                     \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
                 }
                 \DB::table('payments')
-                    ->where('reference', $loanId)
                     ->where('reference_type', 'Loan Payment')
+                    ->where('reference', $loanId)
                     ->delete();
 
                 // Delete Loan Schedule
@@ -2371,30 +2376,14 @@ class LoanController extends Controller
             'sector'
         ];
 
-        $sampleData = [
-            [
-                '100001', // customer_no (existing customer)
-                '1000000', // amount
-                '12', // period
-                '5.5', // interest
-                '2024-01-15', // date_applied
-                'monthly', // interest_cycle
-                '2', // loan_officer (user_id)
-                '1', // group_id
-                'Agriculture' // sector
-            ],
-            [
-                '100355', // customer_no (existing customer)
-                '500000',
-                '6',
-                '4.0',
-                '2024-01-16',
-                'monthly',
-                '3',
-                '2',
-                'Business'
-            ]
-        ];
+        // Fetch all borrower customer numbers (scoped to the user's branch if present) with their groups
+        $branchId = auth()->user()->branch_id ?? null;
+        $customersQuery = \App\Models\Customer::with(['groups:id'])
+            ->where('category', 'Borrower');
+        if ($branchId) {
+            $customersQuery->where('branch_id', $branchId);
+        }
+        $customers = $customersQuery->get(['id','customerNo','branch_id']);
 
         $fileName = 'loan_import_template.csv';
         $handle = fopen('php://output', 'w');
@@ -2406,9 +2395,20 @@ class LoanController extends Controller
         // Write CSV header
         fputcsv($handle, $headers);
 
-        // Write sample data
-        foreach ($sampleData as $row) {
-            fputcsv($handle, $row);
+        // Write one row per customer number with detected group_id and placeholders for other fields
+        foreach ($customers as $customer) {
+            $groupId = optional($customer->groups->first())->id ?? '';
+            fputcsv($handle, [
+                $customer->customerNo, // customer_no
+                '',                    // amount
+                '',                    // period
+                '',                    // interest
+                '',                    // date_applied (YYYY-MM-DD)
+                'monthly',             // interest_cycle (default suggestion)
+                '',                    // loan_officer (user id)
+                $groupId,              // group_id (first group if exists)
+                ''                     // sector
+            ]);
         }
 
         fclose($handle);
