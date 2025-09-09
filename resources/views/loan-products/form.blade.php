@@ -328,7 +328,7 @@
                         <!-- Selected Roles (Right) -->
                         <div class="col-md-5">
                             <label class="form-label">Approval Hierarchy</label>
-                            <select id="selected_roles" name="approval_levels"
+                            <select id="selected_roles" name="approval_levels[]"
                                 class="form-select @error('approval_levels') is-invalid @enderror" size="8" multiple>
                                 @if(isset($loanProduct) && $loanProduct->approval_levels)
                                     @php

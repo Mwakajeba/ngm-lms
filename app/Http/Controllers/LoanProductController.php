@@ -481,12 +481,11 @@ class LoanProductController extends Controller
 
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
-        // TODO: Add loan_product_id to loans table and uncomment this check
         // Check if there are any loans using this product
-        // if ($loanProduct->loans()->count() > 0) {
-        //     return redirect()->route('loan-products.index')
-        //         ->with('error', 'Cannot delete loan product. There are existing loans using this product.');
-        // }
+        if ($loanProduct->loans()->count() > 0) {
+            return redirect()->route('loan-products.index')
+                ->with('error', 'Cannot delete loan product. There are existing loans using this product.');
+        }
 
         DB::beginTransaction();
         try {
