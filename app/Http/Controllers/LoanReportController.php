@@ -36,8 +36,9 @@ class LoanReportController extends Controller
         info('branch: ' . $branchId);
 
         // Unda query ya loans na uweke filters
-        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
-            ->where('status', 'active')
+        //$loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
+            //->where('status', 'active')
+        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])   
             ->whereBetween('disbursed_on', [$startDate, $endDate]);
 
         // Weka filter ya branch
@@ -84,7 +85,6 @@ class LoanReportController extends Controller
 
         // 2. Unda query ya loans na uweke filters kama ilivyo kwenye method ya report
         $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
-            ->where('status', 'active')
             ->whereBetween('disbursed_on', [$startDate, $endDate]);
 
         if ($branchId) {

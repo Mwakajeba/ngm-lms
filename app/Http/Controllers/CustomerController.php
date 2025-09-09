@@ -491,17 +491,21 @@ class CustomerController extends Controller
         try {
             $customer = Customer::findOrFail($decoded);
 
-            // Check for existing loans or cash collaterals
+            // Check for existing loans, cash collaterals, or GL transactions
             $hasLoans = $customer->loans()->exists();
             $hasCollaterals = $customer->collaterals()->exists();
+            $hasGLTransactions = \DB::table('gl_transactions')->where('customer_id', $customer->id)->exists();
 
-            if ($hasLoans || $hasCollaterals) {
+            if ($hasLoans || $hasCollaterals || $hasGLTransactions) {
                 $msg = 'Cannot delete customer: ';
                 if ($hasLoans) {
                     $msg .= 'Customer has existing loans. ';
                 }
                 if ($hasCollaterals) {
-                    $msg .= 'Customer has cash collaterals.';
+                    $msg .= 'Customer has cash collaterals. ';
+                }
+                if ($hasGLTransactions) {
+                    $msg .= 'Customer has transactions.';
                 }
                 return redirect()->route('customers.index')->with('error', $msg);
             }
