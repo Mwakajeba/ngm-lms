@@ -80,9 +80,9 @@ use Vinkla\Hashids\Facades\Hashids;
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="card-title mb-0">{{ $pageTitle ?? 'Loans List' }}</h6>
                             <div class="d-flex gap-2">
-                                <!-- <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                                <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
                                     <i class="bx bx-import"></i> Import Loans
-                                </button> -->
+                                </button>
                                 @if(isset($status) && $status === 'applied')
                                 <a href="{{ route('loans.application.create') }}" class="btn btn-primary">
                                     <i class="bx bx-plus"></i> Create Loan Application
