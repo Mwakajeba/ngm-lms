@@ -242,8 +242,7 @@
                                             <input class="form-check-input select-all-permissions-create" 
                                                    type="checkbox" 
                                                    data-group="{{ $group }}"
-                                                   id="selectAllCreate{{ ucfirst($group) }}"
-                                                   onclick="toggleAllPermissions('{{ $group }}', this)">
+                                                   id="selectAllCreate{{ ucfirst($group) }}">
                                             <label class="form-check-label fw-bold mb-0" for="selectAllCreate{{ ucfirst($group) }}">
                                                 {{ ucfirst($group) }}
                                             </label>
@@ -520,28 +519,7 @@
                 }, 100);
             });
 
-            // Also bind events directly to the modal content
-            $('#createRoleModal').on('click', '.select-all-permissions-create', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                
-                const group = $(this).data('group');
-                const isChecked = $(this).is(':checked');
-                
-                console.log('Direct click on select all for group:', group, 'checked:', isChecked);
-                
-                // Toggle the checkbox state
-                $(this).prop('checked', !isChecked);
-                
-                // Update all permission checkboxes in this group
-                const permissionCheckboxes = $(`.permission-checkbox-create[data-group="${group}"]`);
-                permissionCheckboxes.prop('checked', !isChecked);
-                
-                console.log('Updated', permissionCheckboxes.length, 'permission checkboxes');
-                
-                // Update the select all checkbox state
-                updateSelectAllState(group);
-            });
+
         });
 
         function initializeCreateRoleCheckAll() {

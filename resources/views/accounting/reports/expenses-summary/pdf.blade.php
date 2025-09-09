@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,77 +13,95 @@
             margin: 0;
             padding: 20px;
         }
+
         .header {
             text-align: center;
             margin-bottom: 30px;
             border-bottom: 2px solid #333;
             padding-bottom: 10px;
         }
+
         .company-name {
             font-size: 24px;
             font-weight: bold;
             margin-bottom: 5px;
         }
+
         .report-title {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;
         }
+
         .report-info {
             font-size: 12px;
             color: #666;
         }
+
         .summary-section {
             margin-bottom: 20px;
         }
+
         .summary-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 10px;
             margin-bottom: 20px;
         }
+
         .summary-item {
             border: 1px solid #ddd;
             padding: 10px;
             text-align: center;
             background-color: #f9f9f9;
         }
+
         .summary-label {
             font-size: 10px;
             color: #666;
             margin-bottom: 5px;
         }
+
         .summary-value {
             font-size: 14px;
             font-weight: bold;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
+
         th {
             background-color: #f2f2f2;
             font-weight: bold;
             text-align: center;
         }
+
         .text-right {
             text-align: right;
         }
+
         .text-center {
             text-align: center;
         }
+
         .text-danger {
             color: #dc3545;
         }
+
         .text-success {
             color: #28a745;
         }
+
         .footer {
             margin-top: 30px;
             text-align: center;
@@ -91,18 +110,38 @@
             border-top: 1px solid #ddd;
             padding-top: 10px;
         }
+
         .page-break {
             page-break-before: always;
         }
+
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .logo-wrapper img {
+            max-height: 70px;
+        }
     </style>
 </head>
+
 <body>
+    @php
+    $companyModel = isset($company) ? $company : (function_exists('current_company') ? current_company() : null);
+    $logoPath = ($companyModel && !empty($companyModel->logo)) ? public_path('storage/' . $companyModel->logo) : null;
+    @endphp
+    @if($logoPath && file_exists($logoPath))
+    <div class="logo-wrapper">
+        <img src="{{ $logoPath }}" alt="Company Logo">
+    </div>
+    @endif
     <div class="header">
         <div class="company-name">{{ $company->name }}</div>
         <div class="report-title">EXPENSES SUMMARY REPORT</div>
         <div class="report-info">
-            Period: {{ Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ Carbon\Carbon::parse($endDate)->format('d/m/Y') }} | 
-            Reporting Type: {{ ucfirst($reportingType) }} | 
+            Period: {{ Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ Carbon\Carbon::parse($endDate)->format('d/m/Y') }} |
+            Reporting Type: {{ ucfirst($reportingType) }} |
             Generated: {{ now()->format('d/m/Y H:i:s') }}
         </div>
     </div>
@@ -134,55 +173,55 @@
     <div class="expenses-section">
         <h3>Expenses Details</h3>
         @if($expensesData['filters']['group_by'] === 'group')
-            <table>
-                <thead>
-                    <tr>
-                        <th>Account Group</th>
-                        <th class="text-right">Total Debit</th>
-                        <th class="text-right">Total Credit</th>
-                        <th class="text-right">Net Amount</th>
-                        <th class="text-center">Account Count</th>
-                        <th class="text-center">Transaction Count</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($expensesData['expenses'] as $expense)
-                        <tr>
-                            <td>{{ $expense->group_name }}</td>
-                            <td class="text-right">{{ number_format($expense->total_debit, 2) }}</td>
-                            <td class="text-right">{{ number_format($expense->total_credit, 2) }}</td>
-                            <td class="text-right">{{ number_format($expense->net_amount, 2) }}</td>
-                            <td class="text-center">{{ $expense->account_count }}</td>
-                            <td class="text-center">{{ $expense->transaction_count }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>Account Group</th>
+                    <th class="text-right">Total Debit</th>
+                    <th class="text-right">Total Credit</th>
+                    <th class="text-right">Net Amount</th>
+                    <th class="text-center">Account Count</th>
+                    <th class="text-center">Transaction Count</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($expensesData['expenses'] as $expense)
+                <tr>
+                    <td>{{ $expense->group_name }}</td>
+                    <td class="text-right">{{ number_format($expense->total_debit, 2) }}</td>
+                    <td class="text-right">{{ number_format($expense->total_credit, 2) }}</td>
+                    <td class="text-right">{{ number_format($expense->net_amount, 2) }}</td>
+                    <td class="text-center">{{ $expense->account_count }}</td>
+                    <td class="text-center">{{ $expense->transaction_count }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
         @else
-            <table>
-                <thead>
-                    <tr>
-                        <th>Date</th>
-                        <th>Account Code</th>
-                        <th>Account Name</th>
-                        <th>Account Group</th>
-                        <th>Description</th>
-                        <th class="text-right">Amount</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($expensesData['expenses'] as $expense)
-                        <tr>
-                            <td>{{ Carbon\Carbon::parse($expense->date)->format('d/m/Y') }}</td>
-                            <td>{{ $expense->account_code }}</td>
-                            <td>{{ $expense->account_name }}</td>
-                            <td>{{ $expense->group_name }}</td>
-                            <td>{{ Str::limit($expense->description, 30) }}</td>
-                            <td class="text-right">{{ number_format($expense->amount, 2) }}</td>
-                        </tr>
-                    @endforeach
-                </tbody>
-            </table>
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Account Code</th>
+                    <th>Account Name</th>
+                    <th>Account Group</th>
+                    <th>Description</th>
+                    <th class="text-right">Amount</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($expensesData['expenses'] as $expense)
+                <tr>
+                    <td>{{ Carbon\Carbon::parse($expense->date)->format('d/m/Y') }}</td>
+                    <td>{{ $expense->account_code }}</td>
+                    <td>{{ $expense->account_name }}</td>
+                    <td>{{ $expense->group_name }}</td>
+                    <td>{{ Str::limit($expense->description, 30) }}</td>
+                    <td class="text-right">{{ number_format($expense->amount, 2) }}</td>
+                </tr>
+                @endforeach
+            </tbody>
+        </table>
         @endif
     </div>
 
@@ -214,4 +253,5 @@
         <p>Report Period: {{ Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
     </div>
 </body>
-</html> 
+
+</html>

@@ -778,10 +778,15 @@
                 <div class="tab-pane fade" id="repayments" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0 text-dark">Repayments</h5>
-                        <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
-                            data-bs-target="#addRepaymentModal">
-                            <i class="bx bx-plus me-2 font-18"></i>Add Repayment
-                        </button>
+                        <div class="d-flex gap-2">
+                            <button type="button" class="btn btn-danger d-flex align-items-center" id="bulkDeleteRepaymentsBtn" disabled>
+                                <i class="bx bx-trash me-2 font-18"></i>Bulk Delete
+                            </button>
+                            <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+                                data-bs-target="#addRepaymentModal">
+                                <i class="bx bx-plus me-2 font-18"></i>Add Repayment
+                            </button>
+                        </div>
                     </div>
 
                     @if($loan->repayments && $loan->repayments->count())
@@ -794,6 +799,7 @@
                                     <table class="table table-bordered table-striped mb-0">
                                         <thead class="bg-light">
                                             <tr>
+                                                <th class="text-center" style="width:32px;"><input type="checkbox" id="select_all_repayments"></th>
                                                 <th>#</th>
                                                 <th>Payment Date</th>
                                                 <th>Due Date</th>
@@ -809,6 +815,7 @@
                                         <tbody>
                                             @foreach($loan->repayments->sortByDesc('payment_date') as $index => $repayment)
                                                 <tr>
+                                                    <td class="text-center"><input type="checkbox" class="repayment-select" value="{{ $repayment->id }}"></td>
                                                     <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                                     <td>{{ \Carbon\Carbon::parse($repayment->payment_date)->format('M d, Y') }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($repayment->due_date)->format('M d, Y') }}</td>
@@ -3393,5 +3400,112 @@
                 }
             });
         }
+
+        (function(){
+            function getCsrfToken(){
+                var m = document.querySelector('meta[name="csrf-token"]');
+                return m ? m.getAttribute('content') : '';
+            }
+
+            function updateBulkControls(){
+                var checkboxes = Array.from(document.querySelectorAll('.repayment-select'));
+                var anyChecked = checkboxes.some(function(cb){ return cb.checked; });
+                var btn = document.getElementById('bulkDeleteRepaymentsBtn');
+                if (btn) btn.disabled = !anyChecked;
+                var allChecked = checkboxes.length > 0 && checkboxes.every(function(cb){ return cb.checked; });
+                var master = document.getElementById('select_all_repayments');
+                if (master) master.checked = allChecked;
+            }
+
+            function bindRepaymentCheckboxEvents(){
+                document.querySelectorAll('.repayment-select').forEach(function(cb){
+                    cb.addEventListener('change', updateBulkControls);
+                });
+            }
+
+            function bulkDeleteRepayments(){
+                var ids = Array.from(document.querySelectorAll('.repayment-select:checked')).map(function(cb){ return parseInt(cb.value); });
+                if (ids.length === 0) return;
+
+                if (typeof Swal === 'undefined') {
+                    // Fallback if SweetAlert is not available
+                    if (!confirm('Are you sure you want to delete the selected repayments?')) return;
+
+                    fetch('/repayments/bulk-delete', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        },
+                        body: JSON.stringify({ ids: ids })
+                    }).then(function(r){ return r.json(); }).then(function(resp){
+                        if (resp && resp.success){
+                            window.location.reload();
+                        } else {
+                            alert(resp && resp.message ? resp.message : 'Failed to delete repayments.');
+                        }
+                    }).catch(function(){ alert('Failed to delete repayments.'); });
+                    return;
+                }
+
+                Swal.fire({
+                    title: 'Are you sure?',
+                    text: 'Are you sure you want to delete the selected repayments?',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonText: 'Yes, delete',
+                    cancelButtonText: 'Cancel',
+                    reverseButtons: true
+                }).then(function(result){
+                    if (!result.isConfirmed) return;
+
+                    fetch('/repayments/bulk-delete', {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        },
+                        body: JSON.stringify({ ids: ids })
+                    }).then(function(r){ return r.json(); }).then(function(resp){
+                        if (resp && resp.success){
+                            Swal.fire({
+                                title: 'Deleted!',
+                                text: 'Repayments deleted successfully.',
+                                icon: 'success',
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(function(){ window.location.reload(); });
+                        } else {
+                            Swal.fire({
+                                title: 'Error',
+                                text: (resp && resp.message) ? resp.message : 'Failed to delete repayments.',
+                                icon: 'error'
+                            });
+                        }
+                    }).catch(function(){
+                        Swal.fire({
+                            title: 'Error',
+                            text: 'Failed to delete repayments.',
+                            icon: 'error'
+                        });
+                    });
+                });
+            }
+
+            document.addEventListener('DOMContentLoaded', function(){
+                var master = document.getElementById('select_all_repayments');
+                if (master){
+                    master.addEventListener('change', function(){
+                        var checked = master.checked;
+                        document.querySelectorAll('.repayment-select').forEach(function(cb){ cb.checked = checked; });
+                        updateBulkControls();
+                    });
+                }
+                var btn = document.getElementById('bulkDeleteRepaymentsBtn');
+                if (btn){ btn.addEventListener('click', bulkDeleteRepayments); }
+                bindRepaymentCheckboxEvents();
+                updateBulkControls();
+            });
+        })();
     </script>
 @endpush

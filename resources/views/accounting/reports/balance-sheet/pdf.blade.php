@@ -90,9 +90,20 @@
         .page-break {
             page-break-before: always;
         }
+        .logo-wrapper { text-align: center; margin-bottom: 10px; }
+        .logo-wrapper img { max-height: 70px; }
     </style>
 </head>
 <body>
+    @php
+        $companyModel = isset($company) ? $company : (function_exists('current_company') ? current_company() : null);
+        $logoPath = ($companyModel && !empty($companyModel->logo)) ? public_path('storage/' . $companyModel->logo) : null;
+    @endphp
+    @if($logoPath && file_exists($logoPath))
+        <div class="logo-wrapper">
+            <img src="{{ $logoPath }}" alt="Company Logo">
+        </div>
+    @endif
     <!-- Report Header -->
     <div class="header">
         <div class="company-name">{{ $company->name ?? 'Company Name' }}</div>
@@ -104,7 +115,7 @@
         <div class="report-details">
             {{ ucfirst($reportingType) }} Basis | 
             {{ ucfirst($balanceSheetData['filters']['level_of_detail']) }} Level |
-            Generated on {{ now()->format('F d, Y \a\t g:i A') }}
+            Generated on {{ now()->format('F d, Y \\a\\t g:i A') }}
         </div>
     </div>
 
@@ -361,7 +372,7 @@
 
     <div class="footer">
         <p>This is a computer generated document. No signature is required.</p>
-        <p>Generated on {{ now()->format('F d, Y \a\t g:i A') }}</p>
+        <p>Generated on {{ now()->format('F d, Y \\a\\t g:i A') }}</p>
     </div>
 </body>
 </html> 

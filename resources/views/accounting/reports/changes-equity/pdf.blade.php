@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
     <meta charset="utf-8">
     <title>Changes in Equity Report</title>
@@ -10,77 +11,95 @@
             line-height: 1.4;
             color: #333;
         }
+
         .header {
             text-align: center;
             margin-bottom: 30px;
             border-bottom: 2px solid #333;
             padding-bottom: 20px;
         }
+
         .company-name {
             font-size: 18px;
             font-weight: bold;
             margin-bottom: 5px;
         }
+
         .report-title {
             font-size: 16px;
             font-weight: bold;
             margin-bottom: 5px;
         }
+
         .report-date {
             font-size: 14px;
             margin-bottom: 5px;
         }
+
         .report-details {
             font-size: 10px;
             color: #666;
         }
+
         table {
             width: 100%;
             border-collapse: collapse;
             margin-bottom: 20px;
         }
-        th, td {
+
+        th,
+        td {
             border: 1px solid #ddd;
             padding: 8px;
             text-align: left;
         }
+
         th {
             background-color: #f8f9fa;
             font-weight: bold;
         }
+
         .text-end {
             text-align: right;
         }
+
         .text-center {
             text-align: center;
         }
+
         .equity-header {
             background-color: #d1ecf1;
             color: #0c5460;
             font-weight: bold;
         }
+
         .category-header {
             background-color: #007bff;
             color: white;
             font-weight: bold;
         }
+
         .positive {
             color: #28a745;
             font-weight: bold;
         }
+
         .negative {
             color: #dc3545;
             font-weight: bold;
         }
+
         .total-row {
             background-color: #e9ecef;
             font-weight: bold;
         }
+
         .grand-total-row {
             background-color: #007bff;
             color: white;
             font-weight: bold;
         }
+
         .summary-section {
             margin-bottom: 30px;
             padding: 20px;
@@ -88,6 +107,7 @@
             background-color: #f8f9fa;
             border-radius: 8px;
         }
+
         .summary-title {
             font-size: 16px;
             font-weight: bold;
@@ -97,11 +117,13 @@
             border-bottom: 1px solid #007bff;
             padding-bottom: 10px;
         }
+
         .summary-grid {
             display: flex;
             justify-content: space-between;
             gap: 20px;
         }
+
         .summary-item {
             flex: 1;
             text-align: center;
@@ -110,6 +132,7 @@
             border-radius: 5px;
             background-color: white;
         }
+
         .summary-label {
             font-size: 11px;
             color: #666;
@@ -117,17 +140,21 @@
             text-transform: uppercase;
             font-weight: bold;
         }
+
         .summary-value {
             font-size: 16px;
             font-weight: bold;
             color: #333;
         }
+
         .summary-value.positive {
             color: #28a745;
         }
+
         .summary-value.negative {
             color: #dc3545;
         }
+
         .section-title {
             font-size: 14px;
             font-weight: bold;
@@ -138,12 +165,14 @@
             border-left: 4px solid #007bff;
             border-radius: 4px;
         }
+
         .category-section {
             margin-bottom: 30px;
             border: 1px solid #ddd;
             border-radius: 8px;
             overflow: hidden;
         }
+
         .category-title {
             background-color: #007bff;
             color: white;
@@ -154,15 +183,18 @@
             justify-content: space-between;
             align-items: center;
         }
+
         .category-total {
             background-color: rgba(255, 255, 255, 0.2);
             padding: 4px 8px;
             border-radius: 4px;
             font-size: 11px;
         }
+
         .transaction-row:hover {
             background-color: #f8f9fa;
         }
+
         .nature-badge {
             padding: 2px 6px;
             border-radius: 3px;
@@ -170,28 +202,35 @@
             font-weight: bold;
             text-transform: uppercase;
         }
+
         .nature-credit {
             background-color: #d4edda;
             color: #155724;
         }
+
         .nature-debit {
             background-color: #f8d7da;
             color: #721c24;
         }
+
         .account-info {
             line-height: 1.3;
         }
+
         .account-name {
             font-weight: bold;
             color: #333;
         }
+
         .account-code {
             font-size: 10px;
             color: #666;
         }
+
         .page-break {
             page-break-before: always;
         }
+
         .footer {
             margin-top: 30px;
             padding-top: 20px;
@@ -200,28 +239,50 @@
             font-size: 10px;
             color: #666;
         }
+
         .no-data {
             text-align: center;
             padding: 50px 20px;
             color: #666;
         }
+
         .no-data h4 {
             margin-bottom: 10px;
             color: #999;
         }
+
         .no-data p {
             color: #bbb;
         }
+
+        .logo-wrapper {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+
+        .logo-wrapper img {
+            max-height: 70px;
+        }
     </style>
 </head>
+
 <body>
+    @php
+    $companyModel = isset($company) ? $company : (function_exists('current_company') ? current_company() : null);
+    $logoPath = ($companyModel && !empty($companyModel->logo)) ? public_path('storage/' . $companyModel->logo) : null;
+    @endphp
+    @if($logoPath && file_exists($logoPath))
+    <div class="logo-wrapper">
+        <img src="{{ $logoPath }}" alt="Company Logo">
+    </div>
+    @endif
     <!-- Report Header -->
     <div class="header">
         <div class="company-name">{{ $company->name ?? 'Company Name' }}</div>
         <div class="report-title">STATEMENT OF CHANGES IN EQUITY</div>
         <div class="report-date">For the period from {{ \Carbon\Carbon::parse($fromDate)->format('F d, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('F d, Y') }}</div>
         @if(isset($changesEquityData['filters']['branch_id']) && $changesEquityData['filters']['branch_id'] != 'all')
-            <div class="report-details">Branch: {{ $branches->where('id', $changesEquityData['filters']['branch_id'])->first()->name ?? 'N/A' }}</div>
+        <div class="report-details">Branch: {{ $branches->where('id', $changesEquityData['filters']['branch_id'])->first()->name ?? 'N/A' }}</div>
         @endif
         <div class="report-details">
             Generated on {{ now()->format('F d, Y \a\t g:i A') }}
@@ -235,127 +296,127 @@
             <div class="summary-item">
                 <div class="summary-label">Opening Balance</div>
                 <div class="summary-value">{{ number_format($changesEquityData['opening_balance'], 2) }}</div>
-        </div>
+            </div>
             <div class="summary-item">
                 <div class="summary-label">Net Change</div>
                 <div class="summary-value {{ $changesEquityData['overall_total'] >= 0 ? 'positive' : 'negative' }}">
-                {{ $changesEquityData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['overall_total'], 2) }}
+                    {{ $changesEquityData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['overall_total'], 2) }}
                 </div>
             </div>
             <div class="summary-item">
                 <div class="summary-label">Closing Balance</div>
                 <div class="summary-value">{{ number_format($changesEquityData['closing_balance'], 2) }}</div>
-        </div>
+            </div>
         </div>
     </div>
 
     <!-- Changes by Category -->
     @if(count($changesEquityData['grouped_data']) > 0)
-        <div class="section-title">DETAILED CHANGES BY EQUITY CATEGORY</div>
-        
-        @foreach($changesEquityData['grouped_data'] as $categoryName => $transactions)
-            <div class="category-section">
-                <div class="category-title">
-                    <span>{{ $categoryName }}</span>
-                    <span class="category-total">
-                        Net Change: {{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['category_totals'][$categoryName]['net_change'], 2) }}
-                    </span>
-                </div>
-                
-                <table>
-                    <thead>
-                        <tr class="equity-header">
-                            <th>Date</th>
-                            <th>Account Details</th>
-                            <th>Description</th>
-                            <th class="text-center">Nature</th>
-                            <th class="text-end">Amount</th>
-                            <th class="text-end">Impact</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($transactions as $transaction)
-                            <tr class="transaction-row">
-                                <td>{{ \Carbon\Carbon::parse($transaction['date'])->format('M d, Y') }}</td>
-                                <td class="account-info">
-                                    <div class="account-name">{{ $transaction['account_name'] }}</div>
-                                    <div class="account-code">{{ $transaction['account_code'] }}</div>
-                                </td>
-                                <td>{{ $transaction['description'] ?: 'No description provided' }}</td>
-                                <td class="text-center">
-                                    <span class="nature-badge {{ $transaction['nature'] === 'credit' ? 'nature-credit' : 'nature-debit' }}">
-                                        {{ ucfirst($transaction['nature']) }}
-                                    </span>
-                                </td>
-                                <td class="text-end">{{ number_format($transaction['amount'], 2) }}</td>
-                                <td class="text-end {{ $transaction['impact'] >= 0 ? 'positive' : 'negative' }}">
-                                    {{ $transaction['impact'] >= 0 ? '+' : '' }}{{ number_format($transaction['impact'], 2) }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot>
-                        <tr class="total-row">
-                            <td colspan="4"><strong>Total for {{ $categoryName }}</strong></td>
-                            <td class="text-end">
-                                <strong>
-                                {{ number_format($changesEquityData['category_totals'][$categoryName]['credit_total'], 2) }} /
-                                {{ number_format($changesEquityData['category_totals'][$categoryName]['debit_total'], 2) }}
-                                </strong>
-                            </td>
-                            <td class="text-end">
-                                <strong class="{{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? 'positive' : 'negative' }}">
-                                {{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['category_totals'][$categoryName]['net_change'], 2) }}
-                                </strong>
-                            </td>
-                        </tr>
-                    </tfoot>
-                </table>
-            </div>
-        @endforeach
-    @else
-        <div class="no-data">
-            <h4>No Changes in Equity Found</h4>
-            <p>No equity transactions were recorded for the selected period and filters.</p>
+    <div class="section-title">DETAILED CHANGES BY EQUITY CATEGORY</div>
+
+    @foreach($changesEquityData['grouped_data'] as $categoryName => $transactions)
+    <div class="category-section">
+        <div class="category-title">
+            <span>{{ $categoryName }}</span>
+            <span class="category-total">
+                Net Change: {{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['category_totals'][$categoryName]['net_change'], 2) }}
+            </span>
         </div>
+
+        <table>
+            <thead>
+                <tr class="equity-header">
+                    <th>Date</th>
+                    <th>Account Details</th>
+                    <th>Description</th>
+                    <th class="text-center">Nature</th>
+                    <th class="text-end">Amount</th>
+                    <th class="text-end">Impact</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($transactions as $transaction)
+                <tr class="transaction-row">
+                    <td>{{ \Carbon\Carbon::parse($transaction['date'])->format('M d, Y') }}</td>
+                    <td class="account-info">
+                        <div class="account-name">{{ $transaction['account_name'] }}</div>
+                        <div class="account-code">{{ $transaction['account_code'] }}</div>
+                    </td>
+                    <td>{{ $transaction['description'] ?: 'No description provided' }}</td>
+                    <td class="text-center">
+                        <span class="nature-badge {{ $transaction['nature'] === 'credit' ? 'nature-credit' : 'nature-debit' }}">
+                            {{ ucfirst($transaction['nature']) }}
+                        </span>
+                    </td>
+                    <td class="text-end">{{ number_format($transaction['amount'], 2) }}</td>
+                    <td class="text-end {{ $transaction['impact'] >= 0 ? 'positive' : 'negative' }}">
+                        {{ $transaction['impact'] >= 0 ? '+' : '' }}{{ number_format($transaction['impact'], 2) }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <td colspan="4"><strong>Total for {{ $categoryName }}</strong></td>
+                    <td class="text-end">
+                        <strong>
+                            {{ number_format($changesEquityData['category_totals'][$categoryName]['credit_total'], 2) }} /
+                            {{ number_format($changesEquityData['category_totals'][$categoryName]['debit_total'], 2) }}
+                        </strong>
+                    </td>
+                    <td class="text-end">
+                        <strong class="{{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? 'positive' : 'negative' }}">
+                            {{ $changesEquityData['category_totals'][$categoryName]['net_change'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['category_totals'][$categoryName]['net_change'], 2) }}
+                        </strong>
+                    </td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+    @endforeach
+    @else
+    <div class="no-data">
+        <h4>No Changes in Equity Found</h4>
+        <p>No equity transactions were recorded for the selected period and filters.</p>
+    </div>
     @endif
 
     <!-- Category Summary -->
     @if(count($changesEquityData['grouped_data']) > 0)
-        <div style="margin-top: 40px;">
-            <div class="section-title">EQUITY CATEGORY SUMMARY</div>
-            
-            <table>
-                <thead>
-                    <tr class="equity-header">
-                        <th>Equity Category</th>
-                        <th class="text-end">Credit Total</th>
-                        <th class="text-end">Debit Total</th>
-                        <th class="text-end">Net Change</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($changesEquityData['category_totals'] as $categoryName => $totals)
-                        <tr>
-                            <td><strong>{{ $categoryName }}</strong></td>
-                            <td class="text-end">{{ number_format($totals['credit_total'], 2) }}</td>
-                            <td class="text-end">{{ number_format($totals['debit_total'], 2) }}</td>
-                            <td class="text-end {{ $totals['net_change'] >= 0 ? 'positive' : 'negative' }}">
-                                {{ $totals['net_change'] >= 0 ? '+' : '' }}{{ number_format($totals['net_change'], 2) }}
-                            </td>
-                        </tr>
-                    @endforeach
-                </tbody>
-                <tfoot>
-                    <tr class="grand-total-row">
-                        <td><strong>GRAND TOTAL</strong></td>
-                        <td class="text-end"><strong>{{ number_format(collect($changesEquityData['category_totals'])->sum('credit_total'), 2) }}</strong></td>
-                        <td class="text-end"><strong>{{ number_format(collect($changesEquityData['category_totals'])->sum('debit_total'), 2) }}</strong></td>
-                        <td class="text-end"><strong>{{ $changesEquityData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['overall_total'], 2) }}</strong></td>
-                    </tr>
-                </tfoot>
-            </table>
-        </div>
+    <div style="margin-top: 40px;">
+        <div class="section-title">EQUITY CATEGORY SUMMARY</div>
+
+        <table>
+            <thead>
+                <tr class="equity-header">
+                    <th>Equity Category</th>
+                    <th class="text-end">Credit Total</th>
+                    <th class="text-end">Debit Total</th>
+                    <th class="text-end">Net Change</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($changesEquityData['category_totals'] as $categoryName => $totals)
+                <tr>
+                    <td><strong>{{ $categoryName }}</strong></td>
+                    <td class="text-end">{{ number_format($totals['credit_total'], 2) }}</td>
+                    <td class="text-end">{{ number_format($totals['debit_total'], 2) }}</td>
+                    <td class="text-end {{ $totals['net_change'] >= 0 ? 'positive' : 'negative' }}">
+                        {{ $totals['net_change'] >= 0 ? '+' : '' }}{{ number_format($totals['net_change'], 2) }}
+                    </td>
+                </tr>
+                @endforeach
+            </tbody>
+            <tfoot>
+                <tr class="grand-total-row">
+                    <td><strong>GRAND TOTAL</strong></td>
+                    <td class="text-end"><strong>{{ number_format(collect($changesEquityData['category_totals'])->sum('credit_total'), 2) }}</strong></td>
+                    <td class="text-end"><strong>{{ number_format(collect($changesEquityData['category_totals'])->sum('debit_total'), 2) }}</strong></td>
+                    <td class="text-end"><strong>{{ $changesEquityData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($changesEquityData['overall_total'], 2) }}</strong></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
     @endif
 
     <div class="footer">
@@ -363,4 +424,5 @@
         <p>Generated on {{ now()->format('F d, Y \a\t g:i A') }}</p>
     </div>
 </body>
-</html> 
+
+</html>

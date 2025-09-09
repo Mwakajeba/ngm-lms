@@ -37,7 +37,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Customer Activity Report -->
+                                <!-- Customer Activity Report
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-success">
                                         <div class="card-body text-center">
@@ -51,7 +51,7 @@
                                             </a>
                                         </div>
                                     </div>
-                                </div>
+                                </div> -->
 
                                 <!-- Customer Performance Report -->
                                 <div class="col-md-6 col-lg-4 mb-4">
@@ -102,7 +102,7 @@
                                 </div>
 
                                 <!-- Customer Communication Report -->
-                                <div class="col-md-6 col-lg-4 mb-4">
+                                <!-- <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-secondary">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
@@ -115,7 +115,7 @@
                                             </a>
                                         </div>
                                     </div>
-                                </div>
+                                </div> -->
                             </div>
                         </div>
                     </div>

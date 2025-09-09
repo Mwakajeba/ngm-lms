@@ -213,6 +213,13 @@ class LoanRepaymentController extends Controller
             $repayment->receipt->delete();
         }
 
+        // Also ensure the related loan is set back to active
+        $loan = $repayment->loan; // uses relationship
+        if ($loan) {
+            $loan->status = 'active';
+            $loan->save();
+        }
+
         // Delete repayment
         $repayment->delete();
     }
@@ -244,6 +251,44 @@ class LoanRepaymentController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to delete repayment: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Bulk delete repayments
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $validated = $request->validate([
+            'ids' => 'required|array|min:1',
+            'ids.*' => 'integer|exists:repayments,id',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $repayments = Repayment::with(['loan', 'receipt'])->whereIn('id', $validated['ids'])->get();
+            $deletedCount = 0;
+
+            foreach ($repayments as $repayment) {
+                $this->deleteRepaymentInternal($repayment);
+                $deletedCount++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Repayments deleted successfully.',
+                'deleted' => $deletedCount,
+            ]);
+        } catch (\Throwable $e) {
+            DB::rollBack();
+            Log::error('Bulk repayment deletion error: ' . $e->getMessage());
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete repayments: ' . $e->getMessage(),
             ], 500);
         }
     }

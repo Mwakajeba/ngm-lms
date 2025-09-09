@@ -274,4 +274,12 @@ class LoanProduct extends Model
         
         return Fee::whereIn('id', $feeIds)->get();
     }
+
+    /**
+     * Get all loans using this product
+     */
+    public function loans()
+    {
+        return $this->hasMany(Loan::class, 'product_id');
+    }
 }

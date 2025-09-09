@@ -267,17 +267,30 @@ class GroupController extends Controller
             if ($group->loans()->count() > 0) {
                 return redirect()->back()->with('error', 'Cannot delete group. It has associated loans.');
             }
-            if ($group->members()->count() > 0) {
-                return redirect()->back()->with('error', 'Cannot delete group. It has associated members.');
+            
+            // Check for any assigned customers (members or group leader)
+            $hasMembers = $group->members()->count() > 0;
+            $hasGroupLeader = $group->group_leader !== null;
+            
+            if ($hasMembers || $hasGroupLeader) {
+                $message = 'Cannot delete group. It has assigned customers';
+                if ($hasMembers && $hasGroupLeader) {
+                    $message .= ' (members and group leader)';
+                } elseif ($hasMembers) {
+                    $message .= ' (members)';
+                } elseif ($hasGroupLeader) {
+                    $message .= ' (group leader)';
+                }
+                $message .= '.';
+                return redirect()->back()->with('error', $message);
             }
 
             $group->delete();
             return redirect()->route('groups.index')->with('success', 'Group deleted successfully!');
         } catch (\Exception $e) {
-            \Log::error("Group update failed", [
+            \Log::error("Group deletion failed", [
                 "group_id" => $group->id,
-                "error" => $e->getMessage(),
-                "request_data" => $request->all()
+                "error" => $e->getMessage()
             ]);
             return redirect()->back()->with('error', 'Failed to delete group. Please try again.');
         }
