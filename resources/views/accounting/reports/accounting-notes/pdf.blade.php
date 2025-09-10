@@ -65,9 +65,20 @@
         .page-break {
             page-break-before: always;
         }
+        .logo-wrapper { text-align: center; margin-bottom: 10px; }
+        .logo-wrapper img { max-height: 70px; }
     </style>
 </head>
 <body>
+        @php
+        $companyModel = isset($company) ? $company : (function_exists('current_company') ? current_company() : null);
+        $logoPath = ($companyModel && !empty($companyModel->logo)) ? public_path('storage/' . $companyModel->logo) : null;
+    @endphp
+    @if($logoPath && file_exists($logoPath))
+        <div class="logo-wrapper">
+            <img src="{{ $logoPath }}" alt="Company Logo">
+        </div>
+    @endif
     <div class="header">
         <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
         <div class="report-title">ACCOUNT CLASSES REPORT</div>

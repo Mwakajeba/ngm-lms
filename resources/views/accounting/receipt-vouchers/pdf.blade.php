@@ -179,11 +179,15 @@
 <body>
     <div class="header">
         <div class="header-left">
-            @if($receiptVoucher->user->company->logo)
-                <img src="{{ asset('storage/' . $receiptVoucher->user->company->logo) }}" alt="Company Logo" class="logo">
+            @php
+                $company = $receiptVoucher->user->company ?? null;
+                $logoPath = $company && !empty($company->logo) ? public_path('storage/' . $company->logo) : null;
+            @endphp
+            @if($logoPath && file_exists($logoPath))
+                <img src="file://{{ $logoPath }}" alt="Company Logo" class="logo">
             @endif
             <div class="company-info">
-                <div class="company-name">{{ $receiptVoucher->user->company->name ?? 'SmartFinance' }}</div>
+                <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
                 <div class="document-title">RECEIPT VOUCHER</div>
             </div>
         </div>
@@ -326,4 +330,4 @@
         </div>
     </div>
 </body>
-</html> 
+</html>

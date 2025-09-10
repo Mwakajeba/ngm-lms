@@ -282,4 +282,54 @@ class LoanProduct extends Model
     {
         return $this->hasMany(Loan::class, 'product_id');
     }
+
+    public function getApprovalLevelsAttribute($value)
+    {
+        if (is_null($value) || $value === '') {
+            return [];
+        }
+        if (is_array($value)) {
+            return $value;
+        }
+        return array_values(array_filter(array_map(function ($v) {
+            $v = trim($v);
+            return $v !== '' ? (ctype_digit($v) ? (int) $v : $v) : null;
+        }, explode(',', $value)), function ($v) {
+            return !is_null($v);
+        }));
+    }
+
+    public function setApprovalLevelsAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['approval_levels'] = implode(',', array_map('strval', $value));
+        } else {
+            $this->attributes['approval_levels'] = $value;
+        }
+    }
+
+    public function getRepaymentOrderAttribute($value)
+    {
+        if (is_null($value) || $value === '') {
+            return [];
+        }
+        if (is_array($value)) {
+            return $value;
+        }
+        return array_values(array_filter(array_map(function ($v) {
+            $v = trim($v);
+            return $v !== '' ? $v : null;
+        }, explode(',', $value)), function ($v) {
+            return !is_null($v);
+        }));
+    }
+
+    public function setRepaymentOrderAttribute($value)
+    {
+        if (is_array($value)) {
+            $this->attributes['repayment_order'] = implode(',', $value);
+        } else {
+            $this->attributes['repayment_order'] = $value;
+        }
+    }
 }

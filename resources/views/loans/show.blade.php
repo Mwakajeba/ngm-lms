@@ -64,7 +64,7 @@
                             $totalPaid = $loan->repayments?->sum(function ($r) {
                                 return ($r->principal + $r->interest);
                             }) ?? 0;
-                            $progress = $loan->amount_total > 0 ? round(($totalPaid / $loan->amount_total) * 100) : 0;
+                            $progress = $loan->amount_total > 0 ? min(100, round(($totalPaid / $loan->amount_total) * 100)) : 0;
                             $progressBarClass = match (true) {
                                 $progress === 100 => 'bg-success',
                                 $progress >= 75 => 'bg-primary',
@@ -75,9 +75,9 @@
                         @endphp
                         <p class="mb-1 fw-bold text-dark">
                             {{ $progress }}% Complete
-                            @if($progress === 100)
+                            @if($progress >= 100)
                                 <span class="badge bg-success ms-2">Fully Paid</span>
-                            @elseif($progress === 0)
+                            @elseif($progress == 0)
                                 <span class="badge bg-danger ms-2">No Repayments</span>
                             @else
                                 <span class="badge bg-warning text-dark ms-2">Partially Paid</span>
@@ -422,7 +422,7 @@
                                                     $totalPaid = $loan->repayments?->sum(function ($r) {
                                                         return ($r->principal + $r->interest);
                                                     }) ?? 0;
-                                                    $progress = $loan->amount_total > 0 ? round(($totalPaid / $loan->amount_total) * 100) : 0;
+                                                    $progress = $loan->amount_total > 0 ? min(100, round(($totalPaid / $loan->amount_total) * 100)) : 0;
                                                     $progressBarClass = match (true) {
                                                         $progress === 100 => 'bg-success',
                                                         $progress >= 75 => 'bg-primary',
@@ -438,9 +438,9 @@
                                                             aria-valuemin="0" aria-valuemax="100"></div>
                                                     </div>
                                                     <span class="fw-bold">{{ $progress }}%</span>
-                                                    @if($progress === 100)
+                                                    @if($progress >= 100)
                                                         <span class="badge bg-success ms-2">Fully Paid</span>
-                                                    @elseif($progress === 0)
+                                                    @elseif($progress == 0)
                                                         <span class="badge bg-danger ms-2">No Repayments</span>
                                                     @else
                                                         <span class="badge bg-warning text-dark ms-2">Partially Paid</span>
@@ -474,7 +474,7 @@
                                             @can('approve loan')
                                                 <button type="button"
                                                     class="btn btn-primary w-100 d-flex align-items-center justify-content-center"
-                                                    onclick="approveLoan('{{ Hashids::encode($loan->id) }}')">
+                                                    onclick="{{ $nextAction === 'check' ? 'checkLoan' : ($nextAction === 'authorize' ? 'authorizeLoan' : ($nextAction === 'disburse' ? 'disburseLoan' : 'approveLoan')) }}('{{ Hashids::encode($loan->id) }}')">
                                                     <i class="bx bx-check-circle me-2"></i>
                                                     <div class="text-start">
                                                         <div class="fw-bold">{{ ucfirst($nextAction) }} Loan</div>
@@ -833,11 +833,11 @@
                                                                 onclick="printReceipt({{ $repayment->id }})" title="Print Receipt">
                                                                 Print
                                                             </button>
-                                                            <button type="button" class="btn btn-sm btn-outline-secondary"
+                                                            <!-- <button type="button" class="btn btn-sm btn-outline-secondary"
                                                                 onclick="editRepayment({{ $repayment->id }})"
                                                                 title="Edit Repayment">
                                                                 Edit
-                                                            </button>
+                                                            </button> -->
                                                             <button type="button" class="btn btn-sm btn-outline-danger"
                                                                 onclick="deleteRepayment({{ $repayment->id }})"
                                                                 title="Delete Repayment">
@@ -1426,13 +1426,24 @@
     <!-- Approval Modal -->
     <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel" aria-hidden="true">
         <div class="modal-dialog">
-            <div class="modal-content">
+            <form id="approvalForm" method="POST" class="modal-content">
+                @csrf
                 <div class="modal-header">
                     <h5 class="modal-title" id="approvalModalLabel">Confirm Action</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
                     <p id="approvalMessage"></p>
+                    <div class="mb-3" id="disburse_bank_wrapper" style="display:none;">
+                        <label for="approval_bank_account_id" class="form-label">Select Bank Account <span class="text-danger">*</span></label>
+                        <select class="form-select" name="bank_account_id" id="approval_bank_account_id">
+                            <option value="">-- Select Bank Account --</option>
+                            @foreach($bankAccounts ?? [] as $bankAccount)
+                                <option value="{{ $bankAccount->id }}">{{ $bankAccount->account_number }} - {{ $bankAccount->name }}</option>
+                            @endforeach
+                        </select>
+                        <div class="form-text">This bank account will be used for the disbursement entry.</div>
+                    </div>
                     <div class="mb-3">
                         <label for="comments" class="form-label">Comments (Optional)</label>
                         <textarea class="form-control" name="comments" id="comments" rows="3"></textarea>
@@ -1440,12 +1451,9 @@
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <form id="approvalForm" method="POST" style="display: inline;">
-                        @csrf
-                        <button type="submit" class="btn btn-primary">Confirm</button>
-                    </form>
+                    <button type="submit" class="btn btn-primary">Confirm</button>
                 </div>
-            </div>
+            </form>
         </div>
     </div>
 
@@ -2198,9 +2206,15 @@
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
             const message = document.getElementById('approvalMessage');
             const form = document.getElementById('approvalForm');
+            const bankWrapper = document.getElementById('disburse_bank_wrapper');
+            const bankSelect = document.getElementById('approval_bank_account_id');
 
             message.textContent = 'Are you sure you want to disburse this loan? This will mark the loan as disbursed and activate the repayment schedule.';
             form.action = `/loans/${loanId}/disburse`;
+
+            // Show bank selection and require it
+            if (bankWrapper) bankWrapper.style.display = '';
+            if (bankSelect) bankSelect.setAttribute('required', 'required');
 
             modal.show();
         }
@@ -2209,9 +2223,15 @@
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
             const message = document.getElementById('approvalMessage');
             const form = document.getElementById('approvalForm');
+            const bankWrapper = document.getElementById('disburse_bank_wrapper');
+            const bankSelect = document.getElementById('approval_bank_account_id');
 
             message.textContent = 'Are you sure you want to approve this loan? This will change the loan status to approved.';
             form.action = `/loans/${loanId}/approve`;
+
+            // Hide bank selection for non-disburse actions
+            if (bankWrapper) bankWrapper.style.display = 'none';
+            if (bankSelect) bankSelect.removeAttribute('required');
 
             modal.show();
         }
@@ -2220,9 +2240,14 @@
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
             const message = document.getElementById('approvalMessage');
             const form = document.getElementById('approvalForm');
+            const bankWrapper = document.getElementById('disburse_bank_wrapper');
+            const bankSelect = document.getElementById('approval_bank_account_id');
 
             message.textContent = 'Are you sure you want to check this loan? This will mark the loan as checked for first level approval.';
             form.action = `/loans/${loanId}/check`;
+
+            if (bankWrapper) bankWrapper.style.display = 'none';
+            if (bankSelect) bankSelect.removeAttribute('required');
 
             modal.show();
         }
@@ -2231,9 +2256,14 @@
             const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
             const message = document.getElementById('approvalMessage');
             const form = document.getElementById('approvalForm');
+            const bankWrapper = document.getElementById('disburse_bank_wrapper');
+            const bankSelect = document.getElementById('approval_bank_account_id');
 
             message.textContent = 'Are you sure you want to authorize this loan? This will mark the loan as authorized for final approval.';
             form.action = `/loans/${loanId}/authorize`;
+
+            if (bankWrapper) bankWrapper.style.display = 'none';
+            if (bankSelect) bankSelect.removeAttribute('required');
 
             modal.show();
         }

@@ -112,6 +112,21 @@
             @error('interest') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+        <!-- Interest Cycle -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Interest Cycle <span class="text-danger">*</span></label>
+            <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
+                <option value="">Select Interest Cycle</option>
+                <option value="daily" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'daily' ? 'selected' : '' }}>Daily</option>
+                <option value="weekly" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'weekly' ? 'selected' : '' }}>Weekly</option>
+                <option value="monthly" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'monthly' ? 'selected' : '' }}>Monthly</option>
+                <option value="quarterly" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'quarterly' ? 'selected' : '' }}>Quarterly</option>
+                <option value="semi_annually" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'semi_annually' ? 'selected' : '' }}>Semi-Annually</option>
+                <option value="annually" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'annually' ? 'selected' : '' }}>Annually</option>
+            </select>
+            @error('interest_cycle') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
         <!-- Sector -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Business Sector <span class="text-danger">*</span></label>

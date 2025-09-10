@@ -185,14 +185,9 @@
                     <th>Date</th>
                     <th>Penalty Name</th>
                     <th>Penalty Type</th>
-                    <th>Chart Account</th>
-                    <th>Account Code</th>
                     <th>Customer</th>
-                    <th>Branch</th>
-                    <th class="text-center">Nature</th>
                     <th class="text-right">Amount</th>
                     <th>Description</th>
-                    <th>Reference ID</th>
                     <th>Transaction Type</th>
                 </tr>
             </thead>
@@ -207,15 +202,7 @@
                             {{ ucfirst($item->penalty_type) }}
                         </span>
                     </td>
-                    <td>{{ $item->chart_account_name }}</td>
-                    <td>{{ $item->account_code }}</td>
                     <td>{{ $item->customer_name ?? 'N/A' }}</td>
-                    <td>{{ $item->branch_name ?? 'N/A' }}</td>
-                    <td class="text-center">
-                        <span class="{{ $item->nature === 'debit' ? 'text-danger' : 'text-success' }}">
-                            {{ ucfirst($item->nature) }}
-                        </span>
-                    </td>
                     <td class="text-right">{{ number_format($item->amount, 2) }}</td>
                     <td>{{ Str::limit($item->description, 25) }}</td>
                     <td>{{ $item->reference_id }}</td>
