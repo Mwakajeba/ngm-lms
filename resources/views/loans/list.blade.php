@@ -249,6 +249,63 @@ use Vinkla\Hashids\Facades\Hashids;
             });
         @endif
 
+        // Show SweetAlert for import warnings with detailed errors and logs
+        @if(session('warning'))
+            (function() {
+                function escapeHtml(str) {
+                    return String(str)
+                        .replace(/&/g, '&amp;')
+                        .replace(/</g, '&lt;')
+                        .replace(/>/g, '&gt;')
+                        .replace(/\"/g, '&quot;')
+                        .replace(/'/g, '&#039;');
+                }
+                const errors = @json(session('import_errors', []));
+                const logs = @json(session('import_logs', []));
+                const tips = @json(session('import_tips', []));
+                let html = '';
+
+                if (errors.length) {
+                    html += '<div style="text-align:left; margin-bottom:10px;">'
+                         + '<strong>Errors:</strong>'
+                         + '<ul style="max-height:200px; overflow:auto; padding-left:18px; margin-top:6px;">';
+                    errors.forEach(function(e){
+                        html += '<li>' + escapeHtml(e) + '</li>';
+                    });
+                    html += '</ul></div>';
+                }
+
+                if (logs.length) {
+                    html += '<div style="text-align:left;">'
+                         + '<strong>Logs:</strong>'
+                         + '<pre style="white-space:pre-wrap; max-height:200px; overflow:auto; margin-top:6px;">';
+                    logs.forEach(function(l){
+                        html += escapeHtml(l) + '\n';
+                    });
+                    html += '</pre></div>';
+                }
+
+                if (tips.length) {
+                    html += '<div style="text-align:left; margin-top:10px;">'
+                         + '<strong>How to fix:</strong>'
+                         + '<ul style="max-height:200px; overflow:auto; padding-left:18px; margin-top:6px;">';
+                    tips.forEach(function(t){
+                        html += '<li>' + escapeHtml(t) + '</li>';
+                    });
+                    html += '</ul></div>';
+                }
+
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Import Completed With Issues',
+                    html: html || escapeHtml(`{{ session('warning') }}`),
+                    width: 800,
+                    showCloseButton: true,
+                    confirmButtonText: 'OK'
+                });
+            })();
+        @endif
+
         // Show SweetAlert for error messages
         @if($errors->any())
             Swal.fire({
@@ -357,6 +414,84 @@ use Vinkla\Hashids\Facades\Hashids;
                 processData: false,
                 contentType: false,
                 success: function(response) {
+                    // If controller returns JSON, use it; otherwise fallback to generic success
+                    if (typeof response === 'object' && response !== null && 'success' in response) {
+                        if (response.success) {
+                            Swal.fire({
+                                title: 'Import Successful',
+                                text: response.message || 'Loans have been imported successfully.',
+                                icon: 'success',
+                                confirmButtonText: 'OK'
+                            }).then(() => {
+                                $('#importModal').modal('hide');
+                                $('#loansTable').DataTable().ajax.reload();
+                                $('#importForm')[0].reset();
+                                $('#account_id').prop('disabled', true).html('<option value="">Select loan type first</option>');
+                            });
+                        } else {
+                            // Show SweetAlert with errors/logs/tips
+                            const errors = Array.isArray(response.errors) ? response.errors : [];
+                            const logs = Array.isArray(response.logs) ? response.logs : [];
+                            const tips = Array.isArray(response.tips) ? response.tips : [];
+
+                            function escapeHtml(str) {
+                                return String(str)
+                                    .replace(/&/g, '&amp;')
+                                    .replace(/</g, '&lt;')
+                                    .replace(/>/g, '&gt;')
+                                    .replace(/\"/g, '&quot;')
+                                    .replace(/'/g, '&#039;');
+                            }
+
+                            let html = '';
+                            let primaryTitle = 'Error';
+                            if (tips.length) {
+                                const firstTip = String(tips[0]);
+                                const idx = firstTip.indexOf(':');
+                                if (idx > 0) {
+                                    primaryTitle = 'Error: ' + firstTip.slice(0, idx);
+                                }
+                            }
+                            if (errors.length) {
+                                html += '<div style="text-align:left; margin-bottom:10px;"><strong>Errors:</strong><ul style="max-height:200px; overflow:auto; padding-left:18px; margin-top:6px;">';
+                                errors.forEach(function(e){ html += '<li>' + escapeHtml(e) + '</li>'; });
+                                html += '</ul></div>';
+                            }
+                            if (logs.length) {
+                                html += '<div style="text-align:left;"><strong>Logs:</strong><pre style="white-space:pre-wrap; max-height:200px; overflow:auto; margin-top:6px;">';
+                                logs.forEach(function(l){ html += escapeHtml(l) + '\n'; });
+                                html += '</pre></div>';
+                            }
+                            if (tips.length) {
+                                html += '<div style="text-align:left; margin-top:10px;"><strong>What you must correct:</strong><ul style="max-height:200px; overflow:auto; padding-left:18px; margin-top:6px;">';
+                                tips.forEach(function(t){ html += '<li>fix: ' + escapeHtml(t) + '</li>'; });
+                                html += '</ul></div>';
+                            }
+
+                            let summary = (response.message || '').trim();
+                            const counts = [];
+                            if (typeof response.imported === 'number') counts.push(`Imported: ${response.imported}`);
+                            if (typeof response.skipped === 'number') counts.push(`Skipped: ${response.skipped}`);
+                            if (typeof response.failed === 'number') counts.push(`Failed: ${response.failed}`);
+                            if (typeof response.errors_count === 'number') counts.push(`Errors in list: ${response.errors_count}`);
+                            if (typeof response.logs_count === 'number') counts.push(`Log lines: ${response.logs_count}`);
+                            if (counts.length) {
+                                summary = counts.join(' • ');
+                            }
+
+                            Swal.fire({
+                                icon: 'error',
+                                title: primaryTitle,
+                                html: (summary ? `<p style=\"margin:0 0 8px 0;\">${escapeHtml(summary)}</p>` : '') + html,
+                                width: 900,
+                                showCloseButton: true,
+                                confirmButtonText: 'OK'
+                            });
+                        }
+                        return;
+                    }
+
+                    // Fallback (non-JSON response)
                     Swal.fire({
                         title: 'Import Successful',
                         text: 'Loans have been imported successfully.',
@@ -364,9 +499,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         confirmButtonText: 'OK'
                     }).then(() => {
                         $('#importModal').modal('hide');
-                        // Reload the DataTable
                         $('#loansTable').DataTable().ajax.reload();
-                        // Reset form
                         $('#importForm')[0].reset();
                         $('#account_id').prop('disabled', true).html('<option value="">Select loan type first</option>');
                     });

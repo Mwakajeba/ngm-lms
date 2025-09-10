@@ -15,7 +15,7 @@ class RolePermissionSeeder extends Seeder
         $permissions = [
             // Dashboard
             'view dashboard',
-            'view financial report',
+            'view financial reports',
             'view charges',
             'view journals',
             'view payments',

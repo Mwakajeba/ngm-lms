@@ -315,7 +315,7 @@ class GeneralLedgerReportController extends Controller
         // Set headers
         $sheet->setCellValue('A1', $company->name ?? 'SmartFinance');
         $sheet->setCellValue('A2', 'GENERAL LEDGER REPORT');
-        $sheet->setCellValue('A3', 'Period: ' . Carbon::parse($startDate)->format('M d, Y') . ' to ' . Carbon::parse($endDate)->format('M d, Y'));
+        $sheet->setCellValue('A3', 'Period: ' . \Carbon\Carbon::parse($startDate)->format('M d, Y') . ' to ' . \Carbon\Carbon::parse($endDate)->format('M d, Y'));
         $sheet->setCellValue('A4', 'Basis: ' . ucfirst($reportType));
 
         // Set column headers
@@ -330,8 +330,32 @@ class GeneralLedgerReportController extends Controller
 
         $row = 7;
 
-        foreach ($generalLedgerData['transactions'] as $transaction) {
-            $sheet->setCellValue('A' . $row, Carbon::parse($transaction->date)->format('M d, Y'));
+        $openingBalances = $generalLedgerData['opening_balances'] ?? [];
+        $transactions = $generalLedgerData['transactions'] ?? [];
+
+        $lastAccountId = null;
+
+        foreach ($transactions as $transaction) {
+            // Insert opening balance row if this is the first transaction for this account
+            if ($transaction->chart_account_id !== $lastAccountId) {
+                $ob = $openingBalances->get($transaction->chart_account_id);
+                $opening = $ob ? (($ob->total_debit ?? 0) - ($ob->total_credit ?? 0)) : 0;
+
+                $sheet->setCellValue('A' . $row, 'Opening Balance');
+                $sheet->setCellValue('B' . $row, $transaction->account_code);
+                $sheet->setCellValue('C' . $row, $transaction->account_name);
+                $sheet->setCellValue('D' . $row, '');
+                $sheet->setCellValue('E' . $row, '');
+                $sheet->setCellValue('F' . $row, '');
+                $sheet->setCellValue('G' . $row, '');
+                $sheet->setCellValue('H' . $row, number_format($opening, 2));
+                $row++;
+
+                $lastAccountId = $transaction->chart_account_id;
+            }
+
+            // Transaction row
+            $sheet->setCellValue('A' . $row, \Carbon\Carbon::parse($transaction->date)->format('M d, Y'));
             $sheet->setCellValue('B' . $row, $transaction->account_code);
             $sheet->setCellValue('C' . $row, $transaction->account_name);
             $sheet->setCellValue('D' . $row, $transaction->transaction_id);

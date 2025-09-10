@@ -359,7 +359,11 @@
 			<img src="{{ asset('assets/images/avatars/avatar-2.png') }}" class="user-img" alt="user avatar">
 			<div class="user-info ps-3">
 				<p class="user-name mb-0">{{ Auth::user()->name }}</p>
-				<p class="designattion mb-0">{{ ucfirst(Auth::user()->role) }}</p>
+				<?php
+                // Fetch the user's role name
+                $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()->name) : '';
+                ?>
+                <p class="designattion mb-0">{{ $roleName }}</p>
 			</div>
 		</a>
 		<ul class="dropdown-menu dropdown-menu-end">

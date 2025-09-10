@@ -136,6 +136,10 @@ class UserController extends Controller
                 'is_active' => $request->status === 'active' ? 'yes' : 'no',
             ]);
 
+            // Generate user_id like US00001
+            $user->user_id = 'US' . str_pad($user->id, 5, '0', STR_PAD_LEFT);
+            $user->save();
+
             \Log::info('User created successfully', [
                 'user_id' => $user->id,
                 'user_name' => $user->name

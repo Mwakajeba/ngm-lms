@@ -283,7 +283,10 @@
                             <select id="available_roles" class="form-select" size="8" multiple>
                                 @if(isset($loanProduct) && $loanProduct->approval_levels)
                                     @php
-                                        $selectedRoles = explode(',', $loanProduct->approval_levels);
+                                        $selectedRolesRaw = $loanProduct->approval_levels;
+                                        $selectedRoles = is_array($selectedRolesRaw)
+                                            ? array_map('trim', $selectedRolesRaw)
+                                            : array_map('trim', explode(',', $selectedRolesRaw));
                                         $selectedRoleIds = [];
                                         foreach ($selectedRoles as $roleIdentifier) {
                                             $roleIdentifier = trim($roleIdentifier);
@@ -328,11 +331,14 @@
                         <!-- Selected Roles (Right) -->
                         <div class="col-md-5">
                             <label class="form-label">Approval Hierarchy</label>
-                            <select id="selected_roles" name="approval_levels[]"
+                            <select id="selected_roles" name="approval_levels"
                                 class="form-select @error('approval_levels') is-invalid @enderror" size="8" multiple>
                                 @if(isset($loanProduct) && $loanProduct->approval_levels)
                                     @php
-                                        $selectedRoles = explode(',', $loanProduct->approval_levels);
+                                        $selectedRolesRaw = $loanProduct->approval_levels;
+                                        $selectedRoles = is_array($selectedRolesRaw)
+                                            ? array_map('trim', $selectedRolesRaw)
+                                            : array_map('trim', explode(',', $selectedRolesRaw));
                                     @endphp
                                     @foreach($selectedRoles as $roleIdentifier)
                                         @php
@@ -353,6 +359,10 @@
                                 @endif
                             </select>
                             <small class="text-muted">Drag to reorder approval sequence</small>
+
+                            <!-- Hidden input to ensure approval levels are sent -->
+                            <input type="hidden" id="approval_levels_hidden" name="approval_levels_hidden"
+                                   value="{{ isset($loanProduct) && !empty($loanProduct->approval_levels) ? (is_array($loanProduct->approval_levels) ? implode(',', $loanProduct->approval_levels) : $loanProduct->approval_levels) : '' }}">
                         </div>
                     </div>
 
@@ -610,8 +620,10 @@
                                 @php
                                     $allComponents = ['principal', 'interest', 'fees', 'penalties'];
                                     $selectedComponents = [];
-                                    if (isset($loanProduct) && $loanProduct->repayment_order) {
-                                        $selectedComponents = array_map('trim', explode(',', $loanProduct->repayment_order));
+                                    if (isset($loanProduct) && !empty($loanProduct->repayment_order)) {
+                                        $selectedComponents = is_array($loanProduct->repayment_order)
+                                            ? array_map('trim', $loanProduct->repayment_order)
+                                            : array_map('trim', explode(',', $loanProduct->repayment_order));
                                     }
                                     $availableComponents = array_diff($allComponents, $selectedComponents);
                                     @endphp
@@ -657,7 +669,10 @@
                                 class="form-select @error('repayment_order') is-invalid @enderror" size="6" multiple>
                                 @if(isset($loanProduct) && $loanProduct->repayment_order)
                                     @php
-                                        $selectedComponents = array_map('trim', explode(',', $loanProduct->repayment_order));
+                                        $selectedComponentsRaw = $loanProduct->repayment_order;
+                                        $selectedComponents = is_array($selectedComponentsRaw)
+                                            ? array_map('trim', $selectedComponentsRaw)
+                                            : array_map('trim', explode(',', $selectedComponentsRaw));
                                     @endphp
                                     @foreach($selectedComponents as $component)
                                         @php
@@ -687,7 +702,7 @@
                             
                             <!-- Hidden input to ensure data is always sent -->
                             <input type="hidden" id="repayment_order_hidden" name="repayment_order_hidden" 
-                                   value="{{ isset($loanProduct) && $loanProduct->repayment_order ? $loanProduct->repayment_order : 'principal,interest,fees,penalties' }}">
+                                   value="{{ isset($loanProduct) && !empty($loanProduct->repayment_order) ? (is_array($loanProduct->repayment_order) ? implode(',', $loanProduct->repayment_order) : $loanProduct->repayment_order) : 'principal,interest,fees,penalties' }}">
                         </div>
                     </div>
 
@@ -1035,8 +1050,8 @@
     const form = document.querySelector('form');
 
     if (addBtn && removeBtn && avail && selected){
-      addBtn.addEventListener('click', function(){ moveSelected(avail, selected); });
-      removeBtn.addEventListener('click', function(){ removeSelected(selected, avail); });
+      addBtn.addEventListener('click', function(){ moveSelected(avail, selected); updateApprovalLevelsHiddenField(); });
+      removeBtn.addEventListener('click', function(){ removeSelected(selected, avail); updateApprovalLevelsHiddenField(); });
 
       selected.addEventListener('change', updateDescription);
 
@@ -1067,10 +1082,10 @@
     const removeRoleBtn = byId('move_left');
 
     if (addRoleBtn && removeRoleBtn && availRoles && selectedRoles){
-      addRoleBtn.addEventListener('click', function(){ moveSelected(availRoles, selectedRoles); });
-      removeRoleBtn.addEventListener('click', function(){ removeSelected(selectedRoles, availRoles); });
+      addRoleBtn.addEventListener('click', function(){ moveSelected(availRoles, selectedRoles); updateApprovalLevelsHiddenField(); });
+      removeRoleBtn.addEventListener('click', function(){ removeSelected(selectedRoles, availRoles); updateApprovalLevelsHiddenField(); });
 
-      selectedRoles.addEventListener('change', updateRoleDescription);
+      selectedRoles.addEventListener('change', function(){ updateRoleDescription(); updateApprovalLevelsHiddenField(); });
 
       availRoles.addEventListener('change', function(){
         const opt = availRoles.options[availRoles.selectedIndex];
@@ -1087,12 +1102,14 @@
 
       enableDragReorderRoles(selectedRoles);
       updateRoleDescription();
+      updateApprovalLevelsHiddenField();
     }
     
     // Ensure hidden field is updated before form submission
     if (form) {
       form.addEventListener('submit', function(e) {
         updateHiddenField();
+        updateApprovalLevelsHiddenField();
       });
     }
   });
@@ -1108,6 +1125,17 @@
         selected.selectedIndex = 0;
         updateDescription();
       }
+    }
+  }
+
+  // Function to update the hidden field with current approval levels order
+  function updateApprovalLevelsHiddenField(){
+    const selected = byId('selected_roles');
+    const hidden = byId('approval_levels_hidden');
+    if (selected && hidden){
+      const values = Array.from(selected.options).map(function(opt){ return opt.value; });
+      hidden.value = values.join(',');
+      console.log('Updated approval_levels_hidden:', hidden.value);
     }
   }
 })();

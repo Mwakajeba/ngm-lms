@@ -394,7 +394,8 @@
 
                                                 @can('edit loan')
                                                 @if($loan->status == 'Pending')
-                                                <a href="{{ route('loans.edit', Hashids::encode($loan->id)) }}" class="btn btn-sm btn-primary">Edit</a>
+                                                @php($encodedId = Hashids::encode($loan->id))
+                                                <a href="{{ in_array($loan->status, ['applied','rejected']) ? route('loans.application.edit', $encodedId) : route('loans.edit', $encodedId) }}" class="btn btn-sm btn-primary">Edit</a>
                                                 @endif
                                                 @endcan
                                             </td>

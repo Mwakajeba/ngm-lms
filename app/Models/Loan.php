@@ -150,7 +150,7 @@ class Loan extends Model
             return [];
         }
 
-        $roles = explode(',', $this->product->approval_levels);
+        $roles = is_array($this->product->approval_levels) ? $this->product->approval_levels : explode(",", $this->product->approval_levels);
         $filteredRoles = array_filter($roles); // Remove empty values
 
         // Convert to integers for proper comparison
@@ -294,22 +294,33 @@ class Loan extends Model
             return null;
         }
 
-        // Check if this is the accountant (last role)
-        if ($nextLevel === count($approvalRoles)) {
+        $totalLevels = count($approvalRoles);
+
+        // If last level → disburse
+        if ($nextLevel === $totalLevels) {
             return 'disburse';
         }
 
-        // For other roles, determine action based on level
-        switch ($nextLevel) {
-            case 1:
-                return 'check';
-            case 2:
-                return 'approve';
-            case 3:
-                return 'authorize';
-            default:
-                return 'approve';
+        // Map flows by total level count
+        // 2 levels: Approve → Disburse
+        if ($totalLevels === 2) {
+            return 'approve';
         }
+
+        // 3 levels: Check → Approve → Disburse
+        if ($totalLevels === 3) {
+            return $nextLevel === 1 ? 'check' : 'approve';
+        }
+
+        // 4+ levels: Checked → Approved → Authorized → Disbursed (intermediate levels default to authorize)
+        if ($nextLevel === 1) {
+            return 'check';
+        }
+        if ($nextLevel === 2) {
+            return 'approve';
+        }
+        // level 3 and any additional middle levels before last
+        return 'authorize';
     }
 
     public function getApprovalLevelName($level)

@@ -21,6 +21,8 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use PhpOffice\PhpSpreadsheet\IOFactory;
+use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -389,7 +391,10 @@ class LoanController extends Controller
 
                     // Edit action
                     if (auth()->user()->can('edit loan')) {
-                        $actions .= '<a href="' . route('loans.edit', $encodedId) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
+                        $editUrl = in_array($loan->status, ['applied', 'rejected'])
+                            ? route('loans.application.edit', $encodedId)
+                            : route('loans.edit', $encodedId);
+                        $actions .= '<a href="' . $editUrl . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
                     }
 
                     // Receipt action for applied loans
@@ -484,7 +489,7 @@ class LoanController extends Controller
     public function importLoans(Request $request)
     {
         $request->validate([
-            'import_file' => 'required|file|mimes:csv,txt',
+            'import_file' => 'required|file|mimes:csv,txt,xlsx,xls',
             'loan_type' => 'required|in:new,old',
             'branch_id' => 'required|exists:branches,id',
             'product_id' => 'required|exists:loan_products,id',
@@ -502,7 +507,15 @@ class LoanController extends Controller
                 ]);
             }
 
-            $data = array_map('str_getcsv', file($path));
+            $extension = strtolower($file->getClientOriginalExtension());
+            if (in_array($extension, ['xlsx', 'xls'])) {
+                $spreadsheet = IOFactory::load($path);
+                $sheet = $spreadsheet->getActiveSheet();
+                $rows = $sheet->toArray(null, true, true, false);
+                $data = $rows;
+            } else {
+                $data = array_map('str_getcsv', file($path));
+            }
 
             if (empty($data)) {
                 return redirect()->back()->withErrors([
@@ -511,6 +524,7 @@ class LoanController extends Controller
             }
 
             $header = array_shift($data);
+            $header = array_map(function ($h) { return strtolower(trim((string) $h)); }, $header);
 
             // Validate CSV header
             $expectedHeaders = [
@@ -557,12 +571,26 @@ class LoanController extends Controller
             ]);
 
             $skipErrors = $request->has('skip_errors');
+            $importStartedAt = now();
+            $customerNameIndex = array_search('customer_name', $header, true);
 
-            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, $skipErrors, &$successCount, &$errorCount, &$skippedCount, &$errors) {
+            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, $skipErrors, $customerNameIndex, &$successCount, &$errorCount, &$skippedCount, &$errors) {
                 foreach ($data as $rowIndex => $row) {
                     try {
+                        // Normalize row to header length
+                        $row = array_map(function ($v) { return is_string($v) ? trim($v) : $v; }, $row);
+                        $row = array_pad($row, count($header), '');
                         $rowData = array_combine($header, $row);
                         \Log::info('Processing row', ['row' => $rowIndex + 2, 'data' => $rowData]);
+
+                        // Skip instructional note rows under customer_name
+                        if ($customerNameIndex !== false && isset($rowData['customer_name'])) {
+                            $val = strtolower(trim((string) $rowData['customer_name']));
+                            if ($val !== '' && (str_starts_with($val, 'n.b') || str_contains($val, 'delete first customer name'))) {
+                                $skippedCount++;
+                                continue;
+                            }
+                        }
 
                         // Validate each row
                         $validated = $this->validateLoanRow($rowData, $rowIndex + 2); // +2 for header and 0-based index
@@ -670,8 +698,37 @@ class LoanController extends Controller
                 $message .= " Failed: $errorCount loans.";
             }
 
-            if (!empty($errors)) {
-                return redirect()->back()->with('warning', $message)->with('import_errors', $errors);
+            // Consider import a failure if there are errors OR zero successful imports
+            $hasErrors = !empty($errors);
+            $isZeroImported = ($successCount === 0);
+            if ($hasErrors || $isZeroImported) {
+                $tips = $this->buildImportTips($errors, $product);
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => $message,
+                        'errors' => $errors,
+                        'errors_count' => $errorCount,
+                        'tips' => $tips,
+                        'skipped' => $skippedCount,
+                        'failed' => $errorCount,
+                        'imported' => $successCount,
+                    ]);
+                }
+                return redirect()->back()
+                    ->with('warning', $message)
+                    ->with('import_errors', $errors)
+                    ->with('import_tips', $tips);
+            }
+
+            if ($request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => $message,
+                    'imported' => $successCount,
+                    'skipped' => $skippedCount,
+                    'failed' => $errorCount,
+                ]);
             }
 
             return redirect()->route('loans.list')->with('success', $message);
@@ -711,8 +768,26 @@ class LoanController extends Controller
                 return ['error' => "Row $rowNumber: Invalid interest"];
             }
 
-            if (!strtotime($rowData['date_applied']) || strtotime($rowData['date_applied']) > time()) {
-                return ['error' => "Row $rowNumber: Invalid date_applied"];
+            // Parse date_applied: accept YYYY-MM-DD or Excel serial numbers
+            $dateValue = $rowData['date_applied'];
+            $parsedDate = null;
+            if (is_numeric($dateValue)) {
+                try {
+                    $carbon = \Carbon\Carbon::instance(ExcelDate::excelToDateTimeObject((float) $dateValue));
+                    $parsedDate = $carbon->format('Y-m-d');
+                } catch (\Throwable $t) {
+                    return ['error' => "Row $rowNumber: Invalid date_applied (Excel serial)"];
+                }
+            } else {
+                try {
+                    $carbon = \Carbon\Carbon::createFromFormat('Y-m-d', (string) $dateValue);
+                    $parsedDate = $carbon->format('Y-m-d');
+                } catch (\Throwable $t) {
+                    return ['error' => "Row $rowNumber: Invalid date_applied (expected YYYY-MM-DD)"];
+                }
+            }
+            if (strtotime($parsedDate) > time()) {
+                return ['error' => "Row $rowNumber: Invalid date_applied (future date)"];
             }
 
             $validCycles = ['daily','weekly','monthly','quarterly','semi_annually','annually'];
@@ -734,7 +809,7 @@ class LoanController extends Controller
                     'amount' => (float) $rowData['amount'],
                     'period' => (int) $rowData['period'],
                     'interest' => (float) $rowData['interest'],
-                    'date_applied' => $rowData['date_applied'],
+                    'date_applied' => $parsedDate,
                     'interest_cycle' => strtolower($rowData['interest_cycle']),
                     'loan_officer' => (int) $rowData['loan_officer'],
                     'group_id' => (int) $rowData['group_id'],
@@ -743,6 +818,106 @@ class LoanController extends Controller
         } catch (\Exception $e) {
             return ['error' => "Row $rowNumber: Validation error - " . $e->getMessage()];
         }
+    }
+
+    private function getRecentImportLogs($since)
+    {
+        try {
+            $logFile = storage_path('logs/laravel.log');
+            if (!file_exists($logFile)) {
+                return [];
+            }
+            $lines = @file($logFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+            if ($lines === false) {
+                return [];
+            }
+            $sinceTs = strtotime((string) $since);
+            $matched = [];
+            // scan from end; collect up to 100 relevant lines
+            for ($i = count($lines) - 1; $i >= 0 && count($matched) < 100; $i--) {
+                $line = $lines[$i];
+                // naive timestamp parse: look for today's date or any timestamp after $since
+                $isRelevantText = (stripos($line, 'Import started') !== false) ||
+                                  (stripos($line, 'Processing row') !== false) ||
+                                  (stripos($line, 'Row validation failed') !== false) ||
+                                  (stripos($line, 'Product limits validation failed') !== false) ||
+                                  (stripos($line, 'Collateral validation failed') !== false) ||
+                                  (stripos($line, 'Existing loan check failed') !== false) ||
+                                  (stripos($line, 'Error creating loan') !== false);
+                if ($isRelevantText) {
+                    $matched[] = $line;
+                }
+            }
+            return array_reverse($matched);
+        } catch (\Throwable $t) {
+            return [];
+        }
+    }
+
+    private function buildImportTips(array $errors, LoanProduct $product)
+    {
+        $tips = [];
+        foreach ($errors as $e) {
+            $msgLower = strtolower($e);
+            // 1) Interest rate outside limits (from product limits message)
+            if (preg_match('/interest rate must be between/i', $e)) {
+                // Keep message as-is; it already contains precise bounds
+                $tips[] = trim($e);
+                continue;
+            }
+            // 2) Customer not found -> include number
+            if (preg_match("/customer number '([^']+)' not found/i", $e, $m)) {
+                $tips[] = 'not customer found with ' . $m[1] . ' number';
+                continue;
+            }
+            // 3) Incorrect date format
+            if (str_contains($msgLower, 'invalid date_applied')) {
+                $tips[] = 'incorrect date format';
+                continue;
+            }
+            // 4) Loan officer invalid -> include id
+            if (preg_match('/invalid loan_officer/i', $e)) {
+                if (preg_match('/loan_officer[\s:]*(\d+)/i', $e, $m2)) {
+                    $tips[] = 'no loan officer with ' . $m2[1] . ' id';
+                } else {
+                    $tips[] = 'no loan officer with provided id';
+                }
+                continue;
+            }
+            // 5) Amount/period outside product limits
+            if (preg_match('/amount must be between/i', $e)) {
+                $tips[] = trim($e);
+                continue;
+            }
+            if (preg_match('/period must be between/i', $e)) {
+                $tips[] = trim($e);
+                continue;
+            }
+            // 6) Group invalid
+            if (preg_match('/invalid group_id/i', $e)) {
+                $tips[] = 'group_id is invalid';
+                continue;
+            }
+            // 7) Existing active loan
+            if (preg_match('/already has an active loan/i', $e)) {
+                // Show the message exactly as it is written for clarity
+                $tips[] = 'Customer already has an active loan for this product';
+                continue;
+            }
+            // 8) Collateral
+            if (preg_match('/insufficient collateral/i', $e)) {
+                $tips[] = 'insufficient collateral for requested amount';
+                continue;
+            }
+        }
+        // Dedupe & keep order
+        $tips = array_values(array_unique($tips));
+        // If none matched, add a generic tip
+        if (empty($tips)) {
+            $tips[] = 'review the CSV/XLSX values against product limits and required fields';
+        }
+        // Prefix items with 'fix: ' expectation is done in the view heading, so return plain items
+        return $tips;
     }
 
     private function createLoanFromImport($validated, $product, $accountId, $userId, $branchId)
@@ -1711,6 +1886,7 @@ class LoanController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'group_id' => 'nullable|exists:groups,id',
             'sector' => 'required|string',
+            'interest_cycle' => 'required|string|in:daily,weekly,monthly,quarterly,semi_annually,annually',
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
@@ -1783,7 +1959,7 @@ class LoanController extends Controller
                 'bank_account_id' => null, // Set to null for loan applications
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
-                'interest_cycle' => $product->interest_cycle, // Get from product
+                'interest_cycle' => $validated['interest_cycle'], // Use from form
                 'loan_officer_id' => $userId, // Set to current user for loan applications
                 'branch_id' => $branchId,
                 'status' => $initialStatus,
@@ -1857,7 +2033,8 @@ class LoanController extends Controller
 
         $filetypes = Filetype::all();
 
-        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes'));
+        $bankAccounts = BankAccount::all();
+        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts'));
     }
 
     public function applicationEdit($encodedId)
@@ -1870,8 +2047,8 @@ class LoanController extends Controller
         $loanApplication = Loan::findOrFail($decoded[0]);
 
         // Check if application can be edited
-        if ($loanApplication->status !== 'pending') {
-            return redirect()->route('loans.application.index')->withErrors(['Only pending applications can be edited.']);
+        if (!in_array($loanApplication->status, ['applied', 'rejected'])) {
+            return redirect()->route('loans.application.index')->withErrors(['Only applied or rejected applications can be edited.']);
         }
 
         $branchId = auth()->user()->branch_id;
@@ -1897,8 +2074,8 @@ class LoanController extends Controller
         $loanApplication = Loan::findOrFail($decoded[0]);
 
         // Check if application can be edited
-        if ($loanApplication->status !== 'pending') {
-            return redirect()->route('loans.application.index')->withErrors(['Only pending applications can be edited.']);
+        if (!in_array($loanApplication->status, ['applied', 'rejected'])) {
+            return redirect()->route('loans.application.index')->withErrors(['Only applied or rejected applications can be edited.']);
         }
 
         $validated = $request->validate([
@@ -1910,23 +2087,31 @@ class LoanController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'group_id' => 'nullable|exists:groups,id',
             'sector' => 'required|string',
+            'interest_cycle' => 'required|string|in:daily,weekly,monthly,quarterly,semi_annually,annually',
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
 
         try {
-            $loanApplication->update([
+            $updateData = [
                 'product_id' => $validated['product_id'],
                 'period' => $validated['period'],
                 'interest' => $validated['interest'],
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
-                'interest_cycle' => $product->interest_cycle, // Get from product
+                'interest_cycle' => $validated['interest_cycle'], // Use from form
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
-            ]);
+            ];
+
+            // If loan was rejected, change status back to applied
+            if ($loanApplication->status === 'rejected') {
+                $updateData['status'] = 'applied';
+            }
+
+            $loanApplication->update($updateData);
 
             return redirect()->route('loans.application.index')->with('success', 'Loan application updated successfully.');
         } catch (\Throwable $th) {
@@ -1941,7 +2126,7 @@ class LoanController extends Controller
      */
     public function approveLoan($encodedId, Request $request)
     {
-        \Log::info('approveLoan method called', [
+        \Log::notice('approveLoan() called', [
             'encodedId' => $encodedId,
             'request_method' => $request->method(),
             'request_url' => $request->url(),
@@ -1960,7 +2145,7 @@ class LoanController extends Controller
             $user = auth()->user();
 
             // Debug information
-            \Log::info('Approval attempt', [
+            \Log::notice('Approval attempt context', [
                 'loan_id' => $loan->id,
                 'loan_status' => $loan->status,
                 'user_id' => $user->id,
@@ -2001,6 +2186,13 @@ class LoanController extends Controller
             $nextLevel = $loan->getNextApprovalLevel();
             $roleName = $loan->getApprovalLevelName($nextLevel);
 
+            \Log::notice('Computed next step', [
+                'loan_id' => $loan->id,
+                'nextAction' => $nextAction,
+                'nextLevel' => $nextLevel,
+                'roleName' => $roleName,
+            ]);
+
             if (!$nextAction || !$nextLevel) {
                 \Log::error('Unable to determine next approval action', [
                     'nextAction' => $nextAction,
@@ -2009,14 +2201,28 @@ class LoanController extends Controller
                 return redirect()->back()->withErrors(['Unable to determine next approval action.']);
             }
 
-            \Log::info('About to start database transaction', [
+            // If disbursing, require and set bank account before proceeding
+            if ($nextAction === 'disburse') {
+                $request->validate([
+                    'bank_account_id' => 'required|exists:bank_accounts,id',
+                ]);
+                if (!$loan->bank_account_id || (int) $loan->bank_account_id !== (int) $request->input('bank_account_id')) {
+                    $loan->update(['bank_account_id' => (int) $request->input('bank_account_id')]);
+                    \Log::notice('Bank account set for disbursement', [
+                        'loan_id' => $loan->id,
+                        'bank_account_id' => (int) $request->input('bank_account_id')
+                    ]);
+                }
+            }
+
+            \Log::notice('Starting approval transaction', [
                 'nextAction' => $nextAction,
                 'nextLevel' => $nextLevel,
                 'roleName' => $roleName
             ]);
 
             DB::transaction(function () use ($loan, $user, $validated, $nextAction, $nextLevel, $roleName) {
-                \Log::info('Creating approval record', [
+                \Log::notice('Creating approval record', [
                     'loan_id' => $loan->id,
                     'user_id' => $user->id,
                     'role_name' => $roleName,
@@ -2083,9 +2289,14 @@ class LoanController extends Controller
                     'approved_at' => now(),
                 ]);
 
-                \Log::info('Approval record created', ['approval_id' => $approval->id]);
+                \Log::notice('Approval record created', [
+                    'approval_id' => $approval->id,
+                    'loan_id' => $loan->id,
+                    'action' => $actionForRecord,
+                    'new_status' => $loan->status,
+                ]);
 
-                \Log::info('Loan status updated', [
+                \Log::notice('Loan status updated', [
                     'old_status' => $oldStatus,
                     'new_status' => $loan->fresh()->status,
                     'action' => $nextAction
@@ -2103,7 +2314,7 @@ class LoanController extends Controller
 
             // Redirect based on the new status
             $newStatus = $loan->fresh()->status;
-            \Log::info('Approval completed successfully', [
+            \Log::notice('Approval completed successfully', [
                 'new_status' => $newStatus,
                 'message' => $message
             ]);
@@ -2365,13 +2576,14 @@ class LoanController extends Controller
     public function downloadTemplate()
     {
         $headers = [
+            'customer_name',
             'customer_no',
             'amount',
             'period',
             'interest',
             'date_applied',
             'interest_cycle',
-            'loan_officer',
+            'loan_officer_id',
             'group_id',
             'sector'
         ];
@@ -2383,7 +2595,7 @@ class LoanController extends Controller
         if ($branchId) {
             $customersQuery->where('branch_id', $branchId);
         }
-        $customers = $customersQuery->get(['id','customerNo','branch_id']);
+        $customers = $customersQuery->get(['id','name','customerNo','branch_id']);
 
         $fileName = 'loan_import_template.csv';
         $handle = fopen('php://output', 'w');
@@ -2395,10 +2607,25 @@ class LoanController extends Controller
         // Write CSV header
         fputcsv($handle, $headers);
 
+        // Add note as the first data row under customer_name column
+        fputcsv($handle, [
+            'N.B: delete first customer name before upload',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            '',
+            ''
+        ]);
+
         // Write one row per customer number with detected group_id and placeholders for other fields
         foreach ($customers as $customer) {
             $groupId = optional($customer->groups->first())->id ?? '';
             fputcsv($handle, [
+                $customer->name,
                 $customer->customerNo, // customer_no
                 '',                    // amount
                 '',                    // period

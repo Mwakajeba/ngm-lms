@@ -120,7 +120,7 @@ class LoanProductController extends Controller
             'maximum_principal' => 'required|numeric|min:0|gte:minimum_principal',
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
-            'grace_period' => 'nullable|integer|min:0', // Add grace period validation
+            'grace_period' => 'nullable|integer|min:0',
             'penalt_deduction_criteria' => 'nullable|string',
             'has_top_up' => 'boolean',
             'top_up_type' => 'nullable|required_if:has_top_up,1|string|max:50',
@@ -130,7 +130,8 @@ class LoanProductController extends Controller
             'cash_collateral_value_type' => 'nullable|string|max:50',
             'cash_collateral_value' => 'nullable|numeric|min:0',
             'has_approval_levels' => 'boolean',
-            'approval_levels' => 'nullable|string|max:500',
+            'approval_levels' => 'nullable|array',
+            'approval_levels.*' => 'integer|exists:roles,id',
             'principal_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_revenue_account_id' => 'required|exists:chart_accounts,id',
@@ -171,6 +172,27 @@ class LoanProductController extends Controller
             }
         }
 
+        // Normalize approval_levels from hidden field if present
+        $approvalLevelsHidden = $request->input('approval_levels_hidden');
+        $approvalLevels = [];
+        if (is_string($approvalLevelsHidden) && strlen(trim($approvalLevelsHidden)) > 0) {
+            $approvalLevels = array_values(array_filter(array_map('trim', explode(',', $approvalLevelsHidden)), function($v){ return $v !== ''; }));
+        } elseif (is_array($request->approval_levels)) {
+            $approvalLevels = array_map('strval', $request->approval_levels);
+        }
+
+        // Validate approval levels if provided
+        if (!empty($approvalLevels)) {
+            $validRoleIds = \App\Models\Role::pluck('id')->map(fn($id)=>(string)$id)->toArray();
+            foreach ($approvalLevels as $rid) {
+                if (!in_array((string)$rid, $validRoleIds, true)) {
+                    return redirect()->back()
+                        ->withErrors(['approval_levels' => 'Invalid role ID "' . $rid . '" in approval levels.'])
+                        ->withInput();
+                }
+            }
+        }
+
         DB::beginTransaction();
         try {
             $data = $request->all();
@@ -181,38 +203,12 @@ class LoanProductController extends Controller
             // Persist normalized repayment order as comma-separated string
             $data['repayment_order'] = !empty($repaymentComponents)
                 ? implode(',', $repaymentComponents)
-                : null; // Allow null/empty repayment order
+                : null;
 
-            // Handle top up configuration
-            if (!$request->has('has_top_up')) {
-                $data['top_up_type'] = null;
-                $data['top_up_type_value'] = 0; // coalesce null to 0
-            } else {
-                // If has_top_up is checked but top_up_type is not provided, set it to null and 0 value
-                if (!$request->filled('top_up_type')) {
-                    $data['top_up_type'] = null;
-                    $data['top_up_type_value'] = 0;
-                } else {
-                    // top_up_type provided but value may be empty
-                    $data['top_up_type_value'] = $request->filled('top_up_type_value') ? $request->top_up_type_value : 0;
-                }
-            }
-
-            // Handle fees and penalties arrays
-
-            // Handle cash collateral configuration
-            if (!$request->has('has_cash_collateral')) {
-                $data['cash_collateral_type'] = null;
-                $data['cash_collateral_value_type'] = null;
-                $data['cash_collateral_value'] = 0; // Set to 0 instead of null
-            } else {
-                // If has_cash_collateral is checked but values are not provided, set defaults
-                if (!$request->filled('cash_collateral_value')) {
-                    $data['cash_collateral_value'] = 0;
-                }
-            }
-            $data['fees_ids'] = $request->fees_id ? array_filter($request->fees_id) : null;
-            $data['penalty_ids'] = $request->penalty_id ? array_filter($request->penalty_id) : null;
+            // Persist normalized approval levels as comma-separated string
+            $data['approval_levels'] = !empty($approvalLevels)
+                ? implode(',', $approvalLevels)
+                : null;
 
             $loanProduct = LoanProduct::create($data);
 
@@ -369,7 +365,8 @@ class LoanProductController extends Controller
             'cash_collateral_value_type' => 'nullable|string|max:50',
             'cash_collateral_value' => 'nullable|numeric|min:0',
             'has_approval_levels' => 'boolean',
-            'approval_levels' => 'nullable|string|max:500',
+            'approval_levels' => 'nullable|array',
+            'approval_levels.*' => 'integer|exists:roles,id',
             'principal_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_receivable_account_id' => 'required|exists:chart_accounts,id',
             'interest_revenue_account_id' => 'required|exists:chart_accounts,id',
@@ -410,6 +407,27 @@ class LoanProductController extends Controller
             }
         }
 
+        // Normalize approval_levels from hidden field if present
+        $approvalLevelsHidden = $request->input('approval_levels_hidden');
+        $approvalLevels = [];
+        if (is_string($approvalLevelsHidden) && strlen(trim($approvalLevelsHidden)) > 0) {
+            $approvalLevels = array_values(array_filter(array_map('trim', explode(',', $approvalLevelsHidden)), function($v){ return $v !== ''; }));
+        } elseif (is_array($request->approval_levels)) {
+            $approvalLevels = array_map('strval', $request->approval_levels);
+        }
+
+        // Validate approval levels if provided
+        if (!empty($approvalLevels)) {
+            $validRoleIds = \App\Models\Role::pluck('id')->map(fn($id)=>(string)$id)->toArray();
+            foreach ($approvalLevels as $rid) {
+                if (!in_array((string)$rid, $validRoleIds, true)) {
+                    return redirect()->back()
+                        ->withErrors(['approval_levels' => 'Invalid role ID "' . $rid . '" in approval levels.'])
+                        ->withInput();
+                }
+            }
+        }
+
         DB::beginTransaction();
         try {
             $data = $request->all();
@@ -420,38 +438,12 @@ class LoanProductController extends Controller
             // Persist normalized repayment order as comma-separated string
             $data['repayment_order'] = !empty($repaymentComponents)
                 ? implode(',', $repaymentComponents)
-                : null; // Allow null/empty repayment order
+                : null;
 
-            // Handle top up configuration
-            if (!$request->has('has_top_up')) {
-                $data['top_up_type'] = null;
-                $data['top_up_type_value'] = 0; // coalesce null to 0
-            } else {
-                // If has_top_up is checked but top_up_type is not provided, set it to null and 0 value
-                if (!$request->filled('top_up_type')) {
-                    $data['top_up_type'] = null;
-                    $data['top_up_type_value'] = 0;
-                } else {
-                    // top_up_type provided but value may be empty
-                    $data['top_up_type_value'] = $request->filled('top_up_type_value') ? $request->top_up_type_value : 0;
-                }
-            }
-
-            // Handle fees and penalties arrays
-
-            // Handle cash collateral configuration
-            if (!$request->has('has_cash_collateral')) {
-                $data['cash_collateral_type'] = null;
-                $data['cash_collateral_value_type'] = null;
-                $data['cash_collateral_value'] = 0; // Set to 0 instead of null
-            } else {
-                // If has_cash_collateral is checked but values are not provided, set defaults
-                if (!$request->filled('cash_collateral_value')) {
-                    $data['cash_collateral_value'] = 0;
-                }
-            }
-            $data['fees_ids'] = $request->fees_id ? array_filter($request->fees_id) : null;
-            $data['penalty_ids'] = $request->penalty_id ? array_filter($request->penalty_id) : null;
+            // Persist normalized approval levels as comma-separated string
+            $data['approval_levels'] = !empty($approvalLevels)
+                ? implode(',', $approvalLevels)
+                : null;
 
             $loanProduct->update($data);
 
