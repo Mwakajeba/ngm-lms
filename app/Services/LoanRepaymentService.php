@@ -166,18 +166,37 @@ class LoanRepaymentService
         $defaultOrder = ['penalty_amount', 'fee_amount', 'interest', 'principal'];
 
         if ($loan->product && $loan->product->repayment_order) {
-            // Parse the comma-separated string from the database
-            $repaymentComponents = explode(',', $loan->product->repayment_order);
+            $rawOrder = $loan->product->repayment_order;
+
+            // Normalize to array: accept array, JSON string, or comma-separated string
+            if (is_array($rawOrder)) {
+                $repaymentComponents = $rawOrder;
+            } else if (is_string($rawOrder)) {
+                $trimmed = trim($rawOrder);
+                if ($trimmed !== '' && ($trimmed[0] === '[' || $trimmed[0] === '{')) {
+                    $decoded = json_decode($trimmed, true);
+                    $repaymentComponents = is_array($decoded) ? $decoded : explode(',', $rawOrder);
+                } else {
+                    $repaymentComponents = explode(',', $rawOrder);
+                }
+            } else {
+                $repaymentComponents = [];
+            }
+
             $validComponents = [];
 
             // Map the components to the correct field names
             foreach ($repaymentComponents as $component) {
-                $component = trim($component);
+                $component = is_string($component) ? trim($component) : $component;
                 switch ($component) {
                     case 'penalties':
+                    case 'penalty':
+                    case 'penalty_amount':
                         $validComponents[] = 'penalty_amount';
                         break;
                     case 'fees':
+                    case 'fee':
+                    case 'fee_amount':
                         $validComponents[] = 'fee_amount';
                         break;
                     case 'interest':
