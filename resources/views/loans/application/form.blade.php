@@ -15,7 +15,7 @@
     </div>
 @endif
 
-<form action="{{ $isEdit ? route('loans.application.update', $loanApplication) : route('loans.application.store') }}"
+<form action="{{ $isEdit ? route('loans.application.update', Vinkla\Hashids\Facades\Hashids::encode($loanApplication->id)) : route('loans.application.store') }}"
     method="POST" enctype="multipart/form-data">
     @csrf
     @if($isEdit) @method('PUT') @endif

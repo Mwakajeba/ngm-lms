@@ -73,33 +73,33 @@ class LoanController extends Controller
         // Fetch required data for the receipt form
         $bankAccounts = BankAccount::all();
         $customers = Customer::all();
-            // Get fees with deduction_criteria = 'do_not_include_in_loan_schedule'
-            $excludedFees = \DB::table('fees')
-                ->where('deduction_criteria', 'do_not_include_in_loan_schedule')
-                ->where('status', 'active')
-                ->get();
+        // Get fees with deduction_criteria = 'do_not_include_in_loan_schedule'
+        $excludedFees = \DB::table('fees')
+            ->where('deduction_criteria', 'do_not_include_in_loan_schedule')
+            ->where('status', 'active')
+            ->get();
 
-            // Prepare chart accounts with calculated fee amount/percent
-            $chartAccounts = collect();
-            foreach ($excludedFees as $fee) {
-                if (!$fee->chart_account_id) continue;
-                $account = \App\Models\ChartAccount::find($fee->chart_account_id);
-                if (!$account) continue;
-                $amount = (float) $fee->amount;
-                $calculated = $fee->fee_type === 'percentage'
-                    ? ($loan->amount * $amount / 100)
-                    : $amount;
-                $chartAccounts->push((object) [
-                    'id' => $account->id,
-                    'account_name' => $account->account_name,
-                    'account_code' => $account->account_code,
-                    'fee_name' => $fee->name,
-                    'fee_type' => $fee->fee_type,
-                    'fee_amount' => $calculated
-                ]);
-            }
+        // Prepare chart accounts with calculated fee amount/percent
+        $chartAccounts = collect();
+        foreach ($excludedFees as $fee) {
+            if (!$fee->chart_account_id) continue;
+            $account = \App\Models\ChartAccount::find($fee->chart_account_id);
+            if (!$account) continue;
+            $amount = (float) $fee->amount;
+            $calculated = $fee->fee_type === 'percentage'
+                ? ($loan->amount * $amount / 100)
+                : $amount;
+            $chartAccounts->push((object) [
+                'id' => $account->id,
+                'account_name' => $account->account_name,
+                'account_code' => $account->account_code,
+                'fee_name' => $fee->name,
+                'fee_type' => $fee->fee_type,
+                'fee_amount' => $calculated
+            ]);
+        }
 
-            return view('loans.fees_receipt', compact('loan', 'fees', 'totalFees', 'bankAccounts', 'customers', 'chartAccounts'));
+        return view('loans.fees_receipt', compact('loan', 'fees', 'totalFees', 'bankAccounts', 'customers', 'chartAccounts'));
     }
 
     /**
@@ -164,41 +164,41 @@ class LoanController extends Controller
                 $receiptItem->description = $item['description'] ?? null;
                 $receiptItem->save();
             }
-                // GL Transactions
-                // Debit Bank Account (total amount)
-                $bankAccount = \App\Models\BankAccount::find($validated['bank_account_id']);
-                $branchId = $loan->branch_id;
-                $customerId = $loan->customer_id;
-                $userId = auth()->id();
-                $totalAmount = collect($validated['line_items'])->sum('amount');
+            // GL Transactions
+            // Debit Bank Account (total amount)
+            $bankAccount = \App\Models\BankAccount::find($validated['bank_account_id']);
+            $branchId = $loan->branch_id;
+            $customerId = $loan->customer_id;
+            $userId = auth()->id();
+            $totalAmount = collect($validated['line_items'])->sum('amount');
+            \App\Models\GlTransaction::create([
+                'chart_account_id' => $bankAccount->chart_account_id,
+                'customer_id' => $customerId,
+                'amount' => $totalAmount,
+                'nature' => 'debit',
+                'transaction_id' => $receipt->id,
+                'transaction_type' => 'receipt',
+                'date' => $validated['date'],
+                'description' => 'Loan Fees Receipt for Loan #' . ($loan->loanNo ?? $loan->id),
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
+
+            // Credit each chart account in line items
+            foreach ($validated['line_items'] as $item) {
                 \App\Models\GlTransaction::create([
-                    'chart_account_id' => $bankAccount->chart_account_id,
+                    'chart_account_id' => $item['chart_account_id'],
                     'customer_id' => $customerId,
-                    'amount' => $totalAmount,
-                    'nature' => 'debit',
+                    'amount' => $item['amount'],
+                    'nature' => 'credit',
                     'transaction_id' => $receipt->id,
                     'transaction_type' => 'receipt',
                     'date' => $validated['date'],
-                    'description' => 'Loan Fees Receipt for Loan #' . ($loan->loanNo ?? $loan->id),
+                    'description' => $item['description'] ?? ('Loan Fee for Loan #' . ($loan->loanNo ?? $loan->id)),
                     'branch_id' => $branchId,
                     'user_id' => $userId,
                 ]);
-
-                // Credit each chart account in line items
-                foreach ($validated['line_items'] as $item) {
-                    \App\Models\GlTransaction::create([
-                        'chart_account_id' => $item['chart_account_id'],
-                        'customer_id' => $customerId,
-                        'amount' => $item['amount'],
-                        'nature' => 'credit',
-                        'transaction_id' => $receipt->id,
-                        'transaction_type' => 'receipt',
-                        'date' => $validated['date'],
-                        'description' => $item['description'] ?? ('Loan Fee for Loan #' . ($loan->loanNo ?? $loan->id)),
-                        'branch_id' => $branchId,
-                        'user_id' => $userId,
-                    ]);
-                }
+            }
 
             DB::commit();
             return redirect()->route('loans.list')->with('success', 'Receipt created successfully.');
@@ -332,7 +332,7 @@ class LoanController extends Controller
                     return '' . number_format($loan->amount_total, 2);
                 })
                 ->addColumn('interest_display', function ($loan) {
-                    return round($loan->interest,2) . '%';
+                    return round($loan->interest, 2) . '%';
                 })
                 ->addColumn('status_badge', function ($loan) {
                     $badgeClass = '';
@@ -389,12 +389,20 @@ class LoanController extends Controller
                         $actions .= '<a href="' . route('loans.show', $encodedId) . '" class="btn btn-sm btn-outline-info me-1" title="View"><i class="bx bx-show"></i></a>';
                     }
 
-                    // Edit action
+                    // Edit action (disallow for authorized and approved)
                     if (auth()->user()->can('edit loan')) {
-                        $editUrl = in_array($loan->status, ['applied', 'rejected'])
-                            ? route('loans.application.edit', $encodedId)
-                            : route('loans.edit', $encodedId);
-                        $actions .= '<a href="' . $editUrl . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
+                        if (!in_array($loan->status, ['authorized', 'approved'])) {
+                            $editUrl = in_array($loan->status, ['applied', 'rejected'])
+                                ? route('loans.application.edit', $encodedId)
+                                : route('loans.edit', $encodedId);
+                            $actions .= '<a href="' . $editUrl . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i></a>';
+                        }
+
+                        // Fix & Re-apply for rejected applications
+                        if ($loan->status === 'rejected') {
+                            $fixUrl = route('loans.application.edit', $encodedId);
+                            $actions .= '<a href="' . $fixUrl . '" class="btn btn-sm btn-outline-success me-1" title="Fix & Re-apply"><i class="bx bx-refresh"></i></a>';
+                        }
                     }
 
                     // Receipt action for applied loans
@@ -402,9 +410,11 @@ class LoanController extends Controller
                         $actions .= '<a href="' . route('accounting.loans.create-receipt', $encodedId) . '" class="btn btn-sm btn-outline-success me-1" title="Create Receipt"><i class="bx bx-receipt"></i></a>';
                     }
 
-                    // Delete action
+                    // Delete action (disallow for authorized and approved)
                     if (auth()->user()->can('delete loan')) {
-                        $actions .= '<button class="btn btn-sm btn-outline-danger delete-btn" data-id="' . $encodedId . '" data-name="' . e(optional($loan->customer)->name ?? 'Unknown') . '" title="Delete"><i class="bx bx-trash"></i></button>';
+                        if (!in_array($loan->status, ['authorized', 'approved'])) {
+                            $actions .= '<button class="btn btn-sm btn-outline-danger delete-btn" data-id="' . $encodedId . '" data-name="' . e(optional($loan->customer)->name ?? 'Unknown') . '" title="Delete"><i class="bx bx-trash"></i></button>';
+                        }
                     }
 
                     return '<div class="text-center">' . $actions . '</div>';
@@ -524,7 +534,9 @@ class LoanController extends Controller
             }
 
             $header = array_shift($data);
-            $header = array_map(function ($h) { return strtolower(trim((string) $h)); }, $header);
+            $header = array_map(function ($h) {
+                return strtolower(trim((string) $h));
+            }, $header);
 
             // Validate CSV header
             $expectedHeaders = [
@@ -578,7 +590,9 @@ class LoanController extends Controller
                 foreach ($data as $rowIndex => $row) {
                     try {
                         // Normalize row to header length
-                        $row = array_map(function ($v) { return is_string($v) ? trim($v) : $v; }, $row);
+                        $row = array_map(function ($v) {
+                            return is_string($v) ? trim($v) : $v;
+                        }, $row);
                         $row = array_pad($row, count($header), '');
                         $rowData = array_combine($header, $row);
                         \Log::info('Processing row', ['row' => $rowIndex + 2, 'data' => $rowData]);
@@ -790,7 +804,7 @@ class LoanController extends Controller
                 return ['error' => "Row $rowNumber: Invalid date_applied (future date)"];
             }
 
-            $validCycles = ['daily','weekly','monthly','quarterly','semi_annually','annually'];
+            $validCycles = ['daily', 'weekly', 'monthly', 'quarterly', 'semi_annually', 'annually'];
             if (!in_array(strtolower($rowData['interest_cycle']), $validCycles, true)) {
                 return ['error' => "Row $rowNumber: Invalid interest_cycle"];
             }
@@ -803,18 +817,18 @@ class LoanController extends Controller
                 return ['error' => "Row $rowNumber: Invalid group_id"];
             }
 
-                            return [
-                    'customer_id' => $customer->id,
-                    'customer_no' => $rowData['customer_no'],
-                    'amount' => (float) $rowData['amount'],
-                    'period' => (int) $rowData['period'],
-                    'interest' => (float) $rowData['interest'],
-                    'date_applied' => $parsedDate,
-                    'interest_cycle' => strtolower($rowData['interest_cycle']),
-                    'loan_officer' => (int) $rowData['loan_officer'],
-                    'group_id' => (int) $rowData['group_id'],
-                    'sector' => $rowData['sector'],
-                ];
+            return [
+                'customer_id' => $customer->id,
+                'customer_no' => $rowData['customer_no'],
+                'amount' => (float) $rowData['amount'],
+                'period' => (int) $rowData['period'],
+                'interest' => (float) $rowData['interest'],
+                'date_applied' => $parsedDate,
+                'interest_cycle' => strtolower($rowData['interest_cycle']),
+                'loan_officer' => (int) $rowData['loan_officer'],
+                'group_id' => (int) $rowData['group_id'],
+                'sector' => $rowData['sector'],
+            ];
         } catch (\Exception $e) {
             return ['error' => "Row $rowNumber: Validation error - " . $e->getMessage()];
         }
@@ -838,12 +852,12 @@ class LoanController extends Controller
                 $line = $lines[$i];
                 // naive timestamp parse: look for today's date or any timestamp after $since
                 $isRelevantText = (stripos($line, 'Import started') !== false) ||
-                                  (stripos($line, 'Processing row') !== false) ||
-                                  (stripos($line, 'Row validation failed') !== false) ||
-                                  (stripos($line, 'Product limits validation failed') !== false) ||
-                                  (stripos($line, 'Collateral validation failed') !== false) ||
-                                  (stripos($line, 'Existing loan check failed') !== false) ||
-                                  (stripos($line, 'Error creating loan') !== false);
+                    (stripos($line, 'Processing row') !== false) ||
+                    (stripos($line, 'Row validation failed') !== false) ||
+                    (stripos($line, 'Product limits validation failed') !== false) ||
+                    (stripos($line, 'Collateral validation failed') !== false) ||
+                    (stripos($line, 'Existing loan check failed') !== false) ||
+                    (stripos($line, 'Error creating loan') !== false);
                 if ($isRelevantText) {
                     $matched[] = $line;
                 }
@@ -1395,14 +1409,14 @@ class LoanController extends Controller
 
     public function edit($encodedId)
     {
-    $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
-    if (empty($decoded)) {
-        abort(404, 'Invalid loan ID');
-    }
-    $loanId = $decoded[0];
-    $loan = Loan::findOrFail($loanId);
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            abort(404, 'Invalid loan ID');
+        }
+        $loanId = $decoded[0];
+        $loan = Loan::findOrFail($loanId);
         // Log::info("=== LOAN EDIT METHOD ===", ["encoded_id" => $encodedId, "loan_id" => $loan->id, "loan_data" => ["amount" => $loan->amount, "interest" => $loan->interest, "period" => $loan->period, "interest_cycle" => $loan->interest_cycle, "customer_id" => $loan->customer_id, "group_id" => $loan->group_id, "product_id" => $loan->product_id, "bank_account_id" => $loan->bank_account_id, "loan_officer_id" => $loan->loan_officer_id, "sector" => $loan->sector]]);
-     $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
+        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
 
         $interestCycles = [
             'daily' => 'Daily',
@@ -1439,7 +1453,7 @@ class LoanController extends Controller
 
     public function update(Request $request, $encodedId)
     {
-        
+
 
         \Log::info('LoanController@update reached');
         $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
@@ -1475,7 +1489,7 @@ class LoanController extends Controller
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         $this->validateProductLimits($validated, $product);
-        
+
         // ... rest of the method remains the same until notes creation ...
 
         $userId = auth()->id();
@@ -1526,7 +1540,7 @@ class LoanController extends Controller
                 if (\Schema::hasTable('journals')) {
                     $journals = \DB::table('journals')
                         ->where('reference_type', 'Loan Disbursement')
-                        ->where(function($query) use ($loanId) {
+                        ->where(function ($query) use ($loanId) {
                             $query->where('reference', $loanId);
                         })
                         ->get();
@@ -1536,7 +1550,7 @@ class LoanController extends Controller
                     }
                     \DB::table('journals')
                         ->where('reference_type', 'Loan Disbursement')
-                        ->where('reference',$loanId)
+                        ->where('reference', $loanId)
                         ->delete();
                 }
 
@@ -1848,16 +1862,18 @@ class LoanController extends Controller
     }
 
     // Loan Application Methods
-    public function applicationIndex()
+    public function applicationIndex(Request $request)
     {
         $branchId = auth()->user()->branch_id;
+        $status = $request->get('status', 'applied');
+
         $loanApplications = Loan::with('customer', 'product', 'branch', 'approvals')
             ->where('branch_id', $branchId)
-            ->where('status', 'applied')
+            ->where('status', $status)
             ->latest()
             ->paginate(10);
 
-        return view('loans.application.index', compact('loanApplications'));
+        return view('loans.application.index', compact('loanApplications', 'status'));
     }
 
     public function applicationCreate()
@@ -1866,7 +1882,7 @@ class LoanController extends Controller
         $customers = Customer::where('category', 'borrower')
             ->where('branch_id', $branchId)
             ->with('groups:id,name')
-            ->select('id','name','phone1','customerNo','branch_id')
+            ->select('id', 'name', 'phone1', 'customerNo', 'branch_id')
             ->orderBy('name')
             ->get();
         $groups = Group::where('branch_id', $branchId)->get();
@@ -1991,7 +2007,7 @@ class LoanController extends Controller
                 ? 'Loan application submitted successfully and awaiting approval.'
                 : 'Loan application created and disbursed successfully.';
 
-            return redirect()->route('loans.application.index')->with('success', $message);
+            return redirect()->route('loans.by-status', 'applied')->with('success', $message);
         } catch (\Throwable $th) {
             DB::rollBack();
             return back()->withErrors([
@@ -2043,14 +2059,14 @@ class LoanController extends Controller
     {
         $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
-            return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Loan application not found.']);
         }
 
         $loanApplication = Loan::findOrFail($decoded[0]);
 
         // Check if application can be edited
         if (!in_array($loanApplication->status, ['applied', 'rejected'])) {
-            return redirect()->route('loans.application.index')->withErrors(['Only applied or rejected applications can be edited.']);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Only applied or rejected applications can be edited.']);
         }
 
         $branchId = auth()->user()->branch_id;
@@ -2070,14 +2086,14 @@ class LoanController extends Controller
     {
         $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
-            return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Loan application not found.']);
         }
 
         $loanApplication = Loan::findOrFail($decoded[0]);
 
         // Check if application can be edited
         if (!in_array($loanApplication->status, ['applied', 'rejected'])) {
-            return redirect()->route('loans.application.index')->withErrors(['Only applied or rejected applications can be edited.']);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Only applied or rejected applications can be edited.']);
         }
 
         $validated = $request->validate([
@@ -2108,14 +2124,16 @@ class LoanController extends Controller
                 'sector' => $validated['sector'],
             ];
 
-            // If loan was rejected, change status back to applied
+            // If loan was rejected, change status back to applied and reset approvals
             if ($loanApplication->status === 'rejected') {
                 $updateData['status'] = 'applied';
+                // Remove any prior approvals so the workflow restarts cleanly
+                LoanApproval::where('loan_id', $loanApplication->id)->delete();
             }
 
             $loanApplication->update($updateData);
 
-            return redirect()->route('loans.application.index')->with('success', 'Loan application updated successfully.');
+            return redirect()->route('loans.by-status', 'applied')->with('success', 'Loan application updated successfully.');
         } catch (\Throwable $th) {
             return back()->withErrors([
                 'error' => 'Failed to update loan application: ' . $th->getMessage()
@@ -2433,7 +2451,7 @@ class LoanController extends Controller
     {
         $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
-            return redirect()->route('loans.application.index')->withErrors(['Loan application not found.']);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Loan application not found.']);
         }
 
         try {
@@ -2499,12 +2517,33 @@ class LoanController extends Controller
             'description' => $notes,
         ]);
 
+        $releaseFeeTotal = 0;
+        if ($product && $product->fees_ids) {
+            $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+            if (is_array($feeIds)) {
+                $releaseFees = \DB::table('fees')
+                    ->whereIn('id', $feeIds)
+                    ->where('deduction_criteria', 'charge_fee_on_release_date')
+                    ->where('status', 'active')
+                    ->get();
+                foreach ($releaseFees as $fee) {
+                    $feeAmount = (float) $fee->amount;
+                    $feeType = $fee->fee_type;
+                    $calculatedFee = $feeType === 'percentage'
+                        ? ((float) $loan->amount * (float) $feeAmount / 100)
+                        : (float) $feeAmount;
+                    $releaseFeeTotal += $calculatedFee;
+                }
+            }
+        }
+        $disbursementAmount = $loan->amount - $releaseFeeTotal;
+
         // Create GL Transactions
         GlTransaction::insert([
             [
                 'chart_account_id' => $bankAccount->chart_account_id,
                 'customer_id' => $loan->customer_id,
-                'amount' => $loan->amount,
+                'amount' => $disbursementAmount,
                 'nature' => 'credit',
                 'transaction_id' => $loan->id,
                 'transaction_type' => 'Loan Disbursement',
@@ -2597,7 +2636,7 @@ class LoanController extends Controller
         if ($branchId) {
             $customersQuery->where('branch_id', $branchId);
         }
-        $customers = $customersQuery->get(['id','name','customerNo','branch_id']);
+        $customers = $customersQuery->get(['id', 'name', 'customerNo', 'branch_id']);
 
         $fileName = 'loan_import_template.csv';
         $handle = fopen('php://output', 'w');

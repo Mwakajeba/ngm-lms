@@ -1,6 +1,6 @@
 @extends('layouts.main')
 
-@section('title', 'Loan Applications')
+@section('title', ucfirst($status) . ' Loan Applications')
 
 @section('content')
 <div class="page-wrapper">
@@ -8,17 +8,58 @@
         <x-breadcrumbs-with-icons :links="[
                 ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
                 ['label' => 'Loans', 'url' => route('loans.index'), 'icon' => 'bx bx-credit-card'],
-                ['label' => 'Loan Applications', 'url' => '#', 'icon' => 'bx bx-file-plus'],    
+                ['label' => ucfirst($status) . ' Applications', 'url' => '#', 'icon' => 'bx bx-file-plus'],    
             ]" />
 
-        @can('create loan')
         <div class="d-flex justify-content-between align-items-center mb-3">
             <h6 class="mb-0 text-uppercase">LOAN APPLICATIONS</h6>
-            <a href="{{ route('loans.application.create') }}" class="btn btn-primary">
-                <i class="bx bx-plus me-1"></i> Apply for Loan
-            </a>
+            @can('create loan')
+                @if(!in_array($status, ['checked', 'approved', 'authorized', 'rejected']))
+                <a href="{{ route('loans.application.create') }}" class="btn btn-primary">
+                    <i class="bx bx-plus me-1"></i> Apply for Loan
+                </a>
+                @endif
+            @endcan
         </div>
-        @endcan
+        
+        <!-- Status Navigation Tabs -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <ul class="nav nav-tabs" role="tablist">
+                    <li class="nav-item">
+                        <a class="nav-link {{ $status === 'applied' ? 'active' : '' }}" 
+                           href="{{ route('loans.by-status', ['status' => 'applied']) }}">
+                            Applied Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ $status === 'checked' ? 'active' : '' }}" 
+                           href="{{ route('loans.by-status', ['status' => 'checked']) }}">
+                            Checked Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ $status === 'approved' ? 'active' : '' }}" 
+                           href="{{ route('loans.by-status', ['status' => 'approved']) }}">
+                            Approved Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ $status === 'authorized' ? 'active' : '' }}" 
+                           href="{{ route('loans.by-status', ['status' => 'authorized']) }}">
+                            Authorized Applications
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ $status === 'rejected' ? 'active' : '' }}" 
+                           href="{{ route('loans.by-status', ['status' => 'rejected']) }}">
+                            Rejected Applications
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
         <hr />
 
         <div class="row">
@@ -110,16 +151,22 @@
                                                 @endcan
 
                                                 @can('edit loan')
-                                                @if($application->status === 'applied')
+                                                @if(in_array($application->status, ['applied', 'rejected']))
                                                 <a href="{{ route('loans.application.edit', Hashids::encode($application->id)) }}"
                                                     class="btn btn-sm btn-outline-warning"
                                                     title="Edit Application">Edit
                                                 </a>
+                                                @if($application->status === 'rejected')
+                                                <a href="{{ route('loans.application.edit', Hashids::encode($application->id)) }}"
+                                                    class="btn btn-sm btn-outline-primary"
+                                                    title="Fix issues and re-apply">Fix & Re-apply
+                                                </a>
+                                                @endif
                                                 @endif
                                                 @endcan
                                                 
                                                 @can('delete loan')
-                                                @if(!in_array($application->status, ['active', 'authorized']))
+                                                @if(!in_array($application->status, ['authorized', 'checked', 'approved']))
                                                 <button type="button"
                                                     class="btn btn-sm btn-outline-dark"
                                                     title="Delete Application"
@@ -131,16 +178,40 @@
                                             </div>
                                         </td>
                                     </tr>
+                                    @if($application->status === 'rejected')
+                                    <tr>
+                                        <td colspan="9">
+                                            @php
+                                                $rejection = optional($application->approvals)->where('action','rejected')->sortByDesc('approved_at')->first();
+                                            @endphp
+                                            @if($rejection && $rejection->comments)
+                                            <div class="alert alert-danger mb-0">
+                                                <i class="bx bx-error-circle me-2"></i>
+                                                <strong>Rejection Comment:</strong>
+                                                <span>{{ $rejection->comments }}</span>
+                                            </div>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                    @endif
                                     @empty
                                     <tr>
                                         <td colspan="9" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="bx bx-file-plus fs-1 mb-3"></i>
-                                                <h6>No Loan Applications Found</h6>
-                                                <p>Start by creating a new loan application.</p>
+                                                <h6>No {{ ucfirst($status) }} Applications Found</h6>
+                                                <p>
+                                                    @if($status === 'applied')
+                                                        Start by creating a new loan application.
+                                                    @else
+                                                        No applications found with {{ $status }} status.
+                                                    @endif
+                                                </p>
+                                                @if(!in_array($status, ['checked', 'approved', 'authorized', 'rejected']))
                                                 <a href="{{ route('loans.application.create') }}" class="btn btn-primary">
                                                     <i class="bx bx-plus me-1"></i> Apply for Loan
                                                 </a>
+                                                @endif
                                             </div>
                                         </td>
                                     </tr>
