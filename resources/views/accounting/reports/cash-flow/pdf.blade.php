@@ -289,26 +289,6 @@
         </div>
     </div>
 
-    <!-- Summary Section -->
-    <div class="summary-section">
-        <div class="summary-title">CASH FLOW SUMMARY</div>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <div class="summary-label">Opening Cash Balance</div>
-                <div class="summary-value">{{ number_format($cashFlowData['opening_balance'], 2) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Net Cash Flow</div>
-                <div class="summary-value {{ $cashFlowData['overall_total'] >= 0 ? 'positive' : 'negative' }}">
-                    {{ $cashFlowData['overall_total'] >= 0 ? '+' : '' }}{{ number_format($cashFlowData['overall_total'], 2) }}
-                </div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Closing Cash Balance</div>
-                <div class="summary-value">{{ number_format($cashFlowData['closing_balance'], 2) }}</div>
-            </div>
-        </div>
-    </div>
 
     <!-- Cash Flow by Category -->
     @if(count($cashFlowData['grouped_data']) > 0)
@@ -329,7 +309,6 @@
                     <th>Date</th>
                     <th>Account Details</th>
                     <th>Description</th>
-                    <th class="text-center">Nature</th>
                     <th class="text-end">Amount</th>
                     <th class="text-end">Cash Impact</th>
                 </tr>
@@ -343,11 +322,6 @@
                         <div class="account-code">{{ $transaction['account_code'] }}</div>
                     </td>
                     <td>{{ $transaction['description'] ?: 'No description provided' }}</td>
-                    <td class="text-center">
-                        <span class="nature-badge {{ $transaction['nature'] === 'credit' ? 'nature-credit' : 'nature-debit' }}">
-                            {{ ucfirst($transaction['nature']) }}
-                        </span>
-                    </td>
                     <td class="text-end">{{ number_format($transaction['amount'], 2) }}</td>
                     <td class="text-end {{ $transaction['impact'] >= 0 ? 'positive' : 'negative' }}">
                         {{ $transaction['impact'] >= 0 ? '+' : '' }}{{ number_format($transaction['impact'], 2) }}
@@ -357,7 +331,7 @@
             </tbody>
             <tfoot>
                 <tr class="total-row">
-                    <td colspan="4"><strong>Total for {{ $categoryName }}</strong></td>
+                    <td colspan="3"><strong>Total for {{ $categoryName }}</strong></td>
                     <td class="text-end">
                         <strong>
                             {{ number_format($cashFlowData['category_totals'][$categoryName]['credit_total'], 2) }} /

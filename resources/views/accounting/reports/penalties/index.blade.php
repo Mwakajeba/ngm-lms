@@ -192,7 +192,7 @@
                                                     </span>
                                                 </td>
                                                 <td class="text-end">{{ number_format($item->amount, 2) }}</td>
-                                                <td>{{ Str::limit($item->description, 30) }}</td>
+                                                <td>{{ $item->description }}</td>
                                                 <td>{{ $item->reference_id }}</td>
                                                 <td>{{ $item->transaction_type }}</td>
                                             </tr>

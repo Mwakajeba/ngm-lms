@@ -406,13 +406,18 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/bank-accounts/{encodedId}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Reconciliation
-    Route::resource('bank-reconciliation', BankReconciliationController::class);
+    // Use hash id for show/edit routes
+    Route::get('bank-reconciliation/{hash}', [BankReconciliationController::class, 'show'])->name('bank-reconciliation.show');
+    Route::get('bank-reconciliation/{hash}/edit', [BankReconciliationController::class, 'edit'])->name('bank-reconciliation.edit');
+    // Keep resource for other methods but avoid conflicting show/edit
+    Route::resource('bank-reconciliation', BankReconciliationController::class)->except(['show', 'edit']);
 
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
-    Route::post('/bank-reconciliation/{bankReconciliation}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
-    Route::post('/bank-reconciliation/{bankReconciliation}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
-    Route::post('/bank-reconciliation/{bankReconciliation}/complete', [BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
-    Route::post('/bank-reconciliation/{bankReconciliation}/update-book-balance', [BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
+    Route::post('/bank-reconciliation/{hash}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
+    Route::post('/bank-reconciliation/{hash}/unmatch-items', [BankReconciliationController::class, 'unmatchItems'])->name('bank-reconciliation.unmatch-items');
+    Route::post('/bank-reconciliation/{hash}/confirm-book-item', [BankReconciliationController::class, 'confirmBookItem'])->name('bank-reconciliation.confirm-book-item');
+    Route::post('/bank-reconciliation/{hash}/complete', [BankReconciliationController::class, 'completeReconciliation'])->name('bank-reconciliation.complete');
+    Route::post('/bank-reconciliation/{hash}/update-book-balance', [BankReconciliationController::class, 'updateBookBalance'])->name('bank-reconciliation.update-book-balance');
     Route::post('/bank-reconciliation/refresh-all', [BankReconciliationController::class, 'refreshAllReconciliations'])->name('bank-reconciliation.refresh-all');
 
     // Bill Purchases

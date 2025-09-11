@@ -212,69 +212,27 @@ class PenaltiesReportController extends Controller
         // Get penalties data
         $penaltiesData = $this->getPenaltiesData($startDate, $endDate, $branchId, $penaltyId, $penaltyType);
 
-        $spreadsheet = new Spreadsheet();
-        $sheet = $spreadsheet->getActiveSheet();
-
-        // Set headers
-        $sheet->setCellValue('A1', 'Penalties Report - GL Transactions');
-        $sheet->setCellValue('A2', 'Company: ' . $company->name);
-        $sheet->setCellValue('A3', 'Period: ' . $startDate . ' to ' . $endDate);
-        $sheet->setCellValue('A4', 'Generated: ' . now()->format('Y-m-d H:i:s'));
-
-        // Set column headers
-        $headers = ['#', 'Date', 'Penalty Name', 'Penalty Type', 'Chart Account', 'Account Code', 'Customer', 'Branch', 'Nature', 'Amount', 'Description', 'Reference ID', 'Transaction Type'];
-        $col = 'A';
-        foreach ($headers as $header) {
-            $sheet->setCellValue($col . '6', $header);
-            $col++;
+        // Get filter labels for display
+        $branchName = 'All Branches';
+        if ($branchId !== 'all') {
+            $branch = \App\Models\Branch::find($branchId);
+            $branchName = $branch ? $branch->name : 'Unknown Branch';
         }
 
-        // Add data
-        $row = 7;
-        foreach ($penaltiesData['data'] as $index => $item) {
-            $sheet->setCellValue('A' . $row, $index + 1);
-            $sheet->setCellValue('B' . $row, $item->date);
-            $sheet->setCellValue('C' . $row, $item->penalty_name);
-            $sheet->setCellValue('D' . $row, ucfirst($item->penalty_type));
-            $sheet->setCellValue('E' . $row, $item->chart_account_name);
-            $sheet->setCellValue('F' . $row, $item->account_code);
-            $sheet->setCellValue('G' . $row, $item->customer_name);
-            $sheet->setCellValue('H' . $row, $item->branch_name);
-            $sheet->setCellValue('I' . $row, ucfirst($item->nature));
-            $sheet->setCellValue('J' . $row, number_format($item->amount, 2));
-            $sheet->setCellValue('K' . $row, $item->description);
-            $sheet->setCellValue('L' . $row, $item->reference_id);
-            $sheet->setCellValue('M' . $row, $item->transaction_type);
-            $row++;
+        $penaltyName = 'All Penalties';
+        if ($penaltyId !== 'all') {
+            $penalty = \App\Models\Penalty::find($penaltyId);
+            $penaltyName = $penalty ? $penalty->name : 'Unknown Penalty';
         }
 
-        // Add summary
-        $row += 2;
-        $sheet->setCellValue('A' . $row, 'SUMMARY');
-        $sheet->setCellValue('B' . $row, 'Total Debit: ' . number_format($penaltiesData['summary']['total_debit'], 2));
-        $row++;
-        $sheet->setCellValue('B' . $row, 'Total Credit: ' . number_format($penaltiesData['summary']['total_credit'], 2));
-        $row++;
-        $sheet->setCellValue('B' . $row, 'Total Transactions: ' . $penaltiesData['summary']['total_transactions']);
-        $row++;
-        $sheet->setCellValue('B' . $row, 'Unique Penalties: ' . $penaltiesData['summary']['unique_penalties']);
-        $row++;
-        $sheet->setCellValue('B' . $row, 'Unique Customers: ' . $penaltiesData['summary']['unique_customers']);
-        $row++;
-        $sheet->setCellValue('B' . $row, 'Balance: ' . number_format($penaltiesData['summary']['balance'], 2));
-
-        // Auto-size columns
-        foreach (range('A', 'M') as $column) {
-            $sheet->getColumnDimension($column)->setAutoSize(true);
-        }
+        $penaltyTypeName = ucfirst($penaltyType);
 
         $filename = 'penalties_report_' . $startDate . '_to_' . $endDate . '.xlsx';
         
-        $writer = new Xlsx($spreadsheet);
-        $tempFile = tempnam(sys_get_temp_dir(), 'penalties_report');
-        $writer->save($tempFile);
-
-        return response()->download($tempFile, $filename)->deleteFileAfterSend(true);
+        return \Maatwebsite\Excel\Facades\Excel::download(
+            new \App\Exports\PenaltiesExport($penaltiesData, $startDate, $endDate, $penaltyName, $penaltyTypeName, $branchName), 
+            $filename
+        );
     }
 
     public function exportPdf(Request $request)
