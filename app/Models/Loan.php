@@ -52,15 +52,19 @@ class Loan extends Model
     {
         parent::boot();
 
+        // Ensure a provisional loanNo exists to satisfy NOT NULL before insert
         static::creating(function ($loan) {
-            // Namba ya mwanzo unayotaka kuanzia
+            if (empty($loan->loanNo)) {
+                $loan->loanNo = 'TMP-' . uniqid();
+            }
+        });
+
+        // Set loan number AFTER the record has an ID to avoid heavy queries/loops
+        static::created(function ($loan) {
             $startNumber = 1000000;
-
-            do {
-                $loanNumber = 'SF-' . ($startNumber + self::count());
-            } while (self::where('loanNo', $loanNumber)->exists());
-
-            $loan->loanNo = $loanNumber;
+            $loan->loanNo = 'SF-' . ($startNumber + (int) $loan->id);
+            // Save quietly to avoid triggering observers again
+            $loan->saveQuietly();
         });
     }
 

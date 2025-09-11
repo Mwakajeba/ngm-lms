@@ -1121,7 +1121,7 @@ class LoanController extends Controller
     public function create()
     {
         $customers = Customer::with('groups')->where('category', 'Borrower')->get();
-        info($customers);
+        // Removed heavy debug dump of customers to avoid timeouts
         $products = LoanProduct::all();
 
         $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
@@ -1865,7 +1865,9 @@ class LoanController extends Controller
         $branchId = auth()->user()->branch_id;
         $customers = Customer::where('category', 'borrower')
             ->where('branch_id', $branchId)
-            ->with('groups')
+            ->with('groups:id,name')
+            ->select('id','name','phone1','customerNo','branch_id')
+            ->orderBy('name')
             ->get();
         $groups = Group::where('branch_id', $branchId)->get();
         $products = LoanProduct::all();
@@ -1938,7 +1940,7 @@ class LoanController extends Controller
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
             ->where('status', '!=', 'rejected')
-            ->first();
+            ->exists();
         if ($existingLoan) {
             return back()->withErrors(['error' => 'Member already has a loan with the same product.']);
         }
