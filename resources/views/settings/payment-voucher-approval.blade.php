@@ -18,7 +18,7 @@
                 <div class="card">
                     <div class="card-body">
                         @can('manage payment voucher approval')
-                        <h4 class="card-title mb-4">Payment Voucher Approval Configuration</h4>
+                        <h4 class="card-title mb-4">Payment Voucher Approval - Simple Configuration</h4>
 
                         @if(session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -47,58 +47,7 @@
 
                             <div class="row">
                                 <!-- Approval Levels -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="approval_levels" class="form-label">Number of Approval Levels</label>
-                                    <select class="form-select" id="approval_levels" name="approval_levels" required>
-                                        <option value="">Select Levels</option>
-                                        <option value="1" {{ old('approval_levels', $settings->approval_levels ?? 2) == '1' ? 'selected' : '' }}>1 Level</option>
-                                        <option value="2" {{ old('approval_levels', $settings->approval_levels ?? 2) == '2' ? 'selected' : '' }}>2 Levels</option>
-                                        <option value="3" {{ old('approval_levels', $settings->approval_levels ?? 2) == '3' ? 'selected' : '' }}>3 Levels</option>
-                                        <option value="4" {{ old('approval_levels', $settings->approval_levels ?? 2) == '4' ? 'selected' : '' }}>4 Levels</option>
-                                        <option value="5" {{ old('approval_levels', $settings->approval_levels ?? 2) == '5' ? 'selected' : '' }}>5 Levels</option>
-                                    </select>
-                                </div>
 
-                                <!-- Auto Approval Limit -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="auto_approval_limit" class="form-label">Auto Approval Limit (TZS)</label>
-                                    <input type="number" class="form-control" id="auto_approval_limit" name="auto_approval_limit" value="{{ old('auto_approval_limit', $settings->auto_approval_limit ?? 100000) }}" step="1000" min="0" required>
-                                    <small class="form-text text-muted">Amount in Tanzania Shillings below which no approval is required</small>
-                                </div>
-
-                                <!-- Approval Thresholds -->
-                                <div class="col-12 mb-3">
-                                    <h6 class="mb-3">Approval Thresholds (TZS)</h6>
-                                    <div class="row">
-                                        <div class="col-md-4 mb-2">
-                                            <label for="approval_threshold_1" class="form-label">Level 1 Threshold (TZS)</label>
-                                            <input type="number" class="form-control" id="approval_threshold_1" name="approval_threshold_1" value="{{ old('approval_threshold_1', $settings->approval_threshold_1 ?? 500000) }}" step="1000" min="0" required>
-                                        </div>
-                                        <div class="col-md-4 mb-2">
-                                            <label for="approval_threshold_2" class="form-label">Level 2 Threshold (TZS)</label>
-                                            <input type="number" class="form-control" id="approval_threshold_2" name="approval_threshold_2" value="{{ old('approval_threshold_2', $settings->approval_threshold_2 ?? 2500000) }}" step="1000" min="0">
-                                        </div>
-                                        <div class="col-md-4 mb-2">
-                                            <label for="approval_threshold_3" class="form-label">Level 3 Threshold (TZS)</label>
-                                            <input type="number" class="form-control" id="approval_threshold_3" name="approval_threshold_3" value="{{ old('approval_threshold_3', $settings->approval_threshold_3 ?? 10000000) }}" step="1000" min="0">
-                                        </div>
-                                        <div class="col-md-4 mb-2">
-                                            <label for="approval_threshold_4" class="form-label">Level 4 Threshold (TZS)</label>
-                                            <input type="number" class="form-control" id="approval_threshold_4" name="approval_threshold_4" value="{{ old('approval_threshold_4', $settings->approval_threshold_4 ?? 50000000) }}" step="1000" min="0">
-                                        </div>
-                                        <div class="col-md-4 mb-2">
-                                            <label for="approval_threshold_5" class="form-label">Level 5 Threshold (TZS)</label>
-                                            <input type="number" class="form-control" id="approval_threshold_5" name="approval_threshold_5" value="{{ old('approval_threshold_5', $settings->approval_threshold_5 ?? 100000000) }}" step="1000" min="0">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Escalation Time -->
-                                <div class="col-md-6 mb-3">
-                                    <label for="escalation_time" class="form-label">Escalation Time (Hours)</label>
-                                    <input type="number" class="form-control" id="escalation_time" name="escalation_time" value="{{ old('escalation_time', $settings->escalation_time ?? 24) }}" min="1" max="72" required>
-                                    <small class="form-text text-muted">Time before approval is escalated to next level</small>
-                                </div>
 
                                 <!-- Require Approval for All -->
                                 <div class="col-md-6 mb-3">
@@ -111,9 +60,36 @@
                                     </div>
                                 </div>
                             </div>
+                                
+                            <!-- Direct posting note when approvals are disabled -->
+                            <div class="row" id="direct_post_note" style="display:none;">
+                                <div class="col-12">
+                                    <div class="alert alert-info">
+                                        <i class="bx bx-info-circle me-2"></i>
+                                        All payment vouchers will be saved directly to GL transactions. No approvals will be required.
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Approval Configuration (visible only if require_approval_for_all is checked) -->
+                            <div id="approval_config">
+                            <div class="row">
+                                <div class="col-md-6 mb-3" id="levels_block">
+                                    <label for="approval_levels" class="form-label">Number of Approval Levels</label>
+                                    <select class="form-select" id="approval_levels" name="approval_levels">
+                                        <option value="">Select Levels</option>
+                                        <option value="1" {{ old('approval_levels', $settings->approval_levels ?? 2) == '1' ? 'selected' : '' }}>1 Level</option>
+                                        <option value="2" {{ old('approval_levels', $settings->approval_levels ?? 2) == '2' ? 'selected' : '' }}>2 Levels</option>
+                                        <option value="3" {{ old('approval_levels', $settings->approval_levels ?? 2) == '3' ? 'selected' : '' }}>3 Levels</option>
+                                        <option value="4" {{ old('approval_levels', $settings->approval_levels ?? 2) == '4' ? 'selected' : '' }}>4 Levels</option>
+                                        <option value="5" {{ old('approval_levels', $settings->approval_levels ?? 2) == '5' ? 'selected' : '' }}>5 Levels</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
 
                             <!-- Approval Assignments -->
-                            <div class="row mt-4">
+                            <div class="row mt-4" id="assignments_block">
                                 <div class="col-12">
                                     <h6 class="mb-3">Approval Assignments</h6>
                                     <p class="text-muted">Assign roles or specific users to each approval level</p>
@@ -137,14 +113,14 @@
                                                     <select class="form-select" id="level1_approvers" name="level1_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, old('level1_approvers', $settings->level1_approvers ?? ['role_manager'])) ? 'selected' : '' }}>
+                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, (array) old('level1_approvers', is_array($settings->level1_approvers ?? null) ? $settings->level1_approvers : [])) ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
                                                         @endif
                                                         @if(isset($users))
                                                             @foreach($users as $user)
-                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, old('level1_approvers', $settings->level1_approvers ?? [])) ? 'selected' : '' }}>
+                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, (array) old('level1_approvers', is_array($settings->level1_approvers ?? null) ? $settings->level1_approvers : [])) ? 'selected' : '' }}>
                                                                     {{ $user->name }} ({{ $user->email }})
                                                                 </option>
                                                             @endforeach
@@ -175,7 +151,7 @@
                                                     <select class="form-select" id="level2_approvers" name="level2_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, old('level2_approvers', $settings->level2_approvers ?? ['role_admin'])) ? 'selected' : '' }}>
+                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, (array) old('level2_approvers', is_array($settings->level2_approvers ?? null) ? $settings->level2_approvers : [])) ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
@@ -309,7 +285,7 @@
                                     </div>
                                 </div>
                             </div>
-                            </div>
+                            </div> <!-- /#approval_config -->
 
                             <div class="row mt-4">
                                 <div class="col-12">
@@ -350,8 +326,26 @@
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const approvalLevelsSelect = document.getElementById('approval_levels');
+    const requireAllCheckbox = document.getElementById('require_approval_for_all');
+    const approvalConfig = document.getElementById('approval_config');
+    const directPostNote = document.getElementById('direct_post_note');
+    const levelsBlock = document.getElementById('levels_block');
+    const assignmentsBlock = document.getElementById('assignments_block');
     const approvalCards = document.querySelectorAll('[id^="level"]');
     
+    function toggleApprovalConfig() {
+        const enabled = requireAllCheckbox.checked;
+        approvalConfig.style.display = enabled ? 'block' : 'none';
+        directPostNote.style.display = enabled ? 'none' : 'block';
+        // Enable/disable inputs inside config
+        approvalConfig.querySelectorAll('input, select, textarea').forEach(el => {
+            el.disabled = !enabled;
+        });
+        // Explicitly hide/show blocks
+        if (levelsBlock) levelsBlock.style.display = enabled ? 'block' : 'none';
+        if (assignmentsBlock) assignmentsBlock.style.display = enabled ? 'block' : 'none';
+    }
+
     function toggleApprovalLevels() {
         const selectedLevels = parseInt(approvalLevelsSelect.value);
         
@@ -369,12 +363,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Initial call
+    toggleApprovalConfig();
     toggleApprovalLevels();
     
     // Listen for changes
+    requireAllCheckbox.addEventListener('change', toggleApprovalConfig);
     approvalLevelsSelect.addEventListener('change', toggleApprovalLevels);
     
     // Dynamic approver loading based on approval type
+    @php
+        $rolesNames = isset($roles) ? $roles->pluck('name')->values() : collect();
+        $usersArr = isset($users) ? $users->map(function($u){ return ['id'=>$u->id,'name'=>$u->name,'email'=>$u->email]; })->values() : collect();
+    @endphp
+    const rolesData = @json($rolesNames);
+    const usersData = @json($usersArr);
     const approvalTypeSelects = document.querySelectorAll('[id$="_approval_type"]');
     const approverSelects = document.querySelectorAll('[id$="_approvers"]');
     
@@ -386,25 +388,19 @@ document.addEventListener('DOMContentLoaded', function() {
         approverSelect.innerHTML = '';
         
         if (selectedType === 'role') {
-            // Add role options
-            @if(isset($roles))
-                @foreach($roles as $role)
-                    const roleOption = document.createElement('option');
-                    roleOption.value = 'role_{{ $role->name }}';
-                    roleOption.textContent = '{{ ucfirst($role->name) }} (Role)';
-                    approverSelect.appendChild(roleOption);
-                @endforeach
-            @endif
+            rolesData.forEach(function(name){
+                let opt = document.createElement('option');
+                opt.value = 'role_' + name;
+                opt.textContent = (name.charAt(0).toUpperCase() + name.slice(1)) + ' (Role)';
+                approverSelect.appendChild(opt);
+            });
         } else if (selectedType === 'user') {
-            // Add user options
-            @if(isset($users))
-                @foreach($users as $user)
-                    const userOption = document.createElement('option');
-                    userOption.value = 'user_{{ $user->id }}';
-                    userOption.textContent = '{{ $user->name }} ({{ $user->email }})';
-                    approverSelect.appendChild(userOption);
-                @endforeach
-            @endif
+            usersData.forEach(function(u){
+                let opt = document.createElement('option');
+                opt.value = 'user_' + u.id;
+                opt.textContent = u.name + ' (' + (u.email || '') + ')';
+                approverSelect.appendChild(opt);
+            });
         }
     }
     

@@ -155,86 +155,86 @@
                         
                         <!-- Loading Overlay -->
                         <div id="tableLoadingOverlay" class="position-relative">
-                            <div class="table-responsive">
+                        <div class="table-responsive">
                                 <table id="doubleEntriesTable" class="table table-bordered table-striped nowrap">
-                                    <thead class="table-light">
-                                        <tr>
-                                            <th>Date</th>
-                                            <th>Reference</th>
-                                            <th>Description</th>
-                                            <th>Type</th>
-                                            <th class="text-end">Debit</th>
-                                            <th class="text-end">Credit</th>
-                                            <th class="text-end">Running Balance</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        @forelse($transactions as $transactionData)
-                                        @php $transaction = $transactionData['transaction']; @endphp
-                                        <tr>
-                                            <td>{{ $transaction->date ? $transaction->date->format('d-m-Y') : 'N/A' }}</td>
-                                            <td>
-                                                @if($transaction->journal)
-                                                    <a href="{{ route('accounting.journals.show', $transaction->journal) }}" class="text-decoration-none">
-                                                        {{ $transaction->journal->reference }}
-                                                    </a>
-                                                @elseif($transaction->paymentVoucher)
-                                                    <a href="{{ route('accounting.payment-vouchers.show', $transaction->paymentVoucher) }}" class="text-decoration-none">
-                                                        {{ $transaction->paymentVoucher->reference }}
-                                                    </a>
-                                                @elseif($transaction->bill)
-                                                    <a href="{{ route('accounting.bill-purchases.show', $transaction->bill) }}" class="text-decoration-none">
-                                                        {{ $transaction->bill->reference }}
-                                                    </a>
-                                                @elseif($transaction->receipt)
-                                                    <a href="{{ route('accounting.receipt-vouchers.show', $transaction->receipt) }}" class="text-decoration-none">
-                                                        {{ $transaction->receipt->reference }}
-                                                    </a>
-                                                @else
-                                                    {{ $transaction->transaction_id }}
-                                                @endif
-                                            </td>
-                                            <td>{{ Str::limit($transaction->description, 50) }}</td>
-                                            <td>
-                                                <span class="badge bg-{{ $transaction->transaction_type == 'journal' ? 'primary' : ($transaction->transaction_type == 'payment' ? 'success' : ($transaction->transaction_type == 'receipt' ? 'info' : 'warning')) }}">
-                                                    {{ ucfirst($transaction->transaction_type) }}
-                                                </span>
-                                            </td>
-                                            <td class="text-end">
-                                                @if($transactionData['debit_amount'] > 0)
-                                                    <a href="{{ route('accounting.transactions.details', Hashids::encode($transaction->id), $transaction->transaction_type) }}" 
-                                                       class="text-decoration-none fw-bold text-success">
-                                                        {{ number_format($transactionData['debit_amount'], 2) }}
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-end">
-                                                @if($transactionData['credit_amount'] > 0)
-                                                    <a href="{{ route('accounting.transactions.details', Hashids::encode($transaction->id), $transaction->transaction_type) }}" 
-                                                       class="text-decoration-none fw-bold text-danger">
-                                                        {{ number_format($transactionData['credit_amount'], 2) }}
-                                                    </a>
-                                                @else
-                                                    <span class="text-muted">-</span>
-                                                @endif
-                                            </td>
-                                            <td class="text-end">
-                                                <span class="fw-bold {{ $transactionData['running_balance'] >= 0 ? 'text-success' : 'text-danger' }}">
-                                                    {{ number_format($transactionData['running_balance'], 2) }}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                        @empty
-                                        <tr>
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Date</th>
+                                        <th>Reference</th>
+                                        <th>Description</th>
+                                        <th>Type</th>
+                                        <th class="text-end">Debit</th>
+                                        <th class="text-end">Credit</th>
+                                        <th class="text-end">Running Balance</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @forelse($transactions as $transactionData)
+                                    @php $transaction = $transactionData['transaction']; @endphp
+                                    <tr>
+                                        <td>{{ $transaction->date ? $transaction->date->format('d-m-Y') : 'N/A' }}</td>
+                                        <td>
+                                            @if($transaction->journal)
+                                                <a href="{{ route('accounting.journals.show', $transaction->journal) }}" class="text-decoration-none">
+                                                    {{ $transaction->journal->reference }}
+                                                </a>
+                                            @elseif($transaction->paymentVoucher)
+                                                <a href="{{ route('accounting.payment-vouchers.show', $transaction->paymentVoucher) }}" class="text-decoration-none">
+                                                    {{ $transaction->paymentVoucher->reference }}
+                                                </a>
+                                            @elseif($transaction->bill)
+                                                <a href="{{ route('accounting.bill-purchases.show', $transaction->bill) }}" class="text-decoration-none">
+                                                    {{ $transaction->bill->reference }}
+                                                </a>
+                                            @elseif($transaction->receipt)
+                                                <a href="{{ route('accounting.receipt-vouchers.show', $transaction->receipt) }}" class="text-decoration-none">
+                                                    {{ $transaction->receipt->reference }}
+                                                </a>
+                                            @else
+                                                {{ $transaction->transaction_id }}
+                                            @endif
+                                        </td>
+                                        <td>{{ Str::limit($transaction->description, 50) }}</td>
+                                        <td>
+                                            <span class="badge bg-{{ $transaction->transaction_type == 'journal' ? 'primary' : ($transaction->transaction_type == 'payment' ? 'success' : ($transaction->transaction_type == 'receipt' ? 'info' : 'warning')) }}">
+                                                {{ ucfirst($transaction->transaction_type) }}
+                                            </span>
+                                        </td>
+                                        <td class="text-end">
+                                            @if($transactionData['debit_amount'] > 0)
+                                                <a href="{{ route('accounting.transactions.details', Hashids::encode($transaction->id), $transaction->transaction_type) }}" 
+                                                   class="text-decoration-none fw-bold text-success">
+                                                    {{ number_format($transactionData['debit_amount'], 2) }}
+                                                </a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            @if($transactionData['credit_amount'] > 0)
+                                                <a href="{{ route('accounting.transactions.details', Hashids::encode($transaction->id), $transaction->transaction_type) }}" 
+                                                   class="text-decoration-none fw-bold text-danger">
+                                                    {{ number_format($transactionData['credit_amount'], 2) }}
+                                                </a>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td class="text-end">
+                                            <span class="fw-bold {{ $transactionData['running_balance'] >= 0 ? 'text-success' : 'text-danger' }}">
+                                                {{ number_format($transactionData['running_balance'], 2) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                    @empty
+                                    <tr>
                                             <td colspan="7" class="text-center text-muted py-4">
-                                                <i class="bx bx-info-circle me-2"></i>No transactions found for this account
-                                            </td>
-                                        </tr>
-                                        @endforelse
-                                    </tbody>
-                                </table>
+                                            <i class="bx bx-info-circle me-2"></i>No transactions found for this account
+                                        </td>
+                                    </tr>
+                                    @endforelse
+                                </tbody>
+                            </table>
                             </div>
                         </div>
                     </div>
@@ -417,51 +417,51 @@ $(document).ready(function() {
     // Initialize DataTable for Double Entries
     function initializeTable() {
         table = $('#doubleEntriesTable').DataTable({
-            responsive: true,
-            pageLength: 25,
-            lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+        responsive: true,
+        pageLength: 25,
+        lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
             order: [[0, 'desc']], // Sort by date descending (newest first)
-            columnDefs: [
-                {
-                    targets: [4, 5, 6], // Debit, Credit, Running Balance columns
-                    className: 'text-end'
-                },
-                {
-                    targets: [3], // Type column
-                    orderable: true,
-                    searchable: true
+        columnDefs: [
+            {
+                targets: [4, 5, 6], // Debit, Credit, Running Balance columns
+                className: 'text-end'
+            },
+            {
+                targets: [3], // Type column
+                orderable: true,
+                searchable: true
                 },
                 {
                     targets: [0, 1, 2], // Priority columns for responsive
                     responsivePriority: 1
-                }
-            ],
-            dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
-                 '<"row"<"col-sm-12"tr>>' +
-                 '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
-            language: {
+            }
+        ],
+        dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>' +
+             '<"row"<"col-sm-12"tr>>' +
+             '<"row"<"col-sm-12 col-md-5"i><"col-sm-12 col-md-7"p>>',
+        language: {
                 search: "",
                 searchPlaceholder: "Search transactions...",
-                lengthMenu: "Show _MENU_ transactions per page",
-                info: "Showing _START_ to _END_ of _TOTAL_ transactions",
+            lengthMenu: "Show _MENU_ transactions per page",
+            info: "Showing _START_ to _END_ of _TOTAL_ transactions",
                 infoEmpty: "Showing 0 to 0 of 0 transactions",
                 infoFiltered: "(filtered from _MAX_ total transactions)",
                 emptyTable: "No transactions found for this account",
                 zeroRecords: "No matching transactions found",
                 processing: '<div class="loading-spinner"><div class="spinner-border-custom"></div><div>Loading transactions...</div></div>',
-                paginate: {
-                    first: "First",
-                    last: "Last",
-                    next: "Next",
-                    previous: "Previous"
-                }
-            },
-            initComplete: function() {
-                // Add custom filters
-                this.api().columns().every(function() {
-                    var column = this;
-                    var title = column.header().textContent;
-                    
+            paginate: {
+                first: "First",
+                last: "Last",
+                next: "Next",
+                previous: "Previous"
+            }
+        },
+        initComplete: function() {
+            // Add custom filters
+            this.api().columns().every(function() {
+                var column = this;
+                var title = column.header().textContent;
+                
                     
                 });
             },
@@ -600,7 +600,7 @@ $(document).ready(function() {
         e.preventDefault();
         var href = $(this).attr('href');
         
-        // Show loading state
+    // Show loading state
         // Swal.fire({
         //     title: 'Loading...',
         //     text: 'Loading transaction details',
@@ -638,12 +638,12 @@ function exportDoubleEntries() {
     btn.disabled = true;
     
     setTimeout(() => {
-        var table = $('#doubleEntriesTable').DataTable();
-        var data = table.data().toArray();
-        
-        // Create CSV content
-        var csv = 'Date,Reference,Description,Type,Debit,Credit,Running Balance\n';
-        data.forEach(function(row) {
+    var table = $('#doubleEntriesTable').DataTable();
+    var data = table.data().toArray();
+    
+    // Create CSV content
+    var csv = 'Date,Reference,Description,Type,Debit,Credit,Running Balance\n';
+    data.forEach(function(row) {
             // Clean the data for CSV export
             var cleanRow = row.map(function(cell) {
                 // Remove HTML tags and clean up the content
@@ -659,9 +659,9 @@ function exportDoubleEntries() {
                 return cleanCell;
             });
             csv += cleanRow.join(',') + '\n';
-        });
-        
-        // Download CSV file
+    });
+    
+    // Download CSV file
         var blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
         var link = document.createElement('a');
         var url = URL.createObjectURL(blob);
@@ -697,7 +697,7 @@ function printDoubleEntries() {
     btn.disabled = true;
     
     setTimeout(() => {
-        var table = $('#doubleEntriesTable').DataTable();
+    var table = $('#doubleEntriesTable').DataTable();
         var originalPageLength = table.page.len();
         
         // Show all records for printing

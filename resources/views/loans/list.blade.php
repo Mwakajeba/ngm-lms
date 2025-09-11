@@ -79,6 +79,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         @can('create loan')
                         <div class="d-flex justify-content-between align-items-center mb-4">
                             <h6 class="card-title mb-0">{{ $pageTitle ?? 'Loans List' }}</h6>
+                            @if(!isset($status) || !in_array($status, ['checked', 'approved', 'authorized', 'rejected']))
                             <div class="d-flex gap-2">
                                 <button class="btn btn-outline-success" data-bs-toggle="modal" data-bs-target="#importModal">
                                     <i class="bx bx-import"></i> Import Loans
@@ -93,6 +94,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                 </a>
                                 @endif
                             </div>
+                            @endif
                         </div>
                         @endcan
 
