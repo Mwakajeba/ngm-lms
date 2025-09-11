@@ -113,8 +113,10 @@ class PaymentVoucherController extends Controller
                     }
                     
                     if ($payment->reference_type === 'manual') {
+                        $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', auth()->user()->company_id)->first();
+                        $approvalsDisabled = $settings && !$settings->require_approval_for_all;
                         // Edit action - only if not approved
-                        if (auth()->user()->can('edit payment voucher') && !$payment->isFullyApproved()) {
+                        if (auth()->user()->can('edit payment voucher') && (!$payment->isFullyApproved() || $approvalsDisabled)) {
                             $actions .= '<a href="' . route('accounting.payment-vouchers.edit', $payment->hash_id) . '" 
                                             class="btn btn-sm btn-outline-info me-1" 
                                             data-bs-toggle="tooltip" 
@@ -122,7 +124,7 @@ class PaymentVoucherController extends Controller
                                             title="Edit payment voucher">
                                             <i class="bx bx-edit"></i>
                                         </a>';
-                        } elseif (auth()->user()->can('edit payment voucher') && $payment->isFullyApproved()) {
+                        } elseif (auth()->user()->can('edit payment voucher') && $payment->isFullyApproved() && !$approvalsDisabled) {
                             $actions .= '<button type="button" 
                                             class="btn btn-sm btn-outline-secondary" 
                                             data-bs-toggle="tooltip" 
@@ -134,7 +136,7 @@ class PaymentVoucherController extends Controller
                         }
                         
                         // Delete action - only if not approved
-                        if (auth()->user()->can('delete payment voucher') && !$payment->isFullyApproved()) {
+                        if (auth()->user()->can('delete payment voucher') && (!$payment->isFullyApproved() || $approvalsDisabled)) {
                             $actions .= '<button type="button" 
                                             class="btn btn-sm btn-outline-danger delete-payment-btn"
                                             data-bs-toggle="tooltip" 
@@ -144,7 +146,7 @@ class PaymentVoucherController extends Controller
                                             data-payment-reference="' . e($payment->reference) . '">
                                             <i class="bx bx-trash"></i>
                                         </button>';
-                        } elseif (auth()->user()->can('delete payment voucher') && $payment->isFullyApproved()) {
+                        } elseif (auth()->user()->can('delete payment voucher') && $payment->isFullyApproved() && !$approvalsDisabled) {
                             $actions .= '<button type="button" 
                                             class="btn btn-sm btn-outline-secondary" 
                                             data-bs-toggle="tooltip" 
@@ -287,7 +289,7 @@ class PaymentVoucherController extends Controller
                     'approved_at' => null,
                 ]);
 
-                // Initialize approval workflow
+                // Initialize approval workflow (may auto-approve depending on settings)
                 $payment->initializeApprovalWorkflow();
 
                 // Create payment items
@@ -305,43 +307,50 @@ class PaymentVoucherController extends Controller
 
                 PaymentItem::insert($paymentItems);
 
-                // Create GL transactions
-                $bankAccount = BankAccount::find($request->bank_account_id);
+                // Post to GL only if payment has been approved (either approvals disabled or auto-approved)
+                $payment->refresh();
+                if ($payment->approved) {
+                    $bankAccount = BankAccount::find($request->bank_account_id);
 
-                // Credit bank account
-                GlTransaction::create([
-                    'chart_account_id' => $bankAccount->chart_account_id,
-                    'customer_id' => $request->customer_id,
-                    'supplier_id' => $request->supplier_id,
-                    'amount' => $totalAmount,
-                    'nature' => 'credit',
-                    'transaction_id' => $payment->id,
-                    'transaction_type' => 'payment',
-                    'date' => $request->date,
-                    'description' => $request->description ?: "Payment voucher {$payment->reference}",
-                    'branch_id' => $user->branch_id,
-                    'user_id' => $user->id,
-                ]);
-
-                // Debit each chart account
-                foreach ($request->line_items as $lineItem) {
+                    // Credit bank account
                     GlTransaction::create([
-                        'chart_account_id' => $lineItem['chart_account_id'],
+                        'chart_account_id' => $bankAccount->chart_account_id,
                         'customer_id' => $request->customer_id,
                         'supplier_id' => $request->supplier_id,
-                        'amount' => $lineItem['amount'],
-                        'nature' => 'debit',
+                        'amount' => $totalAmount,
+                        'nature' => 'credit',
                         'transaction_id' => $payment->id,
                         'transaction_type' => 'payment',
                         'date' => $request->date,
-                        'description' => $lineItem['description'] ?: "Payment voucher {$payment->reference}",
+                        'description' => $request->description ?: "Payment voucher {$payment->reference}",
                         'branch_id' => $user->branch_id,
                         'user_id' => $user->id,
                     ]);
+
+                    // Debit each chart account
+                    foreach ($request->line_items as $lineItem) {
+                        GlTransaction::create([
+                            'chart_account_id' => $lineItem['chart_account_id'],
+                            'customer_id' => $request->customer_id,
+                            'supplier_id' => $request->supplier_id,
+                            'amount' => $lineItem['amount'],
+                            'nature' => 'debit',
+                            'transaction_id' => $payment->id,
+                            'transaction_type' => 'payment',
+                            'date' => $request->date,
+                            'description' => $lineItem['description'] ?: "Payment voucher {$payment->reference}",
+                            'branch_id' => $user->branch_id,
+                            'user_id' => $user->id,
+                        ]);
+                    }
+
+                    return redirect()->route('accounting.payment-vouchers.show', $payment)
+                        ->with('success', 'Payment voucher created and posted to GL successfully.');
                 }
 
+                // If not yet approved, inform user it's awaiting approval
                 return redirect()->route('accounting.payment-vouchers.show', $payment)
-                    ->with('success', 'Payment voucher created successfully.');
+                    ->with('success', 'Payment voucher created and is awaiting approval. GL posting will occur after final approval.');
             });
         } catch (\Exception $e) {
             return redirect()->back()
@@ -747,6 +756,52 @@ class PaymentVoucherController extends Controller
                         'approved_by' => $user->id,
                         'approved_at' => now(),
                     ]);
+
+                    // Post to GL if not already posted
+                    $alreadyPosted = \App\Models\GlTransaction::where('transaction_type', 'payment')
+                        ->where('transaction_id', $paymentVoucher->id)
+                        ->exists();
+
+                    if (!$alreadyPosted) {
+                        $paymentVoucher->loadMissing(['bankAccount', 'paymentItems']);
+                        $bankAccount = $paymentVoucher->bankAccount;
+                        $date = $paymentVoucher->date;
+                        $description = $paymentVoucher->description ?: ("Payment voucher {$paymentVoucher->reference}");
+                        $branchId = $paymentVoucher->branch_id;
+                        $userId = $user->id;
+
+                        // Credit bank account with total amount
+                        \App\Models\GlTransaction::create([
+                            'chart_account_id' => $bankAccount?->chart_account_id,
+                            'customer_id' => $paymentVoucher->customer_id,
+                            'supplier_id' => $paymentVoucher->supplier_id,
+                            'amount' => $paymentVoucher->amount,
+                            'nature' => 'credit',
+                            'transaction_id' => $paymentVoucher->id,
+                            'transaction_type' => 'payment',
+                            'date' => $date,
+                            'description' => $description,
+                            'branch_id' => $branchId,
+                            'user_id' => $userId,
+                        ]);
+
+                        // Debit each expense line
+                        foreach ($paymentVoucher->paymentItems as $item) {
+                            \App\Models\GlTransaction::create([
+                                'chart_account_id' => $item->chart_account_id,
+                                'customer_id' => $paymentVoucher->customer_id,
+                                'supplier_id' => $paymentVoucher->supplier_id,
+                                'amount' => $item->amount,
+                                'nature' => 'debit',
+                                'transaction_id' => $paymentVoucher->id,
+                                'transaction_type' => 'payment',
+                                'date' => $date,
+                                'description' => $item->description ?: $description,
+                                'branch_id' => $branchId,
+                                'user_id' => $userId,
+                            ]);
+                        }
+                    }
                 }
             });
 

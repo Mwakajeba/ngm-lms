@@ -686,18 +686,15 @@ class SettingsController extends Controller
      */
     public function updatePaymentVoucherApprovalSettings(Request $request)
     {
-        $request->validate([
-            'approval_levels' => 'required|integer|min:1|max:5',
-            'approval_threshold_1' => 'required|numeric|min:0',
-            'approval_threshold_2' => 'nullable|numeric|min:0',
-            'approval_threshold_3' => 'nullable|numeric|min:0',
-            'approval_threshold_4' => 'nullable|numeric|min:0',
-            'approval_threshold_5' => 'nullable|numeric|min:0',
-            'auto_approval_limit' => 'required|numeric|min:0',
-            'escalation_time' => 'required|integer|min:1|max:72',
+        $requireAll = $request->has('require_approval_for_all');
+
+        $baseRules = [
             'require_approval_for_all' => 'boolean',
-            
-            // Approval assignments validation
+        ];
+
+        $approvalRules = [
+            'approval_levels' => 'required|integer|min:1|max:5',
+            // Minimal required when approvals enabled
             'level1_approval_type' => 'required|in:role,user',
             'level1_approvers' => 'required|array|min:1',
             'level2_approval_type' => 'nullable|in:role,user',
@@ -708,7 +705,10 @@ class SettingsController extends Controller
             'level4_approvers' => 'nullable|array',
             'level5_approval_type' => 'nullable|in:role,user',
             'level5_approvers' => 'nullable|array',
-        ]);
+        ];
+
+        $rules = $requireAll ? array_merge($baseRules, $approvalRules) : $baseRules;
+        $request->validate($rules);
 
         try {
             $user = Auth::user();
@@ -726,42 +726,59 @@ class SettingsController extends Controller
                 ]
             );
 
-            // Update basic settings
-            $settings->update([
-                'approval_levels' => $request->approval_levels,
-                'auto_approval_limit' => $request->auto_approval_limit,
-                'approval_threshold_1' => $request->approval_threshold_1,
-                'approval_threshold_2' => $request->approval_threshold_2,
-                'approval_threshold_3' => $request->approval_threshold_3,
-                'approval_threshold_4' => $request->approval_threshold_4,
-                'approval_threshold_5' => $request->approval_threshold_5,
-                'escalation_time' => $request->escalation_time,
-                'require_approval_for_all' => $request->has('require_approval_for_all'),
-            ]);
+            // Update settings
+            $updateData = [
+                'require_approval_for_all' => $requireAll,
+            ];
+            if ($requireAll) {
+                // Only approval_levels is strictly needed; keep others as previously configured
+                $updateData = array_merge($updateData, [
+                    'approval_levels' => $request->approval_levels,
+                ]);
+            }
+            $settings->update($updateData);
 
             // Update approval assignments
-            for ($level = 1; $level <= 5; $level++) {
-                $approvalType = $request->{"level{$level}_approval_type"};
-                $approvers = $request->{"level{$level}_approvers"} ?? [];
+            if ($requireAll) {
+                for ($level = 1; $level <= 5; $level++) {
+                    $approvalType = $request->{"level{$level}_approval_type"};
+                    $approvers = $request->{"level{$level}_approvers"} ?? [];
 
-                if ($approvalType && !empty($approvers)) {
-                    // Process approver IDs - extract actual IDs from "user_X" or "role_X" format
-                    $processedApprovers = [];
-                    foreach ($approvers as $approver) {
-                        if (str_starts_with($approver, 'user_')) {
-                            $userId = (int) str_replace('user_', '', $approver);
-                            $processedApprovers[] = $userId;
-                        } elseif (str_starts_with($approver, 'role_')) {
-                            $roleName = str_replace('role_', '', $approver);
-                            $processedApprovers[] = $roleName;
+                    if ($approvalType && !empty($approvers)) {
+                        // Process approver IDs - extract actual IDs from "user_X" or "role_X" format
+                        $processedApprovers = [];
+                        foreach ($approvers as $approver) {
+                            if (str_starts_with($approver, 'user_')) {
+                                $userId = (int) str_replace('user_', '', $approver);
+                                $processedApprovers[] = $userId;
+                            } elseif (str_starts_with($approver, 'role_')) {
+                                $roleName = str_replace('role_', '', $approver);
+                                $processedApprovers[] = $roleName;
+                            }
                         }
-                    }
 
-                    $settings->update([
-                        "level{$level}_approval_type" => $approvalType,
-                        "level{$level}_approvers" => $processedApprovers,
-                    ]);
+                        $settings->update([
+                            "level{$level}_approval_type" => $approvalType,
+                            "level{$level}_approvers" => $processedApprovers,
+                        ]);
+                    }
                 }
+            } else {
+                // When approvals disabled, clear approval configuration to avoid confusion
+                // Keep level1_approval_type with a safe non-null default to satisfy existing schema
+                $settings->update([
+                    'approval_levels' => 0,
+                    'level1_approval_type' => 'role',
+                    'level1_approvers' => json_encode([]),
+                    'level2_approval_type' => null,
+                    'level2_approvers' => null,
+                    'level3_approval_type' => null,
+                    'level3_approvers' => null,
+                    'level4_approval_type' => null,
+                    'level4_approvers' => null,
+                    'level5_approval_type' => null,
+                    'level5_approvers' => null,
+                ]);
             }
 
             return redirect()->route('settings.payment-voucher-approval')->with('success', 'Payment voucher approval settings updated successfully!');

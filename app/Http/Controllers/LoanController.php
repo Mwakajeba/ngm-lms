@@ -245,7 +245,21 @@ class LoanController extends Controller
 
     public function index()
     {
-        return view('loans.index');
+        $user = auth()->user();
+        $branchId = $user->branch_id;
+
+        $stats = [
+            'active' => Loan::where('branch_id', $branchId)->where('status', 'active')->count(),
+            'applied' => Loan::where('branch_id', $branchId)->where('status', 'applied')->count(),
+            'checked' => Loan::where('branch_id', $branchId)->where('status', 'checked')->count(),
+            'approved' => Loan::where('branch_id', $branchId)->where('status', 'approved')->count(),
+            'authorized' => Loan::where('branch_id', $branchId)->where('status', 'authorized')->count(),
+            'defaulted' => Loan::where('branch_id', $branchId)->where('status', 'defaulted')->count(),
+            'rejected' => Loan::where('branch_id', $branchId)->where('status', 'rejected')->count(),
+            'written_off' => Loan::where('branch_id', $branchId)->where('status', 'written_off')->count(),
+        ];
+
+        return view('loans.index', compact('stats'));
     }
 
     public function listLoans()
