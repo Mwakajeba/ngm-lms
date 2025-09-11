@@ -143,8 +143,14 @@ class BankReconciliationController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show(BankReconciliation $bankReconciliation)
+    public function show($hash)
     {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return redirect()->back()->withErrors(['error' => 'Invalid reconciliation id.']);
+        }
+
+        $bankReconciliation = BankReconciliation::findOrFail($id);
         $bankReconciliation->load([
             'bankAccount.chartAccount',
             'user',
@@ -167,27 +173,40 @@ class BankReconciliationController extends Controller
             ->orderBy('transaction_date', 'asc')
             ->get();
 
-        // Get reconciled items (in balance) - only show recent ones
+        // Get reconciled pairs, show only the book entry side for clarity
         $reconciledItems = $bankReconciliation->reconciliationItems()
             ->where('is_reconciled', true)
+            ->where('is_book_entry', true)
             ->with(['matchedWithItem', 'reconciledBy'])
             ->orderBy('reconciled_at', 'desc')
-            ->limit(10) // Only show last 10 reconciled items
+            ->limit(10)
             ->get();
+
+        // Compute total reconciled PAIRS (count only book entries)
+        $totalReconciledCount = $bankReconciliation->reconciliationItems()
+            ->where('is_reconciled', true)
+            ->where('is_book_entry', true)
+            ->count();
 
         return view('accounting.bank-reconciliation.show', compact(
             'bankReconciliation',
             'unreconciledBankItems',
             'unreconciledBookItems',
-            'reconciledItems'
+            'reconciledItems',
+            'totalReconciledCount'
         ));
     }
 
     /**
      * Show the form for editing the specified resource.
      */
-    public function edit(BankReconciliation $bankReconciliation)
+    public function edit($hash)
     {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return redirect()->back()->withErrors(['error' => 'Invalid reconciliation id.']);
+        }
+        $bankReconciliation = BankReconciliation::findOrFail($id);
         $user = Auth::user();
 
         // Get bank accounts for the current company
@@ -345,8 +364,13 @@ class BankReconciliationController extends Controller
     /**
      * Match items.
      */
-    public function matchItems(Request $request, BankReconciliation $bankReconciliation)
+    public function matchItems(Request $request, $hash)
     {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return redirect()->back()->withErrors(['error' => 'Invalid reconciliation id.']);
+        }
+        $bankReconciliation = BankReconciliation::findOrFail($id);
         $validator = Validator::make($request->all(), [
             'bank_item_id' => 'required|exists:bank_reconciliation_items,id',
             'book_item_id' => 'required|exists:bank_reconciliation_items,id',
@@ -377,8 +401,13 @@ class BankReconciliationController extends Controller
     /**
      * Unmatch items.
      */
-    public function unmatchItems(Request $request, BankReconciliation $bankReconciliation)
+    public function unmatchItems(Request $request, $hash)
     {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return redirect()->back()->withErrors(['error' => 'Invalid reconciliation id.']);
+        }
+        $bankReconciliation = BankReconciliation::findOrFail($id);
         $validator = Validator::make($request->all(), [
             'item_id' => 'required|exists:bank_reconciliation_items,id',
         ]);
@@ -392,10 +421,34 @@ class BankReconciliationController extends Controller
             $item = BankReconciliationItem::find($request->item_id);
             $matchedItem = $item->getMatchedItem();
 
-            // Unmatch both items
-            $item->markAsUnreconciled();
-            if ($matchedItem) {
+            // Smart reverse rules:
+            // - If either side is a placeholder bank statement (created during confirmation), delete that placeholder
+            //   and only move the real system item back to unreconciled.
+            // - Otherwise (real bank + real book), unmatch both.
+            $isItemPlaceholderBank = $item->is_bank_statement_item
+                && is_null($item->gl_transaction_id)
+                && ((is_string($item->description) && str_starts_with($item->description, 'Statement confirmed'))
+                    || (is_string($item->notes) && str_contains($item->notes, 'Confirmed from physical statement')));
+
+            $isMatchPlaceholderBank = $matchedItem && $matchedItem->is_bank_statement_item
+                && is_null($matchedItem->gl_transaction_id)
+                && ((is_string($matchedItem->description) && str_starts_with($matchedItem->description, 'Statement confirmed'))
+                    || (is_string($matchedItem->notes) && str_contains($matchedItem->notes, 'Confirmed from physical statement')));
+
+            if ($isItemPlaceholderBank && $matchedItem) {
+                // Delete placeholder (clicked item), unmatch and set real item to unreconciled
                 $matchedItem->markAsUnreconciled();
+                $item->delete();
+            } elseif ($isMatchPlaceholderBank) {
+                // Delete placeholder (paired item), unmatch and set clicked real item to unreconciled
+                $item->markAsUnreconciled();
+                $matchedItem->delete();
+            } else {
+                // Fallback: unmatch both
+                $item->markAsUnreconciled();
+                if ($matchedItem) {
+                    $matchedItem->markAsUnreconciled();
+                }
             }
 
             return redirect()->back()
@@ -408,10 +461,81 @@ class BankReconciliationController extends Controller
     }
 
     /**
+     * Confirm a book entry against the physical bank statement by creating a matching
+     * placeholder bank statement item and marking both as reconciled.
+     */
+    public function confirmBookItem(Request $request, $hash)
+    {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid reconciliation id.'
+            ], 422);
+        }
+        $bankReconciliation = BankReconciliation::findOrFail($id);
+        $validator = Validator::make($request->all(), [
+            'book_item_id' => 'required|exists:bank_reconciliation_items,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'message' => $validator->errors()->first(),
+            ], 422);
+        }
+
+        try {
+            $bookItem = BankReconciliationItem::find($request->book_item_id);
+
+            if ($bookItem->is_reconciled) {
+                return response()->json([
+                    'success' => true,
+                    'already_reconciled' => true,
+                ]);
+            }
+
+            // Create a placeholder bank statement item based on the book entry details
+            $bankItem = BankReconciliationItem::create([
+                'bank_reconciliation_id' => $bankReconciliation->id,
+                'transaction_type' => 'bank_statement',
+                'reference' => $bookItem->reference,
+                'description' => 'Statement confirmed: ' . $bookItem->description,
+                'transaction_date' => $bookItem->transaction_date,
+                'amount' => $bookItem->amount,
+                'nature' => $bookItem->nature,
+                'is_bank_statement_item' => true,
+                'is_book_entry' => false,
+                'notes' => 'Confirmed from physical statement',
+            ]);
+
+            // Match the items both ways
+            $bankItem->matchWith($bookItem->id);
+            $bookItem->matchWith($bankItem->id);
+
+            return response()->json([
+                'success' => true,
+                'bank_item_id' => $bankItem->id,
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to confirm item: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Complete reconciliation.
      */
-    public function completeReconciliation(BankReconciliation $bankReconciliation)
+    public function completeReconciliation($hash)
     {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return redirect()->back()->withErrors(['error' => 'Invalid reconciliation id.']);
+        }
+        $bankReconciliation = BankReconciliation::findOrFail($id);
         try {
             $bankReconciliation->update(['status' => 'completed']);
 
@@ -485,8 +609,16 @@ class BankReconciliationController extends Controller
     /**
      * Update book balance when new transactions are added to the reconciliation period.
      */
-    public function updateBookBalance(BankReconciliation $bankReconciliation)
+    public function updateBookBalance($hash)
     {
+        $id = \App\Helpers\HashIdHelper::decode($hash);
+        if (!$id) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid reconciliation id.'
+            ], 400);
+        }
+        $bankReconciliation = BankReconciliation::findOrFail($id);
         try {
             DB::beginTransaction();
 

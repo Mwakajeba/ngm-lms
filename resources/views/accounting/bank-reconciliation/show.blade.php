@@ -145,14 +145,6 @@
                             <div class="col-md-6">
                                 <table class="table table-borderless">
                                     <tr>
-                                        <td class="fw-bold">Bank Charges:</td>
-                                        <td>{{ number_format($bankReconciliation->bank_statement_charges, 2) }}</td>
-                                    </tr>
-                                    <tr>
-                                        <td class="fw-bold">Bank Interest:</td>
-                                        <td>{{ number_format($bankReconciliation->bank_statement_interest, 2) }}</td>
-                                    </tr>
-                                    <tr>
                                         <td class="fw-bold">Created By:</td>
                                         <td>{{ $bankReconciliation->user->name }}</td>
                                     </tr>
@@ -212,7 +204,7 @@
                             <li class="nav-item" role="presentation">
                                 <button class="nav-link" id="reconciled-tab" data-bs-toggle="tab" data-bs-target="#reconciled" type="button" role="tab">
                                     Reconciled Items
-                                    <span class="badge bg-success ms-1">{{ $reconciledItems->count() }}</span>
+                                    <span class="badge bg-success ms-1">{{ $totalReconciledCount ?? $reconciledItems->count() }}</span>
                                 </button>
                             </li>
                         </ul>
@@ -246,44 +238,58 @@
                                 </div>
                                 
                                 <div class="row">
-                                    <!-- Bank Statement Items -->
+                                    <!-- Confirmed From Physical Statement (starts empty, filled by confirmations) -->
                                     <div class="col-md-6">
-                                        <h6 class="fw-bold text-info">Bank Statement Items</h6>
-                                        @forelse($unreconciledBankItems as $item)
-                                        <div class="card mb-2 border-info">
-                                            <div class="card-body p-3">
-                                                <div class="d-flex justify-content-between align-items-start">
-                                                    <div class="flex-grow-1">
-                                                        <h6 class="mb-1">{{ $item->description }}</h6>
-                                                        <small class="text-muted">{{ $item->formatted_transaction_date }} - {{ $item->reference }}</small>
-                                                        <div class="mt-1">
-                                                            <span class="badge {{ $item->nature === 'debit' ? 'bg-danger' : 'bg-success' }}">
-                                                                {{ strtoupper($item->nature) }}
-                                                            </span>
-                                                            <span class="fw-bold ms-2">{{ $item->formatted_amount }}</span>
+                                        <h6 class="fw-bold text-info">Confirmed From Physical Statement</h6>
+                                        <small class="text-muted d-block mb-2">Tick a matching system entry on the right to confirm from your paper statement. Recent confirmations appear here (and also under Reconciled).</small>
+                                        <div id="confirmedFromStatement">
+                                            @if(($totalReconciledCount ?? 0) > 0)
+                                                @foreach($reconciledItems as $item)
+                                                <div class="card mb-2 border-success">
+                                                    <div class="card-body p-3">
+                                                        <div class="d-flex justify-content-between align-items-start">
+                                                            <div class="flex-grow-1">
+                                                                <h6 class="mb-1">{{ $item->description }}</h6>
+                                                                <small class="text-muted">{{ $item->formatted_transaction_date }} - {{ $item->reference }}</small>
+                                                                <div class="mt-1">
+                                                                    <span class="badge {{ $item->nature === 'debit' ? 'bg-danger' : 'bg-success' }}">{{ strtoupper($item->nature) }}</span>
+                                                                    <span class="fw-bold ms-2">{{ $item->formatted_amount }}</span>
+                                                                    <span class="badge bg-success ms-2">Reconciled</span>
+                                                                </div>
+                                                                @if($item->matchedWithItem)
+                                                                <small class="text-muted">Matched with: {{ $item->matchedWithItem->description }}</small>
+                                                                @endif
+                                                            </div>
+                                                            <div class="ms-2">
+                                                                @if($bankReconciliation->status !== 'completed')
+                                                                <form action="{{ route('accounting.bank-reconciliation.unmatch-items', $bankReconciliation) }}" method="POST" class="d-inline unmatch-form">
+                                                                    @csrf
+                                                                    <input type="hidden" name="item_id" value="{{ $item->id }}">
+                                                                    <button type="button" class="btn btn-sm btn-outline-danger unmatch-swal-btn" data-item-id="{{ $item->id }}">
+                                                                        <i class="bx bx-unlink"></i>
+                                                                    </button>
+                                                                </form>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div class="ms-2">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                                onclick="selectForMatching('bank', {{ $item->id }})">
-                                                            <i class="bx bx-link"></i>
-                                                        </button>
-                                                    </div>
                                                 </div>
-                                            </div>
+                                                @endforeach
+                                            @endif
                                         </div>
-                                        @empty
-                                        <div class="text-center py-4">
-                                            <i class="bx bx-check-circle font-size-48 text-success mb-3"></i>
-                                            <h6 class="text-success">All bank statement items reconciled!</h6>
-                                            <p class="text-muted">No unreconciled bank statement items found.</p>
+                                        @if(($totalReconciledCount ?? 0) === 0)
+                                        <div id="noConfirmedPlaceholder" class="text-center py-4">
+                                            <i class="bx bx-info-circle font-size-48 text-muted mb-3"></i>
+                                            <h6 class="text-muted">No confirmations yet</h6>
+                                            <p class="text-muted">Use your physical statement and tick the matching system entry on the right.</p>
                                         </div>
-                                        @endforelse
+                                        @endif
                                     </div>
 
                                     <!-- Book Entry Items -->
                                     <div class="col-md-6">
-                                        <h6 class="fw-bold text-primary">Book Entry Items</h6>
+                                        <h6 class="fw-bold text-primary">Book Entry Items <small class="text-muted">(tick to confirm)</small></h6>
+                                        <small class="text-muted d-block mb-2">Tick the system entry that matches what you see on your physical statement. It will move left as reconciled. You can reverse it.</small>
                                         @forelse($unreconciledBookItems as $item)
                                         <div class="card mb-2 border-primary">
                                             <div class="card-body p-3">
@@ -298,11 +304,8 @@
                                                             <span class="fw-bold ms-2">{{ $item->formatted_amount }}</span>
                                                         </div>
                                                     </div>
-                                                    <div class="ms-2">
-                                                        <button type="button" class="btn btn-sm btn-outline-primary" 
-                                                                onclick="selectForMatching('book', {{ $item->id }})">
-                                                            <i class="bx bx-link"></i>
-                                                        </button>
+                                                    <div class="ms-2 form-check">
+                                                        <input class="form-check-input book-item-checkbox" type="checkbox" value="{{ $item->id }}" id="book_cb_{{ $item->id }}">
                                                     </div>
                                                 </div>
                                             </div>
@@ -317,44 +320,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Match Items Form -->
-                                @if($unreconciledBankItems->count() > 0 && $unreconciledBookItems->count() > 0)
-                                <div class="card mt-4 border-warning">
-                                    <div class="card-header bg-warning text-dark">
-                                        <h6 class="mb-0"><i class="bx bx-link me-2"></i>Match Items</h6>
-                                    </div>
-                                    <div class="card-body">
-                                        <form action="{{ route('accounting.bank-reconciliation.match-items', $bankReconciliation) }}" method="POST">
-                                            @csrf
-                                            <div class="row">
-                                                <div class="col-md-6">
-                                                    <label for="bank_item_id" class="form-label">Bank Statement Item</label>
-                                                    <select class="form-select" id="bank_item_id" name="bank_item_id" required>
-                                                        <option value="">Select bank statement item</option>
-                                                        @foreach($unreconciledBankItems as $item)
-                                                        <option value="{{ $item->id }}">{{ $item->description }} ({{ $item->formatted_amount }})</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                                <div class="col-md-6">
-                                                    <label for="book_item_id" class="form-label">Book Entry Item</label>
-                                                    <select class="form-select" id="book_item_id" name="book_item_id" required>
-                                                        <option value="">Select book entry item</option>
-                                                        @foreach($unreconciledBookItems as $item)
-                                                        <option value="{{ $item->id }}">{{ $item->description }} ({{ $item->formatted_amount }})</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            </div>
-                                            <div class="mt-3">
-                                                <button type="submit" class="btn btn-warning">
-                                                    <i class="bx bx-link me-2"></i>Match Items
-                                                </button>
-                                            </div>
-                                        </form>
-                                    </div>
-                                </div>
-                                @endif
+                                <!-- Match Items Form removed for physical-statement-first workflow -->
                             </div>
 
                             <div class="tab-pane fade" id="reconciled" role="tabpanel">
@@ -392,11 +358,10 @@
                                             </div>
                                             <div class="ms-2">
                                                 @if($bankReconciliation->status !== 'completed')
-                                                <form action="{{ route('accounting.bank-reconciliation.unmatch-items', $bankReconciliation) }}" method="POST" class="d-inline">
+                                                <form action="{{ route('accounting.bank-reconciliation.unmatch-items', $bankReconciliation) }}" method="POST" class="d-inline unmatch-form">
                                                     @csrf
                                                     <input type="hidden" name="item_id" value="{{ $item->id }}">
-                                                    <button type="submit" class="btn btn-sm btn-outline-danger" 
-                                                            onclick="return confirm('Unmatch this item?')">
+                                                    <button type="button" class="btn btn-sm btn-outline-danger unmatch-swal-btn" data-item-id="{{ $item->id }}">
                                                         <i class="bx bx-unlink"></i>
                                                     </button>
                                                 </form>
@@ -536,15 +501,14 @@ function refreshBookBalance() {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
-            // Update the displayed values
             location.reload();
         } else {
-            alert('Error: ' + data.message);
+            Swal.fire('Error', data.message || 'Failed to refresh book balance.', 'error');
         }
     })
     .catch(error => {
         console.error('Error:', error);
-        alert('An error occurred while refreshing the book balance.');
+        Swal.fire('Network Error', 'An error occurred while refreshing the book balance.', 'error');
     })
     .finally(() => {
         // Restore button state
@@ -556,8 +520,63 @@ function refreshBookBalance() {
 
 
 $(document).ready(function() {
+    // SweetAlert confirm for unmatch in reconciled tab
+    $(document).on('click', '.unmatch-swal-btn', function(e){
+        e.preventDefault();
+        const form = $(this).closest('form.unmatch-form');
+        Swal.fire({
+            title: 'Unmatch this item?',
+            text: 'This will move the items back to Unreconciled.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonText: 'Yes, unmatch',
+            cancelButtonText: 'Cancel'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                form.trigger('submit');
+            }
+        });
+    });
     // Set default transaction date
     $('#transaction_date').val('{{ date("Y-m-d") }}');
+
+    // When a book item checkbox is ticked, confirm from physical statement via AJAX
+    $('.book-item-checkbox').on('change', function(){
+        const checkbox = this;
+        if (!checkbox.checked) return;
+
+        const bookItemId = $(checkbox).val();
+        $(checkbox).prop('disabled', true);
+
+        fetch('{{ route("accounting.bank-reconciliation.confirm-book-item", $bankReconciliation) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'Accept': 'application/json'
+            },
+            body: JSON.stringify({ book_item_id: bookItemId })
+        })
+        .then(r => r.json())
+        .then(data => {
+            if (!data.success && !data.already_reconciled) {
+                Swal.fire('Error', data.message || 'Failed to confirm item.', 'error');
+                $(checkbox).prop('checked', false).prop('disabled', false);
+                return;
+            }
+            Swal.fire({
+                icon: 'success',
+                title: 'Confirmed',
+                text: 'Item confirmed from physical statement.',
+                timer: 1200,
+                showConfirmButton: false
+            }).then(() => location.reload());
+        })
+        .catch(() => {
+            Swal.fire('Network Error', 'Please try again.', 'error');
+            $(checkbox).prop('checked', false).prop('disabled', false);
+        });
+    });
 });
 </script>
 @endpush 

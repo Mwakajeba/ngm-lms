@@ -136,7 +136,7 @@
                     </div>
                     <h5 class="card-title">Non Performing Loan Report</h5>
                     <p class="card-text text-muted">View and analyze non performing loans, provisions, and risk metrics.</p>
-                    <a href="{{ route('loans.reports.npl') }}" class="btn btn-danger">
+                    <a href="{{ route('accounting.loans.reports.npl') }}" class="btn btn-danger">
                         <i class="fas fa-file-alt me-1"></i> View Report
                     </a>
                 </div>

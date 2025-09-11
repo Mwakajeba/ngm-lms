@@ -29,6 +29,12 @@ class BankReconciliation extends Model
         'bank_statement_document',
     ];
 
+    // Use Hashids for route model binding like other models
+    public function getRouteKey()
+    {
+        return \App\Helpers\HashIdHelper::encode($this->id);
+    }
+
     protected $casts = [
         'reconciliation_date' => 'date',
         'start_date' => 'date',

@@ -13,29 +13,56 @@
             margin: 0;
             padding: 20px;
         }
-
         .header {
-            text-align: center;
             margin-bottom: 30px;
             border-bottom: 2px solid #333;
-            padding-bottom: 10px;
+            padding-bottom: 20px;
         }
-
+        .header-content {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 20px;
+        }
+        .header-left {
+            display: flex;
+            align-items: center;
+        }
+        .logo {
+            max-height: 80px;
+            max-width: 120px;
+            margin-right: 20px;
+        }
+        .company-info {
+            flex: 1;
+        }
         .company-name {
             font-size: 24px;
             font-weight: bold;
+            color: #333;
             margin-bottom: 5px;
         }
-
+        .company-details {
+            font-size: 11px;
+            color: #666;
+            line-height: 1.3;
+        }
+        .header-right {
+            text-align: right;
+            font-size: 11px;
+            color: #666;
+        }
         .report-title {
             font-size: 18px;
             font-weight: bold;
+            color: #dc3545;
+            text-align: center;
             margin-bottom: 5px;
         }
-
-        .report-info {
-            font-size: 12px;
+        .report-date {
+            font-size: 14px;
             color: #666;
+            text-align: center;
         }
 
         .summary-section {
@@ -143,27 +170,55 @@
             margin-bottom: 20px;
             font-size: 11px;
         }
+ 
     </style>
 </head>
 
 <body>
     @php
-    $companyModel = isset($company) ? $company : (function_exists('current_company') ? current_company() : null);
-    $logoPath = ($companyModel && !empty($companyModel->logo)) ? public_path('storage/' . $companyModel->logo) : null;
+        $companyModel = isset($company) ? $company : \App\Models\Company::first();
+        $logoPath = ($companyModel && !empty($companyModel->logo)) ? public_path('storage/' . $companyModel->logo) : null;
     @endphp
-    @if($logoPath && file_exists($logoPath))
-    <div class="logo-wrapper">
-        <img src="{{ $logoPath }}" alt="Company Logo">
-    </div>
-    @endif
+    
     <div class="header">
-        <div class="company-name">{{ $company->name }}</div>
-        <div class="report-title">PENALTIES REPORT</div>
-        <div class="report-info">
-            Period: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }} |
-            Generated: {{ now()->format('d/m/Y H:i:s') }}
+        <div class="header-content">
+            <div class="header-left">
+                @if($logoPath && file_exists($logoPath))
+                    <img src="{{ $logoPath }}" alt="Company Logo" class="logo">
+                @endif
+                <div class="company-info">
+                    <div class="company-name">{{ $companyModel->name ?? 'SmartFinance' }}</div>
+                    <div class="company-details">
+                        @if($companyModel->address)
+                            {{ $companyModel->address }}<br>
+                        @endif
+                        @if($companyModel->phone)
+                            Tel: {{ $companyModel->phone }}<br>
+                        @endif
+                        @if($companyModel->email)
+                            Email: {{ $companyModel->email }}<br>
+                        @endif
+                        @if($companyModel->company_id)
+                            Company ID: {{ $companyModel->company_id }}<br>
+                        @endif
+                        @if($companyModel->license_number)
+                            License: {{ $companyModel->license_number }}
+                        @endif
+                    </div>
+                </div>
+            </div>
+            <div class="header-right">
+                <div><strong>Report Generated:</strong></div>
+                <div>{{ date('d-m-Y H:i:s') }}</div>
+                <div style="margin-top: 10px;"><strong>Period:</strong></div>
+                <div>{{ \Carbon\Carbon::parse($startDate)->format('d-m-Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('d-m-Y') }}</div>
+            </div>
         </div>
+        <div class="report-title">PENALTIES REPORT</div>
+        <div class="report-date">Financial Penalties & Charges Analysis</div>
     </div>
+
+ 
 
     <!-- Filter Information -->
     <div class="filter-info">
@@ -176,19 +231,16 @@
 
     <!-- Penalties Details -->
     <div class="penalties-section">
-        <h3>Penalties Transaction Details</h3>
+        <div class="summary-title">Penalties Transaction Details</div>
         @if($penaltiesData['data']->count() > 0)
         <table>
             <thead>
                 <tr>
                     <th>#</th>
                     <th>Date</th>
-                    <th>Penalty Name</th>
-                    <th>Penalty Type</th>
                     <th>Customer</th>
                     <th class="text-right">Amount</th>
                     <th>Description</th>
-                    <th>Transaction Type</th>
                 </tr>
             </thead>
             <tbody>
@@ -196,23 +248,15 @@
                 <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ \Carbon\Carbon::parse($item->date)->format('d/m/Y') }}</td>
-                    <td>{{ $item->penalty_name }}</td>
-                    <td class="text-center">
-                        <span class="{{ $item->penalty_type === 'income' ? 'text-success' : 'text-warning' }}">
-                            {{ ucfirst($item->penalty_type) }}
-                        </span>
-                    </td>
                     <td>{{ $item->customer_name ?? 'N/A' }}</td>
                     <td class="text-right">{{ number_format($item->amount, 2) }}</td>
-                    <td>{{ Str::limit($item->description, 25) }}</td>
-                    <td>{{ $item->reference_id }}</td>
-                    <td>{{ $item->transaction_type }}</td>
+                    <td>{{ $item->description }}</td>
                 </tr>
                 @endforeach
             </tbody>
             <tfoot>
                 <tr class="balance-row">
-                    <td colspan="9"><strong>TOTAL BALANCE</strong></td>
+                    <td colspan="4"><strong>TOTAL BALANCE</strong></td>
                     <td class="text-right">
                         <strong class="{{ $penaltiesData['summary']['balance'] >= 0 ? 'text-success' : 'text-danger' }}">
                             {{ number_format($penaltiesData['summary']['balance'], 2) }}
@@ -229,41 +273,22 @@
         @endif
     </div>
 
-    <!-- Additional Summary -->
-    <div class="additional-summary">
-        <h3>Additional Summary</h3>
-        <table style="width: 60%;">
-            <tr>
-                <td><strong>Total Debit Amount:</strong></td>
-                <td class="text-right text-danger">{{ number_format($penaltiesData['summary']['total_debit'], 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Total Credit Amount:</strong></td>
-                <td class="text-right text-success">{{ number_format($penaltiesData['summary']['total_credit'], 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Net Balance (Credit - Debit):</strong></td>
-                <td class="text-right text-primary">{{ number_format($penaltiesData['summary']['balance'], 2) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Total Transactions:</strong></td>
-                <td class="text-right">{{ number_format($penaltiesData['summary']['total_transactions']) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Unique Penalties:</strong></td>
-                <td class="text-right">{{ number_format($penaltiesData['summary']['unique_penalties']) }}</td>
-            </tr>
-            <tr>
-                <td><strong>Unique Customers:</strong></td>
-                <td class="text-right">{{ number_format($penaltiesData['summary']['unique_customers']) }}</td>
-            </tr>
-        </table>
-    </div>
+
 
     <div class="footer">
-        <p>This report was generated on {{ now()->format('d/m/Y H:i:s') }} by {{ $company->name }}</p>
-        <p>Report Period: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }}</p>
-        <p>Penalty: {{ $penaltyName }} | Account Type: {{ $penaltyTypeName }} | Branch: {{ $branchName }}</p>
+        <p><strong>{{ $companyModel->name ?? 'SmartFinance' }} - Penalties Report</strong></p>
+        <p>This report was generated automatically by SmartFinance System on {{ date('d-m-Y H:i:s') }}</p>
+        <p>For any queries regarding this report, please contact the system administrator</p>
+        @if($companyModel->email)
+            <p>Email: {{ $companyModel->email }} | 
+            @if($companyModel->phone)
+                Phone: {{ $companyModel->phone }}
+            @endif
+            </p>
+        @endif
+        <p style="margin-top: 10px; font-size: 9px; color: #999;">
+            This report contains confidential information and is intended for internal use only.
+        </p>
     </div>
 </body>
 

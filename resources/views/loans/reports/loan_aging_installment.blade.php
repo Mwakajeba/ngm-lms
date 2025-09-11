@@ -7,7 +7,7 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
+              ['label' => 'Reports', 'url' => route('reports.loans'), 'icon' => 'bx bx-file'],
             ['label' => 'Loan Aging Installment Report', 'url' => '#', 'icon' => 'bx bx-calendar-check']
         ]" />
         <h6 class="mb-0 text-uppercase">LOAN AGING INSTALLMENT REPORT</h6>

@@ -2455,9 +2455,7 @@ class LoanReportController extends Controller
         $loanOfficerId = $request->get('loan_officer_id');
         $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
         $filename = 'npl_report_' . $asOfDate . '.xlsx';
-        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\GenericArrayExport($nplData, [
-            'Date Of', 'Branch', 'Loan Officer', 'Loan ID', 'Borrower', 'Outstanding (TZS)', 'DPD', 'Classification', 'Provision %', 'Provision (TZS)', 'Collateral', 'Status'
-        ]), $filename);
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\NPLExport($nplData, $asOfDate, $branchId, $loanOfficerId), $filename);
     }
 
     /**
@@ -2469,7 +2467,8 @@ class LoanReportController extends Controller
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
-        $pdf = \PDF::loadView('loans.reports.npl_report_pdf', compact('nplData', 'asOfDate', 'branchId', 'loanOfficerId'));
+        $company = Company::first();
+        $pdf = \PDF::loadView('loans.reports.npl_report_pdf', compact('nplData', 'asOfDate', 'branchId', 'loanOfficerId', 'company'));
         $pdf->setPaper('A3', 'landscape');
         $filename = 'npl_report_' . $asOfDate . '.pdf';
         return $pdf->download($filename);

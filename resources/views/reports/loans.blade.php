@@ -7,7 +7,6 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
                 ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-                ['label' => 'Reports', 'url' => route('reports.index'), 'icon' => 'bx bx-file'],
                 ['label' => 'Loans Reports', 'url' => '#', 'icon' => 'bx bx-credit-card']
             ]" />
         <h6 class="mb-0 text-uppercase">LOANS REPORTS</h6>
@@ -205,6 +204,7 @@
                                         <h5 class="card-title">Portfolio at Risk (PAR) Report</h5>
                                         <p class="card-text">Assess portfolio risk with PAR analysis showing loans past due and risk indicators.</p>
                                         <a href="{{ route('accounting.loans.reports.portfolio_at_risk') }}" class="btn btn-danger">
+                                        <i class="bx bx-file me-1"></i> Generate Report
                                         </a>
                                     </div>
                                 </div>
@@ -241,7 +241,7 @@
                                         <h5 class="card-title">Non Performing Loan Report</h5>
                                         <p class="card-text text-muted">View and analyze non performing loans, provisions, and risk metrics.</p>
                                         <a href="{{ route('accounting.loans.reports.npl') }}" class="btn btn-danger">
-                                            <i class="fas fa-file-alt me-1"></i> View Report
+                                            <i class="bx bx-file me-1"></i> Generate Report
                                         </a>
                                     </div>
                                 </div>
