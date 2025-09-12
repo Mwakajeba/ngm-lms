@@ -1001,6 +1001,7 @@ class LoanController extends Controller
             'amount' => $validated['amount'],
             'description' => $notes,
             'user_id' => $userId,
+            'payee_type' => 'customer',
             'customer_id' => $validated['customer_id'],
             'bank_account_id' => $accountId,
             'branch_id' => $branchId,
@@ -1169,6 +1170,9 @@ class LoanController extends Controller
 
     public function store(Request $request)
     {
+        // Debug: Log all request data
+        \Log::info('Store method request data:', $request->all());
+        
         $validated = $request->validate([
             'product_id' => 'required|exists:loan_products,id',
             'period' => 'required|integer|min:1',
@@ -1182,6 +1186,9 @@ class LoanController extends Controller
             'account_id' => 'required|exists:bank_accounts,id',
             'sector' => 'required|string',
         ]);
+
+        // Debug: Log the validated data to check customer_id
+        \Log::info('Store method validated data:', $validated);
 
 
 
@@ -1320,6 +1327,13 @@ class LoanController extends Controller
 
                 $disbursementAmount = $validated['amount'] - $releaseFeeTotal;
 
+                // Debug: Log customer_id before Payment creation
+                \Log::info('Creating Payment with customer_id:', [
+                    'customer_id' => $validated['customer_id'],
+                    'loan_id' => $loan->id,
+                    'disbursement_amount' => $disbursementAmount
+                ]);
+
                 $payment = Payment::create([
                     'reference' => $loan->id,
                     'reference_type' => 'Loan Payment',
@@ -1328,12 +1342,20 @@ class LoanController extends Controller
                     'amount' => $disbursementAmount,
                     'description' => $notes,
                     'user_id' => $userId,
+                    'payee_type' => 'customer',
                     'customer_id' => $validated['customer_id'],
                     'bank_account_id' => $validated['account_id'],
                     'branch_id' => $branchId,
                     'approved' => true,
                     'approved_by' => $userId,
                     'approved_at' => now(),
+                ]);
+
+                // Debug: Log created payment
+                \Log::info('Payment created:', [
+                    'payment_id' => $payment->id,
+                    'customer_id' => $payment->customer_id,
+                    'reference' => $payment->reference
                 ]);
 
                 PaymentItem::create([
@@ -1634,6 +1656,7 @@ class LoanController extends Controller
                     'amount' => $disbursementAmount,
                     'description' => $notes,
                     'user_id' => $userId,
+                    'payee_type' => 'customer',
                     'customer_id' => $validated['customer_id'],
                     'bank_account_id' => $validated['account_id'],
                     'branch_id' => $branchId,
@@ -2516,6 +2539,7 @@ class LoanController extends Controller
             'amount' => $loan->amount,
             'description' => $notes,
             'user_id' => $userId,
+            'payee_type' => 'customer',
             'customer_id' => $loan->customer_id,
             'bank_account_id' => $loan->bank_account_id,
             'branch_id' => $branchId,
