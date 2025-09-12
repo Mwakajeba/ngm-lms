@@ -6,10 +6,11 @@ class SmsHelper
 {
     public static function send($phone, $message)
     {
-        $sid = config('services.sms.senderid');
-        $token = config('services.sms.token');
-        $key = config('services.sms.key');
-        $url = config('services.sms.url');
+        // Trim to avoid hidden spaces in env (e.g., sender id with leading space)
+        $sid = trim((string) config('services.sms.senderid'));
+        $token = trim((string) config('services.sms.token'));
+        $key = trim((string) config('services.sms.key'));
+        $url = trim((string) config('services.sms.url'));
 
         $postData = [
             'source_addr' => $sid,
