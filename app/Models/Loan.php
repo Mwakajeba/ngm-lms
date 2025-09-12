@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Optional if you want soft deletes
+use Illuminate\Support\Facades\Log;
 
 class Loan extends Model
 {
@@ -852,6 +853,7 @@ class Loan extends Model
             return false;
         }
 
+
         // Step 2: Fetch loan schedules
         $schedules = $this->schedule;
 
@@ -1057,5 +1059,103 @@ class Loan extends Model
             default:
                 return 'Monthly';
         }
+    }
+
+    /**
+     * Post matured interest for schedules that are due before today
+     * This is used when creating past loans to ensure interest is properly recorded
+     */
+    public function postMaturedInterestForPastLoan()
+    {
+        $today = Carbon::today();
+        
+        // Find schedules that are due before today and have interest
+        $maturedSchedules = $this->schedule()
+            ->where('due_date', '<', $today)
+            ->where('interest', '>', 0)
+            ->get();
+
+        if ($maturedSchedules->isEmpty()) {
+            return 0;
+        }
+
+        $totalInterestPosted = 0;
+        $product = $this->product;
+
+        if (!$product || !$product->interest_receivable_account_id || !$product->interest_revenue_account_id) {
+            Log::warning("Missing interest accounts for product {$product->id} - cannot post matured interest");
+            return 0;
+        }
+
+        foreach ($maturedSchedules as $schedule) {
+            // Load repayments for this schedule
+            $schedule->loadMissing('repayments');
+            
+            // Calculate unpaid interest for this schedule
+            $totalInterest = $schedule->interest;
+            $paidInterest = $schedule->repayments->sum('interest');
+            $unpaidInterest = $totalInterest - $paidInterest;
+
+            if ($unpaidInterest <= 0) {
+                continue;
+            }
+
+            // Check if mature interest already posted for this schedule
+            $exists = GlTransaction::where('chart_account_id', $product->interest_receivable_account_id)
+                ->where('customer_id', $this->customer_id)
+                ->where('transaction_id', $schedule->id)
+                ->where('transaction_type', 'Mature Interest')
+                ->exists();
+
+            if ($exists) {
+                continue;
+            }
+
+            // Post mature interest on the schedule's due date
+            $this->createMatureInterestTransactions($schedule, $unpaidInterest, $product);
+            $totalInterestPosted += $unpaidInterest;
+        }
+
+        if ($totalInterestPosted > 0) {
+            Log::info("Posted mature interest for past loan {$this->loanNo}: TZS " . number_format($totalInterestPosted, 2));
+        }
+
+        return $totalInterestPosted;
+    }
+
+    /**
+     * Create GL transactions for mature interest
+     */
+    private function createMatureInterestTransactions($schedule, $unpaidInterest, $product)
+    {
+        $userId = auth()->id() ?? 1; // Use logged-in user or fallback to 1
+
+        // Debit Receivable
+        GlTransaction::create([
+            'chart_account_id' => $product->interest_receivable_account_id,
+            'customer_id' => $this->customer_id,
+            'amount' => $unpaidInterest,
+            'nature' => 'debit',
+            'transaction_id' => $schedule->id,
+            'transaction_type' => 'Mature Interest',
+            'date' => $schedule->due_date,
+            'description' => "Mature interest for loan {$this->loanNo}, schedule {$schedule->id}",
+            'branch_id' => $this->branch_id,
+            'user_id' => $userId,
+        ]);
+
+        // Credit Revenue
+        GlTransaction::create([
+            'chart_account_id' => $product->interest_revenue_account_id,
+            'customer_id' => $this->customer_id,
+            'amount' => $unpaidInterest,
+            'nature' => 'credit',
+            'transaction_id' => $schedule->id,
+            'transaction_type' => 'Mature Interest',
+            'date' => $schedule->due_date,
+            'description' => "Mature interest income for loan {$this->loanNo}, schedule {$schedule->id}",
+            'branch_id' => $this->branch_id,
+            'user_id' => $userId,
+        ]);
     }
 }

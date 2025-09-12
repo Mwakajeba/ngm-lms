@@ -36,10 +36,11 @@ return [
     ],
 
     'sms' => [
-    'senderid' => env('SMS_SENDERID'),
-    'token' => env('SMS_TOKEN'),
-    'key' => env('SMS_KEY'),
-    'url' => env('SMS_URL'),
+        // Beem Africa SMS credentials
+        'senderid' => env('BEEM_SENDER_ID', env('SMS_SENDERID')),
+        'token' => env('BEEM_SECRET_KEY', env('SMS_TOKEN')),
+        'key' => env('BEEM_API_KEY', env('SMS_KEY')),
+        'url' => env('BEEM_SMS_URL', env('SMS_URL', 'https://apisms.beem.africa/v1/send')),
     ],
 
 ];

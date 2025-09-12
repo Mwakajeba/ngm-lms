@@ -6,6 +6,7 @@ use App\Models\Loan;
 use App\Models\LoanSchedule;
 use App\Models\GlTransaction;
 use App\Models\ChartAccount;
+use App\Helpers\SmsHelper;
 use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -66,7 +67,7 @@ class CollectMatureInterestJob implements ShouldQueue
     private function processLoanMatureInterest(Loan $loan): bool
     {
         $maturedSchedules = $loan->schedule()
-            ->where('due_date', '<=', Carbon::today())
+            ->where('due_date', '=', Carbon::today())
             ->where('interest', '>', 0)
             ->get();
 
@@ -92,8 +93,14 @@ class CollectMatureInterestJob implements ShouldQueue
      */
     private function processScheduleMatureInterest(Loan $loan, LoanSchedule $schedule): float
     {
+        // Ensure repayments relationship is available
+        $schedule->loadMissing('repayments');
+
         $totalInterest = $schedule->interest;
-        $paidInterest = $schedule->repayments->sum('interest');
+        // Consider only repayments recorded against this schedule and matching the schedule due_date
+        $paidInterest = $schedule->repayments
+            ->where('due_date', Carbon::parse($schedule->due_date))
+            ->sum('interest');
         $unpaidInterest = $totalInterest - $paidInterest;
 
         if ($unpaidInterest <= 0) {
@@ -108,10 +115,10 @@ class CollectMatureInterestJob implements ShouldQueue
             return 0;
         }
 
+        // Prevent duplicate mature interest postings for this schedule
         $exists = GlTransaction::where('chart_account_id', $receivableId)
             ->where('customer_id', $loan->customer_id)
-            ->where('date', $schedule->due_date)
-            ->where('amount', $unpaidInterest)
+            ->where('transaction_id', $schedule->id)
             ->where('transaction_type', 'Mature Interest')
             ->exists();
 
@@ -119,29 +126,29 @@ class CollectMatureInterestJob implements ShouldQueue
             return 0;
         }
 
-        // Debit Receivable
+        // Debit Receivable (record on schedule due date and mark as Mature Interest)
         GlTransaction::create([
             'chart_account_id' => $receivableId,
             'customer_id' => $loan->customer_id,
             'amount' => $unpaidInterest,
             'nature' => 'debit',
             'transaction_id' => $schedule->id,
-            'transaction_type' => 'Interest',
-            'date' => Carbon::today(),
+            'transaction_type' => 'Mature Interest',
+            'date' => $schedule->due_date,
             'description' => "Mature interest for loan {$loan->loanNo}, schedule {$schedule->id}",
             'branch_id' => $loan->branch_id,
             'user_id' => 1,
         ]);
 
-        // Credit Revenue
+        // Credit Revenue (record on schedule due date and mark as Mature Interest)
         GlTransaction::create([
             'chart_account_id' => $incomeId,
             'customer_id' => $loan->customer_id,
             'amount' => $unpaidInterest,
             'nature' => 'credit',
             'transaction_id' => $schedule->id,
-            'transaction_type' => 'Interest',
-            'date' => Carbon::today(),
+            'transaction_type' => 'Mature Interest',
+            'date' => $schedule->due_date,
             'description' => "Mature interest income for loan {$loan->loanNo}, schedule {$schedule->id}",
             'branch_id' => $loan->branch_id,
             'user_id' => 1,
@@ -209,8 +216,8 @@ class CollectMatureInterestJob implements ShouldQueue
             }
 
             // Skip if penalty already exists
-            $exists = GlTransaction::where('chart_acccount_id', $penaltyConfig->penalty_receivables_account_id)
-                ->where('transaction_type', 'penalty')
+            $exists = GlTransaction::where('chart_account_id', $penaltyConfig->penalty_receivables_account_id)
+                ->where('transaction_type', 'Penalty')
                 ->where('transaction_id', $schedule->id)
                 ->where('customer_id', $loan->customer_id)
                 ->when($deductionType === 'daily bases', fn($q) => $q->whereDate('date', Carbon::today()))
@@ -279,11 +286,37 @@ class CollectMatureInterestJob implements ShouldQueue
 
             // Update schedule penalty_amount
             $schedule->increment('penalty_amount', $penaltyAmount);
+
+            // Send SMS notification to customer in Kiswahili
+            $this->sendPenaltySms($loan, $penaltyAmount);
         }
 
         return true;
     }
 
+
+    /**
+     * Send SMS notification to customer about penalty
+     */
+    private function sendPenaltySms(Loan $loan, float $penaltyAmount): void
+    {
+        try {
+            $customer = $loan->customer;
+            if (!$customer || empty($customer->phone1)) {
+                Log::warning("Cannot send penalty SMS - customer phone missing for loan {$loan->loanNo}");
+                return;
+            }
+
+            $formattedAmount = number_format($penaltyAmount, 2);
+            $message = "Habari {$customer->name}. Mkopo namba {$loan->loanNo} una deni la faini ya TZS {$formattedAmount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.";
+
+            $phone = normalize_phone_number($customer->phone1);
+            SmsHelper::send($phone, $message);
+            Log::info("Penalty SMS sent to customer {$customer->id} for loan {$loan->loanNo}: TZS {$formattedAmount}");
+        } catch (\Exception $e) {
+            Log::error("Failed to send penalty SMS for loan {$loan->loanNo}: " . $e->getMessage());
+        }
+    }
 
     public function failed(\Throwable $exception)
     {

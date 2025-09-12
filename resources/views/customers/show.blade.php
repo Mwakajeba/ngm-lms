@@ -351,7 +351,7 @@
                                 <table class="table table-bordered dt-responsive nowrap table-striped" id="loansTable">
                                     <thead>
                                         <tr>
-                                            <th>Loan ID</th>
+                                            <th>S/N</th>
                                             <th>Amount</th>
                                             <th>Total Amount</th>
                                             <th>Paid Amount</th>
@@ -364,7 +364,7 @@
                                     <tbody>
                                         @foreach($customer->loans as $loan)
                                         <tr>
-                                            <td>{{ $loan->id }}</td>
+                                            <td>{{ $loop->iteration }}</td>
                                             <td>{{ number_format($loan->amount, 2) }}</td>
                                             <td>{{ number_format($loan->amount_total, 2) }}</td>
                                             <td>

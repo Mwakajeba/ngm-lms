@@ -20,11 +20,9 @@
                             class="btn btn-danger">Write Off Loans</a>
 
                         @if($loan->isEligibleForTopUp())
-                            <!-- <button type="button" class="btn btn-success" onclick="showTopUpModal()">
+                            <button type="button" class="btn btn-success" onclick="showTopUpModal()">
                                 <i class="bx bx-plus-circle me-2"></i>Apply for Top-Up
-                            </button> -->
-                            <a href="{{ route('loans.top_up', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
-                            class="btn btn-info"><i class="bx bx-plus me-2"></i> Loan Top-Up</a>
+                            </button>
                         @else
                             <button type="button" class="btn btn-secondary" disabled title="Loan not eligible for top-up">
                                 <i class="bx bx-plus-circle me-2"></i>Top-Up Not Available
@@ -3266,7 +3264,7 @@
         // Top-Up Modal Functions
         function showTopUpModal() {
             const loan = @json($loan);
-            const currentBalance = loan.getCalculatedTopUpAmount ? loan.getCalculatedTopUpAmount() : 0;
+            const currentBalance = @json($loan->getCalculatedTopUpAmount());
 
             Swal.fire({
                 title: 'Apply for Top-Up Loan',
@@ -3291,6 +3289,15 @@
                                 </div>
 
                                 <div class="mb-3">
+                                    <label for="topup_type" class="form-label">Top-Up Type</label>
+                                    <select class="form-control" id="topup_type" required>
+                                        <option value="restructure">Restructure (Replace old loan with new larger loan)</option>
+                                        <option value="additional">Additional (Create separate new loan alongside old loan)</option>
+                                    </select>
+                                    <small class="text-muted">Choose how you want to handle the top-up</small>
+                                </div>
+
+                                <div class="mb-3">
                                     <label for="topup_period" class="form-label">Additional Period</label>
                                     <input type="number" class="form-control" id="topup_period" 
                                             value="12" min="1" max="60" required>
@@ -3310,6 +3317,7 @@
                     const amount = parseFloat(document.getElementById('topup_amount').value);
                     const purpose = document.getElementById('topup_purpose').value;
                     const period = parseInt(document.getElementById('topup_period').value);
+                    const topupType = document.getElementById('topup_type').value;
 
                     if (!amount || amount <= 0) {
                         Swal.showValidationMessage('Please enter a valid amount');
@@ -3331,7 +3339,12 @@
                         return false;
                     }
 
-                    return { amount, purpose, period };
+                    if (!topupType) {
+                        Swal.showValidationMessage('Please select a top-up type');
+                        return false;
+                    }
+
+                    return { amount, purpose, period, topup_type: topupType };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -3353,32 +3366,51 @@
             // Add real-time calculation updates
             setTimeout(() => {
                 const amountInput = document.getElementById('topup_amount');
+                const typeSelect = document.getElementById('topup_type');
+                
+                function updateCalculations() {
+                    const newAmount = parseFloat(amountInput.value) || 0;
+                    const topupType = typeSelect.value;
+                    
+                    let customerReceives;
+                    if (topupType === 'restructure') {
+                        customerReceives = Math.max(0, newAmount - currentBalance);
+                    } else {
+                        customerReceives = newAmount; // Customer receives full amount in additional
+                    }
+
+                    // Update displays
+                    const newLoanDisplay = document.getElementById('new_loan_amount_display');
+                    const customerReceivesDisplay = document.getElementById('customer_receives_display');
+
+                    if (newLoanDisplay) {
+                        newLoanDisplay.textContent = `TZS ${newAmount.toLocaleString()}`;
+                    }
+                    if (customerReceivesDisplay) {
+                        customerReceivesDisplay.textContent = `TZS ${customerReceives.toLocaleString()}`;
+                    }
+                }
+                
                 if (amountInput) {
-                    amountInput.addEventListener('input', function () {
-                        const newAmount = parseFloat(this.value) || 0;
-                        const customerReceives = Math.max(0, newAmount - currentBalance);
-
-                        // Update displays
-                        const newLoanDisplay = document.getElementById('new_loan_amount_display');
-                        const customerReceivesDisplay = document.getElementById('customer_receives_display');
-
-                        if (newLoanDisplay) {
-                            newLoanDisplay.textContent = `TZS ${newAmount.toLocaleString()}`;
-                        }
-                        if (customerReceivesDisplay) {
-                            customerReceivesDisplay.textContent = `TZS ${customerReceives.toLocaleString()}`;
-                        }
-                    });
+                    amountInput.addEventListener('input', updateCalculations);
+                }
+                if (typeSelect) {
+                    typeSelect.addEventListener('change', updateCalculations);
                 }
             }, 100);
         }
 
         function submitTopUpApplication(data) {
             const currentBalance = @json($loan->getCalculatedTopUpAmount());
-            const customerReceives = data.amount - currentBalance;
+            let customerReceives;
+            if (data.topup_type === 'restructure') {
+                customerReceives = data.amount - currentBalance;
+            } else {
+                customerReceives = data.amount; // Customer receives full amount in additional
+            }
 
             $.ajax({
-                url: `/loans/${@json($loan->id)}/topup`,
+                url: `/loans/${@json($loan->encodedId)}/top-up`,
                 method: 'POST',
                 data: {
                     new_loan_amount: data.amount,
@@ -3386,6 +3418,7 @@
                     customer_receives: customerReceives,
                     purpose: data.purpose,
                     period: data.period,
+                    topup_type: data.topup_type,
                     _token: $('meta[name="csrf-token"]').attr('content')
                 },
                 success: function (response) {
@@ -3393,13 +3426,17 @@
 
                     if (response.success) {
                         Swal.fire({
-                            title: 'Top-Up Application Submitted!',
-                            text: response.message || 'Your top-up application has been submitted successfully.',
+                            title: 'Top-Up Loan Created!',
+                            text: response.message || 'Your top-up loan has been created successfully.',
                             icon: 'success',
-                            confirmButtonText: 'OK'
+                            confirmButtonText: 'View New Loan'
                         }).then(() => {
-                            // Reload the page to show updated status
-                            location.reload();
+                            // Redirect to the new loan
+                            if (response.new_loan_encoded_id) {
+                                window.location.href = `/loans/${response.new_loan_encoded_id}`;
+                            } else {
+                                window.location.reload();
+                            }
                         });
                     } else {
                         Swal.fire({

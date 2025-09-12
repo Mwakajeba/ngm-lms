@@ -983,6 +983,8 @@ class LoanController extends Controller
         // Generate repayment schedule
         $loan->generateRepaymentSchedule($validated['interest']);
 
+        // Post matured interest for past loans
+        $loan->postMaturedInterestForPastLoan();
 
         // Record Payment
         $bankAccount = BankAccount::findOrFail($accountId);
@@ -1267,6 +1269,9 @@ class LoanController extends Controller
 
                 // Step 4: Generate repayment schedule
                 $loan->generateRepaymentSchedule($validated['interest']);
+
+                // Step 4.5: Post matured interest for past loans
+                $loan->postMaturedInterestForPastLoan();
 
                 // Log generated schedule details
                 $schedule = $loan->schedule()->orderBy('due_date')->get();
@@ -1557,16 +1562,16 @@ class LoanController extends Controller
 
                 // Delete Payments and PaymentItems for this loan
                 $payments = \DB::table('payments')
-                    ->where('reference', $loanId)
                     ->where('reference_type', 'Loan Payment')
+                    ->where('reference', $loanId)
                     ->get();
                 $paymentIds = $payments->pluck('id')->toArray();
                 if (!empty($paymentIds)) {
                     \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
                 }
                 \DB::table('payments')
-                    ->where('reference', $loanId)
                     ->where('reference_type', 'Loan Payment')
+                    ->where('reference', $loanId)
                     ->delete();
 
                 // Delete Loan Schedule
@@ -1618,6 +1623,9 @@ class LoanController extends Controller
                 ]);
                 $loan->save();
                 $loan->generateRepaymentSchedule($validated['interest']);
+
+                // Post matured interest for past loans
+                $loan->postMaturedInterestForPastLoan();
 
                 // Create payment record
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
@@ -1851,6 +1859,9 @@ class LoanController extends Controller
 
         // Get bank accounts for repayment modal
         $bankAccounts = BankAccount::all();
+
+        // Set the encoded ID for the loan object
+        $loan->encodedId = $encodedId;
 
         return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts'));
     }
@@ -2089,6 +2100,10 @@ class LoanController extends Controller
         $filetypes = Filetype::all();
 
         $bankAccounts = BankAccount::all();
+        
+        // Set the encoded ID for the loan object
+        $loan->encodedId = $encodedId;
+        
         return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts'));
     }
 
