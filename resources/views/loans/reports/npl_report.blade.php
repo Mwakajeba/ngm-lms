@@ -142,7 +142,10 @@
                                 <th>Loan Officer</th>
                                 <th>Loan ID</th>
                                 <th>Borrower</th>
-                                <th>Outstanding (TZS)</th>
+                                <th>Disbursed Date</th>
+                                <th>Last Payment</th>
+                                <th>Total Outstanding (TZS)</th>
+                                <th>NPL Outstanding (TZS)</th>
                                 <th>DPD</th>
                                 <th>Classification</th>
                                 <th>Provision %</th>
@@ -160,7 +163,10 @@
                                         <td>{{ $row['loan_officer'] }}</td>
                                         <td>{{ $row['loan_id'] }}</td>
                                         <td>{{ $row['borrower'] }}</td>
+                                        <td>{{ $row['disbursed_date'] ?? 'N/A' }}</td>
+                                        <td>{{ $row['last_payment_date'] ?? 'N/A' }}</td>
                                         <td class="text-end">{{ number_format($row['outstanding']) }}</td>
+                                        <td class="text-end text-danger fw-bold">{{ number_format($row['npl_outstanding'] ?? $row['outstanding']) }}</td>
                                         <td class="text-end">
                                             <span class="badge 
                                                 @if($row['dpd'] <= 30) bg-warning
@@ -168,19 +174,30 @@
                                                 @elseif($row['dpd'] <= 90) bg-danger
                                                 @else bg-dark
                                                 @endif">
-                                                {{ $row['dpd'] }}
+                                                {{ $row['dpd'] }} days
                                             </span>
                                         </td>
-                                        <td>{{ $row['classification'] }}</td>
-                                        <td>{{ $row['provision_percent'] }}</td>
+                                        <td>
+                                            <span class="badge 
+                                                @if($row['classification'] == 'Loss') bg-danger
+                                                @elseif($row['classification'] == 'Doubtful') bg-warning
+                                                @elseif($row['classification'] == 'Substandard') bg-info
+                                                @else bg-success
+                                                @endif">
+                                                {{ $row['classification'] }}
+                                            </span>
+                                        </td>
+                                        <td class="text-center">{{ $row['provision_percent'] }}</td>
                                         <td class="text-end">{{ number_format($row['provision_amount']) }}</td>
-                                        <td>{{ $row['collateral'] }}</td>
-                                        <td>{{ $row['status'] }}</td>
+                                        <td>{{ $row['collateral'] ?: 'None' }}</td>
+                                        <td>
+                                            <span class="badge bg-danger">{{ $row['status'] }}</span>
+                                        </td>
                                     </tr>
                                 @endforeach
                             @else
                                 <tr>
-                                    <td colspan="12" class="text-center text-muted">No NPL loans found for the selected criteria.</td>
+                                    <td colspan="15" class="text-center text-muted">No NPL loans found for the selected criteria.</td>
                                 </tr>
                             @endif
                         </tbody>

@@ -2399,7 +2399,7 @@ class LoanReportController extends Controller
      */
     private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null)
     {
-        $query = Loan::with(['customer', 'branch', 'loanOfficer', 'collaterals', 'schedule'])
+        $query = Loan::with(['customer', 'branch', 'loanOfficer', 'collaterals', 'schedule.repayments'])
             ->where('status', 'active')
             ->whereDate('disbursed_on', '<=', $asOfDate);
         if ($branchId) {
@@ -2410,35 +2410,55 @@ class LoanReportController extends Controller
         }
         $loans = $query->get();
         $nplData = [];
+        
         foreach ($loans as $loan) {
             $maxDpd = 0;
             $hasNplSchedule = false;
+            $totalOutstanding = 0;
+            $nplOutstanding = 0;
+            
             foreach ($loan->schedule as $schedule) {
-                if ($schedule->due_date < $asOfDate) {
-                    $dpd = Carbon::parse($asOfDate)->diffInDays(Carbon::parse($schedule->due_date));
+                // Calculate outstanding amount for this schedule
+                $totalDue = $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0);
+                $totalPaid = $schedule->repayments->sum(function($repayment) {
+                    return $repayment->principal + $repayment->interest + ($repayment->fee_amount ?? 0);
+                });
+                $outstanding = $totalDue - $totalPaid;
+                $totalOutstanding += $outstanding;
+                
+                // Check if this schedule is overdue and has outstanding amount
+                if ($schedule->due_date < $asOfDate && $outstanding > 0) {
+                    $dpd = Carbon::parse($asOfDate)->diffInDays(Carbon::parse($schedule->due_date), false);
+                    // Use absolute value since diffInDays returns negative for past dates
+                    $dpd = abs($dpd);
                     if ($dpd > $maxDpd) {
                         $maxDpd = $dpd;
                     }
                     if ($dpd > 90) {
                         $hasNplSchedule = true;
+                        $nplOutstanding += $outstanding;
                     }
                 }
             }
-            // If any schedule is NPL, include the loan
-            if ($hasNplSchedule) {
+            
+            // Only include loans that have NPL schedules (overdue > 90 days with outstanding amounts)
+            if ($hasNplSchedule && $nplOutstanding > 0) {
                 $nplData[] = [
                     'date_of' => $asOfDate,
                     'branch' => $loan->branch->name ?? '',
                     'loan_officer' => $loan->loanOfficer->name ?? '',
                     'loan_id' => $loan->loanNo ?? $loan->id,
                     'borrower' => $loan->customer->name ?? '',
-                    'outstanding' => $loan->amount_total ?? 0,
+                    'outstanding' => $totalOutstanding, // Total outstanding for the loan
+                    'npl_outstanding' => $nplOutstanding, // Only NPL portion
                     'dpd' => $maxDpd,
                     'classification' => $maxDpd > 360 ? 'Loss' : ($maxDpd > 180 ? 'Doubtful' : ($maxDpd > 90 ? 'Substandard' : 'Standard')),
                     'provision_percent' => $maxDpd > 360 ? '100%' : ($maxDpd > 180 ? '50%' : ($maxDpd > 90 ? '20%' : '0%')),
-                    'provision_amount' => $loan->amount_total * ($maxDpd > 360 ? 1 : ($maxDpd > 180 ? 0.5 : ($maxDpd > 90 ? 0.2 : 0))),
+                    'provision_amount' => $nplOutstanding * ($maxDpd > 360 ? 1 : ($maxDpd > 180 ? 0.5 : ($maxDpd > 90 ? 0.2 : 0))),
                     'collateral' => $loan->collaterals->pluck('type')->implode(', '),
                     'status' => $loan->status ?? '',
+                    'disbursed_date' => $loan->disbursed_on ? Carbon::parse($loan->disbursed_on)->format('d-m-Y') : 'N/A',
+                    'last_payment_date' => $this->getLastPaymentDate($loan),
                 ];
             }
         }
