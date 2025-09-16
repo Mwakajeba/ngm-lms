@@ -200,6 +200,27 @@ class LoanProductController extends Controller
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
 
+            // Handle fees_ids - map from fees_id array to fees_ids
+            if ($request->has('fees_id')) {
+                $data['fees_ids'] = array_filter($request->input('fees_id', []), function($value) {
+                    return !empty($value);
+                });
+            } else {
+                $data['fees_ids'] = null;
+            }
+
+            // Handle penalty_ids - map from penalty_id array to penalty_ids
+            if ($request->has('penalty_id')) {
+                $data['penalty_ids'] = array_filter($request->input('penalty_id', []), function($value) {
+                    return !empty($value);
+                });
+            } else {
+                $data['penalty_ids'] = null;
+            }
+
+            // Remove the old field names to avoid confusion
+            unset($data['fees_id'], $data['penalty_id']);
+
             // Persist normalized repayment order as comma-separated string
             $data['repayment_order'] = !empty($repaymentComponents)
                 ? implode(',', $repaymentComponents)
@@ -434,6 +455,27 @@ class LoanProductController extends Controller
             $data['allow_push_to_ess'] = $request->has('allow_push_to_ess');
             $data['has_cash_collateral'] = $request->has('has_cash_collateral');
             $data['has_approval_levels'] = $request->has('has_approval_levels');
+
+            // Handle fees_ids - map from fees_id array to fees_ids
+            if ($request->has('fees_id')) {
+                $data['fees_ids'] = array_filter($request->input('fees_id', []), function($value) {
+                    return !empty($value);
+                });
+            } else {
+                $data['fees_ids'] = null;
+            }
+
+            // Handle penalty_ids - map from penalty_id array to penalty_ids
+            if ($request->has('penalty_id')) {
+                $data['penalty_ids'] = array_filter($request->input('penalty_id', []), function($value) {
+                    return !empty($value);
+                });
+            } else {
+                $data['penalty_ids'] = null;
+            }
+
+            // Remove the old field names to avoid confusion
+            unset($data['fees_id'], $data['penalty_id']);
 
             // Persist normalized repayment order as comma-separated string
             $data['repayment_order'] = !empty($repaymentComponents)

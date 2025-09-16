@@ -58,7 +58,7 @@ class LoanTopUpController extends Controller
                 'is_ajax' => $request->ajax()
             ]);
             
-            $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
             Log::info('Decoded ID', ['decoded' => $decoded]);
             
             if (empty($decoded)) {
@@ -97,7 +97,7 @@ class LoanTopUpController extends Controller
                 $customerReceives = $newLoanAmount - $currentBalance;
                 
                 // Create new loan (replaces old loan)
-                $newLoan = Loan::create([
+            $newLoan = Loan::create([
                     'customer_id'      => $loan->customer_id,
                     'group_id'         => $loan->group_id,
                     'product_id'       => $loan->product_id,
@@ -105,9 +105,9 @@ class LoanTopUpController extends Controller
                     'interest'         => $loan->interest,
                     'period'           => $loan->period + $request->period,
                     'bank_account_id'  => $loan->bank_account_id,
-                    'date_applied'     => now(),
-                    'disbursed_on'     => now(),
-                    'status'           => 'active',
+                'date_applied'     => now(),
+                'disbursed_on'     => now(),
+                'status'           => 'active',
                     'sector'           => $loan->sector,
                     'interest_cycle'   => $loan->interest_cycle,
                     'loan_officer_id'  => $loan->loan_officer_id,
@@ -117,17 +117,17 @@ class LoanTopUpController extends Controller
                 ]);
 
                 // Calculate interest and update loan
-                $interestAmount = $newLoan->calculateInterestAmount($newLoan->interest);
-                $repaymentDates = $newLoan->getRepaymentDates();
-                $newLoan->update([
-                    'interest_amount' => $interestAmount,
-                    'amount_total' => $newLoan->amount + $interestAmount,
-                    'first_repayment_date' => $repaymentDates['first_repayment_date'],
-                    'last_repayment_date' => $repaymentDates['last_repayment_date'],
-                ]);
+            $interestAmount = $newLoan->calculateInterestAmount($newLoan->interest);
+            $repaymentDates = $newLoan->getRepaymentDates();
+            $newLoan->update([
+                'interest_amount' => $interestAmount,
+                'amount_total' => $newLoan->amount + $interestAmount,
+                'first_repayment_date' => $repaymentDates['first_repayment_date'],
+                'last_repayment_date' => $repaymentDates['last_repayment_date'],
+            ]);
 
                 // Generate repayment schedule
-                $newLoan->generateRepaymentSchedule($newLoan->interest);
+            $newLoan->generateRepaymentSchedule($newLoan->interest);
 
                 // Create GL Transactions for Restructure Top-Up
                 $this->createRestructureTopUpGlTransactions($loan, $newLoan, $currentBalance, $customerReceives);
@@ -136,50 +136,50 @@ class LoanTopUpController extends Controller
                 $loan->update(['status' => 'restructured']);
 
                 // Create top-up record
-                LoanTopup::create([
+            LoanTopup::create([
                     'old_loan_id'   => $loan->id,
-                    'new_loan_id'   => $newLoan->id,
+                'new_loan_id'   => $newLoan->id,
                     'old_balance'   => $currentBalance,
                     'topup_amount'  => $customerReceives,
-                    'topup_type'    => 'restructure',
-                ]);
+                'topup_type'    => 'restructure',
+            ]);
 
             } else {
                 // ADDITIONAL: Keep old loan active, create separate new loan
                 $customerReceives = $newLoanAmount; // Customer receives full amount
                 
                 // Create new loan (separate from old loan)
-                $newLoan = Loan::create([
-                    'customer_id'      => $loan->customer_id,
-                    'group_id'         => $loan->group_id,
-                    'product_id'       => $loan->product_id,
+            $newLoan = Loan::create([
+                'customer_id'      => $loan->customer_id,
+                'group_id'         => $loan->group_id,
+                'product_id'       => $loan->product_id,
                     'amount'           => $newLoanAmount,
-                    'interest'         => $loan->interest,
+                'interest'         => $loan->interest,
                     'period'           => $request->period, // Only the additional period
-                    'bank_account_id'  => $loan->bank_account_id,
-                    'date_applied'     => now(),
-                    'disbursed_on'     => now(),
-                    'status'           => 'active',
-                    'sector'           => $loan->sector,
-                    'interest_cycle'   => $loan->interest_cycle,
-                    'loan_officer_id'  => $loan->loan_officer_id,
-                    'branch_id'        => $loan->branch_id,
-                    'top_up_id'        => $loan->id,
+                'bank_account_id'  => $loan->bank_account_id,
+                'date_applied'     => now(),
+                'disbursed_on'     => now(),
+                'status'           => 'active',
+                'sector'           => $loan->sector,
+                'interest_cycle'   => $loan->interest_cycle,
+                'loan_officer_id'  => $loan->loan_officer_id,
+                'branch_id'        => $loan->branch_id,
+                'top_up_id'        => $loan->id,
                     'description'      => $request->purpose,
-                ]);
+            ]);
 
                 // Calculate interest and update loan
-                $interestAmount = $newLoan->calculateInterestAmount($newLoan->interest);
-                $repaymentDates = $newLoan->getRepaymentDates();
-                $newLoan->update([
-                    'interest_amount' => $interestAmount,
-                    'amount_total' => $newLoan->amount + $interestAmount,
-                    'first_repayment_date' => $repaymentDates['first_repayment_date'],
-                    'last_repayment_date' => $repaymentDates['last_repayment_date'],
-                ]);
+            $interestAmount = $newLoan->calculateInterestAmount($newLoan->interest);
+            $repaymentDates = $newLoan->getRepaymentDates();
+            $newLoan->update([
+                'interest_amount' => $interestAmount,
+                'amount_total' => $newLoan->amount + $interestAmount,
+                'first_repayment_date' => $repaymentDates['first_repayment_date'],
+                'last_repayment_date' => $repaymentDates['last_repayment_date'],
+            ]);
 
                 // Generate repayment schedule
-                $newLoan->generateRepaymentSchedule($newLoan->interest);
+            $newLoan->generateRepaymentSchedule($newLoan->interest);
 
                 // Create GL Transactions for Additional Top-Up
                 $this->createAdditionalTopUpGlTransactions($loan, $newLoan, $customerReceives);
@@ -187,12 +187,12 @@ class LoanTopUpController extends Controller
                 // Old loan remains active (no status change)
 
                 // Create top-up record
-                LoanTopup::create([
-                    'old_loan_id'   => $loan->id,
-                    'new_loan_id'   => $newLoan->id,
+            LoanTopup::create([
+                'old_loan_id'   => $loan->id,
+                'new_loan_id'   => $newLoan->id,
                     'old_balance'   => $currentBalance,
                     'topup_amount'  => $customerReceives,
-                    'topup_type'    => 'additional',
+                'topup_type'    => 'additional',
                 ]);
             }
 
