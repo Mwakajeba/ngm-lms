@@ -261,7 +261,7 @@
                             </div>
 
                             <!-- Subscription Management -->
-                            <!-- @can('manage subscription')
+                            @can('manage subscription')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
                                     <div class="card-body text-center">
@@ -279,7 +279,7 @@
                                     </div>
                                 </div>
                             </div>
-                            @endcan -->
+                            @endcan
 
                             <!-- Payment Voucher Approval Process -->
                             @can('manage payment voucher approval')
