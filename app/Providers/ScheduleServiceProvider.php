@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Jobs\CollectMatureInterestJob;
 use App\Jobs\RepaymentReminderJob;
+use App\Jobs\CheckSubscriptionExpiryJob;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Console\Scheduling\Schedule;
 
@@ -40,6 +41,13 @@ class ScheduleServiceProvider extends ServiceProvider
                 ->withoutOverlapping()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/repayment-reminder.log'));
+
+            // Schedule subscription expiry check to run every minute
+            $schedule->job(new CheckSubscriptionExpiryJob())
+                ->everyMinute()
+                ->withoutOverlapping()
+                ->onOneServer()
+                ->appendOutputTo(storage_path('logs/subscription-expiry-check.log'));
         });
     }
 }

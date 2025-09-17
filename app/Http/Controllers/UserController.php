@@ -49,7 +49,11 @@ class UserController extends Controller
     {
         // Get branches for current company
         $branches = Branch::forCompany()->active()->get();
-        $roles = Role::where('guard_name', 'web')->orderBy('name')->get();
+        // Get all roles except super_admin
+        $roles = Role::where('guard_name', 'web')
+            ->where('name', '!=', 'super-admin')
+            ->orderBy('name')
+            ->get();
 
         return view('users.form', compact('branches', 'roles'));
     }

@@ -50,6 +50,7 @@ use App\Http\Controllers\Reports\BotDepositsBorrowingsController;
 use App\Http\Controllers\Reports\BotAgentBankingController;
 use App\Http\Controllers\Reports\BotLoansDisbursedController;
 use App\Http\Controllers\Reports\BotGeographicalDistributionController;
+use App\Http\Controllers\SubscriptionController;
 // Add other main app routes here
 Route::get('/dashboard/loan-product-disbursement', [DashboardController::class, 'loanProductDisbursement'])->middleware('auth');
 Route::get('/dashboard/delinquency-loan-buckets', [DashboardController::class, 'delinquencyLoanBuckets'])->middleware('auth');
@@ -59,8 +60,8 @@ Route::get('/api/bank-accounts', [\App\Http\Controllers\Api\BankAccountControlle
 Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');
 
 // Route::middleware(['auth'])->group(function () {
-    Route::get('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'show'])->name('change-branch');
-    Route::post('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'change'])->name('change-branch.submit');
+Route::get('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'show'])->name('change-branch');
+Route::post('/change-branch', [\App\Http\Controllers\ChangeBranchController::class, 'change'])->name('change-branch.submit');
 //     Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
 // Group Loans AJAX
 Route::get('group-loans-ajax/{group}', [\App\Http\Controllers\GroupLoanAjaxController::class, 'index'])->name('group.loans.ajax');
@@ -140,10 +141,10 @@ Route::get('/reports/bot', [App\Http\Controllers\ReportsController::class, 'bot'
 // BOT Balance Sheet & Income Statement
 Route::prefix('reports/bot')->middleware('auth')->name('reports.bot.')->group(function () {
 
-        // Accounting Reports Index
-        Route::get("/accounting-reports", function() {
-            return view("reports.index");
-        })->name("index");
+    // Accounting Reports Index
+    Route::get("/accounting-reports", function () {
+        return view("reports.index");
+    })->name("index");
     Route::get('/balance-sheet', [BotBalanceSheetController::class, 'index'])->name('balance-sheet');
     Route::get('/balance-sheet/export', [BotBalanceSheetController::class, 'export'])->name('balance-sheet.export');
     Route::get('/income-statement', [BotIncomeStatementController::class, 'index'])->name('income-statement');
@@ -293,6 +294,86 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
 
+////////////////////////////////////////////// SUBSCRIPTION MANAGEMENT ///////////////////////////////////////////
+
+Route::prefix('subscriptions')->name('subscriptions.')->middleware(['auth', 'role:super-admin'])->group(function () {
+    // Subscription Dashboard
+    Route::get('/dashboard', [SubscriptionController::class, 'dashboard'])->name('dashboard');
+
+    // Subscription CRUD
+    Route::get('/', [SubscriptionController::class, 'index'])->name('index');
+    Route::get('/create', [SubscriptionController::class, 'create'])->name('create');
+    Route::post('/', [SubscriptionController::class, 'store'])->name('store');
+    Route::get('/{subscription}', [SubscriptionController::class, 'show'])->name('show');
+    Route::get('/{subscription}/edit', [SubscriptionController::class, 'edit'])->name('edit');
+    Route::put('/{subscription}', [SubscriptionController::class, 'update'])->name('update');
+    Route::delete('/{subscription}', [SubscriptionController::class, 'destroy'])->name('destroy');
+
+    // Subscription Actions
+    Route::post('/{subscription}/mark-paid', [SubscriptionController::class, 'markAsPaid'])->name('mark-paid');
+    Route::post('/{subscription}/cancel', [SubscriptionController::class, 'cancel'])->name('cancel');
+    Route::post('/{subscription}/renew', [SubscriptionController::class, 'renew'])->name('renew');
+    Route::post('/{subscription}/extend', [SubscriptionController::class, 'extend'])->name('extend');
+});
+
+// Ticker Messages API - Only for subscription expiry alerts
+Route::get('/api/ticker-messages', function () {
+    // Get subscription alerts - only show ticker if there are expiring subscriptions
+    $expiringSubscriptions = \App\Models\Subscription::where('status', 'active')
+        ->where('end_date', '<=', now()->addDays(5))
+        ->where('end_date', '>=', now())
+        ->with('company')
+        ->get();
+
+    // If no expiring subscriptions, return empty messages to hide ticker
+    if ($expiringSubscriptions->count() == 0) {
+        return response()->json([
+            'success' => true,
+            'messages' => [],
+            'show_ticker' => false,
+            'timestamp' => now()->toISOString()
+        ]);
+    }
+
+    $messages = [];
+    $now = now();
+
+    // Build subscription expiry messages
+    foreach ($expiringSubscriptions as $subscription) {
+        $daysLeft = floor($now->diffInDays($subscription->end_date, false));
+        $urgency = $daysLeft <= 1 ? 'urgent' : ($daysLeft <= 3 ? 'warning' : 'info');
+
+        $daysText = $daysLeft == 0 ? 'expires today' : ($daysLeft == 1 ? 'expires tomorrow' : "expires in {$daysLeft} days");
+
+        $messages[] = [
+            'text' => "⚠️ URGENT: {$subscription->company->name} subscription ({$subscription->plan_name}) {$daysText} - Amount: " . number_format($subscription->amount, 2) . " {$subscription->currency}",
+            'type' => $urgency,
+            'icon' => 'bx-credit-card',
+            'subscription_id' => $subscription->id,
+            'company_name' => $subscription->company->name,
+            'days_left' => $daysLeft,
+            'expiry_date' => $subscription->end_date->format('M d, Y')
+        ];
+    }
+
+    // Add a general reminder message
+    $messages[] = [
+        'text' => "🔔 Action Required: Please renew expiring subscriptions to avoid service interruption",
+        'type' => 'urgent',
+        'icon' => 'bx-bell'
+    ];
+
+    return response()->json([
+        'success' => true,
+        'messages' => $messages,
+        'show_ticker' => true,
+        'expiring_count' => $expiringSubscriptions->count(),
+        'timestamp' => $now->toISOString()
+    ]);
+})->middleware('auth');
+
+////////////////////////////////////////////// END SUBSCRIPTION MANAGEMENT ///////////////////////////////////////////
+
 ////////////////////////////////////////////// BRANCH MANAGEMENT ///////////////////////////////////////////////////
 
 //Route::resource('branches', BranchController::class)->middleware('auth');
@@ -362,10 +443,10 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::put('/chart-accounts/{encodedId}', [ChartAccountController::class, 'update'])->name('chart-accounts.update');
     Route::delete('/chart-accounts/{encodedId}', [ChartAccountController::class, 'destroy'])->name('chart-accounts.destroy');
 
-            // Suppliers
-        Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
-        Route::get('/suppliers/data', [SupplierController::class, 'getSuppliersData'])->name('suppliers.data');
-        Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
+    // Suppliers
+    Route::get('/suppliers', [SupplierController::class, 'index'])->name('suppliers.index');
+    Route::get('/suppliers/data', [SupplierController::class, 'getSuppliersData'])->name('suppliers.data');
+    Route::get('/suppliers/create', [SupplierController::class, 'create'])->name('suppliers.create');
     Route::post('/suppliers', [SupplierController::class, 'store'])->name('suppliers.store');
     Route::get('/suppliers/{encodedId}', [SupplierController::class, 'show'])->name('suppliers.show');
     Route::get('/suppliers/{encodedId}/edit', [SupplierController::class, 'edit'])->name('suppliers.edit');
@@ -488,7 +569,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::prefix('reports')->name('reports.')->group(function () {
 
         // Accounting Reports Index
-        Route::get("/accounting-reports", function() {
+        Route::get("/accounting-reports", function () {
             return view("reports.index");
         })->name("index");
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');
@@ -525,7 +606,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get("/fees/export", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "export"])->name("fees.export");
 
         Route::get("/fees/export-pdf", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "exportPdf"])->name("fees.export-pdf");
-        
+
         // Penalties Report
         Route::get("/penalties", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "index"])->name("penalties");
         Route::get("/penalties/export", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "export"])->name("penalties.export");
@@ -536,7 +617,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
 
-  //route
+    //route
 
     Route::name('loans.reports.')->group(function () {
         //////LOANS REPORT ROUTE////////
@@ -550,14 +631,14 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/loan-aging', [LoanReportController::class, 'loanAgingReport'])->name('loan_aging');
         Route::get('/loan-aging/export-excel', [LoanReportController::class, 'exportLoanAgingToExcel'])->name('loan_aging.export_excel');
         Route::get('/loan-aging/export-pdf', [LoanReportController::class, 'exportLoanAgingToPdf'])->name('loan_aging.export_pdf');
-        
+
         // Loan Aging Installment Report
         Route::get('/loan-aging-installment', [LoanReportController::class, 'loanAgingInstallmentReport'])->name('loan_aging_installment');
         Route::get('/loan-aging-installment/export-excel', [LoanReportController::class, 'exportLoanAgingInstallmentToExcel'])->name('loan_aging_installment.export_excel');
         Route::get('/loan-aging-installment/export-pdf', [LoanReportController::class, 'exportLoanAgingInstallmentToPdf'])->name('loan_aging_installment.export_pdf');
 
         // Reports Index
-        Route::get('/reports', function() {
+        Route::get('/reports', function () {
             return view('loans.reports.index');
         })->name('reports.index');
 
@@ -572,30 +653,30 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/expected-vs-collected/export-pdf', [LoanReportController::class, 'exportExpectedVsCollectedToPdf'])->name('expected_vs_collected.export_pdf');
 
         // Portfolio at Risk (PAR) Report
-                Route::get('/portfolio-at-risk', [LoanReportController::class, 'portfolioAtRiskReport'])->name('portfolio_at_risk');
-                Route::get('/portfolio-at-risk/export-excel', [LoanReportController::class, 'exportPortfolioAtRiskToExcel'])->name('portfolio_at_risk.export_excel');
-                Route::get('/portfolio-at-risk/export-pdf', [LoanReportController::class, 'exportPortfolioAtRiskToPdf'])->name('portfolio_at_risk.export_pdf');
-                
-                // Internal Portfolio Analysis Report
-                Route::get('/internal-portfolio-analysis', [LoanReportController::class, 'internalPortfolioAnalysisReport'])->name('internal_portfolio_analysis');
-                Route::get('/internal-portfolio-analysis/export-excel', [LoanReportController::class, 'exportInternalPortfolioAnalysisToExcel'])->name('internal_portfolio_analysis.export_excel');
-                Route::get('/internal-portfolio-analysis/export-pdf', [LoanReportController::class, 'exportInternalPortfolioAnalysisToPdf'])->name('internal_portfolio_analysis.export_pdf');
-                
-                // Loan Portfolio Report
-                Route::get('/portfolio', [LoanReportController::class, 'portfolioReport'])->name('portfolio');
-                Route::get('/portfolio/export-excel', [LoanReportController::class, 'exportPortfolioToExcel'])->name('portfolio.export_excel');
-                Route::get('/portfolio/export-pdf', [LoanReportController::class, 'exportPortfolioToPdf'])->name('portfolio.export_pdf');
-                
-                // Loan Performance Report
-                Route::get('/performance', [LoanReportController::class, 'performanceReport'])->name('performance');
-                Route::get('/performance/export-excel', [LoanReportController::class, 'exportPerformanceToExcel'])->name('performance.export_excel');
-                Route::get('/performance/export-pdf', [LoanReportController::class, 'exportPerformanceToPdf'])->name('performance.export_pdf');
-                
-                // Delinquency Report
-                Route::get('/delinquency', [LoanReportController::class, 'delinquencyReport'])->name('delinquency');
-                Route::get('/delinquency/export-excel', [LoanReportController::class, 'exportDelinquencyToExcel'])->name('delinquency.export_excel');
-                Route::get('/delinquency/export-pdf', [LoanReportController::class, 'exportDelinquencyToPdf'])->name('delinquency.export_pdf');
-                
+        Route::get('/portfolio-at-risk', [LoanReportController::class, 'portfolioAtRiskReport'])->name('portfolio_at_risk');
+        Route::get('/portfolio-at-risk/export-excel', [LoanReportController::class, 'exportPortfolioAtRiskToExcel'])->name('portfolio_at_risk.export_excel');
+        Route::get('/portfolio-at-risk/export-pdf', [LoanReportController::class, 'exportPortfolioAtRiskToPdf'])->name('portfolio_at_risk.export_pdf');
+
+        // Internal Portfolio Analysis Report
+        Route::get('/internal-portfolio-analysis', [LoanReportController::class, 'internalPortfolioAnalysisReport'])->name('internal_portfolio_analysis');
+        Route::get('/internal-portfolio-analysis/export-excel', [LoanReportController::class, 'exportInternalPortfolioAnalysisToExcel'])->name('internal_portfolio_analysis.export_excel');
+        Route::get('/internal-portfolio-analysis/export-pdf', [LoanReportController::class, 'exportInternalPortfolioAnalysisToPdf'])->name('internal_portfolio_analysis.export_pdf');
+
+        // Loan Portfolio Report
+        Route::get('/portfolio', [LoanReportController::class, 'portfolioReport'])->name('portfolio');
+        Route::get('/portfolio/export-excel', [LoanReportController::class, 'exportPortfolioToExcel'])->name('portfolio.export_excel');
+        Route::get('/portfolio/export-pdf', [LoanReportController::class, 'exportPortfolioToPdf'])->name('portfolio.export_pdf');
+
+        // Loan Performance Report
+        Route::get('/performance', [LoanReportController::class, 'performanceReport'])->name('performance');
+        Route::get('/performance/export-excel', [LoanReportController::class, 'exportPerformanceToExcel'])->name('performance.export_excel');
+        Route::get('/performance/export-pdf', [LoanReportController::class, 'exportPerformanceToPdf'])->name('performance.export_pdf');
+
+        // Delinquency Report
+        Route::get('/delinquency', [LoanReportController::class, 'delinquencyReport'])->name('delinquency');
+        Route::get('/delinquency/export-excel', [LoanReportController::class, 'exportDelinquencyToExcel'])->name('delinquency.export_excel');
+        Route::get('/delinquency/export-pdf', [LoanReportController::class, 'exportDelinquencyToPdf'])->name('delinquency.export_pdf');
+
         // Loan Outstanding Report
         Route::get('/loan-outstanding', [LoanReportController::class, 'loanOutstandingReport'])->name('loan_outstanding');
 
@@ -629,7 +710,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
-    
+
 });
 
 ////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
@@ -679,7 +760,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans/{encodedId}/fees-receipt', [LoanController::class, 'feesReceipt'])->name('loans.fees_receipt');
     Route::get('loans/list', [LoanController::class, 'listLoans'])->name('loans.list');
     Route::get('loans/writtenoff/data', [LoanController::class, 'getWrittenOffLoansData'])->name('loans.writtenoff.data');
-    Route::get('loans/writtenoff', function() {
+    Route::get('loans/writtenoff', function () {
         $loans = \App\Models\Loan::with(['customer', 'product', 'branch'])
             ->where('status', 'written_off')
             ->get();
@@ -802,13 +883,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/chat/unread-count', [App\Http\Controllers\ChatController::class, 'getUnreadCount'])->name('chat.unread-count');
     Route::post('/chat/clear', [App\Http\Controllers\ChatController::class, 'clearChat'])->name('chat.clear');
     Route::get('/chat/online-users', [App\Http\Controllers\ChatController::class, 'getOnlineUsers'])->name('chat.online-users');
-Route::get('/chat/download/{messageId}', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.download');
+    Route::get('/chat/download/{messageId}', [App\Http\Controllers\ChatController::class, 'downloadFile'])->name('chat.download');
 });
 
 // Calendar Routes
 Route::middleware(['auth'])->group(function () {
     Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
-Route::get('/loan-messages', [App\Http\Controllers\LoanMessagesController::class, 'getMessages'])->name('loan-messages.get');
+    Route::get('/loan-messages', [App\Http\Controllers\LoanMessagesController::class, 'getMessages'])->name('loan-messages.get');
 });
 
 Route::post('sms/bulk', [App\Http\Controllers\DashboardController::class, 'sendBulkSms'])->name('sms.bulk');
