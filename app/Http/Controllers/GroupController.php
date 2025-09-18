@@ -43,9 +43,15 @@ class GroupController extends Controller
         })->get();
 
         $branchId = auth()->user()->branch_id;
-        // Only customers in 'Borrower' category can be group leaders
+
+        // Get all customer IDs who are already members of any group
+        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
+
+        // Only customers in 'Borrower' category who are not in any group can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
-            ->where('category', 'Borrower')->get();
+            ->where('category', 'Borrower')
+            ->whereNotIn('id', $allGroupMemberIds)
+            ->get();
 
         return view('groups.create', compact('loanOfficers', 'groupLeaders'));
     }
@@ -68,6 +74,12 @@ class GroupController extends Controller
                         $customer = Customer::find($value);
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
+                        }
+
+                        // Check if customer is already a member of any group
+                        $isInAnyGroup = \DB::table('group_members')->where('customer_id', $value)->exists();
+                        if ($isInAnyGroup) {
+                            $fail('The selected group leader is already a member of another group.');
                         }
                     }
                 }
@@ -138,7 +150,7 @@ class GroupController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members.customer']);
+        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members']);
 
         // Get all loans for this group (assuming each member has loans)
         $memberIds = $group->members->pluck('customer_id');
@@ -165,9 +177,20 @@ class GroupController extends Controller
         })->get();
 
         $branchId = auth()->user()->branch_id;
-        // Only customers in 'Borrower' category can be group leaders
+
+        // Get all customer IDs who are already members of any group
+        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
+
+        // Only customers in 'Borrower' category who are not in any group can be group leaders
+        // But include the current group leader even if they're in a group (for editing existing groups)
+        $currentGroupLeaderId = $group->group_leader;
         $groupLeaders = Customer::where('branch_id', $branchId)
-            ->where('category', 'Borrower')->get();
+            ->where('category', 'Borrower')
+            ->where(function ($query) use ($allGroupMemberIds, $currentGroupLeaderId) {
+                $query->whereNotIn('id', $allGroupMemberIds)
+                    ->orWhere('id', $currentGroupLeaderId);
+            })
+            ->get();
 
         return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders'));
     }
@@ -193,11 +216,19 @@ class GroupController extends Controller
             'group_leader' => [
                 'nullable',
                 'exists:customers,id',
-                function ($attribute, $value, $fail) {
+                function ($attribute, $value, $fail) use ($group) {
                     if ($value) {
                         $customer = Customer::find($value);
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
+                        }
+
+                        // Check if customer is already a member of any group (except if they're the current group leader)
+                        if ($value != $group->group_leader) {
+                            $isInAnyGroup = \DB::table('group_members')->where('customer_id', $value)->exists();
+                            if ($isInAnyGroup) {
+                                $fail('The selected group leader is already a member of another group.');
+                            }
                         }
                     }
                 }
@@ -267,11 +298,11 @@ class GroupController extends Controller
             if ($group->loans()->count() > 0) {
                 return redirect()->back()->with('error', 'Cannot delete group. It has associated loans.');
             }
-            
+
             // Check for any assigned customers (members or group leader)
             $hasMembers = $group->members()->count() > 0;
             $hasGroupLeader = $group->group_leader !== null;
-            
+
             if ($hasMembers || $hasGroupLeader) {
                 $message = 'Cannot delete group. It has assigned customers';
                 if ($hasMembers && $hasGroupLeader) {

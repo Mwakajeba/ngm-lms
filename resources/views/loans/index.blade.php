@@ -189,6 +189,111 @@
             </div>
         </div>
     </div>
+
+    <!-- Opening Balance Modal -->
+    <div class="modal fade" id="openingBalanceModal" tabindex="-1" aria-labelledby="openingBalanceModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="openingBalanceModalLabel">Opening Balance - Bulk Loan Creation</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form id="openingBalanceForm" action="{{ route('loans.opening-balance.store') }}" method="POST"
+                    enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="row">
+                            <!-- Download Template Button -->
+                            <div class="col-12 mb-3">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <h6 class="mb-0">Step 1: Download Template</h6>
+                                    <button type="button" id="downloadTemplateBtn" class="btn btn-outline-primary btn-sm">
+                                        <i class="bx bx-download me-1"></i> Download Template
+                                    </button>
+                                </div>
+                                <small class="text-muted">Download the CSV template and fill in your loan data</small>
+                            </div>
+
+                            <!-- Product Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Loan Product <span class="text-danger">*</span></label>
+                                <select name="product_id" class="form-select @error('product_id') is-invalid @enderror"
+                                    required>
+                                    <option value="">Select Product</option>
+                                    @foreach($products ?? [] as $product)
+                                        <option value="{{ $product->id ?? '' }}" {{ old('product_id') == ($product->id ?? '') ? 'selected' : '' }}>
+                                            {{ $product->name ?? '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('product_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <!-- Branch Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Branch <span class="text-danger">*</span></label>
+                                <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror"
+                                    required>
+                                    <option value="">Select Branch</option>
+                                    @foreach($branches ?? [] as $branch)
+                                        <option value="{{ $branch->id ?? '' }}" {{ old('branch_id') == ($branch->id ?? '') ? 'selected' : '' }}>
+                                            {{ $branch->name ?? '' }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('branch_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <!-- Chart Account Selection -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Chart Account <span class="text-danger">*</span></label>
+                                <select name="chart_account_id"
+                                    class="form-select @error('chart_account_id') is-invalid @enderror" required>
+                                    <option value="">Select Chart Account</option>
+                                    @foreach($chartAccounts ?? [] as $account)
+                                        <option value="{{ $account->id ?? '' }}" {{ old('chart_account_id') == ($account->id ?? '') ? 'selected' : '' }}>
+                                            {{ $account->account_name ?? '' }} ({{ $account->account_code ?? '' }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('chart_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                            </div>
+
+                            <!-- CSV File Upload -->
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">CSV File <span class="text-danger">*</span></label>
+                                <input type="file" name="csv_file"
+                                    class="form-control @error('csv_file') is-invalid @enderror" accept=".csv" required>
+                                @error('csv_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                                <small class="text-muted">Upload the filled CSV template</small>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="alert alert-info">
+                            <h6 class="alert-heading">Instructions:</h6>
+                            <ul class="mb-0">
+                                <li>Select a loan product first, then download the template</li>
+                                <li>Interest cycle will be automatically taken from the selected product</li>
+                                <li>Fill in the loan data in the CSV template</li>
+                                <li>Ensure customer numbers exist in the system</li>
+                                <li>Loans will be created with 'active' status</li>
+                                <li>Repayments will be processed automatically if amount_paid > 0</li>
+                                <li>Process runs in background - you'll be notified when complete</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bx bx-upload me-1"></i> Process Opening Balance
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
     <!--end page wrapper -->
     <!--start overlay-->
     <div class="overlay toggle-icon"></div>
@@ -285,106 +390,32 @@
     </style>
 @endpush
 
-<!-- Opening Balance Modal -->
-<div class="modal fade" id="openingBalanceModal" tabindex="-1" aria-labelledby="openingBalanceModalLabel"
-    aria-hidden="true">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title" id="openingBalanceModalLabel">Opening Balance - Bulk Loan Creation</h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-            </div>
-            <form id="openingBalanceForm" action="{{ route('loans.opening-balance.store') }}" method="POST"
-                enctype="multipart/form-data">
-                @csrf
-                <div class="modal-body">
-                    <div class="row">
-                        <!-- Download Template Button -->
-                        <div class="col-12 mb-3">
-                            <div class="d-flex justify-content-between align-items-center">
-                                <h6 class="mb-0">Step 1: Download Template</h6>
-                                <a href="{{ route('loans.opening-balance.template') }}"
-                                    class="btn btn-outline-primary btn-sm">
-                                    <i class="bx bx-download me-1"></i> Download Template
-                                </a>
-                            </div>
-                            <small class="text-muted">Download the CSV template and fill in your loan data</small>
-                        </div>
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const downloadTemplateBtn = document.getElementById('downloadTemplateBtn');
+            const productSelect = document.querySelector('select[name="product_id"]');
 
-                        <!-- Product Selection -->
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Loan Product <span class="text-danger">*</span></label>
-                            <select name="product_id" class="form-select @error('product_id') is-invalid @enderror"
-                                required>
-                                <option value="">Select Product</option>
-                                @foreach($products ?? [] as $product)
-                                    <option value="{{ $product->id ?? '' }}" {{ old('product_id') == ($product->id ?? '') ? 'selected' : '' }}>
-                                        {{ $product->name ?? '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('product_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+            downloadTemplateBtn.addEventListener('click', function () {
+                const productId = productSelect.value;
 
-                        <!-- Branch Selection -->
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Branch <span class="text-danger">*</span></label>
-                            <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror"
-                                required>
-                                <option value="">Select Branch</option>
-                                @foreach($branches ?? [] as $branch)
-                                    <option value="{{ $branch->id ?? '' }}" {{ old('branch_id') == ($branch->id ?? '') ? 'selected' : '' }}>
-                                        {{ $branch->name ?? '' }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('branch_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                if (!productId) {
+                    alert('Please select a loan product first before downloading the template.');
+                    productSelect.focus();
+                    return;
+                }
 
-                        <!-- Chart Account Selection -->
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">Chart Account <span class="text-danger">*</span></label>
-                            <select name="chart_account_id"
-                                class="form-select @error('chart_account_id') is-invalid @enderror" required>
-                                <option value="">Select Chart Account</option>
-                                @foreach($chartAccounts ?? [] as $account)
-                                    <option value="{{ $account->id ?? '' }}" {{ old('chart_account_id') == ($account->id ?? '') ? 'selected' : '' }}>
-                                        {{ $account->account_name ?? '' }} ({{ $account->account_code ?? '' }})
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('chart_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                // Create download URL with product_id parameter
+                const downloadUrl = '{{ route("loans.opening-balance.template") }}?product_id=' + productId;
 
-                        <!-- CSV File Upload -->
-                        <div class="col-md-6 mb-3">
-                            <label class="form-label">CSV File <span class="text-danger">*</span></label>
-                            <input type="file" name="csv_file"
-                                class="form-control @error('csv_file') is-invalid @enderror" accept=".csv" required>
-                            @error('csv_file') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                            <small class="text-muted">Upload the filled CSV template</small>
-                        </div>
-                    </div>
-
-                    <!-- Instructions -->
-                    <div class="alert alert-info">
-                        <h6 class="alert-heading">Instructions:</h6>
-                        <ul class="mb-0">
-                            <li>Download the template and fill in your loan data</li>
-                            <li>Ensure customer numbers exist in the system</li>
-                            <li>Loans will be created with 'active' status</li>
-                            <li>Repayments will be processed automatically if amount_paid > 0</li>
-                            <li>Process runs in background - you'll be notified when complete</li>
-                        </ul>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-warning">
-                        <i class="bx bx-upload me-1"></i> Process Opening Balance
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
+                // Create a temporary link and trigger download
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = 'opening_balance_template_{{ date("Y-m-d") }}.csv';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+            });
+        });
+    </script>
+@endpush

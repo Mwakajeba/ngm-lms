@@ -264,7 +264,11 @@ class LoanController extends Controller
         // Data for opening balance modal
         $products = LoanProduct::where('is_active', true)->get();
         $branches = \App\Models\Branch::where('status', 'active')->get();
-        $chartAccounts = ChartAccount::with('accountClassGroup')->get();
+        $chartAccounts = ChartAccount::with(['accountClassGroup.accountClass'])
+            ->whereHas('accountClassGroup.accountClass', function ($query) {
+                $query->where('name', 'LIKE', '%Equity%');
+            })
+            ->get();
 
         return view('loans.index', compact('stats', 'products', 'branches', 'chartAccounts'));
     }
@@ -2820,8 +2824,19 @@ class LoanController extends Controller
     /**
      * Download opening balance template
      */
-    public function downloadOpeningBalanceTemplate()
+    public function downloadOpeningBalanceTemplate(Request $request)
     {
+        // Get product_id from request to determine interest cycle
+        $productId = $request->get('product_id');
+        $interestCycle = 'Monthly'; // Default value
+
+        if ($productId) {
+            $product = LoanProduct::find($productId);
+            if ($product && $product->interest_cycle) {
+                $interestCycle = ucfirst($product->interest_cycle);
+            }
+        }
+
         $customers = Customer::with('groups')->get();
 
         $headers = [
@@ -2832,7 +2847,6 @@ class LoanController extends Controller
             'amount',
             'interest',
             'period',
-            'interest_cycle',
             'date_applied',
             'sector',
             'amount_paid'
@@ -2840,7 +2854,7 @@ class LoanController extends Controller
 
         $filename = 'opening_balance_template_' . date('Y-m-d') . '.csv';
 
-        $callback = function () use ($customers, $headers) {
+        $callback = function () use ($customers, $headers, $interestCycle) {
             $file = fopen('php://output', 'w');
 
             // Write headers
@@ -2857,7 +2871,6 @@ class LoanController extends Controller
                     '', // amount - to be filled
                     '', // interest - to be filled
                     '', // period - to be filled
-                    'Monthly', // interest_cycle
                     date('Y-m-d'), // date_applied
                     'Business', // sector
                     '' // amount_paid - to be filled
@@ -2891,7 +2904,7 @@ class LoanController extends Controller
             $headers = array_shift($csvData);
 
             // Validate CSV structure
-            $expectedHeaders = ['customer_no', 'customer_name', 'group_id', 'group_name', 'amount', 'interest', 'period', 'interest_cycle', 'date_applied', 'sector', 'amount_paid'];
+            $expectedHeaders = ['customer_no', 'customer_name', 'group_id', 'group_name', 'amount', 'interest', 'period', 'date_applied', 'sector', 'amount_paid'];
             if (array_diff($expectedHeaders, $headers)) {
                 return redirect()->back()->withErrors(['csv_file' => 'Invalid CSV format. Please download the template and use it.']);
             }

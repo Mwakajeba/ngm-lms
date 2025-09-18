@@ -126,10 +126,10 @@ class BulkLoanCreationJob implements ShouldQueue
             'amount' => floatval($row[4] ?? 0),
             'interest' => floatval($row[5] ?? 0),
             'period' => intval($row[6] ?? 0),
-            'interest_cycle' => $row[7] ?? 'Monthly',
-            'date_applied' => $row[8] ?? date('Y-m-d'),
-            'sector' => $row[9] ?? 'Business',
-            'amount_paid' => floatval($row[10] ?? 0)
+            'interest_cycle' => $product->interest_cycle ?? 'monthly', // Use product's interest cycle
+            'date_applied' => $row[7] ?? date('Y-m-d'),
+            'sector' => $row[8] ?? 'Business',
+            'amount_paid' => floatval($row[9] ?? 0)
         ];
 
         // Validate required fields
