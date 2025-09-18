@@ -28,7 +28,7 @@ class ScheduleServiceProvider extends ServiceProvider
 
             // Schedule mature interest collection to run daily at midnight
             $schedule->job(new CollectMatureInterestJob())
-                ->dailyAt('00:00')
+                ->dailyAt('08:00')
                 // ->everyMinute()
                 ->withoutOverlapping()
                 ->onOneServer()
@@ -44,7 +44,7 @@ class ScheduleServiceProvider extends ServiceProvider
 
             // Schedule subscription expiry check to run every minute
             $schedule->job(new CheckSubscriptionExpiryJob())
-                ->everyMinute()
+                ->dailyAt('00:00')
                 ->withoutOverlapping()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/subscription-expiry-check.log'));

@@ -2,15 +2,14 @@
 
 namespace App\Jobs;
 
-use App\Models\BankAccount;
 use App\Models\CashCollateral;
 use App\Models\Customer;
 use App\Models\GlTransaction;
+use App\Models\Journal;
+use App\Models\JournalItem;
 use App\Models\Loan;
 use App\Models\LoanProduct;
 use App\Models\LoanSchedule;
-use App\Models\Payment;
-use App\Models\PaymentItem;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -49,12 +48,7 @@ class BulkLoanCreationJob implements ShouldQueue
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($this->validated['product_id']);
-        $bankAccount = BankAccount::where('chart_account_id', $this->validated['chart_account_id'])->first();
-
-        if (!$bankAccount) {
-            Log::error('Bank account not found for chart account', ['chart_account_id' => $this->validated['chart_account_id']]);
-            return;
-        }
+        $chartAccountId = $this->validated['chart_account_id'];
 
         $createdLoans = [];
         $failedLoans = [];
@@ -68,10 +62,10 @@ class BulkLoanCreationJob implements ShouldQueue
 
             foreach ($chunk as $rowIndex => $row) {
                 try {
-                    $loanData = $this->processLoanRow($row, $product, $bankAccount);
+                    $loanData = $this->processLoanRow($row, $product, $chartAccountId);
 
                     if ($loanData) {
-                        $loan = $this->createLoan($loanData, $product, $bankAccount);
+                        $loan = $this->createLoan($loanData, $product, $chartAccountId);
                         if ($loan) {
                             $createdLoans[] = $loan;
 
@@ -108,14 +102,14 @@ class BulkLoanCreationJob implements ShouldQueue
         // Dispatch repayment job if there are repayments to process
         if (!empty($repaymentData)) {
             Log::info('Dispatching bulk repayment job', ['repayment_count' => count($repaymentData)]);
-            BulkRepaymentJob::dispatch($repaymentData, $this->userId);
+            BulkRepaymentJob::dispatch($repaymentData, $this->userId, $chartAccountId);
         }
     }
 
     /**
      * Process a single loan row
      */
-    private function processLoanRow($row, $product, $bankAccount)
+    private function processLoanRow($row, $product, $chartAccountId)
     {
         // Map CSV columns to data
         $data = [
@@ -176,16 +170,16 @@ class BulkLoanCreationJob implements ShouldQueue
             'customer_id' => $customer->id,
             'product_id' => $product->id,
             'branch_id' => $this->validated['branch_id'],
-            'bank_account_id' => $bankAccount->id
+            'chart_account_id' => $chartAccountId
         ]);
     }
 
     /**
      * Create a single loan
      */
-    private function createLoan($loanData, $product, $bankAccount)
+    private function createLoan($loanData, $product, $chartAccountId)
     {
-        return DB::transaction(function () use ($loanData, $product, $bankAccount) {
+        return DB::transaction(function () use ($loanData, $product, $chartAccountId) {
             // Create loan
             $loan = Loan::create([
                 'product_id' => $loanData['product_id'],
@@ -194,7 +188,7 @@ class BulkLoanCreationJob implements ShouldQueue
                 'amount' => $loanData['amount'],
                 'customer_id' => $loanData['customer_id'],
                 'group_id' => $loanData['group_id'] ?: null,
-                'bank_account_id' => $loanData['bank_account_id'],
+                'bank_account_id' => null, // Not using bank account anymore
                 'date_applied' => $loanData['date_applied'],
                 'disbursed_on' => $loanData['date_applied'],
                 'sector' => $loanData['sector'],
@@ -222,7 +216,7 @@ class BulkLoanCreationJob implements ShouldQueue
             // Post matured interest for past loans
             $loan->postMaturedInterestForPastLoan();
 
-            // Create payment record
+            // Create journal entry for loan disbursement
             $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$loanData['amount']}";
             $principalReceivable = $product->principal_receivable_account_id;
 
@@ -254,34 +248,40 @@ class BulkLoanCreationJob implements ShouldQueue
 
             $disbursementAmount = $loanData['amount'] - $releaseFeeTotal;
 
-            $payment = Payment::create([
-                'reference' => $loan->id,
-                'reference_type' => 'Loan Payment',
-                'reference_number' => null,
+            // Generate a unique reference for the journal
+            $nextId = Journal::max('id') + 1;
+            $reference = 'JRN-' . str_pad($nextId, 6, '0', STR_PAD_LEFT);
+
+            $journal = Journal::create([
                 'date' => $loanData['date_applied'],
-                'amount' => $disbursementAmount,
                 'description' => $notes,
-                'user_id' => $this->userId,
-                'payee_type' => 'customer',
-                'customer_id' => $loanData['customer_id'],
-                'bank_account_id' => $loanData['bank_account_id'],
                 'branch_id' => $loanData['branch_id'],
-                'approved' => true,
-                'approved_by' => $this->userId,
-                'approved_at' => now(),
+                'user_id' => $this->userId,
+                'reference_type' => 'Loan Disbursement',
+                'reference' => $reference,
             ]);
 
-            PaymentItem::create([
-                'payment_id' => $payment->id,
+            // Create journal items
+            JournalItem::create([
+                'journal_id' => $journal->id,
+                'chart_account_id' => $chartAccountId,
+                'amount' => $disbursementAmount,
+                'nature' => 'credit',
+                'description' => $notes,
+            ]);
+
+            JournalItem::create([
+                'journal_id' => $journal->id,
                 'chart_account_id' => $principalReceivable,
                 'amount' => $loanData['amount'],
+                'nature' => 'debit',
                 'description' => $notes,
             ]);
 
             // Create GL transactions
             GlTransaction::insert([
                 [
-                    'chart_account_id' => $bankAccount->chart_account_id,
+                    'chart_account_id' => $chartAccountId,
                     'customer_id' => $loan->customer_id,
                     'amount' => $disbursementAmount,
                     'nature' => 'credit',

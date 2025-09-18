@@ -2909,6 +2909,9 @@ class LoanController extends Controller
                 return redirect()->back()->withErrors(['csv_file' => 'Invalid CSV format. Please download the template and use it.']);
             }
 
+            // Remove the uploaded file from validated data to avoid serialization issues
+            unset($validated['csv_file']);
+
             // Dispatch job for bulk loan creation
             \App\Jobs\BulkLoanCreationJob::dispatch($csvData, $validated, auth()->id());
 
