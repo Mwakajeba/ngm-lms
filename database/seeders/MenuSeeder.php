@@ -11,7 +11,7 @@ class MenuSeeder extends Seeder
     public function run()
     {
         $adminRole = Role::where('name', 'admin')->first();
-        
+
         if (!$adminRole) {
             $this->command->warn('Admin role not found.');
             return;
@@ -34,7 +34,7 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
             ],
-             'Accounting' => [
+            'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
                     ['name' => 'Charts of account - FSLI', 'route' => 'accounting.account-class-groups.index'],
@@ -60,7 +60,7 @@ class MenuSeeder extends Seeder
                     'accounting.journals.show'
                 ],
             ],
-              'Deposit Accounts' => [
+            'Deposit Accounts' => [
                 'icon' => 'bx bx-outline',
                 'visibleRoutes' => [
                     ['name' => 'Cash Deposit Accounts', 'route' => 'cash_collateral_types.index'],
@@ -77,7 +77,7 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
-          
+
             'Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [

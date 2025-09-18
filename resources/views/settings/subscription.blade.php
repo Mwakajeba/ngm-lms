@@ -68,6 +68,22 @@
                                     </select>
                                 </div>
 
+                                <!-- Start Date -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="subscription_start_date" class="form-label">Subscription Start Date & Time</label>
+                                    <input type="datetime-local" class="form-control" id="subscription_start_date" name="subscription_start_date" 
+                                        value="{{ old('subscription_start_date', isset($subscription) && $subscription->start_date ? \Carbon\Carbon::parse($subscription->start_date)->format('Y-m-d\TH:i') : '') }}" 
+                                        required>
+                                </div>
+
+                                <!-- End Date -->
+                                <div class="col-md-6 mb-3">
+                                    <label for="subscription_end_date" class="form-label">Subscription End Date & Time</label>
+                                    <input type="datetime-local" class="form-control" id="subscription_end_date" name="subscription_end_date" 
+                                        value="{{ old('subscription_end_date', isset($subscription) && $subscription->end_date ? \Carbon\Carbon::parse($subscription->end_date)->format('Y-m-d\TH:i') : '') }}" 
+                                        required>
+                                </div>
+
                                 <!-- Auto Renewal -->
                                 <div class="col-md-6 mb-3">
                                     <div class="form-check form-switch">

@@ -57,12 +57,12 @@ class AuthController extends Controller
             $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
 
             ActivityLog::create([
-                'user_id'     => null,
-                'model'       => 'Auth',
-                'action'      => 'login_failed',
+                'user_id' => null,
+                'model' => 'Auth',
+                'action' => 'login_failed',
                 'description' => "Login blocked - too many attempts for {$request->phone}",
-                'ip_address'  => $request->ip(),
-                'device'      => $deviceString,
+                'ip_address' => $request->ip(),
+                'device' => $deviceString,
                 'activity_time' => now(),
             ]);
 
@@ -77,17 +77,41 @@ class AuthController extends Controller
             LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
 
             ActivityLog::create([
-                'user_id'     => null,
-                'model'       => 'Auth',
-                'action'      => 'login_failed',
+                'user_id' => null,
+                'model' => 'Auth',
+                'action' => 'login_failed',
                 'description' => "Login failed - phone not found ({$request->phone})",
-                'ip_address'  => $request->ip(),
-                'device'      => $deviceString,
+                'ip_address' => $request->ip(),
+                'device' => $deviceString,
                 'activity_time' => now(),
             ]);
 
             return back()->withErrors([
                 'phone' => 'Phone number not found.',
+            ])->withInput();
+        }
+
+        // Check if user is active
+        if ($user->is_active !== 'yes' || $user->status === 'inactive' || $user->status === 'suspended') {
+            LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+
+            ActivityLog::create([
+                'user_id' => $user->id,
+                'model' => 'Auth',
+                'action' => 'login_failed',
+                'description' => "Login failed - user account is {$user->status} (is_active: {$user->is_active})",
+                'ip_address' => $request->ip(),
+                'device' => $deviceString,
+                'activity_time' => now(),
+            ]);
+
+            $errorMessage = 'Your account is currently inactive. Please contact your administrator.';
+            if ($user->status === 'suspended') {
+                $errorMessage = 'Your account has been suspended due to expired subscription. Please contact your administrator.';
+            }
+
+            return back()->withErrors([
+                'phone' => $errorMessage,
             ])->withInput();
         }
 
@@ -101,12 +125,12 @@ class AuthController extends Controller
             LoginAttempt::clearOldAttempts();
 
             ActivityLog::create([
-                'user_id'     => $user->id,
-                'model'       => 'Auth',
-                'action'      => 'login_success',
+                'user_id' => $user->id,
+                'model' => 'Auth',
+                'action' => 'login_success',
                 'description' => 'User logged in successfully',
-                'ip_address'  => $request->ip(),
-                'device'      => $deviceString,
+                'ip_address' => $request->ip(),
+                'device' => $deviceString,
                 'activity_time' => now(),
             ]);
 
@@ -116,12 +140,12 @@ class AuthController extends Controller
         LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
 
         ActivityLog::create([
-            'user_id'     => $user->id,
-            'model'       => 'Auth',
-            'action'      => 'login_failed',
+            'user_id' => $user->id,
+            'model' => 'Auth',
+            'action' => 'login_failed',
             'description' => 'Login failed - wrong password',
-            'ip_address'  => $request->ip(),
-            'device'      => $deviceString,
+            'ip_address' => $request->ip(),
+            'device' => $deviceString,
             'activity_time' => now(),
         ]);
 

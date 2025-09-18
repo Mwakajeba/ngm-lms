@@ -25,13 +25,18 @@ class GroupMemberController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        // Get customers who are not already members of this group
+        // Get customers who are not already members of this group AND not members of any other group
         $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
         $branchId = auth()->user()->branch_id;
+
+        // Get all customer IDs who are already members of any group
+        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
+
         $availableCustomers = Customer::with(['region', 'district'])
-            ->where('category', 'borrower')
+            ->where('category', 'Borrower') // Fixed case sensitivity
             ->where('branch_id', $branchId)
-            ->whereNotIn('id', $existingMemberIds)
+            ->whereNotIn('id', $existingMemberIds) // Not already in this group
+            ->whereNotIn('id', $allGroupMemberIds) // Not in any group
             ->orderBy('name')
             ->get();
 
@@ -87,10 +92,18 @@ class GroupMemberController extends Controller
         }
 
         foreach ($customerIds as $customerId) {
-            // Check if customer is already a member
+            // Check if customer is already a member of this group
             if ($group->members()->where('customer_id', $customerId)->exists()) {
                 $customer = Customer::find($customerId);
                 $errors[] = "Customer '{$customer->name}' is already a member of this group.";
+                continue;
+            }
+
+            // Check if customer is already a member of any other group
+            $isInAnyGroup = \DB::table('group_members')->where('customer_id', $customerId)->exists();
+            if ($isInAnyGroup) {
+                $customer = Customer::find($customerId);
+                $errors[] = "Customer '{$customer->name}' is already a member of another group.";
                 continue;
             }
 

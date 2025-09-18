@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Group extends Model
 {
-    use HasFactory,LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'name',
@@ -85,6 +85,14 @@ class Group extends Model
     }
 
     /**
+     * Get the current member count (alias for members_count).
+     */
+    public function getCurrentMemberCountAttribute()
+    {
+        return $this->members_count;
+    }
+
+    /**
      * Check if the group has reached its maximum member limit.
      */
     public function hasReachedMaxMembers()
@@ -92,8 +100,20 @@ class Group extends Model
         if (!$this->maximum_members) {
             return false;
         }
-        
+
         return $this->members_count >= $this->maximum_members;
+    }
+
+    /**
+     * Check if the group can accept more members.
+     */
+    public function canAcceptMoreMembers()
+    {
+        if (!$this->maximum_members) {
+            return true; // No limit set, can always accept more
+        }
+
+        return $this->members_count < $this->maximum_members;
     }
 
     /**
@@ -104,7 +124,7 @@ class Group extends Model
         if (!$this->minimum_members) {
             return true;
         }
-        
+
         return $this->members_count >= $this->minimum_members;
     }
 
@@ -175,9 +195,9 @@ class Group extends Model
     {
         return $query->where(function ($q) {
             $q->whereNull('maximum_members')
-              ->orWhereHas('members', function ($subQ) {
-                  $subQ->havingRaw('COUNT(*) < groups.maximum_members');
-              });
+                ->orWhereHas('members', function ($subQ) {
+                    $subQ->havingRaw('COUNT(*) < groups.maximum_members');
+                });
         });
     }
 }

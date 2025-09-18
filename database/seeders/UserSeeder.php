@@ -11,7 +11,6 @@ class UserSeeder extends Seeder
 {
     public function run()
     {
-
         // Check if any user already exists
         if (User::exists()) {
             $this->command->warn('Users already exist. Skipping seeding.');
@@ -25,7 +24,7 @@ class UserSeeder extends Seeder
             return;
         }
 
-        // Seed one user per branch with different roles
+        // Seed one user per branch, but set role to 'super-admin'
         foreach ($branches as $index => $branch) {
             User::create([
                 'name' => 'Julius Mwakajeba ' . $index,
@@ -34,11 +33,7 @@ class UserSeeder extends Seeder
                 'password' => Hash::make('12345'),
                 'branch_id' => $branch->id,
                 'company_id'=> $branch->company_id,
-                'role' => match($index % 3) {
-                    0 => 'admin',
-                    1 => 'manager',
-                    default => 'teller',
-                },
+                'role' => 'super-admin',
                 'is_active' => 'yes',
                 'sms_verification_code' => '654321',
                 'sms_verified_at' => now(),
@@ -46,5 +41,3 @@ class UserSeeder extends Seeder
         }
     }
 }
-
-
