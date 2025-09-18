@@ -1,5 +1,8 @@
 <?php
 
+
+
+
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
@@ -19,6 +22,9 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
+
+set_time_limit(0);              // no limit for this request
+ini_set('max_execution_time', 0);
 
 class CustomerController extends Controller
 {

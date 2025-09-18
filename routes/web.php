@@ -771,6 +771,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans/import-template', [LoanController::class, 'downloadTemplate'])->name('loans.import-template');
     Route::get('loans/status/{status}', [LoanController::class, 'loansByStatus'])->name('loans.by-status');
 
+    // Opening Balance Routes for loans
+    Route::get('loans/opening-balance/template', [LoanController::class, 'downloadOpeningBalanceTemplate'])->name('loans.opening-balance.template');
+    Route::post('loans/opening-balance', [LoanController::class, 'storeOpeningBalance'])->name('loans.opening-balance.store');
+
     // New Loan Application Routes (must come BEFORE general loan routes)
     Route::get('loans/application', [LoanController::class, 'applicationIndex'])->name('loans.application.index');
     Route::get('loans/application/create', [LoanController::class, 'applicationCreate'])->name('loans.application.create');

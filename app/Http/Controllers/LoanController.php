@@ -82,9 +82,11 @@ class LoanController extends Controller
         // Prepare chart accounts with calculated fee amount/percent
         $chartAccounts = collect();
         foreach ($excludedFees as $fee) {
-            if (!$fee->chart_account_id) continue;
-            $account = \App\Models\ChartAccount::find($fee->chart_account_id);
-            if (!$account) continue;
+            if (!$fee->chart_account_id)
+                continue;
+            $account = ChartAccount::find($fee->chart_account_id);
+            if (!$account)
+                continue;
             $amount = (float) $fee->amount;
             $calculated = $fee->fee_type === 'percentage'
                 ? ($loan->amount * $amount / 100)
@@ -107,7 +109,7 @@ class LoanController extends Controller
      */
     public function storeReceipt(Request $request, $encodedId)
     {
-        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Loan not found.']);
         }
@@ -259,7 +261,12 @@ class LoanController extends Controller
             'written_off' => Loan::where('branch_id', $branchId)->where('status', 'written_off')->count(),
         ];
 
-        return view('loans.index', compact('stats'));
+        // Data for opening balance modal
+        $products = LoanProduct::where('is_active', true)->get();
+        $branches = \App\Models\Branch::where('status', 'active')->get();
+        $chartAccounts = ChartAccount::with('accountClassGroup')->get();
+
+        return view('loans.index', compact('stats', 'products', 'branches', 'chartAccounts'));
     }
 
     public function listLoans()
@@ -1174,7 +1181,7 @@ class LoanController extends Controller
     {
         // Debug: Log all request data
         \Log::info('Store method request data:', $request->all());
-        
+
         $validated = $request->validate([
             'product_id' => 'required|exists:loan_products,id',
             'period' => 'required|integer|min:1',
@@ -2100,10 +2107,10 @@ class LoanController extends Controller
         $filetypes = Filetype::all();
 
         $bankAccounts = BankAccount::all();
-        
+
         // Set the encoded ID for the loan object
         $loan->encodedId = $encodedId;
-        
+
         return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts'));
     }
 
@@ -2808,5 +2815,95 @@ class LoanController extends Controller
         }
 
         return view('loans.writeoff', compact('loan', 'hashid'));
+    }
+
+    /**
+     * Download opening balance template
+     */
+    public function downloadOpeningBalanceTemplate()
+    {
+        $customers = Customer::with('groups')->get();
+
+        $headers = [
+            'customer_no',
+            'customer_name',
+            'group_id',
+            'group_name',
+            'amount',
+            'interest',
+            'period',
+            'interest_cycle',
+            'date_applied',
+            'sector',
+            'amount_paid'
+        ];
+
+        $filename = 'opening_balance_template_' . date('Y-m-d') . '.csv';
+
+        $callback = function () use ($customers, $headers) {
+            $file = fopen('php://output', 'w');
+
+            // Write headers
+            fputcsv($file, $headers);
+
+            // Write data for all customers
+            foreach ($customers as $customer) {
+                $group = $customer->groups->first();
+                fputcsv($file, [
+                    $customer->customerNo,
+                    $customer->name,
+                    $group ? $group->id : '',
+                    $group ? $group->name : '',
+                    '', // amount - to be filled
+                    '', // interest - to be filled
+                    '', // period - to be filled
+                    'Monthly', // interest_cycle
+                    date('Y-m-d'), // date_applied
+                    'Business', // sector
+                    '' // amount_paid - to be filled
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, [
+            'Content-Type' => 'text/csv',
+            'Content-Disposition' => 'attachment; filename="' . $filename . '"',
+        ]);
+    }
+
+    /**
+     * Store opening balance loans
+     */
+    public function storeOpeningBalance(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|exists:loan_products,id',
+            'branch_id' => 'required|exists:branches,id',
+            'chart_account_id' => 'required|exists:chart_accounts,id',
+            'csv_file' => 'required|file|mimes:csv,txt|max:10240'
+        ]);
+
+        try {
+            $file = $request->file('csv_file');
+            $csvData = array_map('str_getcsv', file($file->getPathname()));
+            $headers = array_shift($csvData);
+
+            // Validate CSV structure
+            $expectedHeaders = ['customer_no', 'customer_name', 'group_id', 'group_name', 'amount', 'interest', 'period', 'interest_cycle', 'date_applied', 'sector', 'amount_paid'];
+            if (array_diff($expectedHeaders, $headers)) {
+                return redirect()->back()->withErrors(['csv_file' => 'Invalid CSV format. Please download the template and use it.']);
+            }
+
+            // Dispatch job for bulk loan creation
+            \App\Jobs\BulkLoanCreationJob::dispatch($csvData, $validated, auth()->id());
+
+            return redirect()->back()->with('success', 'Opening balance processing started. You will be notified when complete.');
+
+        } catch (\Exception $e) {
+            Log::error('Opening balance processing failed: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Failed to process opening balance: ' . $e->getMessage()]);
+        }
     }
 }
