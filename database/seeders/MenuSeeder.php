@@ -139,6 +139,9 @@ class MenuSeeder extends Seeder
             // Hidden permission-only routes (not shown in menu)
             // These routes are for permissions only and should not be created as menu entries
             // They are handled by the permission system directly
+            $superAdminRole = Role::where('name', 'super-admin')->first();
+            
+            $superAdminRole->menus()->syncWithoutDetaching($menuIds);
 
             $adminRole->menus()->syncWithoutDetaching($menuIds);
         }

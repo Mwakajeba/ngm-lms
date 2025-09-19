@@ -26,18 +26,21 @@ class UserSeeder extends Seeder
 
         // Seed one user per branch, but set role to 'super-admin'
         foreach ($branches as $index => $branch) {
-            User::create([
+            $user = User::create([
                 'name' => 'Julius Mwakajeba ' . $index,
                 'phone' => '255655577803' . $index,
                 'email' => 'admin' . $index . '@safco.com',
                 'password' => Hash::make('12345'),
                 'branch_id' => $branch->id,
-                'company_id'=> $branch->company_id,
+                'company_id' => $branch->company_id,
                 'role' => 'super-admin',
                 'is_active' => 'yes',
                 'sms_verification_code' => '654321',
                 'sms_verified_at' => now(),
             ]);
+
+            // Assign super-admin role using Spatie permissions
+            $user->assignRole('super-admin');
         }
     }
 }
