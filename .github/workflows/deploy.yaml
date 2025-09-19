@@ -32,31 +32,31 @@ jobs:
       # 4. Sync files to server using rsync
       - name: Sync files to server
         run: |
-          rsync -avz --delete --exclude='.git*' --exclude='node_modules' --exclude='.env' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/smartfinance
+          rsync -avz --delete --exclude='.git*' --exclude='node_modules' --exclude='.env' -e "ssh -o StrictHostKeyChecking=no" ./ root@161.97.75.172:/var/www/html/dev
 
       # 5. Run composer install on server
       - name: Run composer install on server
         run: |
-          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
+          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/html/dev && composer install --no-dev --optimize-autoloader --ignore-platform-reqs"
 
       # 6. Run migrations on server
       - name: Run migrations on server
         run: |
-          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/smartfinance && php artisan migrate --force"
+          ssh -o StrictHostKeyChecking=no root@161.97.75.172 "cd /var/www/html/dev && php artisan migrate --force"
 
       # 7. Fix permissions on server
       - name: Fix permissions on server
         run: |
           ssh -o StrictHostKeyChecking=no root@161.97.75.172 "
-            sudo chown -R www-data:www-data /var/www/smartfinance/storage /var/www/smartfinance/bootstrap/cache &&
-            sudo chmod -R 775 /var/www/smartfinance/storage /var/www/smartfinance/bootstrap/cache
+            sudo chown -R www-data:www-data /var/www/html/dev/storage /var/www/html/dev/bootstrap/cache &&
+            sudo chmod -R 775 /var/www/html/dev/storage /var/www/html/dev/bootstrap/cache
           "
 
       # 8. Clear and cache Laravel configs on server
       - name: Clear and cache configs on server
         run: |
           ssh -o StrictHostKeyChecking=no root@161.97.75.172 "
-            cd /var/www/smartfinance &&
+            cd /var/www/html/dev &&
             php artisan config:clear &&
             php artisan cache:clear &&
             php artisan route:clear &&
