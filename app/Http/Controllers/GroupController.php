@@ -38,11 +38,9 @@ class GroupController extends Controller
      */
     public function create()
     {
-        $loanOfficers = User::whereHas('roles', function ($query) {
-            $query->whereIn('name', ['loan-officer', 'admin']);
-        })->get();
-
         $branchId = auth()->user()->branch_id;
+
+        $loanOfficers = User::where('branch_id', $branchId)->get();
 
         // Get all customer IDs who are already members of any group
         $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
@@ -172,9 +170,9 @@ class GroupController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        $loanOfficers = User::whereHas('roles', function ($query) {
-            $query->whereIn('name', ['loan-officer', 'admin']);
-        })->get();
+        $branchId = auth()->user()->branch_id;
+        
+        $loanOfficers = User::where('branch_id', $branchId)->get();
 
         $branchId = auth()->user()->branch_id;
 
