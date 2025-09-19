@@ -24,23 +24,27 @@ class UserSeeder extends Seeder
             return;
         }
 
-        // Seed one user per branch, but set role to 'super-admin'
+        // Seed one user per branch - first user as super-admin, others as admin
         foreach ($branches as $index => $branch) {
+            // First user is super-admin, others are admin
+            $role = $index === 0 ? 'super-admin' : 'admin';
+            $name = $index === 0 ? 'Julius Mwakajeba (Super Admin)' : 'Julius Mwakajeba ' . $index;
+
             $user = User::create([
-                'name' => 'Julius Mwakajeba ' . $index,
+                'name' => $name,
                 'phone' => '255655577803' . $index,
                 'email' => 'admin' . $index . '@safco.com',
                 'password' => Hash::make('12345'),
                 'branch_id' => $branch->id,
                 'company_id' => $branch->company_id,
-                'role' => 'super-admin',
+                'role' => $role,
                 'is_active' => 'yes',
                 'sms_verification_code' => '654321',
                 'sms_verified_at' => now(),
             ]);
 
-            // Assign super-admin role using Spatie permissions
-            $user->assignRole('super-admin');
+            // Assign appropriate role using Spatie permissions
+            $user->assignRole($role);
         }
     }
 }
