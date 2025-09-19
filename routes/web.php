@@ -51,6 +51,7 @@ use App\Http\Controllers\Reports\BotAgentBankingController;
 use App\Http\Controllers\Reports\BotLoansDisbursedController;
 use App\Http\Controllers\Reports\BotGeographicalDistributionController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\LaravelLogsController;
 // Add other main app routes here
 Route::get('/dashboard/loan-product-disbursement', [DashboardController::class, 'loanProductDisbursement'])->middleware('auth');
 Route::get('/dashboard/delinquency-loan-buckets', [DashboardController::class, 'delinquencyLoanBuckets'])->middleware('auth');
@@ -102,7 +103,11 @@ Route::post('/reset-password', [AuthController::class, 'storeNewPassword']);
 
 Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('resend.otp');
 
-Route::get('/dashboard', [\App\Http\Controllers\DashboardController::class, 'index'])->name('dashboard');
+Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// Laravel Logs Route
+Route::get('/log', [LaravelLogsController::class, 'index'])->name('laravel-logs.index')->middleware('auth');
+Route::post('/log/clear', [LaravelLogsController::class, 'clearLogs'])->name('laravel-logs.clear')->middleware('auth');
 
 // Language switching
 Route::get('/language/{locale}', [LanguageController::class, 'switchLanguage'])->name('language.switch');
