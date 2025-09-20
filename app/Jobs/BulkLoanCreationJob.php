@@ -226,25 +226,25 @@ class BulkLoanCreationJob implements ShouldQueue
 
             // Calculate release fees
             $releaseFeeTotal = 0;
-            if ($product && $product->fees_ids) {
-                $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
-                if (is_array($feeIds)) {
-                    $releaseFees = \DB::table('fees')
-                        ->whereIn('id', $feeIds)
-                        ->where('deduction_criteria', 'charge_fee_on_release_date')
-                        ->where('status', 'active')
-                        ->get();
+            // if ($product && $product->fees_ids) {
+            //     $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+            //     if (is_array($feeIds)) {
+            //         $releaseFees = \DB::table('fees')
+            //             ->whereIn('id', $feeIds)
+            //             ->where('deduction_criteria', 'charge_fee_on_release_date')
+            //             ->where('status', 'active')
+            //             ->get();
 
-                    foreach ($releaseFees as $fee) {
-                        $feeAmount = (float) $fee->amount;
-                        $feeType = $fee->fee_type;
-                        $calculatedFee = $feeType === 'percentage'
-                            ? ((float) $loanData['amount'] * (float) $feeAmount / 100)
-                            : (float) $feeAmount;
-                        $releaseFeeTotal += $calculatedFee;
-                    }
-                }
-            }
+            //         foreach ($releaseFees as $fee) {
+            //             $feeAmount = (float) $fee->amount;
+            //             $feeType = $fee->fee_type;
+            //             $calculatedFee = $feeType === 'percentage'
+            //                 ? ((float) $loanData['amount'] * (float) $feeAmount / 100)
+            //                 : (float) $feeAmount;
+            //             $releaseFeeTotal += $calculatedFee;
+            //         }
+            //     }
+            // }
 
             $disbursementAmount = $loanData['amount'] - $releaseFeeTotal;
 
@@ -307,42 +307,42 @@ class BulkLoanCreationJob implements ShouldQueue
             ]);
 
             // Post penalty amount to GL if exists
-            $penalty = $product->penalty;
-            $penaltyAmount = LoanSchedule::where('loan_id', $loan->id)->sum('penalty_amount');
+            // $penalty = $product->penalty;
+            // $penaltyAmount = LoanSchedule::where('loan_id', $loan->id)->sum('penalty_amount');
 
-            if ($penaltyAmount > 0 && $penalty) {
-                $receivableId = $penalty->penalty_receivables_account_id;
-                $incomeId = $penalty->penalty_income_account_id;
+            // if ($penaltyAmount > 0 && $penalty) {
+            //     $receivableId = $penalty->penalty_receivables_account_id;
+            //     $incomeId = $penalty->penalty_income_account_id;
 
-                if ($receivableId && $incomeId) {
-                    GlTransaction::insert([
-                        [
-                            'chart_account_id' => $receivableId,
-                            'customer_id' => $loan->customer_id,
-                            'amount' => $penaltyAmount,
-                            'nature' => 'debit',
-                            'transaction_id' => $loan->id,
-                            'transaction_type' => 'Loan Penalty',
-                            'date' => $loanData['date_applied'],
-                            'description' => $notes,
-                            'branch_id' => $loanData['branch_id'],
-                            'user_id' => $this->userId,
-                        ],
-                        [
-                            'chart_account_id' => $incomeId,
-                            'customer_id' => $loan->customer_id,
-                            'amount' => $penaltyAmount,
-                            'nature' => 'credit',
-                            'transaction_id' => $loan->id,
-                            'transaction_type' => 'Loan Penalty',
-                            'date' => $loanData['date_applied'],
-                            'description' => $notes,
-                            'branch_id' => $loanData['branch_id'],
-                            'user_id' => $this->userId,
-                        ]
-                    ]);
-                }
-            }
+            //     if ($receivableId && $incomeId) {
+            //         GlTransaction::insert([
+            //             [
+            //                 'chart_account_id' => $receivableId,
+            //                 'customer_id' => $loan->customer_id,
+            //                 'amount' => $penaltyAmount,
+            //                 'nature' => 'debit',
+            //                 'transaction_id' => $loan->id,
+            //                 'transaction_type' => 'Loan Penalty',
+            //                 'date' => $loanData['date_applied'],
+            //                 'description' => $notes,
+            //                 'branch_id' => $loanData['branch_id'],
+            //                 'user_id' => $this->userId,
+            //             ],
+            //             [
+            //                 'chart_account_id' => $incomeId,
+            //                 'customer_id' => $loan->customer_id,
+            //                 'amount' => $penaltyAmount,
+            //                 'nature' => 'credit',
+            //                 'transaction_id' => $loan->id,
+            //                 'transaction_type' => 'Loan Penalty',
+            //                 'date' => $loanData['date_applied'],
+            //                 'description' => $notes,
+            //                 'branch_id' => $loanData['branch_id'],
+            //                 'user_id' => $this->userId,
+            //             ]
+            //         ]);
+            //     }
+            // }
 
             return $loan;
         });
