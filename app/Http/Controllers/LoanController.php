@@ -260,6 +260,7 @@ class LoanController extends Controller
             'defaulted' => Loan::where('branch_id', $branchId)->where('status', 'defaulted')->count(),
             'rejected' => Loan::where('branch_id', $branchId)->where('status', 'rejected')->count(),
             'written_off' => Loan::where('branch_id', $branchId)->where('status', 'written_off')->count(),
+            'completed' => Loan::where('branch_id', $branchId)->where('status', 'completed')->count(),
         ];
 
         // Data for opening balance modal
@@ -360,6 +361,10 @@ class LoanController extends Controller
                         case 'rejected':
                             $badgeClass = 'bg-danger';
                             $statusText = 'Rejected';
+                            break;
+                        case 'completed':
+                            $badgeClass = 'bg-success';
+                            $statusText = 'Completed';
                             break;
                         default:
                             $badgeClass = 'bg-secondary';
@@ -1132,7 +1137,7 @@ class LoanController extends Controller
         $branchId = auth()->user()->branch_id;
 
         // Validate status
-        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected'];
+        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected', 'completed'];
         if (!in_array($status, $validStatuses)) {
             return redirect()->route('loans.index')->withErrors(['Invalid loan status.']);
         }
@@ -1150,7 +1155,8 @@ class LoanController extends Controller
             'authorized' => 'Authorized Applications',
             'active' => 'Active Loans',
             'defaulted' => 'Defaulted Loans',
-            'rejected' => 'Rejected Applications'
+            'rejected' => 'Rejected Applications',
+            'completed' => 'Completed Loans'
         ];
 
         $pageTitle = $statusNames[$status] ?? ucfirst($status) . ' Loans';
