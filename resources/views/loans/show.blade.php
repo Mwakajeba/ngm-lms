@@ -1562,7 +1562,7 @@
                                 <select class="form-select" name="bank_account_id" id="bank_account_id">
                                     <option value="">-- Select Bank Account --</option>
                                     @foreach($bankAccounts ?? [] as $bankAccount)
-                                        <option value="{{ $bankAccount->chart_account_id }}">{{ $bankAccount->name }} -
+                                        <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} -
                                             {{ $bankAccount->account_number }}
                                         </option>
                                     @endforeach
