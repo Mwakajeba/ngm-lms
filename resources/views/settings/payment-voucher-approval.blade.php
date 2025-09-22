@@ -113,14 +113,30 @@
                                                     <select class="form-select" id="level1_approvers" name="level1_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, (array) old('level1_approvers', is_array($settings->level1_approvers ?? null) ? $settings->level1_approvers : [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level1_approvers')) {
+                                                                        $isSelected = in_array('role_' . $role->name, old('level1_approvers'));
+                                                                    } elseif (is_array($settings->level1_approvers ?? null) && $settings->level1_approval_type === 'role') {
+                                                                        $isSelected = in_array($role->name, $settings->level1_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="role_{{ $role->name }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
                                                         @endif
                                                         @if(isset($users))
                                                             @foreach($users as $user)
-                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, (array) old('level1_approvers', is_array($settings->level1_approvers ?? null) ? $settings->level1_approvers : [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level1_approvers')) {
+                                                                        $isSelected = in_array('user_' . $user->id, old('level1_approvers'));
+                                                                    } elseif (is_array($settings->level1_approvers ?? null) && $settings->level1_approval_type === 'user') {
+                                                                        $isSelected = in_array($user->id, $settings->level1_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="user_{{ $user->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ $user->name }} ({{ $user->email }})
                                                                 </option>
                                                             @endforeach
@@ -151,14 +167,30 @@
                                                     <select class="form-select" id="level2_approvers" name="level2_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, (array) old('level2_approvers', is_array($settings->level2_approvers ?? null) ? $settings->level2_approvers : [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level2_approvers')) {
+                                                                        $isSelected = in_array('role_' . $role->name, old('level2_approvers'));
+                                                                    } elseif (is_array($settings->level2_approvers ?? null) && $settings->level2_approval_type === 'role') {
+                                                                        $isSelected = in_array($role->name, $settings->level2_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="role_{{ $role->name }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
                                                         @endif
                                                         @if(isset($users))
                                                             @foreach($users as $user)
-                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, old('level2_approvers', $settings->level2_approvers ?? [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level2_approvers')) {
+                                                                        $isSelected = in_array('user_' . $user->id, old('level2_approvers'));
+                                                                    } elseif (is_array($settings->level2_approvers ?? null) && $settings->level2_approval_type === 'user') {
+                                                                        $isSelected = in_array($user->id, $settings->level2_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="user_{{ $user->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ $user->name }} ({{ $user->email }})
                                                                 </option>
                                                             @endforeach
@@ -189,14 +221,30 @@
                                                     <select class="form-select" id="level3_approvers" name="level3_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, old('level3_approvers', $settings->level3_approvers ?? ['role_admin'])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level3_approvers')) {
+                                                                        $isSelected = in_array('role_' . $role->name, old('level3_approvers'));
+                                                                    } elseif (is_array($settings->level3_approvers ?? null) && $settings->level3_approval_type === 'role') {
+                                                                        $isSelected = in_array($role->name, $settings->level3_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="role_{{ $role->name }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
                                                         @endif
                                                         @if(isset($users))
                                                             @foreach($users as $user)
-                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, old('level3_approvers', $settings->level3_approvers ?? [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level3_approvers')) {
+                                                                        $isSelected = in_array('user_' . $user->id, old('level3_approvers'));
+                                                                    } elseif (is_array($settings->level3_approvers ?? null) && $settings->level3_approval_type === 'user') {
+                                                                        $isSelected = in_array($user->id, $settings->level3_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="user_{{ $user->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ $user->name }} ({{ $user->email }})
                                                                 </option>
                                                             @endforeach
@@ -227,14 +275,30 @@
                                                     <select class="form-select" id="level4_approvers" name="level4_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, old('level4_approvers', $settings->level4_approvers ?? ['role_super-admin'])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level4_approvers')) {
+                                                                        $isSelected = in_array('role_' . $role->name, old('level4_approvers'));
+                                                                    } elseif (is_array($settings->level4_approvers ?? null) && $settings->level4_approval_type === 'role') {
+                                                                        $isSelected = in_array($role->name, $settings->level4_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="role_{{ $role->name }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
                                                         @endif
                                                         @if(isset($users))
                                                             @foreach($users as $user)
-                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, old('level4_approvers', $settings->level4_approvers ?? [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level4_approvers')) {
+                                                                        $isSelected = in_array('user_' . $user->id, old('level4_approvers'));
+                                                                    } elseif (is_array($settings->level4_approvers ?? null) && $settings->level4_approval_type === 'user') {
+                                                                        $isSelected = in_array($user->id, $settings->level4_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="user_{{ $user->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ $user->name }} ({{ $user->email }})
                                                                 </option>
                                                             @endforeach
@@ -265,14 +329,30 @@
                                                     <select class="form-select" id="level5_approvers" name="level5_approvers[]" multiple>
                                                         @if(isset($roles))
                                                             @foreach($roles as $role)
-                                                                <option value="role_{{ $role->name }}" {{ in_array('role_' . $role->name, old('level5_approvers', $settings->level5_approvers ?? ['role_super-admin'])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level5_approvers')) {
+                                                                        $isSelected = in_array('role_' . $role->name, old('level5_approvers'));
+                                                                    } elseif (is_array($settings->level5_approvers ?? null) && $settings->level5_approval_type === 'role') {
+                                                                        $isSelected = in_array($role->name, $settings->level5_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="role_{{ $role->name }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ ucfirst($role->name) }} (Role)
                                                                 </option>
                                                             @endforeach
                                                         @endif
                                                         @if(isset($users))
                                                             @foreach($users as $user)
-                                                                <option value="user_{{ $user->id }}" {{ in_array('user_' . $user->id, old('level5_approvers', $settings->level5_approvers ?? [])) ? 'selected' : '' }}>
+                                                                @php
+                                                                    $isSelected = false;
+                                                                    if (old('level5_approvers')) {
+                                                                        $isSelected = in_array('user_' . $user->id, old('level5_approvers'));
+                                                                    } elseif (is_array($settings->level5_approvers ?? null) && $settings->level5_approval_type === 'user') {
+                                                                        $isSelected = in_array($user->id, $settings->level5_approvers);
+                                                                    }
+                                                                @endphp
+                                                                <option value="user_{{ $user->id }}" {{ $isSelected ? 'selected' : '' }}>
                                                                     {{ $user->name }} ({{ $user->email }})
                                                                 </option>
                                                             @endforeach
@@ -347,24 +427,29 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function toggleApprovalLevels() {
-        const selectedLevels = parseInt(approvalLevelsSelect.value);
+        const selectedLevels = parseInt(approvalLevelsSelect.value) || 1;
         
         // Show/hide approval level cards based on selection
         for (let i = 1; i <= 5; i++) {
-            const levelCard = document.querySelector(`[id*="level${i}"]`).closest('.card');
-            if (levelCard) {
-                if (i <= selectedLevels) {
-                    levelCard.style.display = 'block';
-                } else {
-                    levelCard.style.display = 'none';
+            const levelElement = document.querySelector(`#level${i}_approvers`);
+            if (levelElement) {
+                const levelCard = levelElement.closest('.card');
+                if (levelCard) {
+                    if (i <= selectedLevels) {
+                        levelCard.style.display = 'block';
+                    } else {
+                        levelCard.style.display = 'none';
+                    }
                 }
             }
         }
     }
     
-    // Initial call
-    toggleApprovalConfig();
-    toggleApprovalLevels();
+    // Initial call with delay to ensure DOM is fully loaded
+    setTimeout(() => {
+        toggleApprovalConfig();
+        toggleApprovalLevels();
+    }, 100);
     
     // Listen for changes
     requireAllCheckbox.addEventListener('change', toggleApprovalConfig);
@@ -405,13 +490,20 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Initialize and add event listeners
-    approvalTypeSelects.forEach((typeSelect, index) => {
-        const approverSelect = approverSelects[index];
-        updateApproverOptions(typeSelect, approverSelect);
-        
-        typeSelect.addEventListener('change', function() {
-            updateApproverOptions(this, approverSelect);
-        });
+    approvalTypeSelects.forEach((typeSelect) => {
+        // Find the corresponding approver select by matching the level number
+        const levelMatch = typeSelect.id.match(/level(\d+)_approval_type/);
+        if (levelMatch) {
+            const level = levelMatch[1];
+            const approverSelect = document.getElementById(`level${level}_approvers`);
+            if (approverSelect) {
+                updateApproverOptions(typeSelect, approverSelect);
+                
+                typeSelect.addEventListener('change', function() {
+                    updateApproverOptions(this, approverSelect);
+                });
+            }
+        }
     });
 });
 </script>
