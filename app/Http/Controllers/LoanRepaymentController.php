@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
 use App\Models\Repayment;
@@ -390,8 +391,10 @@ class LoanRepaymentController extends Controller
                 'repayments.*.loan_id' => 'required|exists:loans,id',
                 'repayments.*.amount' => 'required|numeric|min:0.01',
                 'repayments.*.payment_date' => 'required|date',
-                'repayments.*.bank_account_id' => 'required|exists:chart_accounts,id',
+                'repayments.*.bank_account_id' => 'required|exists:bank_accounts,id',
             ]);
+            $bankAccount = BankAccount::findOrFail($request->repayments[0]['bank_account_id']);
+            $bankChartAccount = $bankAccount->chart_account_id;
 
             $results = [];
             $successCount = 0;
@@ -402,6 +405,7 @@ class LoanRepaymentController extends Controller
                     $paymentData = [
                         'payment_date' => $repaymentData['payment_date'],
                         'bank_account_id' => $repaymentData['bank_account_id'],
+                        'bank_chart_account_id' => $bankChartAccount,
                     ];
 
                     $loan = Loan::with('product')->findOrFail($repaymentData['loan_id']);
