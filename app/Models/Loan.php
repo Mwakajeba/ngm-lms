@@ -46,6 +46,7 @@ class Loan extends Model
     const STATUS_ACTIVE = 'active';
     const STATUS_REJECTED = 'rejected';
     const STATUS_DEFAULTED = 'defaulted';
+    const STATUS_COMPLETE = 'complete';
 
 
 
@@ -487,14 +488,14 @@ class Loan extends Model
         ];
     }
 
-    
+
     /**
      * Get the date increment method based on interest cycle
      */
     public function getDateIncrementMethod(): string
     {
         $cycle = strtolower($this->interest_cycle);
-        
+
         switch ($cycle) {
             case 'daily':
                 return 'addDay';
@@ -519,7 +520,7 @@ class Loan extends Model
     public function getDateIncrementValue(int $index): int
     {
         $cycle = strtolower($this->interest_cycle);
-        
+
         switch ($cycle) {
             case 'daily':
                 return $index;
@@ -1017,7 +1018,7 @@ class Loan extends Model
     public function getPeriodUnit(): string
     {
         $cycle = strtolower($this->interest_cycle);
-        
+
         switch ($cycle) {
             case 'daily':
                 return 'days';
@@ -1042,7 +1043,7 @@ class Loan extends Model
     public function getInstallmentUnit(): string
     {
         $cycle = strtolower($this->interest_cycle);
-        
+
         switch ($cycle) {
             case 'daily':
                 return 'Daily';
@@ -1068,7 +1069,7 @@ class Loan extends Model
     public function postMaturedInterestForPastLoan()
     {
         $today = Carbon::today();
-        
+
         // Find schedules that are due before today and have interest
         $maturedSchedules = $this->schedule()
             ->where('due_date', '<', $today)
@@ -1090,7 +1091,7 @@ class Loan extends Model
         foreach ($maturedSchedules as $schedule) {
             // Load repayments for this schedule
             $schedule->loadMissing('repayments');
-            
+
             // Calculate unpaid interest for this schedule
             $totalInterest = $schedule->interest;
             $paidInterest = $schedule->repayments->sum('interest');
@@ -1157,5 +1158,104 @@ class Loan extends Model
             'branch_id' => $this->branch_id,
             'user_id' => $userId,
         ]);
+    }
+
+    /**
+     * Close the loan by checking if all schedules are fully paid
+     * Changes status to 'complete' if all payments are made
+     * 
+     * @return bool True if loan was closed, false if not eligible for closing
+     */
+    public function closeLoan(): bool
+    {
+        // Only active loans can be closed
+        if ($this->status !== self::STATUS_ACTIVE) {
+            Log::info("Loan {$this->loanNo} cannot be closed - status is {$this->status}");
+            return false;
+        }
+
+        // Get all loan schedules
+        $schedules = $this->schedule;
+
+        if ($schedules->isEmpty()) {
+            Log::info("Loan {$this->loanNo} has no schedules - cannot close");
+            return false;
+        }
+
+        // Check if all schedules are fully paid
+        $allSchedulesPaid = true;
+        $totalOutstanding = 0;
+
+        foreach ($schedules as $schedule) {
+            $remainingAmount = $schedule->remaining_amount;
+            $totalOutstanding += $remainingAmount;
+
+            if ($remainingAmount > 0) {
+                $allSchedulesPaid = false;
+                Log::info("Loan {$this->loanNo} schedule {$schedule->id} has remaining amount: {$remainingAmount}");
+            }
+        }
+
+        if (!$allSchedulesPaid) {
+            Log::info("Loan {$this->loanNo} cannot be closed - total outstanding: {$totalOutstanding}");
+            return false;
+        }
+
+        // All schedules are paid - close the loan
+        $this->status = self::STATUS_COMPLETE;
+        $this->save();
+
+        Log::info("Loan {$this->loanNo} has been successfully closed - all payments completed");
+
+        return true;
+    }
+
+    /**
+     * Check if the loan is eligible for closing
+     * 
+     * @return bool
+     */
+    public function isEligibleForClosing(): bool
+    {
+        // Only active loans can be closed
+        if ($this->status !== self::STATUS_ACTIVE) {
+            return false;
+        }
+
+        // Get all loan schedules
+        $schedules = $this->schedule;
+
+        if ($schedules->isEmpty()) {
+            return false;
+        }
+
+        // Check if all schedules are fully paid
+        foreach ($schedules as $schedule) {
+            if ($schedule->remaining_amount > 0) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Get the total outstanding amount across all schedules
+     * 
+     * @return float
+     */
+    public function getTotalOutstandingAmount(): float
+    {
+        return $this->schedule->sum('remaining_amount');
+    }
+
+    /**
+     * Get the total paid amount across all schedules
+     * 
+     * @return float
+     */
+    public function getTotalPaidAmountFromSchedules(): float
+    {
+        return $this->schedule->sum('paid_amount');
     }
 }
