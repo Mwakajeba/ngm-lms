@@ -1437,7 +1437,7 @@
                         <select class="form-select" name="bank_account_id" id="approval_bank_account_id">
                             <option value="">-- Select Bank Account --</option>
                             @foreach($bankAccounts ?? [] as $bankAccount)
-                                <option value="{{ $bankAccount->chart_account_id }}">{{ $bankAccount->account_number }} - {{ $bankAccount->name }}</option>
+                                <option value="{{ $bankAccount->id }}">{{ $bankAccount->account_number }} - {{ $bankAccount->name }}</option>
                             @endforeach
                         </select>
                         <div class="form-text">This bank account will be used for the disbursement entry.</div>
@@ -1562,7 +1562,7 @@
                                 <select class="form-select" name="bank_account_id" id="bank_account_id">
                                     <option value="">-- Select Bank Account --</option>
                                     @foreach($bankAccounts ?? [] as $bankAccount)
-                                        <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} -
+                                        <option value="{{ $bankAccount->chart_account_id }}">{{ $bankAccount->name }} -
                                             {{ $bankAccount->account_number }}
                                         </option>
                                     @endforeach
