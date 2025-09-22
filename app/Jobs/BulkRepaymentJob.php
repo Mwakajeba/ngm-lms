@@ -46,6 +46,8 @@ class BulkRepaymentJob implements ShouldQueue
             'user_id' => $this->userId
         ]);
 
+        Log::info('Repayment data', ['repayment_data' => $this->repaymentData]);
+
         $processedRepayments = [];
         $failedRepayments = [];
 
