@@ -245,7 +245,7 @@ class LoanRepaymentService
             'customer_id' => $loan->customer_id,
             'loan_id' => $loan->id,
             'loan_schedule_id' => $schedule->id,
-            'bank_account_id' => $paymentData['bank_account_id'] ?? $loan->bank_account_id,
+            'bank_account_id' => $paymentData['bank_chart_account_id'],
             'payment_date' => $paymentData['payment_date'] ?? now(),
             'due_date' => $schedule->due_date,
             'principal' => $schedulePayment['principal'],
