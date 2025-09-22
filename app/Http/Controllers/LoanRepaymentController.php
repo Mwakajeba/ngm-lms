@@ -54,7 +54,7 @@ class LoanRepaymentController extends Controller
                 'payment_date' => 'required|date',
                 'amount' => 'required|numeric|min:0.01',
                 'payment_source' => 'required|in:bank,cash_deposit',
-                'bank_account_id' => 'required_if:payment_source,bank|nullable|exists:bank_accounts,id',
+                'bank_account_id' => 'required_if:payment_source,bank|nullable|exists:chart_accounts,id',
                 'cash_deposit_id' => 'required_if:payment_source,cash_deposit|nullable|exists:cash_collaterals,id',
             ]);
 
@@ -144,7 +144,7 @@ class LoanRepaymentController extends Controller
             $request->validate([
                 'payment_date' => 'required|date',
                 'amount' => 'required|numeric|min:0.01',
-                'bank_account_id' => 'required|exists:bank_accounts,id',
+                'bank_account_id' => 'required|exists:chart_accounts,id',
             ]);
 
             $repayment = Repayment::with(['loan', 'receipt', 'bankAccount'])->findOrFail($id);
@@ -390,7 +390,7 @@ class LoanRepaymentController extends Controller
                 'repayments.*.loan_id' => 'required|exists:loans,id',
                 'repayments.*.amount' => 'required|numeric|min:0.01',
                 'repayments.*.payment_date' => 'required|date',
-                'repayments.*.bank_account_id' => 'required|exists:bank_accounts,id',
+                'repayments.*.bank_account_id' => 'required|exists:chart_accounts,id',
             ]);
 
             $results = [];
@@ -461,7 +461,7 @@ class LoanRepaymentController extends Controller
             $repayment = Repayment::with([
                 'loan.customer',
                 'schedule',
-                'bankAccount',
+                'chartAccount',
                 'receipt.receiptItems.chartAccount'
             ])->findOrFail($id);
 
@@ -478,7 +478,7 @@ class LoanRepaymentController extends Controller
                     'penalty' => $repayment->penalt_amount,
                     'fee' => $repayment->fee_amount,
                 ],
-                'bank_account' => $repayment->bankAccount->name ?? 'N/A',
+                'bank_account' => $repayment->chartAccount()->name ?? 'N/A',
                 'received_by' => auth()->user()->name,
                 'branch' => auth()->user()->branch->name ?? 'N/A',
             ];
