@@ -50,9 +50,9 @@ class Repayment extends Model
         return $this->belongsTo(LoanSchedule::class, 'loan_schedule_id');
     }
 
-    public function chartAccount()
+    public function bankAccount()
     {
-        return $this->belongsTo(ChartAccount::class,'bank_account_id');
+        return $this->belongsTo(BankAccount::class,'bank_account_id');
     }
 
     public function receipt()

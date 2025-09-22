@@ -73,13 +73,20 @@ class LoanRepaymentService
             $processedRepayments[] = $schedulePayment;
         }
 
-        // Check if loan is fully paid
+        // Check if loan is fully paid and close it automatically
         if ($this->isLoanFullyPaid($loan)) {
-            $loan->update([
-                'status' => 'completed',
-                'completed_at' => now(),
-            ]);
-            Log::info('Loan marked as completed', ['loanId' => $loanId]);
+            $closed = $loan->closeLoan();
+            if ($closed) {
+                Log::info('Loan automatically closed after complete repayment', [
+                    'loanId' => $loanId,
+                    'loanNo' => $loan->loanNo
+                ]);
+            } else {
+                Log::warning('Failed to close loan despite being fully paid', [
+                    'loanId' => $loanId,
+                    'loanNo' => $loan->loanNo
+                ]);
+            }
         }
 
         Log::info('Repayment transaction committed', ['loanId' => $loanId]);
@@ -424,7 +431,7 @@ class LoanRepaymentService
         if ($exists && $incomeExists) {
             Log::info('Interest receivable and interest income have been posted ovewtite the array chartAccont interest to be receivable instead of icome');
             $chartAccounts['interest'] = $receivableId;
-          
+
         }
 
         // Credit: Each component to its respective account
@@ -518,7 +525,7 @@ class LoanRepaymentService
             'penalty_amount' => $loan->product->penalty_receivables_account_id ?? null
         ];
 
-        info('chart accounts',$chartAccounts);
+        info('chart accounts', $chartAccounts);
 
         $components = [
             'principal' => $schedulePayment['principal'],
@@ -526,7 +533,7 @@ class LoanRepaymentService
             'fee_amount' => $schedulePayment['fee_amount'],
             'penalty_amount' => $schedulePayment['penalty_amount']
         ];
-        info("components amounts",$components);
+        info("components amounts", $components);
 
         // check if the interest receivable has been posted first, if not, do not create the interest receivable by debiting  and credit interest income
         $receivableId = $loan->product->interest_receivable_account_id;
@@ -557,7 +564,7 @@ class LoanRepaymentService
             Log::warning("Missing interest income account for product {$loan->product->id}");
             return 0;
         }
-        info('income account',[$incomeId]);
+        info('income account', [$incomeId]);
 
         $incomeExists = GlTransaction::where('chart_account_id', $incomeId)
             ->where('customer_id', $loan->customer_id)
@@ -566,7 +573,7 @@ class LoanRepaymentService
             ->where('transaction_type', 'Interest')
             ->exists();
 
-         info("Interest accounts for product {$loan->product->id}", [
+        info("Interest accounts for product {$loan->product->id}", [
             'exists' => $incomeExists,
         ]);
 
@@ -644,14 +651,12 @@ class LoanRepaymentService
     }
 
     /**
-     * Check if loan is fully paid
+     * Check if loan is fully paid using the same logic as closeLoan method
      */
     private function isLoanFullyPaid($loan)
     {
-        $totalDue = $loan->amount_total;
-        $totalPaid = $loan->repayments()->sum(DB::raw('principal + interest + fee_amount + penalt_amount'));
-
-        return $totalPaid >= $totalDue;
+        // Use the same logic as the Loan model's isEligibleForClosing method
+        return $loan->isEligibleForClosing();
     }
 
     /**

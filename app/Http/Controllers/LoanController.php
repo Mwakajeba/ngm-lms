@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\BankAccount;
+use App\Models\Branch;
 use App\Models\CashCollateral;
 use App\Models\Customer;
 use App\Models\Filetype;
@@ -34,7 +35,7 @@ class LoanController extends Controller
      */
     public function feesReceipt($encodedId)
     {
-        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Loan not found.']);
         }
@@ -168,12 +169,12 @@ class LoanController extends Controller
             }
             // GL Transactions
             // Debit Bank Account (total amount)
-            $bankAccount = \App\Models\BankAccount::find($validated['bank_account_id']);
+            $bankAccount = BankAccount::find($validated['bank_account_id']);
             $branchId = $loan->branch_id;
             $customerId = $loan->customer_id;
             $userId = auth()->id();
             $totalAmount = collect($validated['line_items'])->sum('amount');
-            \App\Models\GlTransaction::create([
+            GlTransaction::create([
                 'chart_account_id' => $bankAccount->chart_account_id,
                 'customer_id' => $customerId,
                 'amount' => $totalAmount,
@@ -188,7 +189,7 @@ class LoanController extends Controller
 
             // Credit each chart account in line items
             foreach ($validated['line_items'] as $item) {
-                \App\Models\GlTransaction::create([
+                GlTransaction::create([
                     'chart_account_id' => $item['chart_account_id'],
                     'customer_id' => $customerId,
                     'amount' => $item['amount'],
@@ -282,8 +283,8 @@ class LoanController extends Controller
             ->latest()->get();
 
         // Get data for import modal
-        $branches = \App\Models\Branch::all();
-        $loanProducts = \App\Models\LoanProduct::all();
+        $branches = Branch::all();
+        $loanProducts = LoanProduct::all();
 
         return view('loans.list', compact('loans', 'branches', 'loanProducts'));
     }
@@ -295,43 +296,11 @@ class LoanController extends Controller
             $branchId = auth()->user()->branch_id;
             $status = $request->get('status', 'active'); // Default to active loans
 
-            $loans = Loan::with(['customer', 'product', 'branch'])
+            $loans = Loan::with(['customer', 'product', 'branch', 'group', 'loanOfficer'])
                 ->where('branch_id', $branchId)
                 ->where('status', $status)
                 ->select('loans.*');
 
-            // Use DataTables search value for global search
-            $searchValue = $request->input('search.value');
-            if (!empty($searchValue)) {
-                $loans = $loans->where(function ($query) use ($searchValue) {
-                    $query->where('loans.amount', 'like', "%$searchValue%")
-                        ->orWhere('loans.amount_total', 'like', "%$searchValue%")
-                        ->orWhere('loans.interest', 'like', "%$searchValue%")
-                        ->orWhere('loans.loanNo', 'like', "%$searchValue%")
-                        ->orWhereHas('customer', function ($q) use ($searchValue) {
-                            $q->where('name', 'like', "%$searchValue%")
-                                ->orWhere('customerNo', 'like', "%$searchValue%")
-                                ->orWhere('phone1', 'like', "%$searchValue%")
-                                ->orWhere('phone2', 'like', "%$searchValue%")
-                                ->orWhere('idNumber', 'like', "%$searchValue%")
-                                ->orWhere('work', 'like', "%$searchValue%")
-                                ->orWhere('workAddress', 'like', "%$searchValue%")
-                                ->orWhere('description', 'like', "%$searchValue%")
-                            ;
-                        })
-                        ->orWhereHas('product', function ($q) use ($searchValue) {
-                            $q->where('name', 'like', "%$searchValue%")
-                                ->orWhere('product_type', 'like', "%$searchValue%")
-                            ;
-                        })
-                        ->orWhereHas('branch', function ($q) use ($searchValue) {
-                            $q->where('name', 'like', "%$searchValue%")
-                                ->orWhere('location', 'like', "%$searchValue%")
-                                ->orWhere('manager_name', 'like', "%$searchValue%")
-                            ;
-                        });
-                });
-            }
 
             return DataTables::eloquent($loans)
                 ->addColumn('customer_name', function ($loan) {
@@ -339,13 +308,13 @@ class LoanController extends Controller
                     $initial = strtoupper(substr($customerName, 0, 1));
 
                     return '<div class="d-flex align-items-center">
-                                <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
-                                    <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">' . $initial . '</span>
-                                </div>
-                                <div>
-                                    <div class="fw-bold">' . e($customerName) . '</div>
-                                </div>
-                            </div>';
+                            <div class="avatar avatar-sm bg-primary rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
+                                <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">' . $initial . '</span>
+                            </div>
+                            <div>
+                                <div class="fw-bold">' . e($customerName) . '</div>
+                            </div>
+                        </div>';
                 })
                 ->addColumn('product_name', function ($loan) {
                     return optional($loan->product)->name ?? 'N/A';
@@ -444,6 +413,39 @@ class LoanController extends Controller
 
                     return '<div class="text-center">' . $actions . '</div>';
                 })
+                ->filterColumn('customer_name', function ($query, $keyword) {
+                    $query->whereHas('customer', function ($q) use ($keyword) {
+                        $q->whereRaw("LOWER(name) LIKE LOWER(?)", ["%{$keyword}%"]);
+                    });
+                })
+                ->filterColumn('product_name', function ($query, $keyword) {
+                    $query->whereHas('product', function ($q) use ($keyword) {
+                        $q->whereRaw("LOWER(name) LIKE LOWER(?)", ["%{$keyword}%"]);
+                    });
+                })
+                ->filterColumn('branch_name', function ($query, $keyword) {
+                    $query->whereHas('branch', function ($q) use ($keyword) {
+                        $q->whereRaw("LOWER(name) LIKE LOWER(?)", ["%{$keyword}%"]);
+                    });
+                })
+                ->filterColumn('formatted_amount', function ($query, $keyword) {
+                    $query->whereRaw("LOWER(amount) LIKE LOWER(?)", ["%{$keyword}%"]);
+                })
+                ->filterColumn('formatted_total', function ($query, $keyword) {
+                    $query->whereRaw("LOWER(amount_total) LIKE LOWER(?)", ["%{$keyword}%"]);
+                })
+                ->filterColumn('interest_display', function ($query, $keyword) {
+                    $query->whereRaw("LOWER(interest) LIKE LOWER(?)", ["%{$keyword}%"]);
+                })
+                ->filterColumn('period', function ($query, $keyword) {
+                    $query->whereRaw("LOWER(period) LIKE LOWER(?)", ["%{$keyword}%"]);
+                })
+                ->filterColumn('status_badge', function ($query, $keyword) {
+                    $query->whereRaw("LOWER(status) LIKE LOWER(?)", ["%{$keyword}%"]);
+                })
+                ->filterColumn('formatted_date', function ($query, $keyword) {
+                    $query->whereRaw("LOWER(date_applied) LIKE LOWER(?)", ["%{$keyword}%"]);
+                })
                 ->rawColumns(['customer_name', 'status_badge', 'actions'])
                 ->make(true);
         }
@@ -457,7 +459,7 @@ class LoanController extends Controller
         try {
             if ($type === 'new') {
                 // For new loans, get bank accounts linked to cash and bank chart accounts (assets)
-                $accounts = \App\Models\BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
+                $accounts = BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
                     $query->where('name', 'LIKE', '%cash%')
                         ->orWhere('name', 'LIKE', '%bank%')
                         ->orWhere('name', 'LIKE', '%Cash%')
@@ -1885,7 +1887,7 @@ class LoanController extends Controller
         $request->validate([
             'loan_id' => 'required|exists:loans,id',
             'file_type_id' => 'required|exists:filetypes,id',
-            'file' => 'required|file|max:2048',
+            'file' => 'required|file|max:25600',
         ]);
 
         // Step 2: Store file in public storage
