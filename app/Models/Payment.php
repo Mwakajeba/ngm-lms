@@ -276,7 +276,16 @@ class Payment extends Model
         $settings = PaymentVoucherApprovalSetting::where('company_id', $this->user->company_id)->first();
         
         if (!$settings) {
-            return; // No approval settings configured
+            // No approval settings configured - auto-approve all payments
+            $this->update([
+                'approved' => true,
+                'approved_by' => $this->user_id,
+                'approved_at' => now(),
+            ]);
+            
+            // Create GL transactions for auto-approved payments
+            $this->createGlTransactions();
+            return;
         }
 
         $requiredLevel = $settings->getRequiredApprovalLevel($this->amount);
@@ -288,6 +297,9 @@ class Payment extends Model
                 'approved_by' => $this->user_id,
                 'approved_at' => now(),
             ]);
+            
+            // Create GL transactions for auto-approved payments
+            $this->createGlTransactions();
             return;
         }
 
@@ -373,15 +385,17 @@ class Payment extends Model
             return 'rejected';
         }
 
-        if ($this->isFullyApproved()) {
+        // If payment is already approved (either auto-approved or manually approved), keep it approved
+        if ($this->approved) {
             return 'approved';
         }
 
+        // Only check approval requirements for unapproved payments
         if ($this->requiresApproval()) {
             return 'pending';
         }
 
-        return $this->approved ? 'approved' : 'pending';
+        return 'approved'; // Auto-approved if no approval required
     }
 
     /**
@@ -412,6 +426,61 @@ class Payment extends Model
             return '<span class="badge bg-primary">Manual Payment Voucher</span>';
         } else {
             return '<span class="badge bg-secondary">' . ucfirst(str_replace(' ', ' ', $this->reference_type)) . '</span>';
+        }
+    }
+
+    /**
+     * Create GL transactions for this payment voucher.
+     */
+    public function createGlTransactions()
+    {
+        // Check if GL transactions already exist to avoid duplicates
+        if ($this->glTransactions()->exists()) {
+            return;
+        }
+
+        $this->loadMissing(['bankAccount', 'paymentItems']);
+
+        if (!$this->bankAccount || !$this->paymentItems->count()) {
+            return;
+        }
+
+        $bankAccount = $this->bankAccount;
+        $date = $this->date;
+        $description = $this->description ?: "Payment voucher {$this->reference}";
+        $branchId = $this->branch_id;
+        $userId = $this->user_id;
+
+        // Credit bank account with total amount
+        GlTransaction::create([
+            'chart_account_id' => $bankAccount->chart_account_id,
+            'customer_id' => $this->customer_id,
+            'supplier_id' => $this->supplier_id,
+            'amount' => $this->amount,
+            'nature' => 'credit',
+            'transaction_id' => $this->id,
+            'transaction_type' => 'payment',
+            'date' => $date,
+            'description' => $description,
+            'branch_id' => $branchId,
+            'user_id' => $userId,
+        ]);
+
+        // Debit each expense line
+        foreach ($this->paymentItems as $item) {
+            GlTransaction::create([
+                'chart_account_id' => $item->chart_account_id,
+                'customer_id' => $this->customer_id,
+                'supplier_id' => $this->supplier_id,
+                'amount' => $item->amount,
+                'nature' => 'debit',
+                'transaction_id' => $this->id,
+                'transaction_type' => 'payment',
+                'date' => $date,
+                'description' => $item->description ?: $description,
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
         }
     }
 }

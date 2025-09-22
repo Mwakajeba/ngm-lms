@@ -61,21 +61,10 @@ class PaymentVoucherApprovalSetting extends Model
     public function getRequiredApprovalLevel($amount)
     {
         if ($this->require_approval_for_all) {
-            return 1;
+            return $this->approval_levels;
         }
 
-        if ($amount <= $this->auto_approval_limit) {
-            return 0; // No approval required
-        }
-
-        for ($level = 1; $level <= $this->approval_levels; $level++) {
-            $threshold = $this->{"approval_threshold_{$level}"};
-            if ($amount <= $threshold) {
-                return $level;
-            }
-        }
-
-        return $this->approval_levels; // Highest level required
+        return 0; // No approval required when require_approval_for_all is false
     }
 
     /**

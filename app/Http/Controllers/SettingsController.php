@@ -673,7 +673,7 @@ class SettingsController extends Controller
         
         // Load roles and users for dropdowns
         $roles = \Spatie\Permission\Models\Role::all();
-        $users = \App\Models\User::forCompany()->active()->get();
+        $users = \App\Models\User::where('company_id', $user->company_id)->get();
         
         // Load existing approval settings
         $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', $user->company_id)->first();
@@ -694,7 +694,6 @@ class SettingsController extends Controller
 
         $approvalRules = [
             'approval_levels' => 'required|integer|min:1|max:5',
-            // Minimal required when approvals enabled
             'level1_approval_type' => 'required|in:role,user',
             'level1_approvers' => 'required|array|min:1',
             'level2_approval_type' => 'nullable|in:role,user',
@@ -718,10 +717,7 @@ class SettingsController extends Controller
             $settings = \App\Models\PaymentVoucherApprovalSetting::firstOrCreate(
                 ['company_id' => $companyId],
                 [
-                    'approval_levels' => 2,
-                    'auto_approval_limit' => 100000,
-                    'approval_threshold_1' => 500000,
-                    'escalation_time' => 24,
+                    'approval_levels' => 1,
                     'require_approval_for_all' => false,
                 ]
             );
@@ -740,7 +736,9 @@ class SettingsController extends Controller
 
             // Update approval assignments
             if ($requireAll) {
-                for ($level = 1; $level <= 5; $level++) {
+                $approvalLevels = (int) $request->approval_levels;
+                
+                for ($level = 1; $level <= $approvalLevels; $level++) {
                     $approvalType = $request->{"level{$level}_approval_type"};
                     $approvers = $request->{"level{$level}_approvers"} ?? [];
 
@@ -763,13 +761,20 @@ class SettingsController extends Controller
                         ]);
                     }
                 }
+                
+                // Clear unused levels
+                for ($level = $approvalLevels + 1; $level <= 5; $level++) {
+                    $settings->update([
+                        "level{$level}_approval_type" => null,
+                        "level{$level}_approvers" => null,
+                    ]);
+                }
             } else {
-                // When approvals disabled, clear approval configuration to avoid confusion
-                // Keep level1_approval_type with a safe non-null default to satisfy existing schema
+                // When approvals disabled, clear approval configuration
                 $settings->update([
                     'approval_levels' => 0,
-                    'level1_approval_type' => 'role',
-                    'level1_approvers' => json_encode([]),
+                    'level1_approval_type' => null,
+                    'level1_approvers' => null,
                     'level2_approval_type' => null,
                     'level2_approvers' => null,
                     'level3_approval_type' => null,
