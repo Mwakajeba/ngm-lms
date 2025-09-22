@@ -16,7 +16,7 @@ return new class extends Migration
             $table->foreignId('customer_id')->constrained('customers')->onDelete('cascade');
             $table->foreignId('loan_id')->constrained('loans')->onDelete('cascade');
             $table->foreignId('loan_schedule_id')->constrained('loan_schedules')->onDelete('cascade');
-            $table->foreignId('bank_account_id')->constrained('bank_accounts')->onDelete('cascade');
+            $table->foreignId('bank_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->decimal('principal',12,2);
             $table->decimal('interest',12,2);
             $table->decimal('penalt_amount',15,2);
@@ -29,7 +29,7 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations.
+     * Reverse the migrationss.
      */
     public function down(): void
     {
