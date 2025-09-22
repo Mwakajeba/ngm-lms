@@ -360,16 +360,39 @@
             <div class="signature-box">
                 <div class="signature-line"></div>
                 <div style="margin-top: 5px; font-size: 12px;">Prepared By</div>
+                <div style="margin-top: 2px; font-size: 10px; color: #666;">
+                    {{ $paymentVoucher->user->name ?? 'N/A' }}
+                </div>
             </div>
             
             <div class="signature-box">
                 <div class="signature-line"></div>
                 <div style="margin-top: 5px; font-size: 12px;">Approved By</div>
+                <div style="margin-top: 2px; font-size: 10px; color: #666;">
+                    @if($paymentVoucher->approved && $paymentVoucher->approvedBy)
+                        {{ $paymentVoucher->approvedBy->name }}
+                    @elseif($paymentVoucher->approved)
+                        {{ $paymentVoucher->user->name ?? 'N/A' }}
+                    @else
+                        <span style="color: #999;">Pending Approval</span>
+                    @endif
+                </div>
             </div>
             
             <div class="signature-box">
                 <div class="signature-line"></div>
                 <div style="margin-top: 5px; font-size: 12px;">Received By</div>
+                <div style="margin-top: 2px; font-size: 10px; color: #666;">
+                    @if($paymentVoucher->payee_type === 'customer' && $paymentVoucher->customer)
+                        {{ $paymentVoucher->customer->name }}
+                    @elseif($paymentVoucher->payee_type === 'supplier' && $paymentVoucher->supplier)
+                        {{ $paymentVoucher->supplier->name }}
+                    @elseif($paymentVoucher->payee_type === 'other')
+                        {{ $paymentVoucher->payee_name ?? 'N/A' }}
+                    @else
+                        <span style="color: #999;">N/A</span>
+                    @endif
+                </div>
             </div>
         </div>
         

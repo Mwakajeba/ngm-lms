@@ -663,7 +663,9 @@ class PaymentVoucherController extends Controller
             $paymentVoucher->load([
                 'bankAccount.chartAccount',
                 'customer',
+                'supplier',
                 'user.company',
+                'approvedBy',
                 'branch',
                 'paymentItems.chartAccount'
             ]);
