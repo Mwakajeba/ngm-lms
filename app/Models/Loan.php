@@ -46,7 +46,7 @@ class Loan extends Model
     const STATUS_ACTIVE = 'active';
     const STATUS_REJECTED = 'rejected';
     const STATUS_DEFAULTED = 'defaulted';
-    const STATUS_COMPLETE = 'complete';
+    const STATUS_COMPLETE = 'completed';
 
 
 
@@ -1162,7 +1162,7 @@ class Loan extends Model
 
     /**
      * Close the loan by checking if all schedules are fully paid
-     * Changes status to 'complete' if all payments are made
+     * Changes status to 'completed' if all payments are made
      * 
      * @return bool True if loan was closed, false if not eligible for closing
      */

@@ -182,6 +182,25 @@
                                         </div>
                                     </div>
                                 @endcan
+                                @can('view completed loans')
+                                    <!-- Completed Loans -->
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card border-success position-relative">
+                                            <span
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['completed'] ?? 0 }}</span>
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <i class="bx bx-check-circle fs-1 text-success"></i>
+                                                </div>
+                                                <h5 class="card-title">Completed Loans</h5>
+                                                <p class="card-text">Manage all completed loans.</p>
+                                                <a href="{{ route('loans.by-status', 'completed') }}" class="btn btn-success">
+                                                    <i class="bx bx-check-circle me-1"></i> View Loans
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endcan
                             </div>
                         </div>
                     </div>
