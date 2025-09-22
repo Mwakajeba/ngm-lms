@@ -63,6 +63,7 @@ class BulkLoanCreationJob implements ShouldQueue
             foreach ($chunk as $rowIndex => $row) {
                 try {
                     $loanData = $this->processLoanRow($row, $product, $chartAccountId);
+                    
 
                     if ($loanData) {
                         $loan = $this->createLoan($loanData, $product, $chartAccountId);

@@ -46,6 +46,8 @@ class BulkRepaymentJob implements ShouldQueue
             'user_id' => $this->userId
         ]);
 
+        Log::info('Repayment data', ['repayment_data' => $this->repaymentData]);
+
         $processedRepayments = [];
         $failedRepayments = [];
 
@@ -81,6 +83,9 @@ class BulkRepaymentJob implements ShouldQueue
                             'loan_id' => $repaymentInfo['loan_id'],
                             'paid_amount' => $result['paid_amount']
                         ]);
+
+                        // Check if loan is now fully paid and close it automatically
+                        $this->checkAndCloseLoan($loan);
                     } else {
                         throw new \Exception("Repayment processing failed");
                     }
@@ -412,6 +417,49 @@ class BulkRepaymentJob implements ShouldQueue
                     'user_id' => $this->userId,
                 ]);
             }
+        }
+    }
+
+    /**
+     * Check if loan is fully paid and close it automatically
+     */
+    private function checkAndCloseLoan($loan)
+    {
+        try {
+            // Refresh the loan to get updated data
+            $loan->refresh();
+
+            // Check if loan is eligible for closing
+            if ($loan->isEligibleForClosing()) {
+                $closed = $loan->closeLoan();
+
+                if ($closed) {
+                    Log::info("Loan automatically closed after complete repayment", [
+                        'loan_id' => $loan->id,
+                        'loan_no' => $loan->loanNo,
+                        'customer' => $loan->customer->name ?? 'Unknown'
+                    ]);
+                } else {
+                    Log::warning("Failed to close loan despite being eligible", [
+                        'loan_id' => $loan->id,
+                        'loan_no' => $loan->loanNo
+                    ]);
+                }
+            } else {
+                // Log remaining outstanding amount for tracking
+                $outstanding = $loan->getTotalOutstandingAmount();
+                Log::info("Loan not yet fully paid", [
+                    'loan_id' => $loan->id,
+                    'loan_no' => $loan->loanNo,
+                    'outstanding_amount' => $outstanding
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error("Error checking/closing loan after repayment", [
+                'loan_id' => $loan->id,
+                'loan_no' => $loan->loanNo,
+                'error' => $e->getMessage()
+            ]);
         }
     }
 }
