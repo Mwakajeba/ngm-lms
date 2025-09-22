@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Journal;
 use App\Models\JournalItem;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
@@ -496,7 +497,7 @@ class LoanRepaymentService
         ]);
 
         // Create journal record for withdrawal from cash deposit
-        $journal = \App\Models\Journal::create([
+        $journal = Journal::create([
             'reference' => $repayment->id,
             'reference_type' => 'Withdrawal',
             'customer_id' => $loan->customer_id,
@@ -508,7 +509,7 @@ class LoanRepaymentService
         Log::info('Journal created', ['journal_id' => $journal->id]);
 
         // Debit: Cash collateral account (total amount)
-        \App\Models\JournalItem::create([
+        JournalItem::create([
             'journal_id' => $journal->id,
             'chart_account_id' => $cashDeposit->type->chart_account_id ?? 1,
             'amount' => $schedulePayment['amount'],

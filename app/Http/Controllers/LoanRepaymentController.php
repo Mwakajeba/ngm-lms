@@ -55,11 +55,13 @@ class LoanRepaymentController extends Controller
                 'payment_date' => 'required|date',
                 'amount' => 'required|numeric|min:0.01',
                 'payment_source' => 'required|in:bank,cash_deposit',
-                'bank_account_id' => 'required_if:payment_source,bank|nullable|exists:chart_accounts,id',
+                'bank_account_id' => 'required_if:payment_source,bank|nullable|exists:bank_accounts,id',
                 'cash_deposit_id' => 'required_if:payment_source,cash_deposit|nullable|exists:cash_collaterals,id',
             ]);
 
             Log::info('Validation passed');
+            $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            $bankChartAccount = $bankAccount->chart_account_id;
 
             // Check cash deposit balance if using cash deposit
             if ($request->payment_source === 'cash_deposit') {
@@ -74,6 +76,7 @@ class LoanRepaymentController extends Controller
             $paymentData = [
                 'payment_date' => $request->payment_date,
                 'payment_source' => $request->payment_source,
+                'bank_chart_account_id' => $bankChartAccount,
             ];
 
             if ($request->payment_source === 'bank') {
@@ -145,10 +148,13 @@ class LoanRepaymentController extends Controller
             $request->validate([
                 'payment_date' => 'required|date',
                 'amount' => 'required|numeric|min:0.01',
-                'bank_account_id' => 'required|exists:chart_accounts,id',
+                'bank_account_id' => 'required|exists:bank_accounts,id',
             ]);
 
             $repayment = Repayment::with(['loan', 'receipt', 'bankAccount'])->findOrFail($id);
+            $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            $bankChartAccount = $bankAccount->chart_account_id;
+
 
             // Store the loan and schedule info before deletion
             $loanId = $repayment->loan_id;
@@ -163,6 +169,7 @@ class LoanRepaymentController extends Controller
             $paymentData = [
                 'payment_date' => $request->payment_date,
                 'bank_account_id' => $request->bank_account_id,
+                'bank_chart_account_id' => $bankChartAccount,
             ];
 
             // Get calculation method from loan product
