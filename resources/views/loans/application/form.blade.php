@@ -24,7 +24,7 @@
         <!-- Customer -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Customer <span class="text-danger">*</span></label>
-            <select name="customer_id" id="customerSelect" class="form-select @error('customer_id') is-invalid @enderror" required>
+            <select name="customer_id" id="customerSelect" class="form-select select2-single @error('customer_id') is-invalid @enderror" required>
                 <option value="">Select Customer</option>
                 @foreach($customers as $customer)
                     <option value="{{ $customer->id }}" 
@@ -40,7 +40,7 @@
         <!-- Group -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Group</label>
-            <select name="group_id" id="groupSelect" class="form-select @error('group_id') is-invalid @enderror">
+            <select name="group_id" id="groupSelect" class="form-select select2-single @error('group_id') is-invalid @enderror">
                 <option value="">Select Group</option>
                 @foreach($groups as $group)
                     <option value="{{ $group->id }}" {{ old('group_id', $loanApplication->group_id ?? '') == $group->id ? 'selected' : '' }}>
@@ -54,7 +54,7 @@
         <!-- Product Select -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Loan Product <span class="text-danger">*</span></label>
-            <select id="productSelect" name="product_id" class="form-select @error('product_id') is-invalid @enderror"
+            <select id="productSelect" name="product_id" class="form-select select2-single @error('product_id') is-invalid @enderror"
                 required>
                 <option value="">Select Product</option>
                 @foreach($products as $product)
@@ -115,7 +115,7 @@
         <!-- Interest Cycle -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Interest Cycle <span class="text-danger">*</span></label>
-            <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
+            <select name="interest_cycle" class="form-select select2-single @error('interest_cycle') is-invalid @enderror" required>
                 <option value="">Select Interest Cycle</option>
                 <option value="daily" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'daily' ? 'selected' : '' }}>Daily</option>
                 <option value="weekly" {{ old('interest_cycle', $loanApplication->interest_cycle ?? '') == 'weekly' ? 'selected' : '' }}>Weekly</option>
@@ -130,7 +130,7 @@
         <!-- Sector -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Business Sector <span class="text-danger">*</span></label>
-            <select name="sector" class="form-select @error('sector') is-invalid @enderror" required>
+            <select name="sector" class="form-select select2-single @error('sector') is-invalid @enderror" required>
                 <option value="">Select Sector</option>
                 @foreach($sectors as $sector)
                     <option value="{{ $sector }}" {{ old('sector', $loanApplication->sector ?? '') == $sector ? 'selected' : '' }}>
