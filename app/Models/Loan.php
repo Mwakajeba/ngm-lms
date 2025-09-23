@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes; // Optional if you want soft deletes
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 
 class Loan extends Model
 {
@@ -36,6 +37,15 @@ class Loan extends Model
         'first_repayment_date',
         'last_repayment_date',
         'branch_id',
+    ];
+
+    /**
+     * The accessors to append to the model's array form.
+     */
+    protected $appends = [
+        'total_amount_to_settle',
+        'total_principal_paid',
+        'total_interest_paid'
     ];
 
     // Loan status constants
@@ -1174,38 +1184,18 @@ class Loan extends Model
             return false;
         }
 
-        // Get all loan schedules
-        $schedules = $this->schedule;
-
-        if ($schedules->isEmpty()) {
-            Log::info("Loan {$this->loanNo} has no schedules - cannot close");
+        // Check if loan is fully paid using the new settlement logic
+        if (!$this->isLoanFullyPaidForSettlement()) {
+            $totalPrincipalPaid = $this->getTotalPrincipalPaid();
+            Log::info("Loan {$this->loanNo} cannot be closed - principal paid: {$totalPrincipalPaid}, loan amount: {$this->amount}");
             return false;
         }
 
-        // Check if all schedules are fully paid
-        $allSchedulesPaid = true;
-        $totalOutstanding = 0;
-
-        foreach ($schedules as $schedule) {
-            $remainingAmount = $schedule->remaining_amount;
-            $totalOutstanding += $remainingAmount;
-
-            if ($remainingAmount > 0) {
-                $allSchedulesPaid = false;
-                Log::info("Loan {$this->loanNo} schedule {$schedule->id} has remaining amount: {$remainingAmount}");
-            }
-        }
-
-        if (!$allSchedulesPaid) {
-            Log::info("Loan {$this->loanNo} cannot be closed - total outstanding: {$totalOutstanding}");
-            return false;
-        }
-
-        // All schedules are paid - close the loan
+        // All principal is paid - close the loan
         $this->status = self::STATUS_COMPLETE;
         $this->save();
 
-        Log::info("Loan {$this->loanNo} has been successfully closed - all payments completed");
+        Log::info("Loan {$this->loanNo} has been successfully closed - all principal paid");
 
         return true;
     }
@@ -1222,21 +1212,8 @@ class Loan extends Model
             return false;
         }
 
-        // Get all loan schedules
-        $schedules = $this->schedule;
-
-        if ($schedules->isEmpty()) {
-            return false;
-        }
-
-        // Check if all schedules are fully paid
-        foreach ($schedules as $schedule) {
-            if ($schedule->remaining_amount > 0) {
-                return false;
-            }
-        }
-
-        return true;
+        // Check if loan is fully paid using the new settlement logic
+        return $this->isLoanFullyPaidForSettlement();
     }
 
     /**
@@ -1257,5 +1234,278 @@ class Loan extends Model
     public function getTotalPaidAmountFromSchedules(): float
     {
         return $this->schedule->sum('paid_amount');
+    }
+
+    //get the total amount to settle the loan, this include the interest of the current unpaid schedule + all the remaining principal
+    public function getTotalAmountToSettle(): float
+    {
+        // Get all outstanding principal from all schedules
+        $outstandingPrincipal = $this->schedule->sum('principal') - $this->schedule->sum(function ($schedule) {
+            return $schedule->repayments->sum('principal');
+        });
+
+        // Get remaining interest from current unpaid/partially paid schedule only
+        $currentScheduleInterest = 0;
+        $currentSchedule = $this->schedule->where('is_fully_paid', false)->first();
+        if ($currentSchedule) {
+            // Calculate remaining interest (original interest - interest already paid)
+            $interestPaid = $currentSchedule->repayments->sum('interest');
+            $currentScheduleInterest = max(0, $currentSchedule->interest - $interestPaid);
+        }
+
+        return $outstandingPrincipal + $currentScheduleInterest;
+    }
+
+    /**
+     * Get the total amount to settle the loan as an attribute
+     * This makes it accessible as $loan->total_amount_to_settle
+     */
+    public function getTotalAmountToSettleAttribute(): float
+    {
+        return $this->getTotalAmountToSettle();
+    }
+
+    /**
+     * Get the total principal paid for this loan
+     * 
+     * @return float
+     */
+    public function getTotalPrincipalPaid(): float
+    {
+        return $this->repayments->sum('principal');
+    }
+
+    /**
+     * Get the total principal paid as an attribute
+     * This makes it accessible as $loan->total_principal_paid
+     */
+    public function getTotalPrincipalPaidAttribute(): float
+    {
+        return $this->getTotalPrincipalPaid();
+    }
+
+    /**
+     * Get the total interest paid for this loan
+     * 
+     * @return float
+     */
+    public function getTotalInterestPaid(): float
+    {
+        return $this->repayments->sum('interest');
+    }
+
+    /**
+     * Get the total interest paid as an attribute
+     * This makes it accessible as $loan->total_interest_paid
+     */
+    public function getTotalInterestPaidAttribute(): float
+    {
+        return $this->getTotalInterestPaid();
+    }
+
+    /**
+     * Process settle repayment - pays current interest and all remaining principal
+     * 
+     * @param float $amount The settle amount to be paid
+     * @param array $paymentData Payment data including bank account, payment date, etc.
+     * @return array Result of the settlement
+     */
+    public function processSettleRepayment(float $amount, array $paymentData): array
+    {
+        DB::beginTransaction();
+
+        try {
+            // Get current unpaid/partially paid schedule
+            $currentSchedule = $this->schedule->where('is_fully_paid', false)->first();
+
+            if (!$currentSchedule) {
+                throw new \Exception('No unpaid schedule found for settlement');
+            }
+
+            // Calculate current interest (remaining interest from current schedule)
+            $interestPaid = $currentSchedule->repayments->sum('interest');
+            $currentInterest = max(0, $currentSchedule->interest - $interestPaid);
+
+            // Calculate total outstanding principal from all schedules
+            $outstandingPrincipal = $this->schedule->sum('principal') - $this->schedule->sum(function ($schedule) {
+                return $schedule->repayments->sum('principal');
+            });
+
+            // Validate settle amount
+            $expectedSettleAmount = $currentInterest + $outstandingPrincipal;
+            if (abs($amount - $expectedSettleAmount) > 0.01) {
+                throw new \Exception("Settle amount mismatch. Expected: {$expectedSettleAmount}, Provided: {$amount}");
+            }
+
+            // Create repayment record for current schedule (interest only)
+            if ($currentInterest > 0) {
+                $currentRepayment = Repayment::create([
+                    'customer_id' => $this->customer_id,
+                    'loan_id' => $this->id,
+                    'loan_schedule_id' => $currentSchedule->id,
+                    'bank_account_id' => $paymentData['bank_chart_account_id'] ?? null,
+                    'payment_date' => $paymentData['payment_date'] ?? now(),
+                    'due_date' => $currentSchedule->due_date,
+                    'principal' => 0,
+                    'interest' => $currentInterest,
+                    'fee_amount' => 0,
+                    'penalt_amount' => 0,
+                    'cash_deposit' => $currentInterest,
+                ]);
+
+                // Create GL transactions for current interest
+                $this->createSettleInterestGL($currentRepayment, $currentInterest, $paymentData);
+            }
+
+            // Create repayment records for all remaining principal across all schedules
+            $remainingAmount = $amount - $currentInterest;
+            $processedSchedules = [];
+
+            foreach ($this->schedule as $schedule) {
+                if ($remainingAmount <= 0)
+                    break;
+
+                $principalPaid = $schedule->repayments->sum('principal');
+                $remainingPrincipal = $schedule->principal - $principalPaid;
+
+                if ($remainingPrincipal > 0) {
+                    $principalToPay = min($remainingAmount, $remainingPrincipal);
+
+                    $principalRepayment = Repayment::create([
+                        'customer_id' => $this->customer_id,
+                        'loan_id' => $this->id,
+                        'loan_schedule_id' => $schedule->id,
+                        'bank_account_id' => $paymentData['bank_chart_account_id'] ?? null,
+                        'payment_date' => $paymentData['payment_date'] ?? now(),
+                        'due_date' => $schedule->due_date,
+                        'principal' => $principalToPay,
+                        'interest' => 0,
+                        'fee_amount' => 0,
+                        'penalt_amount' => 0,
+                        'cash_deposit' => $principalToPay,
+                    ]);
+
+                    // Create GL transactions for principal
+                    $this->createSettlePrincipalGL($principalRepayment, $principalToPay, $paymentData);
+
+                    $remainingAmount -= $principalToPay;
+                    $processedSchedules[] = [
+                        'schedule_id' => $schedule->id,
+                        'principal_paid' => $principalToPay
+                    ];
+                }
+            }
+
+            // Check if loan should be closed
+            $shouldClose = $this->isLoanFullyPaidForSettlement();
+            if ($shouldClose) {
+                $this->status = self::STATUS_COMPLETE;
+                $this->save();
+            }
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Loan settled successfully',
+                'current_interest_paid' => $currentInterest,
+                'total_principal_paid' => $amount - $currentInterest,
+                'processed_schedules' => $processedSchedules,
+                'loan_closed' => $shouldClose
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Settle repayment failed', [
+                'loan_id' => $this->id,
+                'amount' => $amount,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Create GL transactions for settle interest payment
+     */
+    private function createSettleInterestGL(Repayment $repayment, float $interestAmount, array $paymentData)
+    {
+        // Debit: Bank/Cash account
+        GlTransaction::create([
+            'chart_account_id' => $paymentData['bank_chart_account_id'],
+            'customer_id' => $this->customer_id,
+            'amount' => $interestAmount,
+            'nature' => 'debit',
+            'transaction_id' => $repayment->id,
+            'transaction_type' => 'Settle Interest',
+            'date' => $repayment->payment_date,
+            'description' => "Settle interest payment for loan {$this->loanNo}",
+            'branch_id' => $this->branch_id,
+            'user_id' => auth()->id(),
+        ]);
+
+        // Credit: Interest receivable or revenue account
+        $interestAccountId = $this->product->interest_receivable_account_id ?? $this->product->interest_revenue_account_id;
+        if ($interestAccountId) {
+            GlTransaction::create([
+                'chart_account_id' => $interestAccountId,
+                'customer_id' => $this->customer_id,
+                'amount' => $interestAmount,
+                'nature' => 'credit',
+                'transaction_id' => $repayment->id,
+                'transaction_type' => 'Settle Interest',
+                'date' => $repayment->payment_date,
+                'description' => "Settle interest payment for loan {$this->loanNo}",
+                'branch_id' => $this->branch_id,
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    /**
+     * Create GL transactions for settle principal payment
+     */
+    private function createSettlePrincipalGL(Repayment $repayment, float $principalAmount, array $paymentData)
+    {
+        // Debit: Bank/Cash account
+        GlTransaction::create([
+            'chart_account_id' => $paymentData['bank_chart_account_id'],
+            'customer_id' => $this->customer_id,
+            'amount' => $principalAmount,
+            'nature' => 'debit',
+            'transaction_id' => $repayment->id,
+            'transaction_type' => 'Settle Principal',
+            'date' => $repayment->payment_date,
+            'description' => "Settle principal payment for loan {$this->loanNo}",
+            'branch_id' => $this->branch_id,
+            'user_id' => auth()->id(),
+        ]);
+
+        // Credit: Principal receivable account
+        $principalAccountId = $this->product->principal_receivable_account_id;
+        if ($principalAccountId) {
+            GlTransaction::create([
+                'chart_account_id' => $principalAccountId,
+                'customer_id' => $this->customer_id,
+                'amount' => $principalAmount,
+                'nature' => 'credit',
+                'transaction_id' => $repayment->id,
+                'transaction_type' => 'Settle Principal',
+                'date' => $repayment->payment_date,
+                'description' => "Settle principal payment for loan {$this->loanNo}",
+                'branch_id' => $this->branch_id,
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    /**
+     * Check if loan is fully paid for settlement purposes
+     * Compares total principal paid against loan amount
+     */
+    public function isLoanFullyPaidForSettlement(): bool
+    {
+        $totalPrincipalPaid = $this->getTotalPrincipalPaid();
+        return $totalPrincipalPaid >= $this->amount;
     }
 }

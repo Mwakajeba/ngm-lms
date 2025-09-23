@@ -2930,4 +2930,58 @@ class LoanController extends Controller
             return redirect()->back()->withErrors(['error' => 'Failed to process opening balance: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Process settle repayment for a loan
+     */
+    public function settleRepayment(Request $request, $id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'payment_date' => 'required|date',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($id);
+
+            // Check if loan is active
+            if ($loan->status !== Loan::STATUS_ACTIVE) {
+                return redirect()->back()->withErrors(['error' => 'Only active loans can be settled.']);
+            }
+
+            // Get bank account for chart account ID
+            $bankAccount = \App\Models\BankAccount::findOrFail($request->bank_account_id);
+
+            $paymentData = [
+                'bank_chart_account_id' => $bankAccount->chart_account_id,
+                'bank_account_id' => $request->bank_account_id,
+                'payment_date' => $request->payment_date,
+                'notes' => $request->notes
+            ];
+
+            // Use LoanRepaymentService to process the settle repayment
+            $repaymentService = new \App\Services\LoanRepaymentService();
+            $result = $repaymentService->processSettleRepayment($loan->id, $request->amount, $paymentData);
+
+            if ($result['success']) {
+                $message = "Loan settled successfully. ";
+                $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
+                $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
+
+                if ($result['loan_closed']) {
+                    $message .= " Loan has been closed.";
+                }
+
+                return redirect()->back()->with('success', $message);
+            } else {
+                return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment.']);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Settle repayment failed: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment: ' . $e->getMessage()]);
+        }
+    }
 }

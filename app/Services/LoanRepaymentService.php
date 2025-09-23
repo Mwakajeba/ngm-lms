@@ -1153,4 +1153,203 @@ class LoanRepaymentService
             ]);
         }
     }
+
+    /**
+     * Process settle repayment - pays current interest and all remaining principal
+     * 
+     * @param int $loanId The loan ID
+     * @param float $amount The settle amount to be paid
+     * @param array $paymentData Payment data including bank account, payment date, etc.
+     * @return array Result of the settlement
+     */
+    public function processSettleRepayment($loanId, float $amount, array $paymentData): array
+    {
+        DB::beginTransaction();
+
+        try {
+            $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($loanId);
+
+            // Get current unpaid/partially paid schedule
+            $currentSchedule = $loan->schedule->where('is_fully_paid', false)->first();
+
+            if (!$currentSchedule) {
+                throw new \Exception('No unpaid schedule found for settlement');
+            }
+
+            // Calculate current interest (remaining interest from current schedule)
+            $interestPaid = $currentSchedule->repayments->sum('interest');
+            $currentInterest = max(0, $currentSchedule->interest - $interestPaid);
+
+            // Calculate total outstanding principal from all schedules
+            $outstandingPrincipal = $loan->schedule->sum('principal') - $loan->schedule->sum(function ($schedule) {
+                return $schedule->repayments->sum('principal');
+            });
+
+            // Validate settle amount
+            $expectedSettleAmount = $currentInterest + $outstandingPrincipal;
+            if (abs($amount - $expectedSettleAmount) > 0.01) {
+                throw new \Exception("Settle amount mismatch. Expected: {$expectedSettleAmount}, Provided: {$amount}");
+            }
+
+            // Create repayment record for current schedule (interest only)
+            if ($currentInterest > 0) {
+                $currentRepayment = Repayment::create([
+                    'customer_id' => $loan->customer_id,
+                    'loan_id' => $loan->id,
+                    'loan_schedule_id' => $currentSchedule->id,
+                    'bank_account_id' => $paymentData['bank_chart_account_id'] ?? null,
+                    'payment_date' => $paymentData['payment_date'] ?? now(),
+                    'due_date' => $currentSchedule->due_date,
+                    'principal' => 0,
+                    'interest' => $currentInterest,
+                    'fee_amount' => 0,
+                    'penalt_amount' => 0,
+                    'cash_deposit' => $currentInterest,
+                ]);
+
+                // Create GL transactions for current interest
+                $this->createSettleInterestGL($loan, $currentRepayment, $currentInterest, $paymentData);
+            }
+
+            // Create repayment records for all remaining principal across all schedules
+            $remainingAmount = $amount - $currentInterest;
+            $processedSchedules = [];
+
+            foreach ($loan->schedule as $schedule) {
+                if ($remainingAmount <= 0)
+                    break;
+
+                $principalPaid = $schedule->repayments->sum('principal');
+                $remainingPrincipal = $schedule->principal - $principalPaid;
+
+                if ($remainingPrincipal > 0) {
+                    $principalToPay = min($remainingAmount, $remainingPrincipal);
+
+                    $principalRepayment = Repayment::create([
+                        'customer_id' => $loan->customer_id,
+                        'loan_id' => $loan->id,
+                        'loan_schedule_id' => $schedule->id,
+                        'bank_account_id' => $paymentData['bank_chart_account_id'] ?? null,
+                        'payment_date' => $paymentData['payment_date'] ?? now(),
+                        'due_date' => $schedule->due_date,
+                        'principal' => $principalToPay,
+                        'interest' => 0,
+                        'fee_amount' => 0,
+                        'penalt_amount' => 0,
+                        'cash_deposit' => $principalToPay,
+                    ]);
+
+                    // Create GL transactions for principal
+                    $this->createSettlePrincipalGL($loan, $principalRepayment, $principalToPay, $paymentData);
+
+                    $remainingAmount -= $principalToPay;
+                    $processedSchedules[] = [
+                        'schedule_id' => $schedule->id,
+                        'principal_paid' => $principalToPay
+                    ];
+                }
+            }
+
+            // Check if loan should be closed
+            $shouldClose = $loan->isLoanFullyPaidForSettlement();
+            if ($shouldClose) {
+                $loan->status = Loan::STATUS_COMPLETE;
+                $loan->save();
+            }
+
+            DB::commit();
+
+            return [
+                'success' => true,
+                'message' => 'Loan settled successfully',
+                'current_interest_paid' => $currentInterest,
+                'total_principal_paid' => $amount - $currentInterest,
+                'processed_schedules' => $processedSchedules,
+                'loan_closed' => $shouldClose
+            ];
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Settle repayment failed', [
+                'loan_id' => $loanId,
+                'amount' => $amount,
+                'error' => $e->getMessage()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Create GL transactions for settle interest payment
+     */
+    private function createSettleInterestGL(Loan $loan, Repayment $repayment, float $interestAmount, array $paymentData)
+    {
+        // Debit: Bank/Cash account
+        GlTransaction::create([
+            'chart_account_id' => $paymentData['bank_chart_account_id'],
+            'customer_id' => $loan->customer_id,
+            'amount' => $interestAmount,
+            'nature' => 'debit',
+            'transaction_id' => $repayment->id,
+            'transaction_type' => 'Settle Interest',
+            'date' => $repayment->payment_date,
+            'description' => "Settle interest payment for loan {$loan->loanNo}",
+            'branch_id' => $loan->branch_id,
+            'user_id' => auth()->id(),
+        ]);
+
+        // Credit: Interest receivable or revenue account
+        $interestAccountId = $loan->product->interest_receivable_account_id ?? $loan->product->interest_revenue_account_id;
+        if ($interestAccountId) {
+            GlTransaction::create([
+                'chart_account_id' => $interestAccountId,
+                'customer_id' => $loan->customer_id,
+                'amount' => $interestAmount,
+                'nature' => 'credit',
+                'transaction_id' => $repayment->id,
+                'transaction_type' => 'Settle Interest',
+                'date' => $repayment->payment_date,
+                'description' => "Settle interest payment for loan {$loan->loanNo}",
+                'branch_id' => $loan->branch_id,
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    /**
+     * Create GL transactions for settle principal payment
+     */
+    private function createSettlePrincipalGL(Loan $loan, Repayment $repayment, float $principalAmount, array $paymentData)
+    {
+        // Debit: Bank/Cash account
+        GlTransaction::create([
+            'chart_account_id' => $paymentData['bank_chart_account_id'],
+            'customer_id' => $loan->customer_id,
+            'amount' => $principalAmount,
+            'nature' => 'debit',
+            'transaction_id' => $repayment->id,
+            'transaction_type' => 'Settle Principal',
+            'date' => $repayment->payment_date,
+            'description' => "Settle principal payment for loan {$loan->loanNo}",
+            'branch_id' => $loan->branch_id,
+            'user_id' => auth()->id(),
+        ]);
+
+        // Credit: Principal receivable account
+        $principalAccountId = $loan->product->principal_receivable_account_id;
+        if ($principalAccountId) {
+            GlTransaction::create([
+                'chart_account_id' => $principalAccountId,
+                'customer_id' => $loan->customer_id,
+                'amount' => $principalAmount,
+                'nature' => 'credit',
+                'transaction_id' => $repayment->id,
+                'transaction_type' => 'Settle Principal',
+                'date' => $repayment->payment_date,
+                'description' => "Settle principal payment for loan {$loan->loanNo}",
+                'branch_id' => $loan->branch_id,
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
 }

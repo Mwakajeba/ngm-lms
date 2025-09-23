@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Repayment extends Model
 {
-    use HasFactory,LogsActivity;
+    use HasFactory, LogsActivity;
     protected $table = 'repayments';
     protected $fillable = [
         'customer_id',
@@ -52,7 +52,7 @@ class Repayment extends Model
 
     public function chartAccount()
     {
-        return $this->belongsTo(ChartAccount::class,'bank_account_id');
+        return $this->belongsTo(ChartAccount::class, 'bank_account_id');
     }
 
     public function receipt()
@@ -91,5 +91,27 @@ class Repayment extends Model
             + $repayments->sum('interest');
 
         return round($totalDue - $totalPaid, 2);
+    }
+
+    /**
+     * Get total principal paid for a specific loan
+     * 
+     * @param int $loanId
+     * @return float
+     */
+    public static function getTotalPrincipalPaidForLoan($loanId): float
+    {
+        return self::where('loan_id', $loanId)->sum('principal');
+    }
+
+    /**
+     * Get total interest paid for a specific loan
+     * 
+     * @param int $loanId
+     * @return float
+     */
+    public static function getTotalInterestPaidForLoan($loanId): float
+    {
+        return self::where('loan_id', $loanId)->sum('interest');
     }
 }

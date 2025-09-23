@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="page-wrapper">
-    <input type="hidden" id="loan_id" value="{{ $loan->id }}">
+        <input type="hidden" id="loan_id" value="{{ $loan->id }}">
         <div class="page-content">
             <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
@@ -30,7 +30,7 @@
                         @endif
                         <a href="{{ route('loans.fees_receipt', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
                             class="btn btn-success"><i class="bx bx-plus-circle me-2"></i> Loan Fees Receipt</a>
-                            
+
                     </div>
                 </div>
                 <div class="d-flex gap-2">
@@ -153,7 +153,7 @@
             @endif
 
             <!-- Top-Up Information Card -->
-            @if($loan->product && $loan->product->top_up_type &&  $loan->isEligibleForTopUp())
+            @if($loan->product && $loan->product->top_up_type && $loan->isEligibleForTopUp())
                 <div class="card shadow-sm border-0 mb-4 border-start border-info border-4">
                     <div class="card-body">
                         <div class="row g-3">
@@ -327,7 +327,8 @@
                                             <td class="text-dark">{{ $loan->period }} {{ $loan->getPeriodUnit() }}</td>
                                         </tr>
                                         <tr>
-                                            <td class="fw-bold text-muted ps-4">{{ $loan->getInstallmentUnit() }} Installment</td>
+                                            <td class="fw-bold text-muted ps-4">{{ $loan->getInstallmentUnit() }}
+                                                Installment</td>
                                             <td class="text-dark">TZS
                                                 {{ number_format($loan->amount_total / $loan->period, 2) }}
                                             </td>
@@ -346,11 +347,32 @@
         return ($r->principal + $r->interest); }) ?? 0, 2) }}
                                             </td>
                                         </tr>
+
+                                        <tr>
+                                            <td class="fw-bold text-muted ps-4">Principal Paid</td>
+                                            <td class="text-success fw-bold">TZS
+                                                {{ number_format($loan->total_principal_paid, 2) }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted ps-4">Interest Paid</td>
+                                            <td class="text-info fw-bold">TZS
+                                                {{ number_format($loan->total_interest_paid, 2) }}
+                                            </td>
+                                        </tr>
                                         <tr>
                                             <td class="fw-bold text-muted ps-4">Outstanding Balance</td>
                                             <td class="text-danger fw-bold">TZS
                                                 {{ number_format($loan->amount_total - ($loan->repayments?->sum(function ($r) {
         return ($r->principal + $r->interest); }) ?? 0), 2) }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted ps-4">Settle Amount</td>
+                                            <td class="text-warning fw-bold">TZS
+                                                {{ number_format($loan->total_amount_to_settle, 2) }}
+                                                <br><small class="text-muted">Pays current interest + all remaining
+                                                    principal</small>
                                             </td>
                                         </tr>
 
@@ -777,7 +799,8 @@
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0 text-dark">Repayments</h5>
                         <div class="d-flex gap-2">
-                            <button type="button" class="btn btn-danger d-flex align-items-center" id="bulkDeleteRepaymentsBtn" disabled>
+                            <button type="button" class="btn btn-danger d-flex align-items-center"
+                                id="bulkDeleteRepaymentsBtn" disabled>
                                 <i class="bx bx-trash me-2 font-18"></i>Bulk Delete
                             </button>
                             <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
@@ -797,7 +820,8 @@
                                     <table class="table table-bordered table-striped mb-0">
                                         <thead class="bg-light">
                                             <tr>
-                                                <th class="text-center" style="width:32px;"><input type="checkbox" id="select_all_repayments"></th>
+                                                <th class="text-center" style="width:32px;"><input type="checkbox"
+                                                        id="select_all_repayments"></th>
                                                 <th>#</th>
                                                 <th>Payment Date</th>
                                                 <th>Due Date</th>
@@ -813,7 +837,8 @@
                                         <tbody>
                                             @foreach($loan->repayments->sortByDesc('payment_date') as $index => $repayment)
                                                 <tr>
-                                                    <td class="text-center"><input type="checkbox" class="repayment-select" value="{{ $repayment->id }}"></td>
+                                                    <td class="text-center"><input type="checkbox" class="repayment-select"
+                                                            value="{{ $repayment->id }}"></td>
                                                     <th scope="row" class="ps-4">{{ $index + 1 }}</th>
                                                     <td>{{ \Carbon\Carbon::parse($repayment->payment_date)->format('M d, Y') }}</td>
                                                     <td>{{ \Carbon\Carbon::parse($repayment->due_date)->format('M d, Y') }}</td>
@@ -832,10 +857,10 @@
                                                                 Print
                                                             </button>
                                                             <!-- <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                                onclick="editRepayment({{ $repayment->id }})"
-                                                                title="Edit Repayment">
-                                                                Edit
-                                                            </button> -->
+                                                                                                                                                                onclick="editRepayment({{ $repayment->id }})"
+                                                                                                                                                                title="Edit Repayment">
+                                                                                                                                                                Edit
+                                                                                                                                                            </button> -->
                                                             <button type="button" class="btn btn-sm btn-outline-danger"
                                                                 onclick="deleteRepayment({{ $repayment->id }})"
                                                                 title="Delete Repayment">
@@ -1433,11 +1458,14 @@
                 <div class="modal-body">
                     <p id="approvalMessage"></p>
                     <div class="mb-3" id="disburse_bank_wrapper" style="display:none;">
-                        <label for="approval_bank_account_id" class="form-label">Select Bank Account <span class="text-danger">*</span></label>
+                        <label for="approval_bank_account_id" class="form-label">Select Bank Account <span
+                                class="text-danger">*</span></label>
                         <select class="form-select" name="bank_account_id" id="approval_bank_account_id">
                             <option value="">-- Select Bank Account --</option>
                             @foreach($bankAccounts ?? [] as $bankAccount)
-                                <option value="{{ $bankAccount->id }}">{{ $bankAccount->account_number }} - {{ $bankAccount->name }}</option>
+                                <option value="{{ $bankAccount->id }}">{{ $bankAccount->account_number }} -
+                                    {{ $bankAccount->name }}
+                                </option>
                             @endforeach
                         </select>
                         <div class="form-text">This bank account will be used for the disbursement entry.</div>
@@ -1540,6 +1568,11 @@
                                 <label for="payment_amount" class="form-label">Amount</label>
                                 <input type="number" step="0.01" class="form-control" name="amount" id="payment_amount"
                                     required>
+                                <small class="text-muted">
+                                    <strong>Settle Amount:</strong> TZS
+                                    {{ number_format($loan->total_amount_to_settle, 2) }}
+                                    (pays current interest + all remaining principal)
+                                </small>
                             </div>
                         </div>
 
@@ -1665,16 +1698,16 @@
                     type === 'warning' ? 'bg-warning' : 'bg-info';
 
             const toastHtml = `
-                <div class="toast align-items-center text-white ${toastClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                    <div class="d-flex">
-                        <div class="toast-body">
-                            <strong>${title}</strong><br>
-                            ${message}
-                        </div>
-                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                    </div>
-                </div>
-            `;
+                                                <div class="toast align-items-center text-white ${toastClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                                                    <div class="d-flex">
+                                                        <div class="toast-body">
+                                                            <strong>${title}</strong><br>
+                                                            ${message}
+                                                        </div>
+                                                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                                    </div>
+                                                </div>
+                                            `;
 
             // Create toast container if it doesn't exist
             let toastContainer = document.getElementById('toast-container');
@@ -2141,15 +2174,15 @@
             Swal.fire({
                 title: 'Remove Penalty',
                 html: `
-                    <div class="text-start">
-                        <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
-                        <p class="text-muted">This will remove the penalty from this schedule item.</p>
-                        <div class="mb-3">
-                            <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
-                            <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
-                        </div>
-                    </div>
-                `,
+                                                    <div class="text-start">
+                                                        <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
+                                                        <p class="text-muted">This will remove the penalty from this schedule item.</p>
+                                                        <div class="mb-3">
+                                                            <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
+                                                            <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
+                                                        </div>
+                                                    </div>
+                                                `,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Remove Penalty',
@@ -2447,156 +2480,156 @@
             const fileName = `Receipt_${customerName}_${receiptData.date}`;
 
             const receiptHtml = `
-                <!DOCTYPE html>
-                <html>
-                <head>
-                    <title>${fileName}</title>
-                    <style>
-                        @page {
-                            size: 80mm 200mm;
-                            margin: 0;
-                            padding: 0;
-                        }
+                                                <!DOCTYPE html>
+                                                <html>
+                                                <head>
+                                                    <title>${fileName}</title>
+                                                    <style>
+                                                        @page {
+                                                            size: 80mm 200mm;
+                                                            margin: 0;
+                                                            padding: 0;
+                                                        }
 
-                        @media print {
-                            body { 
-                                font-family: 'Courier New', monospace; 
-                                font-size: 10px; 
-                                margin: 0; 
-                                padding: 5px;
-                                width: 280px;
-                                max-width: 280px;
-                                min-width: 280px;
-                                page-break-after: avoid;
-                                page-break-before: avoid;
-                            }
-                            .header { text-align: center; margin-bottom: 8px; }
-                            .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                            .subtitle { font-size: 10px; margin-bottom: 8px; }
-                            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                            .label { font-weight: bold; }
-                            .value { text-align: right; }
-                            .total { font-weight: bold; font-size: 12px; }
-                            .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                            .center { text-align: center; }
-                            .bold { font-weight: bold; }
+                                                        @media print {
+                                                            body { 
+                                                                font-family: 'Courier New', monospace; 
+                                                                font-size: 10px; 
+                                                                margin: 0; 
+                                                                padding: 5px;
+                                                                width: 280px;
+                                                                max-width: 280px;
+                                                                min-width: 280px;
+                                                                page-break-after: avoid;
+                                                                page-break-before: avoid;
+                                                            }
+                                                            .header { text-align: center; margin-bottom: 8px; }
+                                                            .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                                                            .subtitle { font-size: 10px; margin-bottom: 8px; }
+                                                            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                                                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                                            .label { font-weight: bold; }
+                                                            .value { text-align: right; }
+                                                            .total { font-weight: bold; font-size: 12px; }
+                                                            .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                                                            .center { text-align: center; }
+                                                            .bold { font-weight: bold; }
 
-                            /* Force thermal printer format */
-                            html, body {
-                                width: 280px !important;
-                                max-width: 280px !important;
-                                min-width: 280px !important;
-                            }
-                        }
+                                                            /* Force thermal printer format */
+                                                            html, body {
+                                                                width: 280px !important;
+                                                                max-width: 280px !important;
+                                                                min-width: 280px !important;
+                                                            }
+                                                        }
 
-                        body { 
-                            font-family: 'Courier New', monospace; 
-                            font-size: 10px; 
-                            margin: 0; 
-                            padding: 5px;
-                            width: 280px;
-                            max-width: 280px;
-                            min-width: 280px;
-                        }
-                        .header { text-align: center; margin-bottom: 8px; }
-                        .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                        .subtitle { font-size: 10px; margin-bottom: 8px; }
-                        .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                        .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                        .label { font-weight: bold; }
-                        .value { text-align: right; }
-                        .total { font-weight: bold; font-size: 12px; }
-                        .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                        .center { text-align: center; }
-                        .bold { font-weight: bold; }
-                    </style>
-                </head>
-                <body>
-                    <div class="header">
-                        <div class="title">SMARTFINANCE</div>
-                        <div class="subtitle">Loan Repayment Receipt</div>
-                    </div>
+                                                        body { 
+                                                            font-family: 'Courier New', monospace; 
+                                                            font-size: 10px; 
+                                                            margin: 0; 
+                                                            padding: 5px;
+                                                            width: 280px;
+                                                            max-width: 280px;
+                                                            min-width: 280px;
+                                                        }
+                                                        .header { text-align: center; margin-bottom: 8px; }
+                                                        .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                                                        .subtitle { font-size: 10px; margin-bottom: 8px; }
+                                                        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                                                        .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                                        .label { font-weight: bold; }
+                                                        .value { text-align: right; }
+                                                        .total { font-weight: bold; font-size: 12px; }
+                                                        .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                                                        .center { text-align: center; }
+                                                        .bold { font-weight: bold; }
+                                                    </style>
+                                                </head>
+                                                <body>
+                                                    <div class="header">
+                                                        <div class="title">SMARTFINANCE</div>
+                                                        <div class="subtitle">Loan Repayment Receipt</div>
+                                                    </div>
 
-                    <div class="divider"></div>
+                                                    <div class="divider"></div>
 
-                    <div class="row">
-                        <span class="label">Customer:</span>
-                        <span class="value">${receiptData.customer_name}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Loan No:</span>
-                        <span class="value">${receiptData.loan_number}</span>
-                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Customer:</span>
+                                                        <span class="value">${receiptData.customer_name}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Loan No:</span>
+                                                        <span class="value">${receiptData.loan_number}</span>
+                                                    </div>
 
-                    <div class="divider"></div>
+                                                    <div class="divider"></div>
 
-                    <div class="row">
-                        <span class="label">Receipt No:</span>
-                        <span class="value">${receiptData.receipt_number}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Date:</span>
-                        <span class="value">${receiptData.date}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Time:</span>
-                        <span class="value">${new Date().toLocaleTimeString()}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Bank Account:</span>
-                        <span class="value">${receiptData.bank_account}</span>
-                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Receipt No:</span>
+                                                        <span class="value">${receiptData.receipt_number}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Date:</span>
+                                                        <span class="value">${receiptData.date}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Time:</span>
+                                                        <span class="value">${new Date().toLocaleTimeString()}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Bank Account:</span>
+                                                        <span class="value">${receiptData.bank_account}</span>
+                                                    </div>
 
-                    <div class="divider"></div>
+                                                    <div class="divider"></div>
 
-                    <div class="center bold">PAYMENT BREAKDOWN</div>
+                                                    <div class="center bold">PAYMENT BREAKDOWN</div>
 
-                    <div class="row">
-                        <span class="label">Principal:</span>
-                        <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Interest:</span>
-                        <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Penalty:</span>
-                        <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Fee:</span>
-                        <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
-                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Principal:</span>
+                                                        <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Interest:</span>
+                                                        <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Penalty:</span>
+                                                        <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Fee:</span>
+                                                        <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
+                                                    </div>
 
-                    <div class="divider"></div>
+                                                    <div class="divider"></div>
 
-                    <div class="row total">
-                        <span class="label">TOTAL PAID:</span>
-                        <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
-                    </div>
+                                                    <div class="row total">
+                                                        <span class="label">TOTAL PAID:</span>
+                                                        <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
+                                                    </div>
 
-                    <div class="divider"></div>
+                                                    <div class="divider"></div>
 
-                    <div class="row">
-                        <span class="label">Received By:</span>
-                        <span class="value">${receiptData.received_by}</span>
-                    </div>
-                    <div class="row">
-                        <span class="label">Branch:</span>
-                        <span class="value">${receiptData.branch}</span>
-                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Received By:</span>
+                                                        <span class="value">${receiptData.received_by}</span>
+                                                    </div>
+                                                    <div class="row">
+                                                        <span class="label">Branch:</span>
+                                                        <span class="value">${receiptData.branch}</span>
+                                                    </div>
 
-                    <div class="divider"></div>
+                                                    <div class="divider"></div>
 
-                    <div class="footer">
-                        <div class="bold">Thank you for your payment!</div>
-                        <div>Keep this receipt for your records</div>
-                        <div style="margin-top: 5px;">--- End of Receipt ---</div>
-                    </div>
-                </body>
-                </html>
-            `;
+                                                    <div class="footer">
+                                                        <div class="bold">Thank you for your payment!</div>
+                                                        <div>Keep this receipt for your records</div>
+                                                        <div style="margin-top: 5px;">--- End of Receipt ---</div>
+                                                    </div>
+                                                </body>
+                                                </html>
+                                            `;
 
             printWindow.document.write(receiptHtml);
             printWindow.document.close();
@@ -2700,11 +2733,11 @@
                             imagesHtml = '<div class="row">';
                             images.forEach((image, index) => {
                                 imagesHtml += `
-                                    <div class="col-md-3 mb-3">
-                                        <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;" 
-                                             onclick="openImageModal('${image}')" role="button">
-                                    </div>
-                                `;
+                                                                    <div class="col-md-3 mb-3">
+                                                                        <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;" 
+                                                                             onclick="openImageModal('${image}')" role="button">
+                                                                    </div>
+                                                                `;
                             });
                             imagesHtml += '</div>';
                         } else {
@@ -2716,11 +2749,11 @@
                             documentsHtml = '<div class="list-group">';
                             documents.forEach(doc => {
                                 documentsHtml += `
-                                    <a href="${doc.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                        <span><i class="bx bx-file me-2"></i>${doc.name}</span>
-                                        <i class="bx bx-download"></i>
-                                    </a>
-                                `;
+                                                                    <a href="${doc.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                                                        <span><i class="bx bx-file me-2"></i>${doc.name}</span>
+                                                                        <i class="bx bx-download"></i>
+                                                                    </a>
+                                                                `;
                             });
                             documentsHtml += '</div>';
                         } else {
@@ -2731,58 +2764,58 @@
                         const conditionBadge = collateral.condition ? getConditionBadge(collateral.condition) : '<span class="text-muted">Not specified</span>';
 
                         const content = `
-                            <div class="row">
-                                <div class="col-md-8">
-                                    <div class="row mb-4">
-                                        <div class="col-12">
-                                            <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Title:</strong> ${collateral.title}<br>
-                                            <strong>Type:</strong> ${collateral.type.charAt(0).toUpperCase() + collateral.type.slice(1)}<br>
-                                            <strong>Status:</strong> ${statusBadge}<br>
-                                            <strong>Condition:</strong> ${conditionBadge}
-                                        </div>
-                                        <div class="col-md-6">
-                                            <strong>Estimated Value:</strong> TZS ${parseFloat(collateral.estimated_value).toLocaleString()}<br>
-                                            ${collateral.appraised_value ? `<strong>Appraised Value:</strong> TZS ${parseFloat(collateral.appraised_value).toLocaleString()}<br>` : ''}
-                                            ${collateral.location ? `<strong>Location:</strong> ${collateral.location}<br>` : ''}
-                                            ${collateral.serial_number ? `<strong>Serial Number:</strong> ${collateral.serial_number}` : ''}
-                                        </div>
-                                    </div>
+                                                            <div class="row">
+                                                                <div class="col-md-8">
+                                                                    <div class="row mb-4">
+                                                                        <div class="col-12">
+                                                                            <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <strong>Title:</strong> ${collateral.title}<br>
+                                                                            <strong>Type:</strong> ${collateral.type.charAt(0).toUpperCase() + collateral.type.slice(1)}<br>
+                                                                            <strong>Status:</strong> ${statusBadge}<br>
+                                                                            <strong>Condition:</strong> ${conditionBadge}
+                                                                        </div>
+                                                                        <div class="col-md-6">
+                                                                            <strong>Estimated Value:</strong> TZS ${parseFloat(collateral.estimated_value).toLocaleString()}<br>
+                                                                            ${collateral.appraised_value ? `<strong>Appraised Value:</strong> TZS ${parseFloat(collateral.appraised_value).toLocaleString()}<br>` : ''}
+                                                                            ${collateral.location ? `<strong>Location:</strong> ${collateral.location}<br>` : ''}
+                                                                            ${collateral.serial_number ? `<strong>Serial Number:</strong> ${collateral.serial_number}` : ''}
+                                                                        </div>
+                                                                    </div>
 
-                                    <div class="mb-4">
-                                        <h6 class="text-primary mb-3"><i class="bx bx-detail me-2"></i>Description</h6>
-                                        <p>${collateral.description}</p>
-                                    </div>
+                                                                    <div class="mb-4">
+                                                                        <h6 class="text-primary mb-3"><i class="bx bx-detail me-2"></i>Description</h6>
+                                                                        <p>${collateral.description}</p>
+                                                                    </div>
 
-                                    ${collateral.notes ? `
-                                    <div class="mb-4">
-                                        <h6 class="text-primary mb-3"><i class="bx bx-note me-2"></i>Additional Notes</h6>
-                                        <p>${collateral.notes}</p>
-                                    </div>` : ''}
+                                                                    ${collateral.notes ? `
+                                                                    <div class="mb-4">
+                                                                        <h6 class="text-primary mb-3"><i class="bx bx-note me-2"></i>Additional Notes</h6>
+                                                                        <p>${collateral.notes}</p>
+                                                                    </div>` : ''}
 
-                                    <div class="mb-4">
-                                        <h6 class="text-primary mb-3"><i class="bx bx-file me-2"></i>Documents</h6>
-                                        ${documentsHtml}
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <h6 class="text-primary mb-3"><i class="bx bx-image me-2"></i>Images</h6>
-                                    ${imagesHtml}
-                                </div>
-                            </div>
+                                                                    <div class="mb-4">
+                                                                        <h6 class="text-primary mb-3"><i class="bx bx-file me-2"></i>Documents</h6>
+                                                                        ${documentsHtml}
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <h6 class="text-primary mb-3"><i class="bx bx-image me-2"></i>Images</h6>
+                                                                    ${imagesHtml}
+                                                                </div>
+                                                            </div>
 
-                            ${collateral.status_changed_at ? `
-                            <div class="alert alert-info">
-                                <h6><i class="bx bx-history me-2"></i>Status History</h6>
-                                <small>
-                                    <strong>Last Changed:</strong> ${new Date(collateral.status_changed_at).toLocaleDateString()}<br>
-                                    <strong>Changed By:</strong> ${collateral.status_changed_by || 'System'}<br>
-                                    ${collateral.status_change_reason ? `<strong>Reason:</strong> ${collateral.status_change_reason}` : ''}
-                                </small>
-                            </div>` : ''}
-                        `;
+                                                            ${collateral.status_changed_at ? `
+                                                            <div class="alert alert-info">
+                                                                <h6><i class="bx bx-history me-2"></i>Status History</h6>
+                                                                <small>
+                                                                    <strong>Last Changed:</strong> ${new Date(collateral.status_changed_at).toLocaleDateString()}<br>
+                                                                    <strong>Changed By:</strong> ${collateral.status_changed_by || 'System'}<br>
+                                                                    ${collateral.status_change_reason ? `<strong>Reason:</strong> ${collateral.status_change_reason}` : ''}
+                                                                </small>
+                                                            </div>` : ''}
+                                                        `;
 
                         $('#collateralDetailsContent').html(content);
                         window.currentCollateralId = collateralId; // Store for edit function
@@ -2820,16 +2853,16 @@
                             images.forEach((image, index) => {
                                 const imagePath = collateral.images[index];
                                 existingImagesHtml += `
-                                    <div class="col-md-3 mb-2">
-                                        <div class="position-relative">
-                                            <img src="${image}" class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;">
-                                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
-                                                    onclick="removeFile('${imagePath}', 'image', ${collateralId})">
-                                                <i class="bx bx-x"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
+                                                                    <div class="col-md-3 mb-2">
+                                                                        <div class="position-relative">
+                                                                            <img src="${image}" class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;">
+                                                                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                                                                                    onclick="removeFile('${imagePath}', 'image', ${collateralId})">
+                                                                                <i class="bx bx-x"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                `;
                             });
                             existingImagesHtml += '</div></div>';
                         }
@@ -2840,135 +2873,135 @@
                             documents.forEach((doc, index) => {
                                 const documentPath = collateral.documents[index];
                                 existingDocumentsHtml += `
-                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                        <span><i class="bx bx-file me-2"></i>${doc.name}</span>
-                                        <div>
-                                            <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
-                                                <i class="bx bx-download"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                    onclick="removeFile('${documentPath}', 'document', ${collateralId})">
-                                                <i class="bx bx-trash"></i>
-                                            </button>
-                                        </div>
-                                    </div>
-                                `;
+                                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                                        <span><i class="bx bx-file me-2"></i>${doc.name}</span>
+                                                                        <div>
+                                                                            <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                                                                <i class="bx bx-download"></i>
+                                                                            </a>
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                                    onclick="removeFile('${documentPath}', 'document', ${collateralId})">
+                                                                                <i class="bx bx-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                `;
                             });
                             existingDocumentsHtml += '</div></div>';
                         }
 
                         const editContent = `
-                            <div class="row">
-                                <div class="col-12">
-                                    <h6 class="text-secondary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_type" class="form-label">Collateral Type</label>
-                                        <select class="form-select" name="type" id="edit_type" required>
-                                            <option value="property" ${collateral.type === 'property' ? 'selected' : ''}>Property</option>
-                                            <option value="vehicle" ${collateral.type === 'vehicle' ? 'selected' : ''}>Vehicle</option>
-                                            <option value="equipment" ${collateral.type === 'equipment' ? 'selected' : ''}>Equipment</option>
-                                            <option value="cash" ${collateral.type === 'cash' ? 'selected' : ''}>Cash</option>
-                                            <option value="jewelry" ${collateral.type === 'jewelry' ? 'selected' : ''}>Jewelry</option>
-                                            <option value="electronics" ${collateral.type === 'electronics' ? 'selected' : ''}>Electronics</option>
-                                            <option value="other" ${collateral.type === 'other' ? 'selected' : ''}>Other</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_title" class="form-label">Title/Name</label>
-                                        <input type="text" class="form-control" name="title" id="edit_title" value="${collateral.title}" required>
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="mb-3">
-                                        <label for="edit_description" class="form-label">Description</label>
-                                        <textarea class="form-control" name="description" id="edit_description" rows="3" required>${collateral.description}</textarea>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_estimated_value" class="form-label">Estimated Value (TZS)</label>
-                                        <input type="number" step="0.01" class="form-control" name="estimated_value" id="edit_estimated_value" value="${collateral.estimated_value}" required>
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_appraised_value" class="form-label">Appraised Value (TZS)</label>
-                                        <input type="number" step="0.01" class="form-control" name="appraised_value" id="edit_appraised_value" value="${collateral.appraised_value || ''}">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="edit_condition" class="form-label">Condition</label>
-                                        <select class="form-select" name="condition" id="edit_condition">
-                                            <option value="">-- Select Condition --</option>
-                                            <option value="excellent" ${collateral.condition === 'excellent' ? 'selected' : ''}>Excellent</option>
-                                            <option value="good" ${collateral.condition === 'good' ? 'selected' : ''}>Good</option>
-                                            <option value="fair" ${collateral.condition === 'fair' ? 'selected' : ''}>Fair</option>
-                                            <option value="poor" ${collateral.condition === 'poor' ? 'selected' : ''}>Poor</option>
-                                        </select>
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="edit_serial_number" class="form-label">Serial Number</label>
-                                        <input type="text" class="form-control" name="serial_number" id="edit_serial_number" value="${collateral.serial_number || ''}">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="edit_registration_number" class="form-label">Registration Number</label>
-                                        <input type="text" class="form-control" name="registration_number" id="edit_registration_number" value="${collateral.registration_number || ''}">
-                                    </div>
-                                </div>
-                                <div class="col-md-8">
-                                    <div class="mb-3">
-                                        <label for="edit_location" class="form-label">Location</label>
-                                        <input type="text" class="form-control" name="location" id="edit_location" value="${collateral.location || ''}">
-                                    </div>
-                                </div>
-                                <div class="col-md-4">
-                                    <div class="mb-3">
-                                        <label for="edit_valuation_date" class="form-label">Valuation Date</label>
-                                        <input type="date" class="form-control" name="valuation_date" id="edit_valuation_date" value="${collateral.valuation_date || ''}">
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="mb-3">
-                                        <label for="edit_valuator_name" class="form-label">Valuator Name</label>
-                                        <input type="text" class="form-control" name="valuator_name" id="edit_valuator_name" value="${collateral.valuator_name || ''}">
-                                    </div>
-                                </div>
-                                <div class="col-12">
-                                    <div class="mb-3">
-                                        <label for="edit_notes" class="form-label">Additional Notes</label>
-                                        <textarea class="form-control" name="notes" id="edit_notes" rows="2">${collateral.notes || ''}</textarea>
-                                    </div>
-                                </div>
+                                                            <div class="row">
+                                                                <div class="col-12">
+                                                                    <h6 class="text-secondary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_type" class="form-label">Collateral Type</label>
+                                                                        <select class="form-select" name="type" id="edit_type" required>
+                                                                            <option value="property" ${collateral.type === 'property' ? 'selected' : ''}>Property</option>
+                                                                            <option value="vehicle" ${collateral.type === 'vehicle' ? 'selected' : ''}>Vehicle</option>
+                                                                            <option value="equipment" ${collateral.type === 'equipment' ? 'selected' : ''}>Equipment</option>
+                                                                            <option value="cash" ${collateral.type === 'cash' ? 'selected' : ''}>Cash</option>
+                                                                            <option value="jewelry" ${collateral.type === 'jewelry' ? 'selected' : ''}>Jewelry</option>
+                                                                            <option value="electronics" ${collateral.type === 'electronics' ? 'selected' : ''}>Electronics</option>
+                                                                            <option value="other" ${collateral.type === 'other' ? 'selected' : ''}>Other</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_title" class="form-label">Title/Name</label>
+                                                                        <input type="text" class="form-control" name="title" id="edit_title" value="${collateral.title}" required>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_description" class="form-label">Description</label>
+                                                                        <textarea class="form-control" name="description" id="edit_description" rows="3" required>${collateral.description}</textarea>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_estimated_value" class="form-label">Estimated Value (TZS)</label>
+                                                                        <input type="number" step="0.01" class="form-control" name="estimated_value" id="edit_estimated_value" value="${collateral.estimated_value}" required>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_appraised_value" class="form-label">Appraised Value (TZS)</label>
+                                                                        <input type="number" step="0.01" class="form-control" name="appraised_value" id="edit_appraised_value" value="${collateral.appraised_value || ''}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_condition" class="form-label">Condition</label>
+                                                                        <select class="form-select" name="condition" id="edit_condition">
+                                                                            <option value="">-- Select Condition --</option>
+                                                                            <option value="excellent" ${collateral.condition === 'excellent' ? 'selected' : ''}>Excellent</option>
+                                                                            <option value="good" ${collateral.condition === 'good' ? 'selected' : ''}>Good</option>
+                                                                            <option value="fair" ${collateral.condition === 'fair' ? 'selected' : ''}>Fair</option>
+                                                                            <option value="poor" ${collateral.condition === 'poor' ? 'selected' : ''}>Poor</option>
+                                                                        </select>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_serial_number" class="form-label">Serial Number</label>
+                                                                        <input type="text" class="form-control" name="serial_number" id="edit_serial_number" value="${collateral.serial_number || ''}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_registration_number" class="form-label">Registration Number</label>
+                                                                        <input type="text" class="form-control" name="registration_number" id="edit_registration_number" value="${collateral.registration_number || ''}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-8">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_location" class="form-label">Location</label>
+                                                                        <input type="text" class="form-control" name="location" id="edit_location" value="${collateral.location || ''}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-4">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_valuation_date" class="form-label">Valuation Date</label>
+                                                                        <input type="date" class="form-control" name="valuation_date" id="edit_valuation_date" value="${collateral.valuation_date || ''}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_valuator_name" class="form-label">Valuator Name</label>
+                                                                        <input type="text" class="form-control" name="valuator_name" id="edit_valuator_name" value="${collateral.valuator_name || ''}">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-12">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_notes" class="form-label">Additional Notes</label>
+                                                                        <textarea class="form-control" name="notes" id="edit_notes" rows="2">${collateral.notes || ''}</textarea>
+                                                                    </div>
+                                                                </div>
 
-                                ${existingImagesHtml}
-                                ${existingDocumentsHtml}
+                                                                ${existingImagesHtml}
+                                                                ${existingDocumentsHtml}
 
-                                <div class="col-12 mt-3">
-                                    <h6 class="text-secondary mb-3"><i class="bx bx-upload me-2"></i>Add New Files</h6>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_new_images" class="form-label">Add New Images</label>
-                                        <input type="file" class="form-control" name="new_images[]" id="edit_new_images" multiple accept="image/*">
-                                    </div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="mb-3">
-                                        <label for="edit_new_documents" class="form-label">Add New Documents</label>
-                                        <input type="file" class="form-control" name="new_documents[]" id="edit_new_documents" multiple accept=".pdf,.doc,.docx,.jpg,.png">
-                                    </div>
-                                </div>
-                            </div>
-                        `;
+                                                                <div class="col-12 mt-3">
+                                                                    <h6 class="text-secondary mb-3"><i class="bx bx-upload me-2"></i>Add New Files</h6>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_new_images" class="form-label">Add New Images</label>
+                                                                        <input type="file" class="form-control" name="new_images[]" id="edit_new_images" multiple accept="image/*">
+                                                                    </div>
+                                                                </div>
+                                                                <div class="col-md-6">
+                                                                    <div class="mb-3">
+                                                                        <label for="edit_new_documents" class="form-label">Add New Documents</label>
+                                                                        <input type="file" class="form-control" name="new_documents[]" id="edit_new_documents" multiple accept=".pdf,.doc,.docx,.jpg,.png">
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        `;
 
                         $('#editCollateralContent').html(editContent);
                     }
@@ -3269,44 +3302,44 @@
             Swal.fire({
                 title: 'Apply for Top-Up Loan',
                 html: `
-                            <div class="text-start">
-                                                                                <div class="alert alert-info">
-                <i class="bx bx-info-circle me-2"></i>
-                <strong>Customer:</strong> ${loan.customer.name}
-            </div>
+                                                            <div class="text-start">
+                                                                                                                <div class="alert alert-info">
+                                                <i class="bx bx-info-circle me-2"></i>
+                                                <strong>Customer:</strong> ${loan.customer.name}
+                                            </div>
 
-                                <div class="mb-3">
-                                    <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
-                                    <input type="number" class="form-control" id="topup_amount" 
-                                            placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
-                                    <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
-                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
+                                                                    <input type="number" class="form-control" id="topup_amount" 
+                                                                            placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
+                                                                    <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
+                                                                </div>
 
-                                <div class="mb-3">
-                                    <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
-                                    <textarea class="form-control" id="topup_purpose" rows="3" 
-                                                placeholder="Please describe the purpose of this top-up loan..."></textarea>
-                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
+                                                                    <textarea class="form-control" id="topup_purpose" rows="3" 
+                                                                                placeholder="Please describe the purpose of this top-up loan..."></textarea>
+                                                                </div>
 
-                                <div class="mb-3">
-                                    <label for="topup_type" class="form-label">Top-Up Type</label>
-                                    <select class="form-control" id="topup_type" required>
-                                        <option value="restructure">Restructure (Replace old loan with new larger loan)</option>
-                                        <option value="additional">Additional (Create separate new loan alongside old loan)</option>
-                                    </select>
-                                    <small class="text-muted">Choose how you want to handle the top-up</small>
-                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="topup_type" class="form-label">Top-Up Type</label>
+                                                                    <select class="form-control" id="topup_type" required>
+                                                                        <option value="restructure">Restructure (Replace old loan with new larger loan)</option>
+                                                                        <option value="additional">Additional (Create separate new loan alongside old loan)</option>
+                                                                    </select>
+                                                                    <small class="text-muted">Choose how you want to handle the top-up</small>
+                                                                </div>
 
-                                <div class="mb-3">
-                                    <label for="topup_period" class="form-label">Additional Period</label>
-                                    <input type="number" class="form-control" id="topup_period" 
-                                            value="12" min="1" max="60" required>
-                                    <small class="text-muted">How many additional periods do you need?</small>
-                                </div>
+                                                                <div class="mb-3">
+                                                                    <label for="topup_period" class="form-label">Additional Period</label>
+                                                                    <input type="number" class="form-control" id="topup_period" 
+                                                                            value="12" min="1" max="60" required>
+                                                                    <small class="text-muted">How many additional periods do you need?</small>
+                                                                </div>
 
 
-                            </div>
-                        `,
+                                                            </div>
+                                                        `,
                 showCancelButton: true,
                 confirmButtonText: 'Apply for Top-Up',
                 cancelButtonText: 'Cancel',
@@ -3367,11 +3400,11 @@
             setTimeout(() => {
                 const amountInput = document.getElementById('topup_amount');
                 const typeSelect = document.getElementById('topup_type');
-                
+
                 function updateCalculations() {
                     const newAmount = parseFloat(amountInput.value) || 0;
                     const topupType = typeSelect.value;
-                    
+
                     let customerReceives;
                     if (topupType === 'restructure') {
                         customerReceives = Math.max(0, newAmount - currentBalance);
@@ -3390,7 +3423,7 @@
                         customerReceivesDisplay.textContent = `TZS ${customerReceives.toLocaleString()}`;
                     }
                 }
-                
+
                 if (amountInput) {
                     amountInput.addEventListener('input', updateCalculations);
                 }
@@ -3468,30 +3501,30 @@
             });
         }
 
-        (function(){
-            function getCsrfToken(){
+        (function () {
+            function getCsrfToken() {
                 var m = document.querySelector('meta[name="csrf-token"]');
                 return m ? m.getAttribute('content') : '';
             }
 
-            function updateBulkControls(){
+            function updateBulkControls() {
                 var checkboxes = Array.from(document.querySelectorAll('.repayment-select'));
-                var anyChecked = checkboxes.some(function(cb){ return cb.checked; });
+                var anyChecked = checkboxes.some(function (cb) { return cb.checked; });
                 var btn = document.getElementById('bulkDeleteRepaymentsBtn');
                 if (btn) btn.disabled = !anyChecked;
-                var allChecked = checkboxes.length > 0 && checkboxes.every(function(cb){ return cb.checked; });
+                var allChecked = checkboxes.length > 0 && checkboxes.every(function (cb) { return cb.checked; });
                 var master = document.getElementById('select_all_repayments');
                 if (master) master.checked = allChecked;
             }
 
-            function bindRepaymentCheckboxEvents(){
-                document.querySelectorAll('.repayment-select').forEach(function(cb){
+            function bindRepaymentCheckboxEvents() {
+                document.querySelectorAll('.repayment-select').forEach(function (cb) {
                     cb.addEventListener('change', updateBulkControls);
                 });
             }
 
-            function bulkDeleteRepayments(){
-                var ids = Array.from(document.querySelectorAll('.repayment-select:checked')).map(function(cb){ return parseInt(cb.value); });
+            function bulkDeleteRepayments() {
+                var ids = Array.from(document.querySelectorAll('.repayment-select:checked')).map(function (cb) { return parseInt(cb.value); });
                 if (ids.length === 0) return;
 
                 if (typeof Swal === 'undefined') {
@@ -3505,13 +3538,13 @@
                             'X-CSRF-TOKEN': getCsrfToken()
                         },
                         body: JSON.stringify({ ids: ids })
-                    }).then(function(r){ return r.json(); }).then(function(resp){
-                        if (resp && resp.success){
+                    }).then(function (r) { return r.json(); }).then(function (resp) {
+                        if (resp && resp.success) {
                             window.location.reload();
                         } else {
                             alert(resp && resp.message ? resp.message : 'Failed to delete repayments.');
                         }
-                    }).catch(function(){ alert('Failed to delete repayments.'); });
+                    }).catch(function () { alert('Failed to delete repayments.'); });
                     return;
                 }
 
@@ -3523,7 +3556,7 @@
                     confirmButtonText: 'Yes, delete',
                     cancelButtonText: 'Cancel',
                     reverseButtons: true
-                }).then(function(result){
+                }).then(function (result) {
                     if (!result.isConfirmed) return;
 
                     fetch('/repayments/bulk-delete', {
@@ -3533,15 +3566,15 @@
                             'X-CSRF-TOKEN': getCsrfToken()
                         },
                         body: JSON.stringify({ ids: ids })
-                    }).then(function(r){ return r.json(); }).then(function(resp){
-                        if (resp && resp.success){
+                    }).then(function (r) { return r.json(); }).then(function (resp) {
+                        if (resp && resp.success) {
                             Swal.fire({
                                 title: 'Deleted!',
                                 text: 'Repayments deleted successfully.',
                                 icon: 'success',
                                 timer: 1200,
                                 showConfirmButton: false
-                            }).then(function(){ window.location.reload(); });
+                            }).then(function () { window.location.reload(); });
                         } else {
                             Swal.fire({
                                 title: 'Error',
@@ -3549,7 +3582,7 @@
                                 icon: 'error'
                             });
                         }
-                    }).catch(function(){
+                    }).catch(function () {
                         Swal.fire({
                             title: 'Error',
                             text: 'Failed to delete repayments.',
@@ -3559,17 +3592,17 @@
                 });
             }
 
-            document.addEventListener('DOMContentLoaded', function(){
+            document.addEventListener('DOMContentLoaded', function () {
                 var master = document.getElementById('select_all_repayments');
-                if (master){
-                    master.addEventListener('change', function(){
+                if (master) {
+                    master.addEventListener('change', function () {
                         var checked = master.checked;
-                        document.querySelectorAll('.repayment-select').forEach(function(cb){ cb.checked = checked; });
+                        document.querySelectorAll('.repayment-select').forEach(function (cb) { cb.checked = checked; });
                         updateBulkControls();
                     });
                 }
                 var btn = document.getElementById('bulkDeleteRepaymentsBtn');
-                if (btn){ btn.addEventListener('click', bulkDeleteRepayments); }
+                if (btn) { btn.addEventListener('click', bulkDeleteRepayments); }
                 bindRepaymentCheckboxEvents();
                 updateBulkControls();
             });
