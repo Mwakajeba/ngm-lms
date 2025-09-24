@@ -85,7 +85,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Maximum Members <span class="text-gray">(optional)</span></label>
                                     <input type="number" name="maximum_members" class="form-control @error('maximum_members') is-invalid @enderror"
-                                        value="{{ old('maximum_members', $group->maximum_members) }}" min="1" max="100" required>
+                                        value="{{ old('maximum_members', $group->maximum_members) }}" min="1" max="100000" required>
                                     @error('maximum_members')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
