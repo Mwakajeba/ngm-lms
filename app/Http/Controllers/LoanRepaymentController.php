@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\BankAccount;
 use App\Models\Loan;
 use App\Models\LoanSchedule;
 use App\Models\Repayment;
@@ -60,49 +61,106 @@ class LoanRepaymentController extends Controller
 
             Log::info('Validation passed');
 
-            // Check cash deposit balance if using cash deposit
-            if ($request->payment_source === 'cash_deposit') {
-                $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
+            // Get loan and check if amount matches settle amount
+            $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($request->loan_id);
+            $settleAmount = $loan->total_amount_to_settle;
+            $paymentAmount = $request->amount;
 
-                if ($cashDeposit->amount < $request->amount) {
-                    return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
-                }
-            }
-
-            // Prepare payment data based on source
-            $paymentData = [
-                'payment_date' => $request->payment_date,
-                'payment_source' => $request->payment_source,
-            ];
-
-            if ($request->payment_source === 'bank') {
-                $paymentData['bank_account_id'] = $request->bank_account_id;
-            } else {
-                $paymentData['cash_deposit_id'] = $request->cash_deposit_id;
-            }
-
-            // Get calculation method from loan product
-            $loan = Loan::with('product')->findOrFail($request->loan_id);
-            $calculationMethod = $loan->product->interest_method ?? 'flat_rate';
-
-            Log::info('Processing repayment', [
-                'loan_id' => $request->loan_id,
-                'amount' => $request->amount,
-                'calculation_method' => $calculationMethod,
-                'payment_source' => $request->payment_source
+            Log::info('Amount comparison', [
+                'payment_amount' => $paymentAmount,
+                'settle_amount' => $settleAmount,
+                'difference' => abs($paymentAmount - $settleAmount)
             ]);
 
-            // Process repayment using service
-            $result = $this->repaymentService->processRepayment(
-                $request->loan_id,
-                $request->amount,
-                $paymentData,
-                $calculationMethod
-            );
+            // Check if this is a settle repayment (amount matches settle amount within 0.01 tolerance)
+            $isSettleRepayment = abs($paymentAmount - $settleAmount) <= 0.01;
 
-            Log::info('Repayment processing result', $result);
+            if ($isSettleRepayment) {
+                Log::info('Processing settle repayment', [
+                    'loan_id' => $request->loan_id,
+                    'amount' => $paymentAmount,
+                    'settle_amount' => $settleAmount
+                ]);
 
-            return redirect()->back()->with('success', 'Repayment recorded successfully!');
+                // Use settle repayment process
+                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                $paymentData = [
+                    'bank_chart_account_id' => $bankAccount->chart_account_id,
+                    'bank_account_id' => $request->bank_account_id,
+                    'payment_date' => $request->payment_date,
+                    'notes' => 'Settle repayment - pays current interest and all remaining principal'
+                ];
+
+                $result = $this->repaymentService->processSettleRepayment($request->loan_id, $paymentAmount, $paymentData);
+
+                if ($result['success']) {
+                    $message = "Loan settled successfully. ";
+                    $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
+                    $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
+
+                    if ($result['loan_closed']) {
+                        $message .= " Loan has been closed.";
+                    }
+
+                    return redirect()->back()->with('success', $message);
+                } else {
+                    return redirect()->back()->with('error', 'Failed to process settle repayment.');
+                }
+            } else {
+                Log::info('Processing normal repayment', [
+                    'loan_id' => $request->loan_id,
+                    'amount' => $paymentAmount,
+                    'settle_amount' => $settleAmount
+                ]);
+
+                // Use normal repayment process
+                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                $bankChartAccount = $bankAccount->chart_account_id;
+
+                // Check cash deposit balance if using cash deposit
+                if ($request->payment_source === 'cash_deposit') {
+                    $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
+
+                    if ($cashDeposit->amount < $request->amount) {
+                        return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
+                    }
+                }
+
+                // Prepare payment data based on source
+                $paymentData = [
+                    'payment_date' => $request->payment_date,
+                    'payment_source' => $request->payment_source,
+                    'bank_chart_account_id' => $bankChartAccount,
+                ];
+
+                if ($request->payment_source === 'bank') {
+                    $paymentData['bank_account_id'] = $request->bank_account_id;
+                } else {
+                    $paymentData['cash_deposit_id'] = $request->cash_deposit_id;
+                }
+
+                // Get calculation method from loan product
+                $calculationMethod = $loan->product->interest_method ?? 'flat_rate';
+
+                Log::info('Processing normal repayment', [
+                    'loan_id' => $request->loan_id,
+                    'amount' => $request->amount,
+                    'calculation_method' => $calculationMethod,
+                    'payment_source' => $request->payment_source
+                ]);
+
+                // Process repayment using service
+                $result = $this->repaymentService->processRepayment(
+                    $request->loan_id,
+                    $request->amount,
+                    $paymentData,
+                    $calculationMethod
+                );
+
+                Log::info('Repayment processing result', $result);
+
+                return redirect()->back()->with('success', 'Repayment recorded successfully!');
+            }
 
         } catch (\Exception $e) {
             Log::error('Loan repayment error: ' . $e->getMessage());
@@ -148,6 +206,9 @@ class LoanRepaymentController extends Controller
             ]);
 
             $repayment = Repayment::with(['loan', 'receipt', 'bankAccount'])->findOrFail($id);
+            $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            $bankChartAccount = $bankAccount->chart_account_id;
+
 
             // Store the loan and schedule info before deletion
             $loanId = $repayment->loan_id;
@@ -162,6 +223,7 @@ class LoanRepaymentController extends Controller
             $paymentData = [
                 'payment_date' => $request->payment_date,
                 'bank_account_id' => $request->bank_account_id,
+                'bank_chart_account_id' => $bankChartAccount,
             ];
 
             // Get calculation method from loan product
@@ -392,6 +454,8 @@ class LoanRepaymentController extends Controller
                 'repayments.*.payment_date' => 'required|date',
                 'repayments.*.bank_account_id' => 'required|exists:bank_accounts,id',
             ]);
+            $bankAccount = BankAccount::findOrFail($request->repayments[0]['bank_account_id']);
+            $bankChartAccount = $bankAccount->chart_account_id;
 
             $results = [];
             $successCount = 0;
@@ -402,6 +466,7 @@ class LoanRepaymentController extends Controller
                     $paymentData = [
                         'payment_date' => $repaymentData['payment_date'],
                         'bank_account_id' => $repaymentData['bank_account_id'],
+                        'bank_chart_account_id' => $bankChartAccount,
                     ];
 
                     $loan = Loan::with('product')->findOrFail($repaymentData['loan_id']);
@@ -461,7 +526,7 @@ class LoanRepaymentController extends Controller
             $repayment = Repayment::with([
                 'loan.customer',
                 'schedule',
-                'bankAccount',
+                'chartAccount',
                 'receipt.receiptItems.chartAccount'
             ])->findOrFail($id);
 
@@ -478,7 +543,7 @@ class LoanRepaymentController extends Controller
                     'penalty' => $repayment->penalt_amount,
                     'fee' => $repayment->fee_amount,
                 ],
-                'bank_account' => $repayment->bankAccount->name ?? 'N/A',
+                'bank_account' => $repayment->chartAccount()->name ?? 'N/A',
                 'received_by' => auth()->user()->name,
                 'branch' => auth()->user()->branch->name ?? 'N/A',
             ];

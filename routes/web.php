@@ -847,6 +847,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loans/{encodedId}/disburse', [LoanController::class, 'disburseLoan'])->name('loans.disburse');
     Route::post('/loans/{encodedId}/reject', [LoanController::class, 'rejectLoan'])->name('loans.reject');
     Route::post('/loans/{encodedId}/default', [LoanController::class, 'defaultLoan'])->name('loans.default');
+    Route::post('/loans/{encodedId}/settle', [LoanController::class, 'settleRepayment'])->name('loans.settle');
 });
 
 ////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////

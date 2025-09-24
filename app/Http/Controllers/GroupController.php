@@ -148,13 +148,20 @@ class GroupController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        $group->load(['loanOfficer', 'groupLeader', 'branch', 'members']);
+        // Load related data with proper eager loading
+        $group->load([
+            'loanOfficer',
+            'groupLeader',
+            'branch',
+            'members' => function ($query) {
+                // Load the Customer model through the pivot table
+                $query->withPivot(['joined_date', 'notes']);
+            },
+            'loans.customer', // Load loans with their customers
+            'loans.product'   // Load loans with their products
+        ]);
 
-        // Get all loans for this group (assuming each member has loans)
-        $memberIds = $group->members->pluck('customer_id');
-        $loans = Loan::whereIn('customer_id', $memberIds)->get();
-
-        return view('groups.show', compact('group', 'loans'));
+        return view('groups.show', compact('group'));
     }
 
     /**
@@ -171,7 +178,7 @@ class GroupController extends Controller
         $group = Group::findOrFail($decoded[0]);
 
         $branchId = auth()->user()->branch_id;
-        
+
         $loanOfficers = User::where('branch_id', $branchId)->get();
 
         $branchId = auth()->user()->branch_id;
@@ -422,6 +429,10 @@ class GroupController extends Controller
         try {
             DB::beginTransaction();
 
+            // Initialize arrays for bulk inserts
+            $allReceiptItems = [];
+            $allGlTransactions = [];
+
             foreach ($request->repayments as $customerId => $loans) {
                 foreach ($loans as $loanId => $repaymentData) {
                     // Pata schedule husika
@@ -654,8 +665,8 @@ class GroupController extends Controller
             DB::commit();
             return redirect()->route('groups.show', $encodedId)->with('success', 'Group repayment processed successfully!');
         } catch (\Exception $e) {
-            \Log::error("Group update failed", [
-                "group_id" => $group->id,
+            \Log::error("Group repayment failed", [
+                "encoded_id" => $encodedId,
                 "error" => $e->getMessage(),
                 "request_data" => $request->all()
             ]);

@@ -260,6 +260,7 @@ class LoanController extends Controller
             'defaulted' => Loan::where('branch_id', $branchId)->where('status', 'defaulted')->count(),
             'rejected' => Loan::where('branch_id', $branchId)->where('status', 'rejected')->count(),
             'written_off' => Loan::where('branch_id', $branchId)->where('status', 'written_off')->count(),
+            'completed' => Loan::where('branch_id', $branchId)->where('status', 'completed')->count(),
         ];
 
         // Data for opening balance modal
@@ -360,6 +361,10 @@ class LoanController extends Controller
                         case 'rejected':
                             $badgeClass = 'bg-danger';
                             $statusText = 'Rejected';
+                            break;
+                        case 'completed':
+                            $badgeClass = 'bg-success';
+                            $statusText = 'Completed';
                             break;
                         default:
                             $badgeClass = 'bg-secondary';
@@ -1132,7 +1137,7 @@ class LoanController extends Controller
         $branchId = auth()->user()->branch_id;
 
         // Validate status
-        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected'];
+        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected', 'completed'];
         if (!in_array($status, $validStatuses)) {
             return redirect()->route('loans.index')->withErrors(['Invalid loan status.']);
         }
@@ -1150,7 +1155,8 @@ class LoanController extends Controller
             'authorized' => 'Authorized Applications',
             'active' => 'Active Loans',
             'defaulted' => 'Defaulted Loans',
-            'rejected' => 'Rejected Applications'
+            'rejected' => 'Rejected Applications',
+            'completed' => 'Completed Loans'
         ];
 
         $pageTitle = $statusNames[$status] ?? ucfirst($status) . ' Loans';
@@ -1510,7 +1516,7 @@ class LoanController extends Controller
 
 
         \Log::info('LoanController@update reached');
-        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        $decoded =Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Invalid loan ID.']);
         }
@@ -2016,7 +2022,7 @@ class LoanController extends Controller
         //check if member already has a loan with the same product
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
-            ->where('status', '!=', 'rejected')
+            ->where('status', '=', 'active')
             ->exists();
         if ($existingLoan) {
             return back()->withErrors(['error' => 'Member already has a loan with the same product.']);
@@ -2922,6 +2928,60 @@ class LoanController extends Controller
         } catch (\Exception $e) {
             Log::error('Opening balance processing failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Failed to process opening balance: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Process settle repayment for a loan
+     */
+    public function settleRepayment(Request $request, $id)
+    {
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'bank_account_id' => 'required|exists:bank_accounts,id',
+            'payment_date' => 'required|date',
+            'notes' => 'nullable|string|max:500'
+        ]);
+
+        try {
+            $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($id);
+
+            // Check if loan is active
+            if ($loan->status !== Loan::STATUS_ACTIVE) {
+                return redirect()->back()->withErrors(['error' => 'Only active loans can be settled.']);
+            }
+
+            // Get bank account for chart account ID
+            $bankAccount = \App\Models\BankAccount::findOrFail($request->bank_account_id);
+
+            $paymentData = [
+                'bank_chart_account_id' => $bankAccount->chart_account_id,
+                'bank_account_id' => $request->bank_account_id,
+                'payment_date' => $request->payment_date,
+                'notes' => $request->notes
+            ];
+
+            // Use LoanRepaymentService to process the settle repayment
+            $repaymentService = new \App\Services\LoanRepaymentService();
+            $result = $repaymentService->processSettleRepayment($loan->id, $request->amount, $paymentData);
+
+            if ($result['success']) {
+                $message = "Loan settled successfully. ";
+                $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
+                $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
+
+                if ($result['loan_closed']) {
+                    $message .= " Loan has been closed.";
+                }
+
+                return redirect()->back()->with('success', $message);
+            } else {
+                return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment.']);
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Settle repayment failed: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment: ' . $e->getMessage()]);
         }
     }
 }
