@@ -259,7 +259,7 @@ class BulkLoanCreationJob implements ShouldQueue
                 'branch_id' => $loanData['branch_id'],
                 'user_id' => $this->userId,
                 'reference_type' => 'Loan Disbursement',
-                'reference' => $reference,
+                'reference' => $loan->id,
             ]);
 
             // Create journal items

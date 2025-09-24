@@ -1516,7 +1516,7 @@ class LoanController extends Controller
 
 
         \Log::info('LoanController@update reached');
-        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedId);
+        $decoded =Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Invalid loan ID.']);
         }
@@ -2022,7 +2022,7 @@ class LoanController extends Controller
         //check if member already has a loan with the same product
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
-            ->where('status', '!=', 'rejected')
+            ->where('status', '=', 'active')
             ->exists();
         if ($existingLoan) {
             return back()->withErrors(['error' => 'Member already has a loan with the same product.']);

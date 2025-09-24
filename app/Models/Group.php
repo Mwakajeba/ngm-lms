@@ -32,7 +32,25 @@ class Group extends Model
 
     public function loans()
     {
-        return $this->hasMany(Loan::class);
+        // Get loans through group members using hasManyThrough
+        return $this->hasManyThrough(
+            Loan::class,
+            \App\Models\GroupMember::class,
+            'group_id', // Foreign key on group_members table
+            'customer_id', // Foreign key on loans table
+            'id', // Local key on groups table
+            'customer_id' // Local key on group_members table
+        );
+    }
+
+    /**
+     * Get all loans for this group's members
+     * This is a helper method that returns a query builder
+     */
+    public function getGroupLoans()
+    {
+        $memberIds = $this->members()->pluck('customer_id');
+        return Loan::whereIn('customer_id', $memberIds);
     }
 
     /**
