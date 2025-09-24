@@ -39,8 +39,8 @@ class GroupSeeder extends Seeder
             'name' => 'Individual',
             'loan_officer' => $adminUser->id,
             'branch_id' => $branch->id,
-            'minimum_members' => 1,
-            'maximum_members' => 1,
+            'minimum_members' => 1000000,
+            'maximum_members' => 1000000,
             'group_leader' => null, // No specific leader for individual group
             'meeting_day' => null, // No meetings for individual customers
             'meeting_time' => null,
