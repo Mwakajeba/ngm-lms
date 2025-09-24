@@ -299,7 +299,7 @@ $isEdit = isset($customer);
                 @else
                     <div class="row mb-2 file-type-upload-row">
                         <div class="col-md-5">
-                            <select name="filetypes[]" class="form-select" required>
+                            <select name="filetypes[]" class="form-select">
                                 <option value="">Select File Type</option>
                                 @foreach ($filetypes as $type)
                                 <option value="{{ $type->id }}">{{ $type->name }}</option>
