@@ -206,6 +206,10 @@
             
             // Reset group selection
             groupSelect.value = '';
+            // If using Select2 or similar, trigger change so UI updates
+            if (typeof $ !== 'undefined' && $(groupSelect).trigger) {
+                $(groupSelect).trigger('change');
+            }
             
             if (customerGroups) {
                 try {
@@ -213,6 +217,9 @@
                     if (groupIds.length > 0) {
                         // Auto-select the first group if customer has groups
                         groupSelect.value = groupIds[0];
+                        if (typeof $ !== 'undefined' && $(groupSelect).trigger) {
+                            $(groupSelect).trigger('change');
+                        }
                     }
                 } catch (e) {
                     console.error('Error parsing customer groups:', e);
