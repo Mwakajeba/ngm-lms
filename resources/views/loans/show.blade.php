@@ -618,6 +618,8 @@
                                                     $remainingAmount = $item->remaining_amount;
                                                     $isFullyPaid = $item->is_fully_paid;
                                                     $paymentPercentage = $item->payment_percentage;
+                                                    $completed =$loan->status === 'completed';
+                                                    
                                                 @endphp
                                                 <tr
                                                     class="{{ $isFullyPaid ? 'table-success' : ($paidAmount > 0 ? 'table-warning' : '') }}">
@@ -642,7 +644,7 @@
                                                         @endif
                                                     </td>
                                                     <td class="text-center">
-                                                        @if($isFullyPaid)
+                                                        @if($isFullyPaid || $completed)
                                                             <button type="button" class="btn btn-sm btn-success" disabled>
                                                                 <i class="bx bx-check-circle me-1"></i>Paid
                                                             </button>

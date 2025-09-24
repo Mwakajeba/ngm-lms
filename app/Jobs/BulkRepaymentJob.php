@@ -329,7 +329,7 @@ class BulkRepaymentJob implements ShouldQueue
             'branch_id' => $loan->branch_id,
             'user_id' => $this->userId,
             'reference_type' => 'Loan Repayment',
-            'reference' => $reference,
+            'reference' => $loan->id,
         ]);
 
         // Debit: Chart account (source of funds)
