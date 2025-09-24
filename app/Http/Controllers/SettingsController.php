@@ -770,18 +770,14 @@ class SettingsController extends Controller
                     ]);
                 }
             } else {
-                // When approvals disabled, clear approval configuration
+                // When approvals are disabled, set levels to 0 and clear approvers only.
+                // Do NOT set level1_approval_type (non-nullable) to null.
                 $settings->update([
                     'approval_levels' => 0,
-                    'level1_approval_type' => null,
                     'level1_approvers' => null,
-                    'level2_approval_type' => null,
                     'level2_approvers' => null,
-                    'level3_approval_type' => null,
                     'level3_approvers' => null,
-                    'level4_approval_type' => null,
                     'level4_approvers' => null,
-                    'level5_approval_type' => null,
                     'level5_approvers' => null,
                 ]);
             }
