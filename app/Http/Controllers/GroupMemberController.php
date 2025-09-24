@@ -25,20 +25,36 @@ class GroupMemberController extends Controller
 
         $group = Group::findOrFail($decoded[0]);
 
-        // Get customers who are not already members of this group AND not members of any other group
+        // Get customers who are not already members of this group
         $existingMemberIds = $group->members()->pluck('customer_id')->toArray();
         $branchId = auth()->user()->branch_id;
 
-        // Get all customer IDs who are already members of any group
-        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
-
-        $availableCustomers = Customer::with(['region', 'district'])
-            ->where('category', 'Borrower') // Fixed case sensitivity
+        // Get all customers who are borrowers and not in this group
+        $allCustomers = Customer::with(['region', 'district'])
+            ->where('category', 'Borrower')
             ->where('branch_id', $branchId)
             ->whereNotIn('id', $existingMemberIds) // Not already in this group
-            ->whereNotIn('id', $allGroupMemberIds) // Not in any group
             ->orderBy('name')
             ->get();
+
+        // Filter to only include customers who are:
+        // 1. Not in any group, OR
+        // 2. In the Individual group
+        $availableCustomers = collect();
+
+        foreach ($allCustomers as $customer) {
+            $currentGroup = \DB::table('group_members')
+                ->join('groups', 'group_members.group_id', '=', 'groups.id')
+                ->where('group_members.customer_id', $customer->id)
+                ->select('groups.name as group_name', 'groups.id as group_id')
+                ->first();
+
+            // Include customer if not in any group OR in Individual group
+            if (!$currentGroup || $currentGroup->group_name === 'Individual') {
+                $customer->current_group = $currentGroup;
+                $availableCustomers->push($customer);
+            }
+        }
 
         // Check if this is the first member and if there's a group leader
         $isFirstMember = $group->members()->count() === 0;
@@ -99,12 +115,30 @@ class GroupMemberController extends Controller
                 continue;
             }
 
-            // Check if customer is already a member of any other group
-            $isInAnyGroup = \DB::table('group_members')->where('customer_id', $customerId)->exists();
-            if ($isInAnyGroup) {
-                $customer = Customer::find($customerId);
-                $errors[] = "Customer '{$customer->name}' is already a member of another group.";
-                continue;
+            // Check if customer is in another group
+            $currentGroupMember = \DB::table('group_members')
+                ->join('groups', 'group_members.group_id', '=', 'groups.id')
+                ->where('group_members.customer_id', $customerId)
+                ->select('groups.name as group_name', 'groups.id as group_id', 'group_members.id as member_id')
+                ->first();
+
+            if ($currentGroupMember) {
+                // Check if the customer is in an individual group
+                if ($currentGroupMember->group_name === 'Individual') {
+                    // Allow moving from individual group - remove from individual group first
+                    try {
+                        \DB::table('group_members')->where('id', $currentGroupMember->member_id)->delete();
+                    } catch (\Exception $e) {
+                        $customer = Customer::find($customerId);
+                        $errors[] = "Failed to remove customer '{$customer->name}' from individual group.";
+                        continue;
+                    }
+                } else {
+                    // Customer is in a regular group - not allowed to move
+                    $customer = Customer::find($customerId);
+                    $errors[] = "Customer '{$customer->name}' is already a member of group '{$currentGroupMember->group_name}'. Cannot move from regular groups.";
+                    continue;
+                }
             }
 
             // Check if group can accept more members

@@ -48,6 +48,13 @@
                                 </div>
                             @endif
 
+                            <div class="alert alert-info">
+                                <i class="bx bx-info-circle me-2"></i>
+                                <strong>Available Customers:</strong> Only customers who are not in any group or are in the
+                                "Individual" group are shown below.
+                                Customers in other regular groups are not available for selection.
+                            </div>
+
                             @if($availableCustomers->count() > 0)
                                 <form action="{{ route('group-members.store', Hashids::encode($group->id)) }}" method="POST"
                                     id="addMembersForm">
@@ -63,8 +70,12 @@
                                                         data-gender="{{ $customer->sex ?? 'N/A' }}"
                                                         data-region="{{ $customer->region && $customer->region->name ? $customer->region->name : 'N/A' }}"
                                                         data-district="{{ $customer->district && $customer->district->name ? $customer->district->name : 'N/A' }}"
-                                                        data-phone="{{ $customer->phone1 ?? 'N/A' }}">
+                                                        data-phone="{{ $customer->phone1 ?? 'N/A' }}"
+                                                        data-current-group="{{ $customer->current_group ? $customer->current_group->group_name : 'No Group' }}">
                                                         {{ $customer->name ?? 'Unknown' }} - {{ $customer->phone1 ?? 'No phone' }}
+                                                        @if($customer->current_group)
+                                                            (Currently in: {{ $customer->current_group->group_name }})
+                                                        @endif
                                                     </option>
                                                 @endforeach
                                             </select>
@@ -96,7 +107,10 @@
                                 <div class="text-center py-4">
                                     <i class="bx bx-user-x text-muted" style="font-size: 3rem;"></i>
                                     <h5 class="text-muted mt-3">No Available Customers</h5>
-                                    <p class="text-muted">All customers are already members of this group.</p>
+                                    <p class="text-muted">All customers are either already members of this group or are in other
+                                        regular groups.</p>
+                                    <p class="text-muted">Only customers who are not in any group or are in the "Individual"
+                                        group can be added.</p>
                                     <a href="{{ route('groups.show', Hashids::encode($group->id)) }}" class="btn btn-primary">
                                         <i class="bx bx-arrow-back"></i> Back to Group
                                     </a>
@@ -219,7 +233,7 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        document.addEventListener('DOMContentLoaded', function () {
             if (window.jQuery) {
                 $('#customerSelect.select2-single').select2({
                     placeholder: 'Select Customer',
@@ -255,7 +269,8 @@
                 gender: selectedOption.dataset.gender,
                 region: selectedOption.dataset.region,
                 district: selectedOption.dataset.district,
-                phone: selectedOption.dataset.phone
+                phone: selectedOption.dataset.phone,
+                currentGroup: selectedOption.dataset.currentGroup
             };
 
             selectedCustomers.push(customer);
@@ -279,67 +294,73 @@
 
             if (selectedCustomers.length === 0) {
                 container.innerHTML = `
-                                                <div class="empty-state">
-                                                    <i class="bx bx-user-plus"></i>
-                                                    <p>No customers selected</p>
-                                                </div>
-                                            `;
+                                                                <div class="empty-state">
+                                                                    <i class="bx bx-user-plus"></i>
+                                                                    <p>No customers selected</p>
+                                                                </div>
+                                                            `;
                 return;
             }
 
             let html = `
-                                            <div class="table-responsive">
-                                                <table class="table table-hover">
-                                                    <thead>
-                                                        <tr>
-                                                            <th>Customer</th>
-                                                            <th>Gender</th>
-                                                            <th>Region</th>
-                                                            <th>District</th>
-                                                            <th>Phone</th>
-                                                            <th class="text-center">Actions</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody>
-                                        `;
+                                                            <div class="table-responsive">
+                                                                <table class="table table-hover">
+                                                                    <thead>
+                                                                        <tr>
+                                                                            <th>Customer</th>
+                                                                            <th>Gender</th>
+                                                                            <th>Region</th>
+                                                                            <th>District</th>
+                                                                            <th>Phone</th>
+                                                                            <th>Current Group</th>
+                                                                            <th class="text-center">Actions</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                        `;
 
             selectedCustomers.forEach(customer => {
                 html += `
-                                                <tr>
-                                                    <td>
-                                                        <div class="d-flex align-items-center">
-                                                            <div class="avatar-sm bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-2">
-                                                                <i class="bx bx-user font-size-16"></i>
-                                                            </div>
-                                                            <div>
-                                                                <strong>${customer.name}</strong>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td>
-                                                        <span class="badge bg-info">${customer.gender}</span>
-                                                    </td>
-                                                    <td>${customer.region}</td>
-                                                    <td>${customer.district}</td>
-                                                    <td>${customer.phone}</td>
-                                                    <td class="text-center">
-                                                        <div class="btn-group" role="group">
-                                                            <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                onclick="removeCustomerFromList('${customer.id}')"
-                                                                title="Remove from list">
-                                                                <i class="bx bx-trash"></i>
-                                                            </button>
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            `;
+                                                                <tr>
+                                                                    <td>
+                                                                        <div class="d-flex align-items-center">
+                                                                            <div class="avatar-sm bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-2">
+                                                                                <i class="bx bx-user font-size-16"></i>
+                                                                            </div>
+                                                                            <div>
+                                                                                <strong>${customer.name}</strong>
+                                                                            </div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td>
+                                                                        <span class="badge bg-info">${customer.gender}</span>
+                                                                    </td>
+                                                                    <td>${customer.region}</td>
+                                                                    <td>${customer.district}</td>
+                                                                    <td>${customer.phone}</td>
+                                                                    <td>
+                                                                        <span class="badge ${customer.currentGroup === 'Individual' ? 'bg-warning' : customer.currentGroup === 'No Group' ? 'bg-success' : 'bg-info'}">
+                                                                            ${customer.currentGroup}
+                                                                        </span>
+                                                                    </td>
+                                                                    <td class="text-center">
+                                                                        <div class="btn-group" role="group">
+                                                                            <button type="button" class="btn btn-sm btn-outline-danger"
+                                                                                onclick="removeCustomerFromList('${customer.id}')"
+                                                                                title="Remove from list">
+                                                                                <i class="bx bx-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </td>
+                                                                </tr>
+                                                            `;
             });
 
             html += `
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        `;
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        `;
 
             container.innerHTML = html;
         }
