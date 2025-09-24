@@ -151,7 +151,7 @@ class CustomerController extends Controller
     $companies = Company::all();
     $registrars = User::all();
     $regions = Region::all();
-    $groups = \App\Models\Group::where('branch_id', $branchId)->get();
+    $groups = \App\Models\Group::where('branch_id', $branchId)->where('id', '!=', 1)->get();
 
     $customer = null;
     return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'groups', 'customer'));
@@ -234,6 +234,15 @@ class CustomerController extends Controller
             if ($request->filled('group_id')) {
                 DB::table('group_members')->insert([
                     'group_id' => $request->group_id,
+                    'customer_id' => $customer->id,
+                    'status' => 'active',
+                    'joined_date' => now()->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }else{
+                DB::table('group_members')->insert([
+                    'group_id' => 1,
                     'customer_id' => $customer->id,
                     'status' => 'active',
                     'joined_date' => now()->toDateString(),
@@ -625,6 +634,15 @@ class CustomerController extends Controller
                             'company_id' => auth()->user()->company_id,
                         ]);
                     }
+                    //assign all member to the individual group
+                    DB::table('group_members')->insert([
+                        'group_id' => 1,
+                        'customer_id' => $customer->id,
+                        'status' => 'active',
+                        'joined_date' => now()->toDateString(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
 
                     $successCount++;
                 } catch (\Exception $e) {
