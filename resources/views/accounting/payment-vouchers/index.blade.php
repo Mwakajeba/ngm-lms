@@ -215,10 +215,11 @@
                         console.log("Delete URL:", `/accounting/payment-vouchers/${paymentId}`);
                         
                         $.ajax({
-                            url: `/accounting/payment-vouchers/${paymentId}`,
-                            type: "DELETE",
+                            url: `{{ url('accounting/payment-vouchers') }}/${paymentId}`,
+                            type: "POST",
                             data: {
-                                _token: "{{ csrf_token() }}"
+                                _token: "{{ csrf_token() }}",
+                                _method: "DELETE"
                             },
                             success: function(response) {
                                 console.log("Delete success:", response);
