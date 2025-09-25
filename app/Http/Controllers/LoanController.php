@@ -1172,7 +1172,7 @@ class LoanController extends Controller
     {
         $customers = Customer::with('groups')->where('category', 'Borrower')->get();
         // Removed heavy debug dump of customers to avoid timeouts
-        $products = LoanProduct::all();
+        $products = LoanProduct::where('is_active', true)->get();
 
         $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
 
@@ -1953,7 +1953,7 @@ class LoanController extends Controller
             ->orderBy('name')
             ->get();
         $groups = Group::where('branch_id', $branchId)->get();
-        $products = LoanProduct::all();
+        $products = LoanProduct::where('is_active', true)->get();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other'];
 

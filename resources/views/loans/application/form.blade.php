@@ -37,19 +37,14 @@
             @error('customer_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
-        <!-- Group -->
+        <!-- Displayed Group (disabled text input) -->
         <div class="col-md-6 mb-3">
             <label class="form-label">Group</label>
-            <select name="group_id" id="groupSelect" class="form-select select2-single @error('group_id') is-invalid @enderror">
-                <option value="">Select Group</option>
-                @foreach($groups as $group)
-                    <option value="{{ $group->id }}" {{ old('group_id', $loanApplication->group_id ?? '') == $group->id ? 'selected' : '' }}>
-                        {{ $group->name }}
-                    </option>
-                @endforeach
-            </select>
-            @error('group_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
+            <input type="text" id="group_name" class="form-control" value="" readonly>
         </div>
+
+        <!-- Hidden Group ID for form submission -->
+        <input type="hidden" name="group_id" id="group_id" value="{{ old('group_id', $loanApplication->group_id ?? '') }}">
 
         <!-- Product Select -->
         <div class="col-md-6 mb-3">
@@ -185,7 +180,7 @@
 
 <script>
     const products = @json($products);
-    const groups = @json($groups);
+    const customers = @json($customers);
 
     document.addEventListener("DOMContentLoaded", function () {
         const customerSelect = document.getElementById("customerSelect");
@@ -200,24 +195,22 @@
         const productInfo = document.getElementById("productInfo");
 
         // Handle customer selection to auto-populate group
-        customerSelect.addEventListener("change", function () {
-            const selectedOption = this.options[this.selectedIndex];
-            const customerGroups = selectedOption.getAttribute('data-groups');
-            
-            // Reset group selection
-            groupSelect.value = '';
-            
-            if (customerGroups) {
-                try {
-                    const groupIds = JSON.parse(customerGroups);
-                    if (groupIds.length > 0) {
-                        // Auto-select the first group if customer has groups
-                        groupSelect.value = groupIds[0];
-                    }
-                } catch (e) {
-                    console.error('Error parsing customer groups:', e);
-                }
+        const groupIdInput = document.getElementById('group_id');
+        const groupNameDisplay = document.getElementById('group_name');
+
+        function updateGroupForCustomer(customerId) {
+            const selectedCustomer = customers.find(c => c.id == customerId);
+            groupIdInput.value = '';
+            groupNameDisplay.value = '';
+            if (selectedCustomer && selectedCustomer.groups && selectedCustomer.groups.length > 0) {
+                const group = selectedCustomer.groups[0];
+                groupIdInput.value = group.id;
+                groupNameDisplay.value = group.name;
             }
+        }
+
+        customerSelect.addEventListener("change", function () {
+            updateGroupForCustomer(this.value);
         });
 
         productSelect.addEventListener("change", function () {
@@ -267,10 +260,35 @@
             }
         });
 
-        // Trigger change events if values are pre-selected (for edit mode)
-        if (customerSelect.value) {
-            customerSelect.dispatchEvent(new Event('change'));
+        // Initialize Select2 for all .select2-single selects
+        if (window.jQuery) {
+            $('.select2-single').select2({
+                placeholder: 'Select Customer',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
         }
+
+        // On edit, set group from $loanApplication if available
+        @if($isEdit && isset($loanApplication) && isset($loanApplication->group))
+            groupIdInput.value = '{{ $loanApplication->group_id }}';
+            groupNameDisplay.value = '{{ $loanApplication->group->name }}';
+        @else
+            // Otherwise, use customer selection logic
+            if (window.jQuery) {
+                $('#customerSelect').on('change', function() {
+                    updateGroupForCustomer(this.value);
+                });
+                $('#customerSelect').trigger('change');
+            } else {
+                if (customerSelect.value) {
+                    updateGroupForCustomer(customerSelect.value);
+                }
+            }
+        @endif
+
+        // Trigger change events if values are pre-selected (for edit mode)
         if (productSelect.value) {
             productSelect.dispatchEvent(new Event('change'));
         }
