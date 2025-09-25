@@ -29,6 +29,7 @@ class GroupController extends Controller
         $branchId = auth()->user()->branch_id;
         $groups = Group::with(['loanOfficer', 'branch'])
             ->where('branch_id', $branchId)
+            ->where('id', '!=', 1)
             ->get();
         return view('groups.index', compact('groups'));
     }
@@ -146,6 +147,10 @@ class GroupController extends Controller
             return redirect()->route('groups.index')->withErrors(['Group not found.']);
         }
 
+        // Only allow showing a group if its id is not 1
+        if ($decoded[0] == 1) {
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
         $group = Group::findOrFail($decoded[0]);
 
         // Load related data with proper eager loading
