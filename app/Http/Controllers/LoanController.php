@@ -1953,7 +1953,7 @@ class LoanController extends Controller
             ->orderBy('name')
             ->get();
         $groups = Group::where('branch_id', $branchId)->get();
-        $products = LoanProduct::all();
+        $products = LoanProduct::where('is_active', true)->get();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other'];
 
