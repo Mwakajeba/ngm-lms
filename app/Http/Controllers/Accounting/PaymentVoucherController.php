@@ -100,9 +100,20 @@ class PaymentVoucherController extends Controller
                 })
                 ->addColumn('actions', function ($payment) {
                     $actions = '';
-                    
+
+                    $canView = auth()->user()->can('view payment voucher details');
+                    $canEdit = auth()->user()->can('edit payment voucher');
+                    $canDelete = auth()->user()->can('delete payment voucher');
+                    $canEditApproved = auth()->user()->can('edit approved payment voucher');
+                    $canDeleteApproved = auth()->user()->can('delete approved payment voucher');
+
+                    $isManual = $payment->reference_type === 'manual';
+                    $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', auth()->user()->company_id)->first();
+                    $approvalsDisabled = $settings && !$settings->require_approval_for_all;
+                    $isApproved = $payment->isFullyApproved();
+
                     // View action
-                    if (auth()->user()->can('view payment voucher details')) {
+                    if ($canView) {
                         $actions .= '<a href="' . route('accounting.payment-vouchers.show', $payment->hash_id) . '" 
                                         class="btn btn-sm btn-outline-success me-1" 
                                         data-bs-toggle="tooltip" 
@@ -111,60 +122,65 @@ class PaymentVoucherController extends Controller
                                         <i class="bx bx-show"></i>
                                     </a>';
                     }
-                    
-                    if ($payment->reference_type === 'manual') {
-                        $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', auth()->user()->company_id)->first();
-                        $approvalsDisabled = $settings && !$settings->require_approval_for_all;
-                        // Edit action - only if not approved
-                        if (auth()->user()->can('edit payment voucher') && (!$payment->isFullyApproved() || $approvalsDisabled)) {
+
+                    // Edit action: always show if user has permission, enable if allowed
+                    if ($canEdit) {
+                        // Allow edit for manual vouchers regardless of approval; otherwise require override
+                        $editAllowed = ($isManual) || $canEditApproved;
+                        $editTitle = $editAllowed
+                            ? 'Edit payment voucher'
+                            : ($isManual ? 'Cannot edit: Payment voucher is approved' : 'Edit locked: Source is ' . ucfirst($payment->reference_type) . ' transaction');
+
+                        if ($editAllowed) {
                             $actions .= '<a href="' . route('accounting.payment-vouchers.edit', $payment->hash_id) . '" 
                                             class="btn btn-sm btn-outline-info me-1" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
-                                            title="Edit payment voucher">
+                                            title="' . e($editTitle) . '">
                                             <i class="bx bx-edit"></i>
                                         </a>';
-                        } elseif (auth()->user()->can('edit payment voucher') && $payment->isFullyApproved() && !$approvalsDisabled) {
+                        } else {
                             $actions .= '<button type="button" 
-                                            class="btn btn-sm btn-outline-secondary" 
+                                            class="btn btn-sm btn-outline-secondary me-1" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
-                                            title="Cannot edit: Payment voucher is approved" 
+                                            title="' . e($editTitle) . '" 
                                             disabled>
-                                            <i class="bx bx-lock"></i>
+                                            <i class="bx bx-edit"></i>
                                         </button>';
                         }
-                        
-                        // Delete action - only if not approved
-                        if (auth()->user()->can('delete payment voucher') && (!$payment->isFullyApproved() || $approvalsDisabled)) {
+                    }
+
+                    // Delete action: always show if user has permission, enable if allowed
+                    if ($canDelete) {
+                        // Allow delete for manual vouchers regardless of approval; otherwise require override
+                        $deleteAllowed = ($isManual) || $canDeleteApproved;
+                        $deleteTitle = $deleteAllowed
+                            ? 'Delete payment voucher'
+                            : ($isManual ? 'Cannot delete: Payment voucher is approved' : 'Delete locked: Source is ' . ucfirst($payment->reference_type) . ' transaction');
+
+                        if ($deleteAllowed) {
                             $actions .= '<button type="button" 
                                             class="btn btn-sm btn-outline-danger delete-payment-btn"
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
-                                            title="Delete payment voucher"
+                                            title="' . e($deleteTitle) . '"
                                             data-payment-id="' . $payment->hash_id . '"
                                             data-payment-reference="' . e($payment->reference) . '">
                                             <i class="bx bx-trash"></i>
                                         </button>';
-                        } elseif (auth()->user()->can('delete payment voucher') && $payment->isFullyApproved() && !$approvalsDisabled) {
+                        } else {
                             $actions .= '<button type="button" 
                                             class="btn btn-sm btn-outline-secondary" 
                                             data-bs-toggle="tooltip" 
                                             data-bs-placement="top" 
-                                            title="Cannot delete: Payment voucher is approved" 
+                                            title="' . e($deleteTitle) . '" 
                                             disabled>
-                                            <i class="bx bx-lock"></i>
+                                            <i class="bx bx-trash"></i>
                                         </button>';
                         }
-                    } else {
-                        $actions .= '<button type="button" 
-                                        class="btn btn-sm btn-outline-secondary" 
-                                        title="Edit/Delete locked: Source is ' . ucfirst($payment->reference_type) . ' transaction" 
-                                        disabled>
-                                        <i class="bx bx-lock"></i>
-                                    </button>';
                     }
-                    
+
                     return '<div class="text-center">' . $actions . '</div>';
                 })
                 ->rawColumns(['reference_link', 'payee_info', 'description_limited', 'reference_type_badge', 'formatted_amount', 'status_badge', 'actions'])
@@ -374,10 +390,15 @@ class PaymentVoucherController extends Controller
      */
     public function edit(Payment $paymentVoucher)
     {
+        // Authorization: require permission to edit payment vouchers
+        if (!auth()->user()->can('edit payment voucher')) {
+            abort(403, 'You do not have permission to edit payment vouchers.');
+        }
+
         $user = Auth::user();
 
-        // Check if payment voucher is approved - if so, prevent editing
-        if ($paymentVoucher->isFullyApproved()) {
+        // For manual vouchers, allow edit even if approved; otherwise require override
+        if ($paymentVoucher->isFullyApproved() && $paymentVoucher->reference_type !== 'manual' && !auth()->user()->can('edit approved payment voucher')) {
             return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
                 ->withErrors(['error' => 'Cannot edit an approved payment voucher.']);
         }
@@ -425,8 +446,13 @@ class PaymentVoucherController extends Controller
      */
     public function update(Request $request, Payment $paymentVoucher)
     {
-        // Check if payment voucher is approved - if so, prevent updating
-        if ($paymentVoucher->isFullyApproved()) {
+        // Authorization: require permission to edit payment vouchers
+        if (!auth()->user()->can('edit payment voucher')) {
+            abort(403, 'You do not have permission to edit payment vouchers.');
+        }
+
+        // For manual vouchers, allow update even if approved; otherwise require override
+        if ($paymentVoucher->isFullyApproved() && $paymentVoucher->reference_type !== 'manual' && !auth()->user()->can('edit approved payment voucher')) {
             return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
                 ->withErrors(['error' => 'Cannot update an approved payment voucher.']);
         }
@@ -578,8 +604,13 @@ class PaymentVoucherController extends Controller
      */
     public function destroy(Payment $paymentVoucher)
     {
-        // Check if payment voucher is approved - if so, prevent deletion
-        if ($paymentVoucher->isFullyApproved()) {
+        // Authorization: require permission to delete payment vouchers
+        if (!auth()->user()->can('delete payment voucher')) {
+            abort(403, 'You do not have permission to delete payment vouchers.');
+        }
+
+        // For manual vouchers, allow delete even if approved; otherwise require override
+        if ($paymentVoucher->isFullyApproved() && $paymentVoucher->reference_type !== 'manual' && !auth()->user()->can('delete approved payment voucher')) {
             return redirect()->route('accounting.payment-vouchers.show', $paymentVoucher)
                 ->withErrors(['error' => 'Cannot delete an approved payment voucher.']);
         }

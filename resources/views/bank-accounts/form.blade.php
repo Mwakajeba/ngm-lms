@@ -6,7 +6,7 @@
         <div class="col-md-6">
             <div class="mb-3">
                 <label for="chart_account_id" class="form-label">Chart Account <span class="text-danger">*</span></label>
-                <select class="form-select @error('chart_account_id') is-invalid @enderror" name="chart_account_id" id="chart_account_id" required>
+                <select class="form-select select2-single @error('chart_account_id') is-invalid @enderror" name="chart_account_id" id="chart_account_id" required>
                     <option value="">-- Choose Chart Account --</option>
                     @foreach($chartAccounts as $chartAccount)
                         <option value="{{ $chartAccount->id }}" {{ (old('chart_account_id') == $chartAccount->id || (isset($bankAccount) && $bankAccount->chart_account_id == $chartAccount->id)) ? 'selected' : '' }}>

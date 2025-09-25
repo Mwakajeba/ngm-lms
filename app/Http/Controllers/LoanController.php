@@ -1495,7 +1495,7 @@ class LoanController extends Controller
             ->where('group_members.customer_id', $loan->customer_id)
             ->select('groups.*')
             ->get();
-        $products = LoanProduct::all();
+        $products = LoanProduct::where('is_active', true)->get();
         $bankAccounts = BankAccount::all();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // You can move this to config if reusable
 

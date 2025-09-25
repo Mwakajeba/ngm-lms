@@ -7,6 +7,7 @@
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+            ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
             ['label' => 'User Management', 'url' => route('users.index'), 'icon' => 'bx bx-user'],
             ['label' => isset($user) ? 'Edit User' : 'Create User', 'url' => '#', 'icon' => isset($user) ? 'bx bx-edit' : 'bx bx-plus-circle']
         ]" />
