@@ -268,7 +268,7 @@
                             <div class="col-md-6 mb-3">
                                 <label class="form-label">Chart Account <span class="text-danger">*</span></label>
                                 <select name="chart_account_id"
-                                    class="form-select @error('chart_account_id') is-invalid @enderror" required>
+                                    class="form-select @error('chart_account_id') is-invalid @enderror select2-single" required>
                                     <option value="">Select Chart Account</option>
                                     @foreach($chartAccounts ?? [] as $account)
                                         <option value="{{ $account->id ?? '' }}" {{ old('chart_account_id') == ($account->id ?? '') ? 'selected' : '' }}>

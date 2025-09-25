@@ -250,7 +250,7 @@ $isEdit = isset($customer);
         </div>
 
         <!-- Group -->
-        <div class="col-md-6 mb-3">
+        <!-- <div class="col-md-6 mb-3 hidden">
             <label class="form-label">Group</label>
             <select name="group_id" class="form-select selectpicker" data-live-search="true">
                 <option value="">Select Group</option>
@@ -264,7 +264,7 @@ $isEdit = isset($customer);
                 @endforeach
             </select>
             @error('group_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-        </div>
+        </div> -->
 
         <!-- Multiple File Types and Documents Upload -->
         <hr class="my-4">
