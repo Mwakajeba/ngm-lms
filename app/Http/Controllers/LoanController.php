@@ -266,11 +266,12 @@ class LoanController extends Controller
         // Data for opening balance modal
         $products = LoanProduct::where('is_active', true)->get();
         $branches = \App\Models\Branch::where('status', 'active')->get();
-        $chartAccounts = ChartAccount::with(['accountClassGroup.accountClass'])
-            ->whereHas('accountClassGroup.accountClass', function ($query) {
-                $query->where('name', 'LIKE', '%Equity%');
-            })
-            ->get();
+        // $chartAccounts = ChartAccount::with(['accountClassGroup.accountClass'])
+        //     ->whereHas('accountClassGroup.accountClass', function ($query) {
+        //         $query->where('name', 'LIKE', '%Equity%');
+        //     })
+        //     ->get();
+        $chartAccounts = ChartAccount::all();
 
         return view('loans.index', compact('stats', 'products', 'branches', 'chartAccounts'));
     }
