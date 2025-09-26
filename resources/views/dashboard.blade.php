@@ -231,9 +231,10 @@ use Vinkla\Hashids\Facades\Hashids;
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Outstanding Principal</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($outstandingPrincipal ?? 0, 0) }}</h4>
+                                <p class="mb-0">Outstanding Total</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format(($outstandingPrincipal + $outstandingInterest) ?? 0, 0) }}</h4>
                                 <p class="mb-0">Outstanding Interest: TZS {{ number_format($outstandingInterest ?? 0, 0) }}</p>
+                                <p class="mb-0">Outstanding Principal: TZS {{ number_format($outstandingPrincipal ?? 0, 0) }} </p>
                             </div>
                             <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-hourglass'></i></div>
                         </div>
