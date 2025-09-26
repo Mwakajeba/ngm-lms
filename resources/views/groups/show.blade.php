@@ -328,7 +328,16 @@
                 serverSide: false,
                 ajax: {
                     url: '{{ url('group-members-ajax/' . $group->id) }}',
-                    dataSrc: 'data'
+                    dataSrc: 'data',
+                    error: function (xhr) {
+                        console.error('Group members AJAX error:', xhr.status, xhr.statusText);
+                        console.error('Response:', xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Failed to load members',
+                            text: 'Please refresh the page. If it persists, check server logs.'
+                        });
+                    }
                 },
                 columns: [
                     { data: 'member', orderable: false, searchable: true },
@@ -340,7 +349,13 @@
         });
     </script>
     <script>
-        function removeMember(groupId, memberId, memberName) {
+        // Delegated click handler to avoid inline JS and escaping issues
+            $(document).on('click', '.remove-member-btn', function () {
+            const groupId = $(this).data('group-id');
+            const memberId = $(this).data('member-id');
+            const memberName = $(this).data('member-name');
+            const actionUrl = $(this).data('action-url');
+
             Swal.fire({
                 title: 'Remove Member?',
                 text: `Are you sure you want to remove "${memberName}" from this group?`,
@@ -354,7 +369,7 @@
                 if (result.isConfirmed) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = `/groups/${groupId}/members/${memberId}`;
+                    form.action = actionUrl || `/groups/${groupId}/members/${memberId}`;
 
                     const csrfToken = document.createElement('input');
                     csrfToken.type = 'hidden';
@@ -373,7 +388,7 @@
                     form.submit();
                 }
             });
-        }
+        });
     </script>
 @endpush
 
