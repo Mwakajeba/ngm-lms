@@ -56,7 +56,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                 <!-- Loan Officer -->
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Loan Officer<span class="text-danger">*</span></label>
-                                    <select name="loan_officer" class="form-select select2-single @error('loan_officer') is-invalid @enderror" required>
+                                    <select name="loan_officer" class="form-select select2-single @error('loan_officer') is-invalid @enderror" >
                                         <option value="">-- Select Loan Officer --</option>
                                         @foreach($loanOfficers as $officer)
                                         <option value="{{ $officer->id }}"
@@ -99,7 +99,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                         @foreach($groupLeaders as $leader)
                                         <option value="{{ $leader->id }}"
                                             {{ old('group_leader', $group->group_leader) == $leader->id ? 'selected' : '' }}>
-                                            {{ $leader->name }} ({{ $leader->email }})
+                                            {{ $leader->name }}
                                         </option>
                                         @endforeach
                                     </select>
@@ -111,7 +111,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                 <!-- Meeting Day -->
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label">Meeting Day <span class="text-danger">(optional)</span></label>
-                                    <select name="meeting_day" class="form-select select2-single @error('meeting_day') is-invalid @enderror" required>
+                                    <select name="meeting_day" class="form-select select2-single @error('meeting_day') is-invalid @enderror" >
                                         <option value="">-- Select Meeting Day --</option>
                                         <option value="monday" {{ old('meeting_day', $group->meeting_day) == 'monday' ? 'selected' : '' }}>Monday</option>
                                         <option value="tuesday" {{ old('meeting_day', $group->meeting_day) == 'tuesday' ? 'selected' : '' }}>Tuesday</option>
