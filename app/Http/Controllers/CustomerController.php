@@ -823,43 +823,71 @@ class CustomerController extends Controller
             DB::beginTransaction();
             $uploadedCount = 0;
             $uploadedDocuments = [];
+            $errors = [];
 
             foreach ($filetypes as $index => $filetypeId) {
                 if (!isset($documents[$index])) {
                     continue;
                 }
 
-                $file = $documents[$index];
-                $path = $file->store('documents', 'public');
+                try {
+                    $file = $documents[$index];
+                    $path = $file->store('documents', 'public');
 
-                DB::table('customer_file_types')->updateOrInsert(
-                    [
+                    // Check if this filetype already exists for this customer
+                    $existing = DB::table('customer_file_types')
+                        ->where('customer_id', $customer->id)
+                        ->where('filetype_id', $filetypeId)
+                        ->first();
+
+                    if ($existing) {
+                        // If filetype already exists, use "Multiple Documents" filetype instead
+                        $filetypeId = 8; // Multiple Documents filetype
+                    }
+
+                    // Create new record
+                    DB::table('customer_file_types')->insert([
                         'customer_id' => $customer->id,
                         'filetype_id' => $filetypeId,
-                    ],
-                    [
                         'document_path' => $path,
-                        'updated_at' => now(),
                         'created_at' => now(),
-                    ]
-                );
+                        'updated_at' => now(),
+                    ]);
 
-                $uploadedDocuments[] = [
-                    'name' => $file->getClientOriginalName(),
-                    'type' => \App\Models\Filetype::find($filetypeId)->name ?? 'Unknown',
-                    'size' => $this->formatFileSize($file->getSize())
-                ];
+                    $uploadedDocuments[] = [
+                        'name' => $file->getClientOriginalName(),
+                        'type' => \App\Models\Filetype::find($filetypeId)->name ?? 'Unknown',
+                        'size' => $this->formatFileSize($file->getSize())
+                    ];
 
-                $uploadedCount++;
+                    $uploadedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to upload {$documents[$index]->getClientOriginalName()}: " . $e->getMessage();
+                }
+            }
+
+            if ($uploadedCount === 0) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No files were uploaded successfully',
+                    'errors' => $errors
+                ], 400);
             }
 
             DB::commit();
 
+            $message = "Successfully uploaded {$uploadedCount} document(s)";
+            if (!empty($errors)) {
+                $message .= ". Some files failed: " . implode(', ', $errors);
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => "Successfully uploaded {$uploadedCount} document(s)",
+                'message' => $message,
                 'uploaded_count' => $uploadedCount,
-                'documents' => $uploadedDocuments
+                'documents' => $uploadedDocuments,
+                'errors' => $errors
             ]);
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
@@ -869,6 +897,7 @@ class CustomerController extends Controller
             ], 422);
         } catch (\Exception $e) {
             DB::rollBack();
+            \Log::error('Document upload failed: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to upload documents: ' . $e->getMessage(),
