@@ -65,12 +65,12 @@
                                                 <td>{{ $subscription->start_date->format('M d, Y') }}</td>
                                                 <td>{{ $subscription->end_date->format('M d, Y') }}</td>
                                                 <td>
-                                                    <span class="badge badge-{{ $subscription->getStatusBadgeClass() }}">
+                                                    <span class="badge badge-{{ $subscription->getStatusBadgeClass() }}" style="color: black;">
                                                         {{ ucfirst($subscription->status) }}
                                                     </span>
                                                 </td>
                                                 <td>
-                                                    <span class="badge badge-{{ $subscription->getPaymentStatusBadgeClass() }}">
+                                                    <span class="badge badge-{{ $subscription->getPaymentStatusBadgeClass() }}" style="color: black;">
                                                         {{ ucfirst($subscription->payment_status) }}
                                                     </span>
                                                 </td>

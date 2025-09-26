@@ -1506,6 +1506,8 @@ class Loan extends Model
     public function isLoanFullyPaidForSettlement(): bool
     {
         $totalPrincipalPaid = $this->getTotalPrincipalPaid();
-        return $totalPrincipalPaid >= $this->amount;
+        // Allow up to 0.5 TZS difference due to rounding
+        $epsilon = 0.5;
+        return ($totalPrincipalPaid + $epsilon) >= $this->amount;
     }
 }

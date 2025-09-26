@@ -161,11 +161,12 @@ class DashboardController extends Controller
         ->latest()
         ->take(5)
         ->get();
-            
+        
+        $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed','complete_topup'];
         // Loan statistics
         $loans = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
-        })->get();
+        })->whereIn('status', $loans_status_stats)->get();
 
         $totalLoanAmount = $loans->sum('amount_total');
         $totalPrincipal = $loans->sum('amount');
