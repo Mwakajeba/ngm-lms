@@ -112,6 +112,7 @@
                                             <th>Status</th>
                                             <th>Branch</th>
                                             <th>Date Applied</th>
+                                            <th>Comment</th>
                                             <th class="text-center">Actions</th>
                                         </tr>
                                     </thead>
@@ -359,9 +360,10 @@
                     { data: 'status_badge', name: 'status', orderable: false, searchable: true },
                     { data: 'branch_name', name: 'branch_name', orderable: true, searchable: true },
                     { data: 'formatted_date', name: 'date_applied', orderable: true, searchable: true },
+                    { data: 'comment', name: 'comment', orderable: false, searchable: true },
                     { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' }
                 ],
-                order: [[8, 'desc']], // Order by date applied descending
+                order: [[9, 'desc']], // Order by date applied descending
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
                 language: {
