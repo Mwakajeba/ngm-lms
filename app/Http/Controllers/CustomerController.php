@@ -39,20 +39,20 @@ class CustomerController extends Controller
         if (empty($phoneNumber)) {
             return $phoneNumber;
         }
-        
+
         // Remove any spaces, dashes, or special characters except +
         $phoneNumber = preg_replace("/[^0-9+]/", "", $phoneNumber);
-        
+
         // If starts with 0, remove 0 and add 255
         if (substr($phoneNumber, 0, 1) === "0") {
             return "255" . substr($phoneNumber, 1);
         }
-        
+
         // If starts with +255, remove +
         if (substr($phoneNumber, 0, 4) === "+255") {
             return substr($phoneNumber, 1);
         }
-        
+
         // Return as is if already in correct format
         return $phoneNumber;
     }
@@ -64,7 +64,7 @@ class CustomerController extends Controller
         $borrowerCount = Customer::where('category', 'Borrower')->where('branch_id', $branchId)->count();
         $guarantorCount = Customer::where('category', 'Guarantor')->where('branch_id', $branchId)->count();
         $customerCount = Customer::where('branch_id', $branchId)->count();
-        
+
         return view('customers.index', compact('borrowerCount', 'guarantorCount', 'customerCount'));
     }
 
@@ -73,7 +73,7 @@ class CustomerController extends Controller
     {
         if ($request->ajax()) {
             $branchId = auth()->user()->branch_id;
-            
+
             $customers = Customer::with(['branch', 'company', 'user', 'region', 'district'])
                 ->where('branch_id', $branchId)
                 ->select('customers.*');
@@ -83,7 +83,7 @@ class CustomerController extends Controller
                     $isGuarantor = isset($customer->category) && strtolower($customer->category) === 'guarantor';
                     $avatarClass = $isGuarantor ? 'bg-success' : 'bg-primary';
                     $initial = strtoupper(substr($customer->name, 0, 1));
-                    
+
                     return '<div class="d-flex align-items-center">
                                 <div class="avatar avatar-sm ' . $avatarClass . ' rounded-circle me-2 d-flex align-items-center justify-content-center shadow" style="width:36px; height:36px;">
                                     <span class="avatar-title text-white fw-bold" style="font-size:1.25rem;">' . $initial . '</span>
@@ -105,28 +105,28 @@ class CustomerController extends Controller
                 ->addColumn('actions', function ($customer) {
                     $actions = '';
                     $encodedId = \Vinkla\Hashids\Facades\Hashids::encode($customer->id);
-                    
+
                     // View action
                     if (auth()->user()->can('view customer profile')) {
                         $actions .= '<a href="' . route('customers.show', $encodedId) . '" class="btn btn-sm btn-outline-info me-1" title="View"><i class="bx bx-show"></i> Show</a>';
                     }
-                    
+
                     // Edit action
                     if (auth()->user()->can('edit customer')) {
                         $actions .= '<a href="' . route('customers.edit', $encodedId) . '" class="btn btn-sm btn-outline-primary me-1" title="Edit"><i class="bx bx-edit"></i> Edit</a>';
                     }
-                    
+
                     // Delete action
                     if (auth()->user()->can('delete customer')) {
                         $actions .= '<button class="btn btn-sm btn-outline-danger delete-btn" data-id="' . $encodedId . '" data-name="' . e($customer->name) . '" title="Delete"><i class="bx bx-trash"></i> Delete</button>';
                     }
-                    
+
                     return '<div class="text-center">' . $actions . '</div>';
                 })
                 ->rawColumns(['avatar_name', 'actions'])
                 ->make(true);
         }
-        
+
         return response()->json(['error' => 'Invalid request'], 400);
     }
 
@@ -143,25 +143,25 @@ class CustomerController extends Controller
     // Show form to create a new customer
     public function create()
     {
-    $branchId = auth()->user()->branch_id;
-    $loanOfficers = User::where('branch_id', $branchId)->get();
-    $filetypes = Filetype::orderBy('name')->get();
-    $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
-    $branches = Branch::all();
-    $companies = Company::all();
-    $registrars = User::all();
-    $regions = Region::all();
-    $groups = \App\Models\Group::where('branch_id', $branchId)->where('id', '!=', 1)->get();
+        $branchId = auth()->user()->branch_id;
+        $loanOfficers = User::where('branch_id', $branchId)->get();
+        $filetypes = Filetype::orderBy('name')->get();
+        $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
+        $branches = Branch::all();
+        $companies = Company::all();
+        $registrars = User::all();
+        $regions = Region::all();
+        $groups = \App\Models\Group::where('branch_id', $branchId)->where('id', '!=', 1)->get();
 
-    $customer = null;
-    return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'groups', 'customer'));
+        $customer = null;
+        return view('customers.create', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'filetypes', 'groups', 'customer'));
     }
 
     // Store a new customer
     public function store(Request $request)
     {
         // Basic validation rules
-    $rules = [
+        $rules = [
             'name' => 'required|string|max:255',
             'description' => 'nullable|string|max:1000',
             'phone1' => 'required|string|max:20',
@@ -193,12 +193,7 @@ class CustomerController extends Controller
         $validated = $request->validate($rules);
 
         // Prepare customer data
-    $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents', 'group_id']);
-        // Format phone numbers
-        $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
-        if (!empty($data["phone2"])) {
-            $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
-        }
+        $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id', 'filetypes', 'documents', 'group_id']);
         // Format phone numbers
         $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
         if (!empty($data["phone2"])) {
@@ -240,7 +235,7 @@ class CustomerController extends Controller
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-            }else{
+            } else {
                 DB::table('group_members')->insert([
                     'group_id' => 1,
                     'customer_id' => $customer->id,
@@ -333,10 +328,10 @@ class CustomerController extends Controller
         $companies = \App\Models\Company::all();
         $registrars = \App\Models\User::all();
         $regions = \App\Models\Region::all();
-    $filetypes = \App\Models\Filetype::orderBy('name')->get();
-    $groups = \App\Models\Group::where('branch_id', $branchId)->get();
-    $customer->load('loanOfficers', 'filetypes');
-    return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes', 'groups'));
+        $filetypes = \App\Models\Filetype::orderBy('name')->get();
+        $groups = \App\Models\Group::where('branch_id', $branchId)->get();
+        $customer->load('loanOfficers', 'filetypes');
+        return view('customers.edit', compact('branches', 'companies', 'registrars', 'regions', 'loanOfficers', 'collateralTypes', 'customer', 'filetypes', 'groups'));
     }
 
     // Update customer data
@@ -371,11 +366,6 @@ class CustomerController extends Controller
         ]);
 
         $data = $request->except(['customerNo', 'loan_officer_ids', 'collateral_type_id']);
-        // Format phone numbers
-        $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
-        if (!empty($data["phone2"])) {
-            $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
-        }
         // Format phone numbers
         $data["phone1"] = $this->formatPhoneNumber($data["phone1"]);
         if (!empty($data["phone2"])) {
@@ -731,7 +721,7 @@ class CustomerController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
-    
+
     /**
      * Send SMS message to customer
      */
@@ -746,22 +736,22 @@ class CustomerController extends Controller
                     'message' => 'Invalid customer ID'
                 ], 400);
             }
-            
+
             $customer = Customer::findOrFail($decodedId[0]);
-            
+
             // Validate request
             $request->validate([
                 'phone_number' => 'required|string',
                 'message_content' => 'required|string|max:500',
             ]);
-            
+
             $phoneNumber = $request->phone_number;
             $message = $request->message_content;
-            
+
             // Use phone number as provided since it's already in clean format
             // Remove any spaces, dashes, or special characters except +
             $phoneNumber = preg_replace('/[^0-9+]/', '', $phoneNumber);
-            
+
             // Ensure phone number is not empty after cleaning
             if (empty($phoneNumber)) {
                 return response()->json([
@@ -769,10 +759,10 @@ class CustomerController extends Controller
                     'message' => 'Invalid phone number provided.'
                 ], 400);
             }
-            
+
             // Send SMS using SmsHelper
             $smsResponse = \App\Helpers\SmsHelper::send($phoneNumber, $message);
-            
+
             // Log the SMS activity (optional)
             \DB::table('sms_logs')->insert([
                 'customer_id' => $customer->id,
@@ -784,13 +774,13 @@ class CustomerController extends Controller
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
-            
+
             // Return a simple success message for SweetAlert or toast notification
             return response()->json([
                 'success' => true,
                 'message' => 'Successfully sent SMS to ' . $customer->name
             ]);
-            
+
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([
                 'success' => false,
@@ -799,11 +789,144 @@ class CustomerController extends Controller
             ], 422);
         } catch (\Exception $e) {
             \Log::error('SMS sending failed: ' . $e->getMessage());
-            
+
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to send SMS: ' . $e->getMessage()
             ], 500);
         }
     }
+
+    /**
+     * Upload multiple documents for a customer
+     */
+    public function uploadDocuments(Request $request, $encodedCustomerId)
+    {
+        try {
+            $decoded = Hashids::decode($encodedCustomerId);
+            if (empty($decoded)) {
+                return response()->json(['success' => false, 'message' => 'Invalid customer id'], 400);
+            }
+
+            $customer = Customer::findOrFail($decoded[0]);
+
+            $request->validate([
+                'filetypes' => 'required|array',
+                'filetypes.*' => 'required|exists:filetypes,id',
+                'documents' => 'required|array',
+                'documents.*' => 'required|file|mimes:pdf,doc,docx,jpg,jpeg,png|max:5120',
+            ]);
+
+            $filetypes = $request->input('filetypes', []);
+            $documents = $request->file('documents', []);
+
+            DB::beginTransaction();
+            $uploadedCount = 0;
+            $uploadedDocuments = [];
+
+            foreach ($filetypes as $index => $filetypeId) {
+                if (!isset($documents[$index])) {
+                    continue;
+                }
+
+                $file = $documents[$index];
+                $path = $file->store('documents', 'public');
+
+                DB::table('customer_file_types')->updateOrInsert(
+                    [
+                        'customer_id' => $customer->id,
+                        'filetype_id' => $filetypeId,
+                    ],
+                    [
+                        'document_path' => $path,
+                        'updated_at' => now(),
+                        'created_at' => now(),
+                    ]
+                );
+
+                $uploadedDocuments[] = [
+                    'name' => $file->getClientOriginalName(),
+                    'type' => \App\Models\Filetype::find($filetypeId)->name ?? 'Unknown',
+                    'size' => $this->formatFileSize($file->getSize())
+                ];
+
+                $uploadedCount++;
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => "Successfully uploaded {$uploadedCount} document(s)",
+                'uploaded_count' => $uploadedCount,
+                'documents' => $uploadedDocuments
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to upload documents: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Format file size in human readable format
+     */
+    private function formatFileSize($bytes)
+    {
+        $units = ['B', 'KB', 'MB', 'GB'];
+        $bytes = max($bytes, 0);
+        $pow = floor(($bytes ? log($bytes) : 0) / log(1024));
+        $pow = min($pow, count($units) - 1);
+        $bytes /= pow(1024, $pow);
+        return round($bytes, 2) . ' ' . $units[$pow];
+    }
+
+    /**
+     * Delete a single customer document (pivot row)
+     */
+    public function deleteDocument(Request $request, $encodedCustomerId, $pivotId)
+    {
+        try {
+            $decoded = Hashids::decode($encodedCustomerId);
+            if (empty($decoded)) {
+                return response()->json(['success' => false, 'message' => 'Invalid customer id'], 400);
+            }
+
+            $customerId = $decoded[0];
+            $pivot = DB::table('customer_file_types')->where('id', $pivotId)->where('customer_id', $customerId)->first();
+            if (!$pivot) {
+                return response()->json(['success' => false, 'message' => 'Document not found'], 404);
+            }
+
+            // Delete file from storage if exists
+            if (!empty($pivot->document_path)) {
+                try {
+                    \Storage::disk('public')->delete($pivot->document_path);
+                } catch (\Exception $e) {
+                    // ignore storage deletion errors
+                }
+            }
+
+            DB::table('customer_file_types')->where('id', $pivotId)->delete();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Document deleted successfully'
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete document: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
 }
