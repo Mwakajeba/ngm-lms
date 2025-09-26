@@ -97,7 +97,7 @@
                                                 <i class="bx bx-wallet me-1"></i>Bank Account <span
                                                     class="text-danger">*</span>
                                             </label>
-                                            <select class="form-select @error('bank_account_id') is-invalid @enderror"
+                                            <select class="form-select select2-single @error('bank_account_id') is-invalid @enderror"
                                                 id="bank_account_id" name="bank_account_id" data-live-search="true"
                                                 required>
                                                 <option value="">-- Select Bank Account --</option>
@@ -131,7 +131,7 @@
                                                                 Payee Type <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('payee_type') is-invalid @enderror"
+                                                                class="form-select select2-single @error('payee_type') is-invalid @enderror"
                                                                 id="payee_type" name="payee_type" required>
                                                                 <option value="">-- Select Payee Type --</option>
                                                                 <option value="customer" {{ old('payee_type', 'customer') == 'customer' ? 'selected' : '' }}>Customer
@@ -151,7 +151,7 @@
                                                                 Select Customer <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('customer_id') is-invalid @enderror"
+                                                                class="form-select select2-single @error('customer_id') is-invalid @enderror"
                                                                 id="customer_id" name="customer_id">
                                                                 <option value="">-- Select Customer --</option>
                                                                 @foreach($customers as $customer)
@@ -333,6 +333,16 @@
         $(document).ready(function () {
             let lineItemCount = 0;
 
+            function initSelect2() {
+                $('.select2-single').each(function() {
+                    if (!$(this).hasClass('select2-hidden-accessible')) {
+                        $(this).select2({ width: '100%' });
+                    }
+                });
+            }
+
+            initSelect2();
+
             // Handle payee type change
             $('#payee_type').change(function () {
                 const payeeType = $(this).val();
@@ -376,7 +386,7 @@
                                             <div class="col-lg-5">
                                                 <div class="mb-3">
                                                     <label class="form-label fw-bold">Chart Account <span class="text-danger">*</span></label>
-                                                    <select class="form-select chart-account-select" name="line_items[${lineItemCount}][chart_account_id]" required>
+                                                    <select class="form-select chart-account-select select2-single" name="line_items[${lineItemCount}][chart_account_id]" required>
                                                         <option value="">-- Select Chart Account --</option>
                                                         @foreach($chartAccounts as $chartAccount)
                                                             <option value="{{ $chartAccount->id }}">{{ $chartAccount->account_name }} ({{ $chartAccount->account_code }})</option>
@@ -410,6 +420,7 @@
                                     </div>
                                 `;
                 $('#lineItemsContainer').append(lineItemHtml);
+                initSelect2();
             }
 
             // Remove line item
