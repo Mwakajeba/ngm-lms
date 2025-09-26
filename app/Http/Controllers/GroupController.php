@@ -194,12 +194,15 @@ class GroupController extends Controller
         // Only customers in 'Borrower' category who are not in any group can be group leaders
         // But include the current group leader even if they're in a group (for editing existing groups)
         $currentGroupLeaderId = $group->group_leader;
+        // Only allow group leader to be selected from members of this group
+        $groupMemberIds = \DB::table('group_members')
+            ->where('group_id', $group->id)
+            ->pluck('customer_id')
+            ->toArray();
+
         $groupLeaders = Customer::where('branch_id', $branchId)
             ->where('category', 'Borrower')
-            ->where(function ($query) use ($allGroupMemberIds, $currentGroupLeaderId) {
-                $query->whereNotIn('id', $allGroupMemberIds)
-                    ->orWhere('id', $currentGroupLeaderId);
-            })
+            ->whereIn('id', $groupMemberIds)
             ->get();
 
         return view('groups.edit', compact('group', 'loanOfficers', 'groupLeaders'));
@@ -233,11 +236,14 @@ class GroupController extends Controller
                             $fail('The selected group leader must be a customer in the Borrower category.');
                         }
 
-                        // Check if customer is already a member of any group (except if they're the current group leader)
+                        // Check if customer is not a member of this group
                         if ($value != $group->group_leader) {
-                            $isInAnyGroup = \DB::table('group_members')->where('customer_id', $value)->exists();
-                            if ($isInAnyGroup) {
-                                $fail('The selected group leader is already a member of another group.');
+                            $isNotMemberOfThisGroup = !\DB::table('group_members')
+                                ->where('customer_id', $value)
+                                ->where('group_id', $group->id)
+                                ->exists();
+                            if ($isNotMemberOfThisGroup) {
+                                $fail('The selected group leader must be a member of this group.');
                             }
                         }
                     }
