@@ -877,10 +877,6 @@
                                 id="bulkDeleteRepaymentsBtn" disabled>
                                 <i class="bx bx-trash me-2 font-18"></i>Bulk Delete
                             </button>
-                            <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
-                                data-bs-target="#addRepaymentModal">
-                                <i class="bx bx-plus me-2 font-18"></i>Add Repayment
-                            </button>
                         </div>
                     </div>
 
@@ -923,7 +919,7 @@
                                                     <td class="text-end pe-4 fw-bold">
                                                         {{ number_format($repayment->amount_paid, 2) }}
                                                     </td>
-                                                    <td>{{ $repayment->bankAccount->name ?? 'N/A' }}</td>
+                                                    <td>{{ $repayment->chartAccount->account_name ?? 'N/A' }}</td>
                                                     <td class="text-center">
                                                         <div class="btn-group" role="group">
                                                             <button type="button" class="btn btn-sm btn-outline-primary"
