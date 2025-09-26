@@ -742,6 +742,12 @@
                 <div class="tab-pane fade" id="documents" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">
                         <h5 class="mb-0 text-dark">Documents</h5>
+                        @can('manage loan documents')
+                        <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
+                            data-bs-target="#uploadDocumentModal">
+                            <i class="bx bx-plus me-2"></i>Add Document
+                        </button>
+                        @endcan
                     </div>
 
                     @if($loan->loanFiles->count())
@@ -806,6 +812,62 @@
                         </div>
                     @endif
                 </div>
+
+                @can('manage loan documents')
+                <!-- Upload Document Modal -->
+                <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentModalLabel" aria-hidden="true">
+                    <div class="modal-dialog modal-lg modal-dialog-centered">
+                        <div class="modal-content">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="uploadDocumentModalLabel"><i class="bx bx-upload me-2"></i>Upload Loan Documents</h5>
+                                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                            </div>
+                            <form id="uploadDocumentForm" action="{{ route('loan-documents.store') }}" method="POST" enctype="multipart/form-data">
+                                @csrf
+                                <input type="hidden" name="loan_id" value="{{ $loan->id }}">
+                                <div class="modal-body">
+                                    <div id="documentUploads">
+                                        <div class="document-upload-row mb-3 p-3 border rounded">
+                                            <div class="row g-3">
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Document Type</label>
+                                                    <select class="form-select document-type" name="file_type_id" required>
+                                                        <option value="">-- Select Document Type --</option>
+                                                        @foreach($filetypes as $file)
+                                                            <option value="{{ $file->id }}">{{ $file->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="col-md-6">
+                                                    <label class="form-label">Choose File</label>
+                                                    <div class="input-group">
+                                                        <input type="file" class="form-control document-file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                                        <button type="button" class="btn btn-outline-danger remove-document-btn">
+                                                            <i class="bx bx-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="d-flex justify-content-between">
+                                        <button type="button" class="btn btn-outline-secondary" id="addAnotherDocument">
+                                            <i class="bx bx-plus me-1"></i>Add Another
+                                        </button>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                                    <button type="submit" class="btn btn-primary">
+                                        <i class="bx bx-upload me-1"></i>Upload
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                @endcan
 
                 <div class="tab-pane fade" id="repayments" role="tabpanel">
                     <div class="d-flex justify-content-between align-items-center mb-4">

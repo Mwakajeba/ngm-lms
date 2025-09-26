@@ -958,4 +958,65 @@ class CustomerController extends Controller
         }
     }
 
+    /**
+     * Stream a customer document for viewing in the browser
+     */
+    public function viewDocument($encodedCustomerId, $pivotId)
+    {
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedCustomerId);
+        if (empty($decoded)) {
+            abort(404);
+        }
+
+        $customerId = $decoded[0];
+        $pivot = \DB::table('customer_file_types')
+            ->where('id', $pivotId)
+            ->where('customer_id', $customerId)
+            ->first();
+
+        if (!$pivot || empty($pivot->document_path)) {
+            abort(404);
+        }
+
+        $disk = \Storage::disk('public');
+        if (!$disk->exists($pivot->document_path)) {
+            abort(404);
+        }
+
+        $mimeType = $disk->mimeType($pivot->document_path) ?: 'application/octet-stream';
+        $contents = $disk->get($pivot->document_path);
+        return response($contents, 200)->header('Content-Type', $mimeType);
+    }
+
+    /**
+     * Download a customer document as attachment
+     */
+    public function downloadDocument($encodedCustomerId, $pivotId)
+    {
+        $decoded = \Vinkla\Hashids\Facades\Hashids::decode($encodedCustomerId);
+        if (empty($decoded)) {
+            abort(404);
+        }
+
+        $customerId = $decoded[0];
+        $pivot = \DB::table('customer_file_types')
+            ->where('id', $pivotId)
+            ->where('customer_id', $customerId)
+            ->first();
+
+        if (!$pivot || empty($pivot->document_path)) {
+            abort(404);
+        }
+
+        $disk = \Storage::disk('public');
+        if (!$disk->exists($pivot->document_path)) {
+            abort(404);
+        }
+
+        $filename = basename($pivot->document_path);
+        return response()->streamDownload(function () use ($disk, $pivot) {
+            echo $disk->get($pivot->document_path);
+        }, $filename);
+    }
+
 }
