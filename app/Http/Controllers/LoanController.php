@@ -381,6 +381,11 @@ class LoanController extends Controller
                     return $loan->date_applied ? \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y') : 'N/A';
                 })
                 ->addColumn('comment', function ($loan) {
+                    // Don't show comment for active loans
+                    if ($loan->status === 'active') {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    
                     $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
                     if ($latestApproval && $latestApproval->comments) {
                         return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
