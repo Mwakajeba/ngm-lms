@@ -266,66 +266,6 @@ $isEdit = isset($customer);
             @error('group_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div> -->
 
-        <!-- Multiple File Types and Documents Upload -->
-        <hr class="my-4">
-        <div class="col-md-12 mb-3">
-            <label class="form-label">Upload Documents</label>
-            <div id="file-type-upload-container">
-                {{-- Show existing uploaded documents if editing --}}
-                @if($isEdit && isset($customer) && $customer->filetypes->count())
-                    @foreach ($customer->filetypes as $index => $filetype)
-                    <div class="row mb-2 file-type-upload-row">
-                        <div class="col-md-5">
-                            <select name="filetypes[]" class="form-select">
-                                <option value="">Select File Type</option>
-                                @foreach ($filetypes as $type)
-                                <option value="{{ $type->id }}" {{ $type->id == $filetype->id ? 'selected' : '' }}>{{ $type->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
-                            @if($filetype->pivot->document_path)
-                                <a href="{{ asset('storage/' . $filetype->pivot->document_path) }}" target="_blank">View Uploaded</a>
-                            @endif
-                        </div>
-                        <div class="col-md-2 d-flex align-items-center">
-                            <button type="button" class="btn btn-danger btn-sm remove-filetype-row" title="Remove row">
-                                <i class="bx bx-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                    @endforeach
-                @else
-                    <div class="row mb-2 file-type-upload-row">
-                        <div class="col-md-5">
-                            <select name="filetypes[]" class="form-select">
-                                <option value="">Select File Type</option>
-                                @foreach ($filetypes as $type)
-                                <option value="{{ $type->id }}">{{ $type->name }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="col-md-5">
-                            <input type="file" name="documents[]" class="form-control" accept=".pdf,.doc,.docx,image/*">
-                        </div>
-                        <div class="col-md-2 d-flex align-items-center">
-                            <button type="button" class="btn btn-danger btn-sm remove-filetype-row" title="Remove row">
-                                <i class="bx bx-trash"></i>
-                            </button>
-                        </div>
-                    </div>
-                @endif
-
-
-            </div>
-
-            <button type="button" class="btn btn-outline-primary btn-sm" id="add-filetype-row">
-                <i class="bx bx-plus"></i> Add Another
-            </button>
-        </div>
-
-
         <hr class="my-4">
 
         <div class="d-flex justify-content-between">

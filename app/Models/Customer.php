@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Customer extends Model
 {
-    use HasFactory,LogsActivity;
+    use HasFactory, LogsActivity;
 
     protected $fillable = [
         'customerNo',
@@ -77,8 +77,9 @@ class Customer extends Model
         return $this->hasMany(CashCollateral::class);
     }
 
-    public function repayments(){
-        return $this->hasMany(Repayment::class,'customer_id');
+    public function repayments()
+    {
+        return $this->hasMany(Repayment::class, 'customer_id');
     }
 
     public function loans()
@@ -101,7 +102,7 @@ class Customer extends Model
     {
         return $this->belongsToMany(Group::class, 'group_members', 'customer_id', 'group_id');
     }
-    
+
     public function loanOfficers()
     {
         return $this->belongsToMany(User::class, 'customer_officer', 'customer_id', 'officer_id');
@@ -132,7 +133,7 @@ class Customer extends Model
     public function filetypes()
     {
         return $this->belongsToMany(Filetype::class, 'customer_file_types')
-            ->withPivot('document_path')
+            ->withPivot('id', 'document_path')
             ->withTimestamps();
     }
 
@@ -140,7 +141,7 @@ class Customer extends Model
     {
         return 20000000;
     }
-    
+
 
 
 }

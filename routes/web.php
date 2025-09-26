@@ -709,6 +709,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('customers/bulk-upload', [CustomerController::class, 'bulkUploadStore'])->name('customers.bulk-upload.store');
     Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
 
+    // Documents upload/delete
+    Route::post('customers/{customer}/documents', [CustomerController::class, 'uploadDocuments'])->name('customers.documents.upload');
+    Route::delete('customers/{customer}/documents/{pivotId}', [CustomerController::class, 'deleteDocument'])->name('customers.documents.delete');
+
     // Parameterized routes (must come after specific routes)
     Route::post('customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');

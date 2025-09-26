@@ -618,8 +618,8 @@
                                                     $remainingAmount = $item->remaining_amount;
                                                     $isFullyPaid = $item->is_fully_paid;
                                                     $paymentPercentage = $item->payment_percentage;
-                                                    $completed =$loan->status === 'completed';
-                                                    
+                                                    $completed = $loan->status === 'completed';
+
                                                 @endphp
                                                 <tr
                                                     class="{{ $isFullyPaid ? 'table-success' : ($paidAmount > 0 ? 'table-warning' : '') }}">
@@ -740,15 +740,9 @@
                 </div>
 
                 <div class="tab-pane fade" id="documents" role="tabpanel">
-                    @can('manage loan documents')
-                        <div class="d-flex justify-content-between align-items-center mb-4">
-                            <h5 class="mb-0 text-dark">Documents</h5>
-                            <button type="button" class="btn btn-primary d-flex align-items-center" data-bs-toggle="modal"
-                                data-bs-target="#uploadDocumentModal">
-                                <i class="bx bx-cloud-upload me-2 font-18"></i>Upload Document
-                            </button>
-                        </div>
-                    @endcan
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h5 class="mb-0 text-dark">Documents</h5>
+                    </div>
 
                     @if($loan->loanFiles->count())
                         <div class="card radius-10">
@@ -769,17 +763,33 @@
                                             @foreach($loan->loanFiles as $index => $doc)
                                                 <tr>
                                                     <th scope="row" class="ps-4">{{ $index + 1 }}</th>
-                                                    <td>{{ $doc->fileType->name }}</td>
+                                                    <td>
+                                                        <div class="d-flex align-items-center">
+                                                            <i class="bx bx-file me-2 text-primary"></i>
+                                                            <span class="fw-medium">{{ $doc->fileType->name }}</span>
+                                                        </div>
+                                                    </td>
                                                     @can('view loan documents')
                                                         <td class="text-end pe-4">
-                                                            <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank"
-                                                                class="btn btn-sm btn-outline-secondary me-2">
-                                                                View
-                                                            </a>
-                                                            <a href="{{ asset('storage/' . $doc->file_path) }}" download
-                                                                class="btn btn-sm btn-primary">
-                                                                Download
-                                                            </a>
+                                                            <div class="btn-group" role="group">
+                                                                <a href="{{ asset('storage/' . $doc->file_path) }}" target="_blank"
+                                                                    class="btn btn-sm btn-outline-primary" title="View Document">
+                                                                    <i class="bx bx-show"></i>
+                                                                </a>
+                                                                <a href="{{ asset('storage/' . $doc->file_path) }}" download
+                                                                    class="btn btn-sm btn-outline-success" title="Download Document">
+                                                                    <i class="bx bx-download"></i>
+                                                                </a>
+                                                                @can('manage loan documents')
+                                                                    <button type="button"
+                                                                        class="btn btn-sm btn-outline-danger delete-document-btn"
+                                                                        data-document-id="{{ $doc->id }}"
+                                                                        data-document-name="{{ $doc->fileType->name }}"
+                                                                        title="Delete Document">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                @endcan
+                                                            </div>
                                                         </td>
                                                     @endcan
                                                 </tr>
@@ -859,10 +869,10 @@
                                                                 Print
                                                             </button>
                                                             <!-- <button type="button" class="btn btn-sm btn-outline-secondary"
-                                                                                                                                                                onclick="editRepayment({{ $repayment->id }})"
-                                                                                                                                                                title="Edit Repayment">
-                                                                                                                                                                Edit
-                                                                                                                                                            </button> -->
+                                                                                                                                                                                                                                                                                                                                                                                        onclick="editRepayment({{ $repayment->id }})"
+                                                                                                                                                                                                                                                                                                                                                                                        title="Edit Repayment">
+                                                                                                                                                                                                                                                                                                                                                                                        Edit
+                                                                                                                                                                                                                                                                                                                                                                                    </button> -->
                                                             <button type="button" class="btn btn-sm btn-outline-danger"
                                                                 onclick="deleteRepayment({{ $repayment->id }})"
                                                                 title="Delete Repayment">
@@ -1116,39 +1126,7 @@
         </div>
     </div>
 
-    <div class="modal fade" id="uploadDocumentModal" tabindex="-1" aria-labelledby="uploadDocumentLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <form id="uploadDocumentForm" action="{{ route('loan-documents.store') }}" method="POST"
-                enctype="multipart/form-data" class="modal-content">
-                @csrf
-                <input type="hidden" name="loan_id" value="{{ $loan->id }}">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="uploadDocumentLabel">Upload Document</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <div class="mb-3">
-                        <label for="guarantor_id" class="form-label">File Type</label>
-                        <select class="form-select" name="file_type_id" id="file_type_id" required>
-                            <option value="">-- Select Document Type --</option>
-                            @foreach($filetypes as $file)
-                                <option value="{{ $file->id }}">{{ $file->name }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="mb-3">
-                        <label for="docFile" class="form-label">Choose File</label>
-                        <input type="file" class="form-control" name="file" id="docFile"
-                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                    <button type="submit" class="btn btn-success">Upload</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Modern Document Upload Modal -->
 
     <!-- Add Repayment Modal -->
     <div class="modal fade" id="addRepaymentModal" tabindex="-1" aria-labelledby="addRepaymentModalLabel"
@@ -1700,16 +1678,16 @@
                     type === 'warning' ? 'bg-warning' : 'bg-info';
 
             const toastHtml = `
-                                                <div class="toast align-items-center text-white ${toastClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
-                                                    <div class="d-flex">
-                                                        <div class="toast-body">
-                                                            <strong>${title}</strong><br>
-                                                            ${message}
-                                                        </div>
-                                                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
-                                                    </div>
-                                                </div>
-                                            `;
+                                                                                                                        <div class="toast align-items-center text-white ${toastClass} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+                                                                                                                            <div class="d-flex">
+                                                                                                                                <div class="toast-body">
+                                                                                                                                    <strong>${title}</strong><br>
+                                                                                                                                    ${message}
+                                                                                                                                </div>
+                                                                                                                                <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                                                                                                                            </div>
+                                                                                                                        </div>
+                                                                                                                    `;
 
             // Create toast container if it doesn't exist
             let toastContainer = document.getElementById('toast-container');
@@ -1815,8 +1793,11 @@
                 });
             });
 
-            // Handle document upload form submission
-            $('#uploadDocumentForm').on('submit', function (e) {
+
+
+
+            // Handle add repayment form submission
+            $('#addRepaymentForm').on('submit', function (e) {
                 e.preventDefault();
 
                 const form = $(this);
@@ -1824,10 +1805,239 @@
                 const originalText = submitBtn.html();
 
                 // Disable submit button and show loading
+                submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Processing...');
+
+                const newRow = `
+                                                                                        <div class="document-upload-row mb-3 p-3 border rounded">
+                                                                                            <div class="row g-3">
+                                                                                                <div class="col-md-6">
+                                                                                                    <label class="form-label">Document Type</label>
+                                                                                                    <select class="form-select document-type" name="filetypes[]" required>
+                                                                                                        <option value="">-- Select Document Type --</option>
+                                                                                                        @foreach($filetypes as $file)
+                                                                                                            <option value="{{ $file->id }}">{{ $file->name }}</option>
+                                                                                                        @endforeach
+                                                                                                    </select>
+                                                                                                </div>
+                                                                                                <div class="col-md-6">
+                                                                                                    <label class="form-label">Choose File</label>
+                                                                                                    <div class="input-group">
+                                                                                                        <input type="file" class="form-control document-file" name="documents[]" 
+                                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                                                                                        <button type="button" class="btn btn-outline-danger remove-document-btn">
+                                                                                                            <i class="bx bx-trash"></i>
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    `;
+
+                console.log('Generated new row HTML:', newRow);
+                console.log('Target container exists:', $('#documentUploads').length > 0);
+                console.log('Target container HTML before append:', $('#documentUploads').html());
+
+                try {
+                    $('#documentUploads').append(newRow);
+                    console.log('✅ Successfully appended new row');
+                    console.log('New document row added, total rows:', documentRowCount);
+
+                    // Update remove buttons visibility
+                    updateRemoveButtons();
+                    console.log('✅ Updated remove buttons visibility');
+
+                    console.log('Target container HTML after append:', $('#documentUploads').html());
+                } catch (error) {
+                    console.error('❌ Error appending new row:', error);
+                }
+            });
+
+            // Fallback: Document delegation in case direct binding fails
+            $(document).on('click', '#addAnotherDocument', function (e) {
+                e.preventDefault();
+                console.log('=== FALLBACK: ADD ANOTHER DOCUMENT CLICKED ===');
+                console.log('Fallback handler triggered');
+
+                // Only proceed if this is the first time (avoid double execution)
+                if (!$(this).data('fallback-handled')) {
+                    $(this).data('fallback-handled', true);
+                    console.log('Executing fallback handler');
+
+                    documentRowCount++;
+                    console.log('Fallback: Incremented documentRowCount to:', documentRowCount);
+
+                    const newRow = `
+                                                                                    <div class="document-upload-row mb-3 p-3 border rounded">
+                                                                                        <div class="row g-3">
+                                                                                            <div class="col-md-6">
+                                                                                                <label class="form-label">Document Type</label>
+                                                                                                <select class="form-select document-type" name="filetypes[]" required>
+                                                                                                    <option value="">-- Select Document Type --</option>
+                                                                                                    @foreach($filetypes as $file)
+                                                                                                        <option value="{{ $file->id }}">{{ $file->name }}</option>
+                                                                                                    @endforeach
+                                                                                                </select>
+                                                                                            </div>
+                                                                                            <div class="col-md-6">
+                                                                                                <label class="form-label">Choose File</label>
+                                                                                                <div class="input-group">
+                                                                                                    <input type="file" class="form-control document-file" name="documents[]" 
+                                                                                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                                                                                    <button type="button" class="btn btn-outline-danger remove-document-btn">
+                                                                                                        <i class="bx bx-trash"></i>
+                                                                                                    </button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    </div>
+                                                                                `;
+
+                    console.log('Fallback: Generated new row HTML');
+                    console.log('Fallback: Target container exists:', $('#documentUploads').length > 0);
+
+                    try {
+                        $('#documentUploads').append(newRow);
+                        console.log('✅ Fallback: Successfully appended new row');
+                        updateRemoveButtons();
+                        console.log('✅ Fallback: Updated remove buttons visibility');
+                    } catch (error) {
+                        console.error('❌ Fallback: Error appending new row:', error);
+                    }
+                }
+            });
+
+            // Remove document row
+            $(document).on('click', '.remove-document-btn', function () {
+                console.log('Remove document clicked');
+                const row = $(this).closest('.document-upload-row');
+                row.fadeOut(300, function () {
+                    $(this).remove();
+                    documentRowCount--;
+                    console.log('Document row removed, remaining rows:', documentRowCount);
+
+                    // Show/hide remove buttons based on row count
+                    updateRemoveButtons();
+                });
+            });
+
+            // Update remove buttons visibility
+            function updateRemoveButtons() {
+                const rows = $('.document-upload-row');
+                rows.each(function (index) {
+                    const removeBtn = $(this).find('.remove-document-btn');
+                    if (rows.length > 1) {
+                        removeBtn.show();
+                    } else {
+                        removeBtn.hide();
+                    }
+                });
+            }
+
+            // Initialize remove buttons visibility
+            updateRemoveButtons();
+
+            // Handle delete document button click
+            $(document).on('click', '.delete-document-btn', function () {
+                const documentId = $(this).data('document-id');
+                const documentName = $(this).data('document-name');
+
+                console.log('Delete document clicked', { documentId, documentName });
+
+                Swal.fire({
+                    title: 'Delete Document?',
+                    html: `Are you sure you want to delete <strong>"${documentName}"</strong>?<br><small class="text-muted">This action cannot be undone.</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: '<i class="bx bx-trash me-1"></i>Yes, delete it!',
+                    cancelButtonText: '<i class="bx bx-x me-1"></i>Cancel',
+                    reverseButtons: true
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        console.log('User confirmed deletion');
+
+                        // Show loading state
+                        const deleteBtn = $(this);
+                        const originalHtml = deleteBtn.html();
+                        deleteBtn.html('<i class="bx bx-loader-alt bx-spin"></i>').prop('disabled', true);
+
+                        $.ajax({
+                            url: `/loan-documents/${documentId}`,
+                            method: 'DELETE',
+                            headers: {
+                                'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                            },
+                            success: function (response) {
+                                console.log('Delete success:', response);
+                                showToast('Success!', 'Document deleted successfully!', 'success');
+
+                                // Remove the table row with animation
+                                deleteBtn.closest('tr').fadeOut(300, function () {
+                                    $(this).remove();
+                                });
+                            },
+                            error: function (xhr) {
+                                console.error('Delete error:', xhr);
+                                let errorMessage = 'Failed to delete document.';
+                                if (xhr.responseJSON && xhr.responseJSON.message) {
+                                    errorMessage = xhr.responseJSON.message;
+                                }
+                                showToast('Error!', errorMessage, 'error');
+
+                                // Restore button state
+                                deleteBtn.html(originalHtml).prop('disabled', false);
+                            }
+                        });
+                    }
+                });
+            });
+
+            // Handle document upload form submission
+            $('#uploadDocumentForm').on('submit', function (e) {
+                e.preventDefault();
+                console.log('Upload form submitted');
+
+                const form = $(this);
+                const submitBtn = form.find('button[type="submit"]');
+                const originalText = submitBtn.html();
+
+                // Validate form
+                let isValid = true;
+                $('.document-type').each(function () {
+                    if (!$(this).val()) {
+                        isValid = false;
+                        $(this).addClass('is-invalid');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                $('.document-file').each(function () {
+                    if (!$(this)[0].files.length) {
+                        isValid = false;
+                        $(this).addClass('is-invalid');
+                    } else {
+                        $(this).removeClass('is-invalid');
+                    }
+                });
+
+                if (!isValid) {
+                    showToast('Error!', 'Please fill in all required fields', 'error');
+                    return;
+                }
+
+                // Disable submit button and show loading
                 submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Uploading...');
 
                 // Create FormData for file uploads
                 const formData = new FormData(this);
+
+                // Log form data for debugging
+                console.log('Form data entries:');
+                for (let [key, value] of formData.entries()) {
+                    console.log(key, value);
+                }
 
                 $.ajax({
                     url: form.attr('action'),
@@ -1839,14 +2049,16 @@
                         'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
                     },
                     success: function (response) {
+                        console.log('Upload success:', response);
                         $('#uploadDocumentModal').modal('hide');
-                        showToast('Success!', 'Document uploaded successfully!', 'success');
+                        showToast('Success!', 'Documents uploaded successfully!', 'success');
                         setTimeout(() => {
                             location.reload();
                         }, 1500);
                     },
                     error: function (xhr) {
-                        let errorMessage = 'Failed to upload document.';
+                        console.error('Upload error:', xhr);
+                        let errorMessage = 'Failed to upload documents.';
                         if (xhr.responseJSON && xhr.responseJSON.message) {
                             errorMessage = xhr.responseJSON.message;
                         } else if (xhr.responseJSON && xhr.responseJSON.errors) {
@@ -2176,15 +2388,15 @@
             Swal.fire({
                 title: 'Remove Penalty',
                 html: `
-                                                    <div class="text-start">
-                                                        <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
-                                                        <p class="text-muted">This will remove the penalty from this schedule item.</p>
-                                                        <div class="mb-3">
-                                                            <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
-                                                            <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
-                                                        </div>
-                                                    </div>
-                                                `,
+                                                                                                                            <div class="text-start">
+                                                                                                                                <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
+                                                                                                                                <p class="text-muted">This will remove the penalty from this schedule item.</p>
+                                                                                                                                <div class="mb-3">
+                                                                                                                                    <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
+                                                                                                                                    <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
+                                                                                                                                </div>
+                                                                                                                            </div>
+                                                                                                                        `,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Remove Penalty',
@@ -2482,156 +2694,156 @@
             const fileName = `Receipt_${customerName}_${receiptData.date}`;
 
             const receiptHtml = `
-                                                <!DOCTYPE html>
-                                                <html>
-                                                <head>
-                                                    <title>${fileName}</title>
-                                                    <style>
-                                                        @page {
-                                                            size: 80mm 200mm;
-                                                            margin: 0;
-                                                            padding: 0;
-                                                        }
+                                                                                                                        <!DOCTYPE html>
+                                                                                                                        <html>
+                                                                                                                        <head>
+                                                                                                                            <title>${fileName}</title>
+                                                                                                                            <style>
+                                                                                                                                @page {
+                                                                                                                                    size: 80mm 200mm;
+                                                                                                                                    margin: 0;
+                                                                                                                                    padding: 0;
+                                                                                                                                }
 
-                                                        @media print {
-                                                            body { 
-                                                                font-family: 'Courier New', monospace; 
-                                                                font-size: 10px; 
-                                                                margin: 0; 
-                                                                padding: 5px;
-                                                                width: 280px;
-                                                                max-width: 280px;
-                                                                min-width: 280px;
-                                                                page-break-after: avoid;
-                                                                page-break-before: avoid;
-                                                            }
-                                                            .header { text-align: center; margin-bottom: 8px; }
-                                                            .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                                                            .subtitle { font-size: 10px; margin-bottom: 8px; }
-                                                            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                                                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                                                            .label { font-weight: bold; }
-                                                            .value { text-align: right; }
-                                                            .total { font-weight: bold; font-size: 12px; }
-                                                            .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                                                            .center { text-align: center; }
-                                                            .bold { font-weight: bold; }
+                                                                                                                                @media print {
+                                                                                                                                    body { 
+                                                                                                                                        font-family: 'Courier New', monospace; 
+                                                                                                                                        font-size: 10px; 
+                                                                                                                                        margin: 0; 
+                                                                                                                                        padding: 5px;
+                                                                                                                                        width: 280px;
+                                                                                                                                        max-width: 280px;
+                                                                                                                                        min-width: 280px;
+                                                                                                                                        page-break-after: avoid;
+                                                                                                                                        page-break-before: avoid;
+                                                                                                                                    }
+                                                                                                                                    .header { text-align: center; margin-bottom: 8px; }
+                                                                                                                                    .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                                                                                                                                    .subtitle { font-size: 10px; margin-bottom: 8px; }
+                                                                                                                                    .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                                                                                                                                    .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                                                                                                                    .label { font-weight: bold; }
+                                                                                                                                    .value { text-align: right; }
+                                                                                                                                    .total { font-weight: bold; font-size: 12px; }
+                                                                                                                                    .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                                                                                                                                    .center { text-align: center; }
+                                                                                                                                    .bold { font-weight: bold; }
 
-                                                            /* Force thermal printer format */
-                                                            html, body {
-                                                                width: 280px !important;
-                                                                max-width: 280px !important;
-                                                                min-width: 280px !important;
-                                                            }
-                                                        }
+                                                                                                                                    /* Force thermal printer format */
+                                                                                                                                    html, body {
+                                                                                                                                        width: 280px !important;
+                                                                                                                                        max-width: 280px !important;
+                                                                                                                                        min-width: 280px !important;
+                                                                                                                                    }
+                                                                                                                                }
 
-                                                        body { 
-                                                            font-family: 'Courier New', monospace; 
-                                                            font-size: 10px; 
-                                                            margin: 0; 
-                                                            padding: 5px;
-                                                            width: 280px;
-                                                            max-width: 280px;
-                                                            min-width: 280px;
-                                                        }
-                                                        .header { text-align: center; margin-bottom: 8px; }
-                                                        .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                                                        .subtitle { font-size: 10px; margin-bottom: 8px; }
-                                                        .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                                                        .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                                                        .label { font-weight: bold; }
-                                                        .value { text-align: right; }
-                                                        .total { font-weight: bold; font-size: 12px; }
-                                                        .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                                                        .center { text-align: center; }
-                                                        .bold { font-weight: bold; }
-                                                    </style>
-                                                </head>
-                                                <body>
-                                                    <div class="header">
-                                                        <div class="title">SMARTFINANCE</div>
-                                                        <div class="subtitle">Loan Repayment Receipt</div>
-                                                    </div>
+                                                                                                                                body { 
+                                                                                                                                    font-family: 'Courier New', monospace; 
+                                                                                                                                    font-size: 10px; 
+                                                                                                                                    margin: 0; 
+                                                                                                                                    padding: 5px;
+                                                                                                                                    width: 280px;
+                                                                                                                                    max-width: 280px;
+                                                                                                                                    min-width: 280px;
+                                                                                                                                }
+                                                                                                                                .header { text-align: center; margin-bottom: 8px; }
+                                                                                                                                .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                                                                                                                                .subtitle { font-size: 10px; margin-bottom: 8px; }
+                                                                                                                                .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                                                                                                                                .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                                                                                                                .label { font-weight: bold; }
+                                                                                                                                .value { text-align: right; }
+                                                                                                                                .total { font-weight: bold; font-size: 12px; }
+                                                                                                                                .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                                                                                                                                .center { text-align: center; }
+                                                                                                                                .bold { font-weight: bold; }
+                                                                                                                            </style>
+                                                                                                                        </head>
+                                                                                                                        <body>
+                                                                                                                            <div class="header">
+                                                                                                                                <div class="title">SMARTFINANCE</div>
+                                                                                                                                <div class="subtitle">Loan Repayment Receipt</div>
+                                                                                                                            </div>
 
-                                                    <div class="divider"></div>
+                                                                                                                            <div class="divider"></div>
 
-                                                    <div class="row">
-                                                        <span class="label">Customer:</span>
-                                                        <span class="value">${receiptData.customer_name}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Loan No:</span>
-                                                        <span class="value">${receiptData.loan_number}</span>
-                                                    </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Customer:</span>
+                                                                                                                                <span class="value">${receiptData.customer_name}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Loan No:</span>
+                                                                                                                                <span class="value">${receiptData.loan_number}</span>
+                                                                                                                            </div>
 
-                                                    <div class="divider"></div>
+                                                                                                                            <div class="divider"></div>
 
-                                                    <div class="row">
-                                                        <span class="label">Receipt No:</span>
-                                                        <span class="value">${receiptData.receipt_number}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Date:</span>
-                                                        <span class="value">${receiptData.date}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Time:</span>
-                                                        <span class="value">${new Date().toLocaleTimeString()}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Bank Account:</span>
-                                                        <span class="value">${receiptData.bank_account}</span>
-                                                    </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Receipt No:</span>
+                                                                                                                                <span class="value">${receiptData.receipt_number}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Date:</span>
+                                                                                                                                <span class="value">${receiptData.date}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Time:</span>
+                                                                                                                                <span class="value">${new Date().toLocaleTimeString()}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Bank Account:</span>
+                                                                                                                                <span class="value">${receiptData.bank_account}</span>
+                                                                                                                            </div>
 
-                                                    <div class="divider"></div>
+                                                                                                                            <div class="divider"></div>
 
-                                                    <div class="center bold">PAYMENT BREAKDOWN</div>
+                                                                                                                            <div class="center bold">PAYMENT BREAKDOWN</div>
 
-                                                    <div class="row">
-                                                        <span class="label">Principal:</span>
-                                                        <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Interest:</span>
-                                                        <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Penalty:</span>
-                                                        <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Fee:</span>
-                                                        <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
-                                                    </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Principal:</span>
+                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Interest:</span>
+                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Penalty:</span>
+                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Fee:</span>
+                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
+                                                                                                                            </div>
 
-                                                    <div class="divider"></div>
+                                                                                                                            <div class="divider"></div>
 
-                                                    <div class="row total">
-                                                        <span class="label">TOTAL PAID:</span>
-                                                        <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
-                                                    </div>
+                                                                                                                            <div class="row total">
+                                                                                                                                <span class="label">TOTAL PAID:</span>
+                                                                                                                                <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
+                                                                                                                            </div>
 
-                                                    <div class="divider"></div>
+                                                                                                                            <div class="divider"></div>
 
-                                                    <div class="row">
-                                                        <span class="label">Received By:</span>
-                                                        <span class="value">${receiptData.received_by}</span>
-                                                    </div>
-                                                    <div class="row">
-                                                        <span class="label">Branch:</span>
-                                                        <span class="value">${receiptData.branch}</span>
-                                                    </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Received By:</span>
+                                                                                                                                <span class="value">${receiptData.received_by}</span>
+                                                                                                                            </div>
+                                                                                                                            <div class="row">
+                                                                                                                                <span class="label">Branch:</span>
+                                                                                                                                <span class="value">${receiptData.branch}</span>
+                                                                                                                            </div>
 
-                                                    <div class="divider"></div>
+                                                                                                                            <div class="divider"></div>
 
-                                                    <div class="footer">
-                                                        <div class="bold">Thank you for your payment!</div>
-                                                        <div>Keep this receipt for your records</div>
-                                                        <div style="margin-top: 5px;">--- End of Receipt ---</div>
-                                                    </div>
-                                                </body>
-                                                </html>
-                                            `;
+                                                                                                                            <div class="footer">
+                                                                                                                                <div class="bold">Thank you for your payment!</div>
+                                                                                                                                <div>Keep this receipt for your records</div>
+                                                                                                                                <div style="margin-top: 5px;">--- End of Receipt ---</div>
+                                                                                                                            </div>
+                                                                                                                        </body>
+                                                                                                                        </html>
+                                                                                                                    `;
 
             printWindow.document.write(receiptHtml);
             printWindow.document.close();
@@ -2735,11 +2947,11 @@
                             imagesHtml = '<div class="row">';
                             images.forEach((image, index) => {
                                 imagesHtml += `
-                                                                    <div class="col-md-3 mb-3">
-                                                                        <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;" 
-                                                                             onclick="openImageModal('${image}')" role="button">
-                                                                    </div>
-                                                                `;
+                                                                                                                                            <div class="col-md-3 mb-3">
+                                                                                                                                                <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;" 
+                                                                                                                                                     onclick="openImageModal('${image}')" role="button">
+                                                                                                                                            </div>
+                                                                                                                                        `;
                             });
                             imagesHtml += '</div>';
                         } else {
@@ -2751,11 +2963,11 @@
                             documentsHtml = '<div class="list-group">';
                             documents.forEach(doc => {
                                 documentsHtml += `
-                                                                    <a href="${doc.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
-                                                                        <span><i class="bx bx-file me-2"></i>${doc.name}</span>
-                                                                        <i class="bx bx-download"></i>
-                                                                    </a>
-                                                                `;
+                                                                                                                                            <a href="${doc.url}" target="_blank" class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                                                                                                                                                <span><i class="bx bx-file me-2"></i>${doc.name}</span>
+                                                                                                                                                <i class="bx bx-download"></i>
+                                                                                                                                            </a>
+                                                                                                                                        `;
                             });
                             documentsHtml += '</div>';
                         } else {
@@ -2766,58 +2978,58 @@
                         const conditionBadge = collateral.condition ? getConditionBadge(collateral.condition) : '<span class="text-muted">Not specified</span>';
 
                         const content = `
-                                                            <div class="row">
-                                                                <div class="col-md-8">
-                                                                    <div class="row mb-4">
-                                                                        <div class="col-12">
-                                                                            <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <strong>Title:</strong> ${collateral.title}<br>
-                                                                            <strong>Type:</strong> ${collateral.type.charAt(0).toUpperCase() + collateral.type.slice(1)}<br>
-                                                                            <strong>Status:</strong> ${statusBadge}<br>
-                                                                            <strong>Condition:</strong> ${conditionBadge}
-                                                                        </div>
-                                                                        <div class="col-md-6">
-                                                                            <strong>Estimated Value:</strong> TZS ${parseFloat(collateral.estimated_value).toLocaleString()}<br>
-                                                                            ${collateral.appraised_value ? `<strong>Appraised Value:</strong> TZS ${parseFloat(collateral.appraised_value).toLocaleString()}<br>` : ''}
-                                                                            ${collateral.location ? `<strong>Location:</strong> ${collateral.location}<br>` : ''}
-                                                                            ${collateral.serial_number ? `<strong>Serial Number:</strong> ${collateral.serial_number}` : ''}
-                                                                        </div>
-                                                                    </div>
+                                                                                                                                    <div class="row">
+                                                                                                                                        <div class="col-md-8">
+                                                                                                                                            <div class="row mb-4">
+                                                                                                                                                <div class="col-12">
+                                                                                                                                                    <h6 class="text-primary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                                                                                                                                                </div>
+                                                                                                                                                <div class="col-md-6">
+                                                                                                                                                    <strong>Title:</strong> ${collateral.title}<br>
+                                                                                                                                                    <strong>Type:</strong> ${collateral.type.charAt(0).toUpperCase() + collateral.type.slice(1)}<br>
+                                                                                                                                                    <strong>Status:</strong> ${statusBadge}<br>
+                                                                                                                                                    <strong>Condition:</strong> ${conditionBadge}
+                                                                                                                                                </div>
+                                                                                                                                                <div class="col-md-6">
+                                                                                                                                                    <strong>Estimated Value:</strong> TZS ${parseFloat(collateral.estimated_value).toLocaleString()}<br>
+                                                                                                                                                    ${collateral.appraised_value ? `<strong>Appraised Value:</strong> TZS ${parseFloat(collateral.appraised_value).toLocaleString()}<br>` : ''}
+                                                                                                                                                    ${collateral.location ? `<strong>Location:</strong> ${collateral.location}<br>` : ''}
+                                                                                                                                                    ${collateral.serial_number ? `<strong>Serial Number:</strong> ${collateral.serial_number}` : ''}
+                                                                                                                                                </div>
+                                                                                                                                            </div>
 
-                                                                    <div class="mb-4">
-                                                                        <h6 class="text-primary mb-3"><i class="bx bx-detail me-2"></i>Description</h6>
-                                                                        <p>${collateral.description}</p>
-                                                                    </div>
+                                                                                                                                            <div class="mb-4">
+                                                                                                                                                <h6 class="text-primary mb-3"><i class="bx bx-detail me-2"></i>Description</h6>
+                                                                                                                                                <p>${collateral.description}</p>
+                                                                                                                                            </div>
 
-                                                                    ${collateral.notes ? `
-                                                                    <div class="mb-4">
-                                                                        <h6 class="text-primary mb-3"><i class="bx bx-note me-2"></i>Additional Notes</h6>
-                                                                        <p>${collateral.notes}</p>
-                                                                    </div>` : ''}
+                                                                                                                                            ${collateral.notes ? `
+                                                                                                                                            <div class="mb-4">
+                                                                                                                                                <h6 class="text-primary mb-3"><i class="bx bx-note me-2"></i>Additional Notes</h6>
+                                                                                                                                                <p>${collateral.notes}</p>
+                                                                                                                                            </div>` : ''}
 
-                                                                    <div class="mb-4">
-                                                                        <h6 class="text-primary mb-3"><i class="bx bx-file me-2"></i>Documents</h6>
-                                                                        ${documentsHtml}
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <h6 class="text-primary mb-3"><i class="bx bx-image me-2"></i>Images</h6>
-                                                                    ${imagesHtml}
-                                                                </div>
-                                                            </div>
+                                                                                                                                            <div class="mb-4">
+                                                                                                                                                <h6 class="text-primary mb-3"><i class="bx bx-file me-2"></i>Documents</h6>
+                                                                                                                                                ${documentsHtml}
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-4">
+                                                                                                                                            <h6 class="text-primary mb-3"><i class="bx bx-image me-2"></i>Images</h6>
+                                                                                                                                            ${imagesHtml}
+                                                                                                                                        </div>
+                                                                                                                                    </div>
 
-                                                            ${collateral.status_changed_at ? `
-                                                            <div class="alert alert-info">
-                                                                <h6><i class="bx bx-history me-2"></i>Status History</h6>
-                                                                <small>
-                                                                    <strong>Last Changed:</strong> ${new Date(collateral.status_changed_at).toLocaleDateString()}<br>
-                                                                    <strong>Changed By:</strong> ${collateral.status_changed_by || 'System'}<br>
-                                                                    ${collateral.status_change_reason ? `<strong>Reason:</strong> ${collateral.status_change_reason}` : ''}
-                                                                </small>
-                                                            </div>` : ''}
-                                                        `;
+                                                                                                                                    ${collateral.status_changed_at ? `
+                                                                                                                                    <div class="alert alert-info">
+                                                                                                                                        <h6><i class="bx bx-history me-2"></i>Status History</h6>
+                                                                                                                                        <small>
+                                                                                                                                            <strong>Last Changed:</strong> ${new Date(collateral.status_changed_at).toLocaleDateString()}<br>
+                                                                                                                                            <strong>Changed By:</strong> ${collateral.status_changed_by || 'System'}<br>
+                                                                                                                                            ${collateral.status_change_reason ? `<strong>Reason:</strong> ${collateral.status_change_reason}` : ''}
+                                                                                                                                        </small>
+                                                                                                                                    </div>` : ''}
+                                                                                                                                `;
 
                         $('#collateralDetailsContent').html(content);
                         window.currentCollateralId = collateralId; // Store for edit function
@@ -2855,16 +3067,16 @@
                             images.forEach((image, index) => {
                                 const imagePath = collateral.images[index];
                                 existingImagesHtml += `
-                                                                    <div class="col-md-3 mb-2">
-                                                                        <div class="position-relative">
-                                                                            <img src="${image}" class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;">
-                                                                            <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
-                                                                                    onclick="removeFile('${imagePath}', 'image', ${collateralId})">
-                                                                                <i class="bx bx-x"></i>
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                `;
+                                                                                                                                            <div class="col-md-3 mb-2">
+                                                                                                                                                <div class="position-relative">
+                                                                                                                                                    <img src="${image}" class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;">
+                                                                                                                                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                                                                                                                                                            onclick="removeFile('${imagePath}', 'image', ${collateralId})">
+                                                                                                                                                        <i class="bx bx-x"></i>
+                                                                                                                                                    </button>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        `;
                             });
                             existingImagesHtml += '</div></div>';
                         }
@@ -2875,135 +3087,135 @@
                             documents.forEach((doc, index) => {
                                 const documentPath = collateral.documents[index];
                                 existingDocumentsHtml += `
-                                                                    <div class="list-group-item d-flex justify-content-between align-items-center">
-                                                                        <span><i class="bx bx-file me-2"></i>${doc.name}</span>
-                                                                        <div>
-                                                                            <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
-                                                                                <i class="bx bx-download"></i>
-                                                                            </a>
-                                                                            <button type="button" class="btn btn-sm btn-outline-danger" 
-                                                                                    onclick="removeFile('${documentPath}', 'document', ${collateralId})">
-                                                                                <i class="bx bx-trash"></i>
-                                                                            </button>
-                                                                        </div>
-                                                                    </div>
-                                                                `;
+                                                                                                                                            <div class="list-group-item d-flex justify-content-between align-items-center">
+                                                                                                                                                <span><i class="bx bx-file me-2"></i>${doc.name}</span>
+                                                                                                                                                <div>
+                                                                                                                                                    <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
+                                                                                                                                                        <i class="bx bx-download"></i>
+                                                                                                                                                    </a>
+                                                                                                                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                                                                                                            onclick="removeFile('${documentPath}', 'document', ${collateralId})">
+                                                                                                                                                        <i class="bx bx-trash"></i>
+                                                                                                                                                    </button>
+                                                                                                                                                </div>
+                                                                                                                                            </div>
+                                                                                                                                        `;
                             });
                             existingDocumentsHtml += '</div></div>';
                         }
 
                         const editContent = `
-                                                            <div class="row">
-                                                                <div class="col-12">
-                                                                    <h6 class="text-secondary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_type" class="form-label">Collateral Type</label>
-                                                                        <select class="form-select" name="type" id="edit_type" required>
-                                                                            <option value="property" ${collateral.type === 'property' ? 'selected' : ''}>Property</option>
-                                                                            <option value="vehicle" ${collateral.type === 'vehicle' ? 'selected' : ''}>Vehicle</option>
-                                                                            <option value="equipment" ${collateral.type === 'equipment' ? 'selected' : ''}>Equipment</option>
-                                                                            <option value="cash" ${collateral.type === 'cash' ? 'selected' : ''}>Cash</option>
-                                                                            <option value="jewelry" ${collateral.type === 'jewelry' ? 'selected' : ''}>Jewelry</option>
-                                                                            <option value="electronics" ${collateral.type === 'electronics' ? 'selected' : ''}>Electronics</option>
-                                                                            <option value="other" ${collateral.type === 'other' ? 'selected' : ''}>Other</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_title" class="form-label">Title/Name</label>
-                                                                        <input type="text" class="form-control" name="title" id="edit_title" value="${collateral.title}" required>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_description" class="form-label">Description</label>
-                                                                        <textarea class="form-control" name="description" id="edit_description" rows="3" required>${collateral.description}</textarea>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_estimated_value" class="form-label">Estimated Value (TZS)</label>
-                                                                        <input type="number" step="0.01" class="form-control" name="estimated_value" id="edit_estimated_value" value="${collateral.estimated_value}" required>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_appraised_value" class="form-label">Appraised Value (TZS)</label>
-                                                                        <input type="number" step="0.01" class="form-control" name="appraised_value" id="edit_appraised_value" value="${collateral.appraised_value || ''}">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_condition" class="form-label">Condition</label>
-                                                                        <select class="form-select" name="condition" id="edit_condition">
-                                                                            <option value="">-- Select Condition --</option>
-                                                                            <option value="excellent" ${collateral.condition === 'excellent' ? 'selected' : ''}>Excellent</option>
-                                                                            <option value="good" ${collateral.condition === 'good' ? 'selected' : ''}>Good</option>
-                                                                            <option value="fair" ${collateral.condition === 'fair' ? 'selected' : ''}>Fair</option>
-                                                                            <option value="poor" ${collateral.condition === 'poor' ? 'selected' : ''}>Poor</option>
-                                                                        </select>
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_serial_number" class="form-label">Serial Number</label>
-                                                                        <input type="text" class="form-control" name="serial_number" id="edit_serial_number" value="${collateral.serial_number || ''}">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_registration_number" class="form-label">Registration Number</label>
-                                                                        <input type="text" class="form-control" name="registration_number" id="edit_registration_number" value="${collateral.registration_number || ''}">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-8">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_location" class="form-label">Location</label>
-                                                                        <input type="text" class="form-control" name="location" id="edit_location" value="${collateral.location || ''}">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-4">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_valuation_date" class="form-label">Valuation Date</label>
-                                                                        <input type="date" class="form-control" name="valuation_date" id="edit_valuation_date" value="${collateral.valuation_date || ''}">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_valuator_name" class="form-label">Valuator Name</label>
-                                                                        <input type="text" class="form-control" name="valuator_name" id="edit_valuator_name" value="${collateral.valuator_name || ''}">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-12">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_notes" class="form-label">Additional Notes</label>
-                                                                        <textarea class="form-control" name="notes" id="edit_notes" rows="2">${collateral.notes || ''}</textarea>
-                                                                    </div>
-                                                                </div>
+                                                                                                                                    <div class="row">
+                                                                                                                                        <div class="col-12">
+                                                                                                                                            <h6 class="text-secondary mb-3"><i class="bx bx-info-circle me-2"></i>Basic Information</h6>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_type" class="form-label">Collateral Type</label>
+                                                                                                                                                <select class="form-select" name="type" id="edit_type" required>
+                                                                                                                                                    <option value="property" ${collateral.type === 'property' ? 'selected' : ''}>Property</option>
+                                                                                                                                                    <option value="vehicle" ${collateral.type === 'vehicle' ? 'selected' : ''}>Vehicle</option>
+                                                                                                                                                    <option value="equipment" ${collateral.type === 'equipment' ? 'selected' : ''}>Equipment</option>
+                                                                                                                                                    <option value="cash" ${collateral.type === 'cash' ? 'selected' : ''}>Cash</option>
+                                                                                                                                                    <option value="jewelry" ${collateral.type === 'jewelry' ? 'selected' : ''}>Jewelry</option>
+                                                                                                                                                    <option value="electronics" ${collateral.type === 'electronics' ? 'selected' : ''}>Electronics</option>
+                                                                                                                                                    <option value="other" ${collateral.type === 'other' ? 'selected' : ''}>Other</option>
+                                                                                                                                                </select>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_title" class="form-label">Title/Name</label>
+                                                                                                                                                <input type="text" class="form-control" name="title" id="edit_title" value="${collateral.title}" required>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-12">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_description" class="form-label">Description</label>
+                                                                                                                                                <textarea class="form-control" name="description" id="edit_description" rows="3" required>${collateral.description}</textarea>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_estimated_value" class="form-label">Estimated Value (TZS)</label>
+                                                                                                                                                <input type="number" step="0.01" class="form-control" name="estimated_value" id="edit_estimated_value" value="${collateral.estimated_value}" required>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_appraised_value" class="form-label">Appraised Value (TZS)</label>
+                                                                                                                                                <input type="number" step="0.01" class="form-control" name="appraised_value" id="edit_appraised_value" value="${collateral.appraised_value || ''}">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-4">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_condition" class="form-label">Condition</label>
+                                                                                                                                                <select class="form-select" name="condition" id="edit_condition">
+                                                                                                                                                    <option value="">-- Select Condition --</option>
+                                                                                                                                                    <option value="excellent" ${collateral.condition === 'excellent' ? 'selected' : ''}>Excellent</option>
+                                                                                                                                                    <option value="good" ${collateral.condition === 'good' ? 'selected' : ''}>Good</option>
+                                                                                                                                                    <option value="fair" ${collateral.condition === 'fair' ? 'selected' : ''}>Fair</option>
+                                                                                                                                                    <option value="poor" ${collateral.condition === 'poor' ? 'selected' : ''}>Poor</option>
+                                                                                                                                                </select>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-4">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_serial_number" class="form-label">Serial Number</label>
+                                                                                                                                                <input type="text" class="form-control" name="serial_number" id="edit_serial_number" value="${collateral.serial_number || ''}">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-4">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_registration_number" class="form-label">Registration Number</label>
+                                                                                                                                                <input type="text" class="form-control" name="registration_number" id="edit_registration_number" value="${collateral.registration_number || ''}">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-8">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_location" class="form-label">Location</label>
+                                                                                                                                                <input type="text" class="form-control" name="location" id="edit_location" value="${collateral.location || ''}">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-4">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_valuation_date" class="form-label">Valuation Date</label>
+                                                                                                                                                <input type="date" class="form-control" name="valuation_date" id="edit_valuation_date" value="${collateral.valuation_date || ''}">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-12">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_valuator_name" class="form-label">Valuator Name</label>
+                                                                                                                                                <input type="text" class="form-control" name="valuator_name" id="edit_valuator_name" value="${collateral.valuator_name || ''}">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-12">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_notes" class="form-label">Additional Notes</label>
+                                                                                                                                                <textarea class="form-control" name="notes" id="edit_notes" rows="2">${collateral.notes || ''}</textarea>
+                                                                                                                                            </div>
+                                                                                                                                        </div>
 
-                                                                ${existingImagesHtml}
-                                                                ${existingDocumentsHtml}
+                                                                                                                                        ${existingImagesHtml}
+                                                                                                                                        ${existingDocumentsHtml}
 
-                                                                <div class="col-12 mt-3">
-                                                                    <h6 class="text-secondary mb-3"><i class="bx bx-upload me-2"></i>Add New Files</h6>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_new_images" class="form-label">Add New Images</label>
-                                                                        <input type="file" class="form-control" name="new_images[]" id="edit_new_images" multiple accept="image/*">
-                                                                    </div>
-                                                                </div>
-                                                                <div class="col-md-6">
-                                                                    <div class="mb-3">
-                                                                        <label for="edit_new_documents" class="form-label">Add New Documents</label>
-                                                                        <input type="file" class="form-control" name="new_documents[]" id="edit_new_documents" multiple accept=".pdf,.doc,.docx,.jpg,.png">
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                        `;
+                                                                                                                                        <div class="col-12 mt-3">
+                                                                                                                                            <h6 class="text-secondary mb-3"><i class="bx bx-upload me-2"></i>Add New Files</h6>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_new_images" class="form-label">Add New Images</label>
+                                                                                                                                                <input type="file" class="form-control" name="new_images[]" id="edit_new_images" multiple accept="image/*">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                        <div class="col-md-6">
+                                                                                                                                            <div class="mb-3">
+                                                                                                                                                <label for="edit_new_documents" class="form-label">Add New Documents</label>
+                                                                                                                                                <input type="file" class="form-control" name="new_documents[]" id="edit_new_documents" multiple accept=".pdf,.doc,.docx,.jpg,.png">
+                                                                                                                                            </div>
+                                                                                                                                        </div>
+                                                                                                                                    </div>
+                                                                                                                                `;
 
                         $('#editCollateralContent').html(editContent);
                     }
@@ -3304,44 +3516,44 @@
             Swal.fire({
                 title: 'Apply for Top-Up Loan',
                 html: `
-                                                            <div class="text-start">
-                                                                                                                <div class="alert alert-info">
-                                                <i class="bx bx-info-circle me-2"></i>
-                                                <strong>Customer:</strong> ${loan.customer.name}
-                                            </div>
+                                                                                                                                    <div class="text-start">
+                                                                                                                                                                                        <div class="alert alert-info">
+                                                                                                                        <i class="bx bx-info-circle me-2"></i>
+                                                                                                                        <strong>Customer:</strong> ${loan.customer.name}
+                                                                                                                    </div>
 
-                                                                <div class="mb-3">
-                                                                    <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
-                                                                    <input type="number" class="form-control" id="topup_amount" 
-                                                                            placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
-                                                                    <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
-                                                                </div>
+                                                                                                                                        <div class="mb-3">
+                                                                                                                                            <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
+                                                                                                                                            <input type="number" class="form-control" id="topup_amount" 
+                                                                                                                                                    placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
+                                                                                                                                            <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
+                                                                                                                                        </div>
 
-                                                                <div class="mb-3">
-                                                                    <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
-                                                                    <textarea class="form-control" id="topup_purpose" rows="3" 
-                                                                                placeholder="Please describe the purpose of this top-up loan..."></textarea>
-                                                                </div>
+                                                                                                                                        <div class="mb-3">
+                                                                                                                                            <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
+                                                                                                                                            <textarea class="form-control" id="topup_purpose" rows="3" 
+                                                                                                                                                        placeholder="Please describe the purpose of this top-up loan..."></textarea>
+                                                                                                                                        </div>
 
-                                                                <div class="mb-3">
-                                                                    <label for="topup_type" class="form-label">Top-Up Type</label>
-                                                                    <select class="form-control" id="topup_type" required>
-                                                                        <option value="restructure">Restructure (Replace old loan with new larger loan)</option>
-                                                                        <option value="additional">Additional (Create separate new loan alongside old loan)</option>
-                                                                    </select>
-                                                                    <small class="text-muted">Choose how you want to handle the top-up</small>
-                                                                </div>
+                                                                                                                                        <div class="mb-3">
+                                                                                                                                            <label for="topup_type" class="form-label">Top-Up Type</label>
+                                                                                                                                            <select class="form-control" id="topup_type" required>
+                                                                                                                                                <option value="restructure">Restructure (Replace old loan with new larger loan)</option>
+                                                                                                                                                <option value="additional">Additional (Create separate new loan alongside old loan)</option>
+                                                                                                                                            </select>
+                                                                                                                                            <small class="text-muted">Choose how you want to handle the top-up</small>
+                                                                                                                                        </div>
 
-                                                                <div class="mb-3">
-                                                                    <label for="topup_period" class="form-label">Additional Period</label>
-                                                                    <input type="number" class="form-control" id="topup_period" 
-                                                                            value="12" min="1" max="60" required>
-                                                                    <small class="text-muted">How many additional periods do you need?</small>
-                                                                </div>
+                                                                                                                                        <div class="mb-3">
+                                                                                                                                            <label for="topup_period" class="form-label">Additional Period</label>
+                                                                                                                                            <input type="number" class="form-control" id="topup_period" 
+                                                                                                                                                    value="12" min="1" max="60" required>
+                                                                                                                                            <small class="text-muted">How many additional periods do you need?</small>
+                                                                                                                                        </div>
 
 
-                                                            </div>
-                                                        `,
+                                                                                                                                    </div>
+                                                                                                                                `,
                 showCancelButton: true,
                 confirmButtonText: 'Apply for Top-Up',
                 cancelButtonText: 'Cancel',
@@ -3608,6 +3820,8 @@
                 bindRepaymentCheckboxEvents();
                 updateBulkControls();
             });
+
+
         })();
     </script>
 @endpush
