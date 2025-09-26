@@ -478,15 +478,15 @@
 
                                                         @if($file->pivot->document_path)
                                                             <div class="mt-3 d-flex gap-2">
-                                                                <a href="{{ asset('storage/' . $file->pivot->document_path) }}"
+                                                                <a href="{{ route('customers.documents.view', [Hashids::encode($customer->id), $file->pivot->id]) }}"
                                                                     class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
                                                                     target="_blank" title="View Document">
                                                                     <i class="bx bx-show-alt fs-6"></i>
                                                                     <span class="d-none d-sm-inline">View</span>
                                                                 </a>
-                                                                <a href="{{ asset('storage/' . $file->pivot->document_path) }}"
-                                                                    class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
-                                                                    download title="Download Document">
+                                                                <a href="{{ route('customers.documents.download', [Hashids::encode($customer->id), $file->pivot->id]) }}"
+                                                                    class="btn btn-sm btn-outline-success d-flex align-iteems-center gap-1"
+                                                                    title="Download Document">
                                                                     <i class="bx bx-download fs-6"></i>
                                                                     <span class="d-none d-sm-inline">Download</span>
                                                                 </a>
