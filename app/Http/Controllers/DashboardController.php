@@ -162,7 +162,7 @@ class DashboardController extends Controller
         ->take(5)
         ->get();
         
-        $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed'];
+        $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed','complete_topup'];
         // Loan statistics
         $loans = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
