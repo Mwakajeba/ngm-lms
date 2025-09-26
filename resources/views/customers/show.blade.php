@@ -110,19 +110,19 @@
                                                 ->leftJoin('repayments as r', 's.id', '=', 'r.loan_schedule_id')
                                                 ->where('s.customer_id', $customer->id)
                                                 ->selectRaw('
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            s.id,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            s.due_date,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (s.principal + s.interest) as amount_due,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            IFNULL(SUM(r.principal + r.interest), 0) as total_paid,
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            CASE
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            WHEN SUM(r.principal + r.interest) < (s.principal + s.interest)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                AND ?> s.due_date
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                THEN DATEDIFF(?, s.due_date)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                WHEN SUM(r.principal + r.interest) >= (s.principal + s.interest)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                AND MAX(r.payment_date) > s.due_date
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                THEN DATEDIFF(MAX(r.payment_date), s.due_date)
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ELSE 0
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                END as days_in_arrears', [$today, $today])
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            s.id,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            s.due_date,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            (s.principal + s.interest) as amount_due,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            IFNULL(SUM(r.principal + r.interest), 0) as total_paid,
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            CASE
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            WHEN SUM(r.principal + r.interest) < (s.principal + s.interest)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                AND ?> s.due_date
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                THEN DATEDIFF(?, s.due_date)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                WHEN SUM(r.principal + r.interest) >= (s.principal + s.interest)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                AND MAX(r.payment_date) > s.due_date
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                THEN DATEDIFF(MAX(r.payment_date), s.due_date)
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ELSE 0
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                END as days_in_arrears', [$today, $today])
                                                 ->groupBy('s.id', 's.due_date', 's.principal', 's.interest')
                                                 ->orderBy('s.due_date')
                                                 ->get();
@@ -462,45 +462,72 @@
                                                                         $extension = strtolower(pathinfo($file->pivot->document_path, PATHINFO_EXTENSION));
                                                                     @endphp
                                                                     @if(in_array($extension, ['pdf']))
-                                                                        <i class="bx bxs-file-pdf text-danger fs-2"></i>
+                                                                        <div
+                                                                            class="file-icon-wrapper bg-danger bg-opacity-10 rounded-3 p-3">
+                                                                            <i class="bx bxs-file-pdf text-danger fs-1"></i>
+                                                                        </div>
                                                                     @elseif(in_array($extension, ['doc', 'docx']))
-                                                                        <i class="bx bxs-file-doc text-primary fs-2"></i>
+                                                                        <div
+                                                                            class="file-icon-wrapper bg-primary bg-opacity-10 rounded-3 p-3">
+                                                                            <i class="bx bxs-file-doc text-primary fs-1"></i>
+                                                                        </div>
                                                                     @elseif(in_array($extension, ['jpg', 'jpeg', 'png', 'gif']))
-                                                                        <i class="bx bxs-file-image text-success fs-2"></i>
+                                                                        <div
+                                                                            class="file-icon-wrapper bg-success bg-opacity-10 rounded-3 p-3">
+                                                                            <i class="bx bxs-file-image text-success fs-1"></i>
+                                                                        </div>
                                                                     @else
-                                                                        <i class="bx bxs-file text-muted fs-2"></i>
+                                                                        <div
+                                                                            class="file-icon-wrapper bg-secondary bg-opacity-10 rounded-3 p-3">
+                                                                            <i class="bx bxs-file text-secondary fs-1"></i>
+                                                                        </div>
                                                                     @endif
                                                                 @else
-                                                                    <i class="bx bxs-file text-muted fs-2"></i>
+                                                                    <div class="file-icon-wrapper bg-light rounded-3 p-3">
+                                                                        <i class="bx bxs-file text-muted fs-1"></i>
+                                                                    </div>
                                                                 @endif
                                                             </div>
                                                             <div class="flex-grow-1 ms-3">
                                                                 <h6 class="mb-1 text-truncate" title="{{ $file->name }}">
                                                                     {{ $file->name }}
                                                                 </h6>
-                                                                <small class="text-muted">
+                                                                <div class="d-flex align-items-center gap-1">
                                                                     @if($file->pivot->document_path)
-                                                                        <i class="bx bx-check-circle text-success me-1"></i>Uploaded
+                                                                        <span
+                                                                            class="badge bg-success bg-opacity-10 text-success border border-success border-opacity-25">
+                                                                            <i class="bx bx-check-circle me-1"></i>Uploaded
+                                                                        </span>
                                                                     @else
-                                                                        <i class="bx bx-x-circle text-danger me-1"></i>No file
+                                                                        <span
+                                                                            class="badge bg-danger bg-opacity-10 text-danger border border-danger border-opacity-25">
+                                                                            <i class="bx bx-x-circle me-1"></i>No file
+                                                                        </span>
                                                                     @endif
-                                                                </small>
+                                                                </div>
                                                             </div>
                                                         </div>
 
                                                         @if($file->pivot->document_path)
-                                                            <div class="mt-3 d-flex gap-1">
+                                                            <div class="mt-3 d-flex gap-2">
                                                                 <a href="{{ asset('storage/' . $file->pivot->document_path) }}"
-                                                                    class="btn btn-sm btn-outline-info" target="_blank" title="View">
-                                                                    <i class="bx bx-show"></i>
+                                                                    class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
+                                                                    target="_blank" title="View Document">
+                                                                    <i class="bx bx-show-alt fs-6"></i>
+                                                                    <span class="d-none d-sm-inline">View</span>
                                                                 </a>
                                                                 <a href="{{ asset('storage/' . $file->pivot->document_path) }}"
-                                                                    class="btn btn-sm btn-outline-success" download title="Download">
-                                                                    <i class="bx bx-download"></i>
+                                                                    class="btn btn-sm btn-outline-success d-flex align-items-center gap-1"
+                                                                    download title="Download Document">
+                                                                    <i class="bx bx-download fs-6"></i>
+                                                                    <span class="d-none d-sm-inline">Download</span>
                                                                 </a>
-                                                                <button type="button" class="btn btn-sm btn-outline-danger"
-                                                                    onclick="deleteDocument({{ $file->pivot->id }})" title="Delete">
-                                                                    <i class="bx bx-trash"></i>
+                                                                <button type="button"
+                                                                    class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
+                                                                    onclick="deleteDocument({{ $file->pivot->id }})"
+                                                                    title="Delete Document">
+                                                                    <i class="bx bx-trash-alt fs-6"></i>
+                                                                    <span class="d-none d-sm-inline">Delete</span>
                                                                 </button>
                                                             </div>
                                                         @else
@@ -620,12 +647,14 @@
                             <!-- File Upload Area -->
                             <div class="upload-area" id="uploadArea">
                                 <div class="text-center py-5">
-                                    <i class="bx bx-cloud-upload display-1 text-muted"></i>
-                                    <h5 class="mt-3">Drag & Drop files here or click to browse</h5>
-                                    <p class="text-muted">Support: PDF, DOC, DOCX, JPG, PNG (Max 5MB each)</p>
+                                    <div class="upload-icon-wrapper mb-4">
+                                        <i class="bx bx-cloud-upload display-1 text-primary"></i>
+                                    </div>
+                                    <h5 class="fw-bold text-dark">Drag & Drop files here or click to browse</h5>
+                                    <p class="text-muted mb-4">Support: PDF, DOC, DOCX, JPG, PNG (Max 5MB each)</p>
                                     <input type="file" id="fileInput" multiple accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
                                         style="display: none;">
-                                    <button type="button" class="btn btn-primary"
+                                    <button type="button" class="btn btn-primary btn-lg px-4 py-2 rounded-pill"
                                         onclick="document.getElementById('fileInput').click()">
                                         <i class="bx bx-folder-open me-2"></i>Choose Files
                                     </button>
@@ -653,12 +682,12 @@
                                 </div>
                             </div>
                         </div>
-                        <div class="modal-footer">
-                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                <i class="bx bx-x me-1"></i>Cancel
+                        <div class="modal-footer bg-light">
+                            <button type="button" class="btn btn-outline-secondary px-4" data-bs-dismiss="modal">
+                                <i class="bx bx-x me-2"></i>Cancel
                             </button>
-                            <button type="button" class="btn btn-primary" id="uploadBtn" disabled>
-                                <i class="bx bx-upload me-1"></i>Upload Documents
+                            <button type="button" class="btn btn-primary px-4" id="uploadBtn" disabled>
+                                <i class="bx bx-upload me-2"></i>Upload Documents
                             </button>
                         </div>
                     </div>
@@ -767,19 +796,30 @@
             <style>
                 .upload-area {
                     border: 2px dashed #dee2e6;
-                    border-radius: 8px;
+                    border-radius: 12px;
                     transition: all 0.3s ease;
                     cursor: pointer;
+                    background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
                 }
 
                 .upload-area:hover {
                     border-color: #0d6efd;
-                    background-color: #f8f9fa;
+                    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%);
+                    transform: translateY(-2px);
+                    box-shadow: 0 8px 25px rgba(13, 110, 253, 0.15);
                 }
 
                 .upload-area.border-primary {
                     border-color: #0d6efd !important;
-                    background-color: #f8f9fa !important;
+                    background: linear-gradient(135deg, #e3f2fd 0%, #f8f9fa 100%) !important;
+                }
+
+                .upload-icon-wrapper {
+                    transition: all 0.3s ease;
+                }
+
+                .upload-area:hover .upload-icon-wrapper {
+                    transform: scale(1.1);
                 }
 
                 .document-card {
@@ -793,6 +833,50 @@
 
                 .file-icon {
                     font-size: 2rem;
+                }
+
+                .file-icon-wrapper {
+                    transition: all 0.3s ease;
+                    border: 1px solid transparent;
+                }
+
+                .file-icon-wrapper:hover {
+                    transform: translateY(-2px);
+                    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+                }
+
+                .document-card .btn {
+                    transition: all 0.2s ease;
+                    font-weight: 500;
+                }
+
+                .document-card .btn:hover {
+                    transform: translateY(-1px);
+                    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+                }
+
+                .document-card .btn-outline-primary:hover {
+                    background-color: var(--bs-primary);
+                    border-color: var(--bs-primary);
+                    color: white;
+                }
+
+                .document-card .btn-outline-success:hover {
+                    background-color: var(--bs-success);
+                    border-color: var(--bs-success);
+                    color: white;
+                }
+
+                .document-card .btn-outline-danger:hover {
+                    background-color: var(--bs-danger);
+                    border-color: var(--bs-danger);
+                    color: white;
+                }
+
+                .badge {
+                    font-size: 0.75rem;
+                    font-weight: 500;
+                    padding: 0.375rem 0.75rem;
                 }
             </style>
         @endpush
@@ -916,25 +1000,36 @@
                         fileCountSpan.textContent = this.selectedFiles.length;
 
                         filesListDiv.innerHTML = this.selectedFiles.map((file, index) => `
-                                                                        <div class="col-md-6">
-                                                                            <div class="card border">
-                                                                                <div class="card-body p-2">
-                                                                                    <div class="d-flex align-items-center">
-                                                                                        <div class="flex-shrink-0 me-2">
-                                                                                            <i class="bx bxs-file fs-4 text-primary"></i>
+                                                                                        <div class="col-md-6">
+                                                                                            <div class="card border">
+                                                                                                <div class="card-body p-3">
+                                                                                                    <div class="d-flex align-items-start">
+                                                                                                        <div class="flex-shrink-0 me-3">
+                                                                                                            <i class="bx bxs-file fs-4 text-primary"></i>
+                                                                                                        </div>
+                                                                                                        <div class="flex-grow-1">
+                                                                                                            <h6 class="mb-1 text-truncate" title="${file.name}">${file.name}</h6>
+                                                                                                            <small class="text-muted mb-2 d-block">${this.formatFileSize(file.size)}</small>
+                                                                                                            <select class="form-select form-select-sm filetype-select" data-file-index="${index}" required>
+                                                                                                                <option value="">Select document type...</option>
+                                                                                                                <option value="1">Passport</option>
+                                                                                                                <option value="2">National ID</option>
+                                                                                                                <option value="3">Driver License</option>
+                                                                                                                <option value="4">Proof of Residence</option>
+                                                                                                                <option value="5">Proof of Income</option>
+                                                                                                                <option value="6">Birth Certificate</option>
+                                                                                                                <option value="7">Company Registration</option>
+                                                                                                                <option value="8">Multiple Documents</option>
+                                                                                                            </select>
+                                                                                                        </div>
+                                                                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="documentUploader.removeFile(${index})">
+                                                                                                            <i class="bx bx-x"></i>
+                                                                                                        </button>
+                                                                                                    </div>
+                                                                                                </div>
+                                                                                            </div>
                                                                                         </div>
-                                                                                        <div class="flex-grow-1">
-                                                                                            <h6 class="mb-0 text-truncate" title="${file.name}">${file.name}</h6>
-                                                                                            <small class="text-muted">${this.formatFileSize(file.size)}</small>
-                                                                                        </div>
-                                                                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="documentUploader.removeFile(${index})">
-                                                                                            <i class="bx bx-x"></i>
-                                                                                        </button>
-                                                                                    </div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-                                                                    `).join('');
+                                                                                    `).join('');
                     }
 
                     removeFile(index) {
@@ -953,6 +1048,24 @@
                     async uploadFiles() {
                         if (this.selectedFiles.length === 0) return;
 
+                        // Validate that all files have filetypes selected
+                        const filetypeSelects = document.querySelectorAll('.filetype-select');
+                        let allValid = true;
+
+                        filetypeSelects.forEach(select => {
+                            if (!select.value) {
+                                select.classList.add('is-invalid');
+                                allValid = false;
+                            } else {
+                                select.classList.remove('is-invalid');
+                            }
+                        });
+
+                        if (!allValid) {
+                            this.showToast('Please select document types for all files', 'error');
+                            return;
+                        }
+
                         const uploadBtn = document.getElementById('uploadBtn');
                         const uploadProgress = document.getElementById('uploadProgress');
                         const progressBar = uploadProgress.querySelector('.progress-bar');
@@ -968,10 +1081,11 @@
 
                             formData.append('_token', csrfToken);
 
-                            // Add files with generic filetype (we'll handle this in backend)
+                            // Add files with their selected filetypes
                             this.selectedFiles.forEach((file, index) => {
+                                const filetypeSelect = document.querySelector(`.filetype-select[data-file-index="${index}"]`);
                                 formData.append('documents[]', file);
-                                formData.append('filetypes[]', 1); // Default filetype, can be improved
+                                formData.append('filetypes[]', filetypeSelect.value);
                             });
 
                             const response = await fetch('{{ route("customers.documents.upload", Hashids::encode($customer->id)) }}', {
@@ -1067,114 +1181,114 @@
                     const fileName = `Deposit_Receipt_${customerName}_${receiptData.date}`;
 
                     const receiptHtml = `
-                                                                    <!DOCTYPE html>
-                                                                    <html>
-                                                                    <head>
-                                                                        <title>${fileName}</title>
-                                                                        <style>
-                                                                            @page {
-                                                                                size: 80mm 200mm;
-                                                                                margin: 0;
-                                                                                padding: 0;
-                                                                            }
+                                                                                    <!DOCTYPE html>
+                                                                                    <html>
+                                                                                    <head>
+                                                                                        <title>${fileName}</title>
+                                                                                        <style>
+                                                                                            @page {
+                                                                                                size: 80mm 200mm;
+                                                                                                margin: 0;
+                                                                                                padding: 0;
+                                                                                            }
 
-                                                                            @media print {
-                                                                                body { 
-                                                                                    font-family: 'Courier New', monospace; 
-                                                                                    font-size: 10px; 
-                                                                                    margin: 0; 
-                                                                                    padding: 5px;
-                                                                                    width: 280px;
-                                                                                    max-width: 280px;
-                                                                                    min-width: 280px;
-                                                                                    page-break-after: avoid;
-                                                                                    page-break-before: avoid;
-                                                                                }
-                                                                            }
+                                                                                            @media print {
+                                                                                                body { 
+                                                                                                    font-family: 'Courier New', monospace; 
+                                                                                                    font-size: 10px; 
+                                                                                                    margin: 0; 
+                                                                                                    padding: 5px;
+                                                                                                    width: 280px;
+                                                                                                    max-width: 280px;
+                                                                                                    min-width: 280px;
+                                                                                                    page-break-after: avoid;
+                                                                                                    page-break-before: avoid;
+                                                                                                }
+                                                                                            }
 
-                                                                            body { 
-                                                                                font-family: 'Courier New', monospace; 
-                                                                                font-size: 10px; 
-                                                                                margin: 0; 
-                                                                                padding: 5px;
-                                                                                width: 280px;
-                                                                                max-width: 280px;
-                                                                                min-width: 280px;
-                                                                            }
-                                                                            .header { text-align: center; margin-bottom: 8px; }
-                                                                            .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                                                                            .subtitle { font-size: 10px; margin-bottom: 8px; }
-                                                                            .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                                                                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                                                                            .label { font-weight: bold; }
-                                                                            .value { text-align: right; }
-                                                                            .total { font-weight: bold; font-size: 12px; }
-                                                                            .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                                                                            .center { text-align: center; }
-                                                                            .bold { font-weight: bold; }
-                                                                            .notes { margin: 8px 0; font-size: 9px; }
-                                                                        </style>
-                                                                    </head>
-                                                                    <body>
-                                                                        <div class="header">
-                                                                            <div class="title">SMARTFINANCE</div>
-                                                                            <div class="subtitle">Cash Deposit Receipt</div>
-                                                                        </div>
+                                                                                            body { 
+                                                                                                font-family: 'Courier New', monospace; 
+                                                                                                font-size: 10px; 
+                                                                                                margin: 0; 
+                                                                                                padding: 5px;
+                                                                                                width: 280px;
+                                                                                                max-width: 280px;
+                                                                                                min-width: 280px;
+                                                                                            }
+                                                                                            .header { text-align: center; margin-bottom: 8px; }
+                                                                                            .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                                                                                            .subtitle { font-size: 10px; margin-bottom: 8px; }
+                                                                                            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                                                                                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                                                                            .label { font-weight: bold; }
+                                                                                            .value { text-align: right; }
+                                                                                            .total { font-weight: bold; font-size: 12px; }
+                                                                                            .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                                                                                            .center { text-align: center; }
+                                                                                            .bold { font-weight: bold; }
+                                                                                            .notes { margin: 8px 0; font-size: 9px; }
+                                                                                        </style>
+                                                                                    </head>
+                                                                                    <body>
+                                                                                        <div class="header">
+                                                                                            <div class="title">SMARTFINANCE</div>
+                                                                                            <div class="subtitle">Cash Deposit Receipt</div>
+                                                                                        </div>
 
-                                                                        <div class="divider"></div>
+                                                                                        <div class="divider"></div>
 
-                                                                        <div class="row">
-                                                                            <span class="label">Customer:</span>
-                                                                            <span class="value">${receiptData.customer_name}</span>
-                                                                        </div>
-                                                                        <div class="row">
-                                                                            <span class="label">Deposit Type:</span>
-                                                                            <span class="value">${receiptData.deposit_type}</span>
-                                                                        </div>
+                                                                                        <div class="row">
+                                                                                            <span class="label">Customer:</span>
+                                                                                            <span class="value">${receiptData.customer_name}</span>
+                                                                                        </div>
+                                                                                        <div class="row">
+                                                                                            <span class="label">Deposit Type:</span>
+                                                                                            <span class="value">${receiptData.deposit_type}</span>
+                                                                                        </div>
 
-                                                                        <div class="divider"></div>
+                                                                                        <div class="divider"></div>
 
-                                                                        <div class="row">
-                                                                            <span class="label">Receipt No:</span>
-                                                                            <span class="value">${receiptData.receipt_number}</span>
-                                                                        </div>
-                                                                        <div class="row">
-                                                                            <span class="label">Date:</span>
-                                                                            <span class="value">${receiptData.date}</span>
-                                                                        </div>
-                                                                        <div class="row">
-                                                                            <span class="label">Time:</span>
-                                                                            <span class="value">${receiptData.time}</span>
-                                                                        </div>
-                                                                        <div class="row">
-                                                                            <span class="label">Bank Account:</span>
-                                                                            <span class="value">${receiptData.bank_account}</span>
-                                                                        </div>
+                                                                                        <div class="row">
+                                                                                            <span class="label">Receipt No:</span>
+                                                                                            <span class="value">${receiptData.receipt_number}</span>
+                                                                                        </div>
+                                                                                        <div class="row">
+                                                                                            <span class="label">Date:</span>
+                                                                                            <span class="value">${receiptData.date}</span>
+                                                                                        </div>
+                                                                                        <div class="row">
+                                                                                            <span class="label">Time:</span>
+                                                                                            <span class="value">${receiptData.time}</span>
+                                                                                        </div>
+                                                                                        <div class="row">
+                                                                                            <span class="label">Bank Account:</span>
+                                                                                            <span class="value">${receiptData.bank_account}</span>
+                                                                                        </div>
 
-                                                                        <div class="divider"></div>
+                                                                                        <div class="divider"></div>
 
-                                                                        <div class="row total">
-                                                                            <span class="label">Amount Deposited:</span>
-                                                                            <span class="value">TSHS ${parseFloat(receiptData.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                                        </div>
+                                                                                        <div class="row total">
+                                                                                            <span class="label">Amount Deposited:</span>
+                                                                                            <span class="value">TSHS ${parseFloat(receiptData.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                                                                                        </div>
 
-                                                                        <div class="divider"></div>
+                                                                                        <div class="divider"></div>
 
-                                                                        <div class="notes">
-                                                                            <div class="label">Notes:</div>
-                                                                            <div style="margin-top: 2px;">${receiptData.notes}</div>
-                                                                        </div>
+                                                                                        <div class="notes">
+                                                                                            <div class="label">Notes:</div>
+                                                                                            <div style="margin-top: 2px;">${receiptData.notes}</div>
+                                                                                        </div>
 
-                                                                        <div class="divider"></div>
+                                                                                        <div class="divider"></div>
 
-                                                                        <div class="footer">
-                                                                            <div>Received by: ${receiptData.received_by}</div>
-                                                                            <div>Branch: ${receiptData.branch}</div>
-                                                                            <div style="margin-top: 5px;">Thank you for your deposit!</div>
-                                                                        </div>
-                                                                    </body>
-                                                                    </html>
-                                                                `;
+                                                                                        <div class="footer">
+                                                                                            <div>Received by: ${receiptData.received_by}</div>
+                                                                                            <div>Branch: ${receiptData.branch}</div>
+                                                                                            <div style="margin-top: 5px;">Thank you for your deposit!</div>
+                                                                                        </div>
+                                                                                    </body>
+                                                                                    </html>
+                                                                                `;
 
                     printWindow.document.write(receiptHtml);
                     printWindow.document.close();
@@ -1258,10 +1372,10 @@
                                 icon: 'question',
                                 title: 'Confirm SMS Sending',
                                 html: `<p><strong>To:</strong> ${phoneNumber}</p>
-                                                                                   <p><strong>Message:</strong></p>
-                                                                                   <div class="border p-2 rounded bg-light" style="max-height:100px; overflow-y:auto;">
-                                                                                   ${msg}</div>
-                                                                                   <small class="text-muted">SMS charges may apply</small>`,
+                                                                                                   <p><strong>Message:</strong></p>
+                                                                                                   <div class="border p-2 rounded bg-light" style="max-height:100px; overflow-y:auto;">
+                                                                                                   ${msg}</div>
+                                                                                                   <small class="text-muted">SMS charges may apply</small>`,
                                 showCancelButton: true,
                                 confirmButtonColor: '#28a745',
                                 cancelButtonColor: '#6c757d',

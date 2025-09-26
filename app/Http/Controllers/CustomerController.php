@@ -841,23 +841,18 @@ class CustomerController extends Controller
                         ->first();
 
                     if ($existing) {
-                        // Update existing record
-                        DB::table('customer_file_types')
-                            ->where('id', $existing->id)
-                            ->update([
-                                'document_path' => $path,
-                                'updated_at' => now(),
-                            ]);
-                    } else {
-                        // Create new record
-                        DB::table('customer_file_types')->insert([
-                            'customer_id' => $customer->id,
-                            'filetype_id' => $filetypeId,
-                            'document_path' => $path,
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                        // If filetype already exists, use "Multiple Documents" filetype instead
+                        $filetypeId = 8; // Multiple Documents filetype
                     }
+
+                    // Create new record
+                    DB::table('customer_file_types')->insert([
+                        'customer_id' => $customer->id,
+                        'filetype_id' => $filetypeId,
+                        'document_path' => $path,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
 
                     $uploadedDocuments[] = [
                         'name' => $file->getClientOriginalName(),
