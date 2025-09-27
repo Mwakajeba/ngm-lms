@@ -35,6 +35,15 @@ class BankReconciliation extends Model
         return \App\Helpers\HashIdHelper::encode($this->id);
     }
 
+    public function resolveRouteBinding($value, $field = null)
+    {
+        $id = \App\Helpers\HashIdHelper::decode($value);
+        if (!$id) {
+            return null;
+        }
+        return $this->where($field ?: $this->getKeyName(), $id)->first();
+    }
+
     protected $casts = [
         'reconciliation_date' => 'date',
         'start_date' => 'date',

@@ -492,11 +492,11 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/bank-accounts/{encodedId}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Reconciliation
-    // Use hash id for show/edit routes
-    Route::get('bank-reconciliation/{hash}', [BankReconciliationController::class, 'show'])->name('bank-reconciliation.show');
-    Route::get('bank-reconciliation/{hash}/edit', [BankReconciliationController::class, 'edit'])->name('bank-reconciliation.edit');
     // Keep resource for other methods but avoid conflicting show/edit
     Route::resource('bank-reconciliation', BankReconciliationController::class)->except(['show', 'edit']);
+    // Use hash id for show/edit routes (must come after resource to avoid conflicts)
+    Route::get('bank-reconciliation/{hash}', [BankReconciliationController::class, 'show'])->name('bank-reconciliation.show');
+    Route::get('bank-reconciliation/{hash}/edit', [BankReconciliationController::class, 'edit'])->name('bank-reconciliation.edit');
 
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
     Route::post('/bank-reconciliation/{hash}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
@@ -621,10 +621,11 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     // Transaction Routes
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
+});
 
-    //route
+//route
 
-    Route::name('loans.reports.')->group(function () {
+Route::name('loans.reports.')->group(function () {
         //////LOANS REPORT ROUTE////////
         Route::get('/loan-disbursement', [LoanReportController::class, 'loanDisbursementReport'])->name('disbursed');
         Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loan-export');
@@ -690,8 +691,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/npl/export-excel', [LoanReportController::class, 'exportNPLToExcel'])->name('npl.export_excel');
         Route::get('/npl/export-pdf', [LoanReportController::class, 'exportNPLToPdf'])->name('npl.export_pdf');
     });
-
-});
 
 ////////////////////////////////////////////// END ACCOUNTING MANAGEMENT ///////////////////////////////////////////
 
