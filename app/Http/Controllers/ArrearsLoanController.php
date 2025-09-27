@@ -17,18 +17,20 @@ class ArrearsLoanController extends Controller
                 $loans = DB::table('loans')
                     ->join('customers', 'loans.customer_id', '=', 'customers.id')
                     ->join('loan_schedules', 'loans.id', '=', 'loan_schedules.loan_id')
+                    ->leftJoin('repayments', 'loans.id', '=', 'repayments.loan_id')
                     ->where('loans.status', 'active')
-                    ->whereBetween('loan_schedules.days_in_arrears', [1, 30])
+                    ->whereDate('loan_schedules.due_date', '<', now())
                     ->select(
                         'loans.id as loan_id',
                         'customers.name as customer_name',
                         'customers.customerNo as customer_no',
-                        'loans.loan_no',
+                        'loans.loanNo as loan_no',
                         DB::raw('SUM(loan_schedules.principal + loan_schedules.interest) as amount_in_arrears'),
-                        'loans.outstanding as total_outstanding',
-                        DB::raw('MAX(loan_schedules.days_in_arrears) as days_in_arrears')
+                        DB::raw('(loans.amount - COALESCE(SUM(repayments.principal), 0)) as total_outstanding'),
+                        DB::raw('MAX(DATEDIFF(CURDATE(), loan_schedules.due_date)) as days_in_arrears')
                     )
-                    ->groupBy('loans.id', 'customers.name', 'customers.customerNo', 'loans.loan_no', 'loans.outstanding')
+                    ->groupBy('loans.id', 'customers.name', 'customers.customerNo', 'loans.loanNo', 'loans.amount')
+                    ->havingRaw('MAX(DATEDIFF(CURDATE(), loan_schedules.due_date)) BETWEEN 1 AND 30')
                     ->orderByDesc('days_in_arrears')
                     ->get();
                 return response()->json(['data' => $loans]);
