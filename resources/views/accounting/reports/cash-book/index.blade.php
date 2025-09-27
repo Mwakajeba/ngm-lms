@@ -146,8 +146,8 @@
                                                             <th class="text-center">BANK ACCOUNT</th>
                                                             <th class="text-center">TRANSACTION NO</th>
                                                             <th class="text-center">REFERENCE NO.</th>
-                                                            <th class="text-center">CREDIT</th>
                                                             <th class="text-center">DEBIT</th>
+                                                            <th class="text-center">CREDIT</th>
                                                             <th class="text-center">BALANCE</th>
                                                         </tr>
                                                     </thead>
@@ -188,13 +188,13 @@
                                                         @endforeach
 
                                                         <tr>
-                                                            <td colspan="5" class="text-end fw-bold">Total Credit</td>
+                                                            <td colspan="5" class="text-end fw-bold">Total Debit</td>
                                                             <td class="text-end fw-bold">{{ number_format($total_receipts, 2) }}</td>
                                                             <td></td>
                                                             <td></td>
                                                         </tr>
                                                         <tr>
-                                                            <td colspan="5" class="text-end fw-bold">Total Debit</td>
+                                                            <td colspan="5" class="text-end fw-bold">Total Credit</td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($total_payments, 2) }}</td>
                                                             <td></td>

@@ -197,8 +197,8 @@ class CashBookReportController extends Controller
         $sheet->setCellValue('C5', 'BANK ACCOUNT');
         $sheet->setCellValue('D5', 'TRANSACTION NO');
         $sheet->setCellValue('E5', 'REFERENCE NO.');
-        $sheet->setCellValue('F5', 'CREDIT');
         $sheet->setCellValue('G5', 'DEBIT');
+        $sheet->setCellValue('F5', 'CREDIT');
         $sheet->setCellValue('H5', 'BALANCE');
 
         $row = 6;
@@ -216,19 +216,19 @@ class CashBookReportController extends Controller
             $sheet->setCellValue('C' . $row, $transaction['bank_account']);
             $sheet->setCellValue('D' . $row, $transaction['transaction_no']);
             $sheet->setCellValue('E' . $row, $transaction['reference_no']);
-            $sheet->setCellValue('F' . $row, $transaction['credit'] > 0 ? number_format($transaction['credit'], 2) : '');
             $sheet->setCellValue('G' . $row, $transaction['debit'] > 0 ? number_format($transaction['debit'], 2) : '');
+            $sheet->setCellValue('F' . $row, $transaction['credit'] > 0 ? number_format($transaction['credit'], 2) : '');
             $sheet->setCellValue('H' . $row, number_format($transaction['balance'], 2));
             $row++;
         }
 
         // Totals
-        $sheet->setCellValue('A' . $row, 'Total Credit');
+        $sheet->setCellValue('A' . $row, 'Total Debit');
         $sheet->setCellValue('F' . $row, number_format($cashBookData['total_receipts'], 2));
         $sheet->getStyle('A' . $row . ':F' . $row)->getFont()->setBold(true);
         $row++;
 
-        $sheet->setCellValue('A' . $row, 'Total Debit');
+        $sheet->setCellValue('A' . $row, 'Total Credit');
         $sheet->setCellValue('G' . $row, number_format($cashBookData['total_payments'], 2));
         $sheet->getStyle('A' . $row . ':G' . $row)->getFont()->setBold(true);
         $row++;

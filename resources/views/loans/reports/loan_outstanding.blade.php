@@ -49,6 +49,21 @@
                         </div>
                     </div>
                 </form>
+                
+                @if(isset($outstandingData) && !empty($outstandingData))
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="d-flex gap-2 justify-content-end">
+                            <button type="button" class="btn btn-success" onclick="exportReport('excel')">
+                                <i class="bx bx-file me-1"></i> Export Excel
+                            </button>
+                            <button type="button" class="btn btn-danger" onclick="exportReport('pdf')">
+                                <i class="bx bx-file-pdf me-1"></i> Export PDF
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                @endif
             </div>
         </div>
 
@@ -136,8 +151,8 @@
                                     <td>{{ $row['loan_officer'] }}</td>
                                     <td class="text-end">{{ number_format($row['principal_paid'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['interest_paid'], 2) }}</td>
-                                    <td class="text-end">{{ number_format($row['amount']-$row['principal_paid'], 2) }}</td>
-                                    <td class="text-end">{{ number_format($row['interest']-$row['interest_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['amount'] - $row['principal_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['interest'] - $row['interest_paid'], 2) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($row['outstanding_balance'], 2) }}</td>
 
                                 </tr>
@@ -154,4 +169,40 @@
         @endif
     </div>
 </div>
+
+<script>
+function exportReport(type) {
+    const form = document.querySelector('form');
+    const formData = new FormData(form);
+    formData.append('export_type', type);
+    
+    // Convert FormData to URL parameters
+    const params = new URLSearchParams();
+    for (let [key, value] of formData.entries()) {
+        if (value !== '') {
+            params.append(key, value);
+        }
+    }
+    
+    const url = '{{ route("accounting.loans.reports.loan_outstanding") }}?' + params.toString();
+    
+    // Show loading state
+    Swal.fire({
+        title: 'Generating Report...',
+        text: 'Please wait while we prepare your ' + type.toUpperCase() + ' report.',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
+    // Download the file
+    window.location.href = url;
+    
+    // Close the loading state after a short delay
+    setTimeout(() => {
+        Swal.close();
+    }, 2000);
+}
+</script>
 @endsection

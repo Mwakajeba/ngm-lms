@@ -340,6 +340,7 @@ class LoanReportController extends Controller
         $asOfDate = $request->input('as_of_date', date('Y-m-d'));
         $branchId = $request->input('branch_id');
         $loanOfficerId = $request->input('loan_officer_id');
+        $exportType = $request->input('export_type');
 
         // Get all branches and loan officers for filter dropdowns
         $branches = \App\Models\Branch::all();
@@ -371,7 +372,10 @@ class LoanReportController extends Controller
                 $feesPaid = $loan->repayments()->sum('fee_amount');
                 $penaltyPaid = $loan->repayments()->sum('penalt_amount');
             }
-            $outstandingBalance = ($loan->amount ?? 0) - $principalPaid;
+            // Calculate outstanding balance correctly: (Principal + Interest) - (Principal Paid + Interest Paid)
+            $totalLoanAmount = ($loan->amount ?? 0) + ($loan->interest_amount ?? 0);
+            $totalPaid = $principalPaid + $interestPaid;
+            $outstandingBalance = $totalLoanAmount - $totalPaid;
 
             $outstandingData[] = [
                 'customer' => $loan->customer->name ?? 'N/A',
@@ -403,12 +407,22 @@ class LoanReportController extends Controller
             'total_principal_paid' => $totalPrincipalPaid,
         ];
 
+        // Handle export requests
+        if ($exportType && !empty($outstandingData)) {
+            if ($exportType === 'excel') {
+                return $this->exportLoanOutstandingToExcel($outstandingData, $summary, $asOfDate, $branchId, $loanOfficerId);
+            } elseif ($exportType === 'pdf') {
+                return $this->exportLoanOutstandingToPdf($outstandingData, $summary, $asOfDate, $branchId, $loanOfficerId);
+            }
+        }
+
         // Only show data if filter applied
         $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('loan_officer_id');
         return view('loans.reports.loan_outstanding', [
             'branches' => $branches,
             'loanOfficers' => $loanOfficers,
             'outstandingData' => $showData ? $outstandingData : null,
+            'summary' => $summary,
         ]);
     }
 
@@ -2491,6 +2505,103 @@ class LoanReportController extends Controller
         $pdf = \PDF::loadView('loans.reports.npl_report_pdf', compact('nplData', 'asOfDate', 'branchId', 'loanOfficerId', 'company'));
         $pdf->setPaper('A3', 'landscape');
         $filename = 'npl_report_' . $asOfDate . '.pdf';
+        return $pdf->download($filename);
+    }
+
+    /**
+     * Export Loan Outstanding Balance Report to Excel
+     */
+    private function exportLoanOutstandingToExcel($outstandingData, $summary, $asOfDate, $branchId = null, $loanOfficerId = null)
+    {
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+        
+        return \Maatwebsite\Excel\Facades\Excel::download(new class($outstandingData, $summary, $asOfDate, $branch, $loanOfficer) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithTitle, \Maatwebsite\Excel\Concerns\WithStyles, \Maatwebsite\Excel\Concerns\ShouldAutoSize {
+            private $outstandingData;
+            private $summary;
+            private $asOfDate;
+            private $branch;
+            private $loanOfficer;
+
+            public function __construct($outstandingData, $summary, $asOfDate, $branch, $loanOfficer)
+            {
+                $this->outstandingData = collect($outstandingData);
+                $this->summary = $summary;
+                $this->asOfDate = $asOfDate;
+                $this->branch = $branch;
+                $this->loanOfficer = $loanOfficer;
+            }
+
+            public function collection()
+            {
+                return $this->outstandingData->map(function ($row) {
+                    return [
+                        'Customer' => $row['customer'],
+                        'Customer No' => $row['customer_no'],
+                        'Phone' => $row['phone'],
+                        'Loan No' => $row['loan_no'],
+                        'Disbursed Amount' => $row['amount'],
+                        'Expected Interest' => $row['interest'],
+                        'Disbursed Date' => $row['disbursed_no'],
+                        'Expiry' => $row['expiry'],
+                        'Branch' => $row['branch'],
+                        'Loan Officer' => $row['loan_officer'],
+                        'Principal Paid' => $row['principal_paid'],
+                        'Interest Paid' => $row['interest_paid'],
+                        'Outstanding Principal' => $row['amount'] - $row['principal_paid'],
+                        'Outstanding Interest' => $row['interest'] - $row['interest_paid'],
+                        'Outstanding Balance' => $row['outstanding_balance'],
+                    ];
+                });
+            }
+
+            public function headings(): array
+            {
+                return [
+                    'Customer',
+                    'Customer No',
+                    'Phone',
+                    'Loan No',
+                    'Disbursed Amount',
+                    'Expected Interest',
+                    'Disbursed Date',
+                    'Expiry',
+                    'Branch',
+                    'Loan Officer',
+                    'Principal Paid',
+                    'Interest Paid',
+                    'Outstanding Principal',
+                    'Outstanding Interest',
+                    'Outstanding Balance',
+                ];
+            }
+
+            public function title(): string
+            {
+                return 'Loan Outstanding Balance Report';
+            }
+
+            public function styles(\PhpOffice\PhpSpreadsheet\Worksheet\Worksheet $sheet)
+            {
+                return [
+                    1 => ['font' => ['bold' => true]],
+                ];
+            }
+        }, 'loan_outstanding_balance_' . $asOfDate . '.xlsx');
+    }
+
+    /**
+     * Export Loan Outstanding Balance Report to PDF
+     */
+    private function exportLoanOutstandingToPdf($outstandingData, $summary, $asOfDate, $branchId = null, $loanOfficerId = null)
+    {
+        $branch = $branchId ? Branch::find($branchId) : null;
+        $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
+        $company = Company::first();
+        
+        $pdf = \PDF::loadView('loans.reports.loan_outstanding_pdf', compact('outstandingData', 'summary', 'asOfDate', 'branch', 'loanOfficer', 'company'));
+        $pdf->setPaper('A3', 'landscape');
+        $filename = 'loan_outstanding_balance_' . $asOfDate . '.pdf';
         return $pdf->download($filename);
     }
 }
