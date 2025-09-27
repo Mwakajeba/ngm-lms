@@ -60,12 +60,14 @@
                                     </select>
                                 </div>
 
-                                <!-- Branch (Admin Only) -->
-                                @if($user->hasRole('admin'))
+                                <!-- Branch -->
+                                @if(!empty($branches))
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @if($user->hasRole('admin'))
+                                            <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->name }}
@@ -143,8 +145,8 @@
                                     <h4 class="mb-1"><strong>{{ $user->company->name ?? 'Company Name' }}</strong></h4>
                                     <h6 class="text-muted mb-2">BALANCE SHEET</h6>
                                     <p class="mb-1">As of {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}</p>
-                                    @if($branchId && $branchId != 'all')
-                                        <p class="mb-1 text-muted">Branch: {{ $branches->where('id', $branchId)->first()->name ?? 'N/A' }}</p>
+                                    @if($branchId && $branchId != 'all' && !empty($branches))
+                                        <p class="mb-1 text-muted">Branch: {{ $branches->where('id', $branchId)->first()['name'] ?? 'N/A' }}</p>
                                     @endif
                                     <p class="mb-0 text-muted small">
                                         {{ ucfirst($reportingType) }} Basis | 
@@ -153,6 +155,66 @@
                                     </p>
                                 </div>
                                 
+                                <!-- Balance Sheet Summary -->
+                                <div class="card border-primary mb-4">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0"><i class="bx bx-calculator me-2"></i>BALANCE SHEET SUMMARY</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        @php
+                                            $totalAssets = $balanceSheetData['current']['assets']->sum(function($item) {
+                                                return $item->debit_total - $item->credit_total;
+                                            });
+                                            $totalLiabilities = $balanceSheetData['current']['liabilities']->sum(function($item) {
+                                                return $item->credit_total - $item->debit_total;
+                                            });
+                                            $baseEquity = $balanceSheetData['current']['equity']->sum(function($item) {
+                                                return $item->credit_total - $item->debit_total;
+                                            });
+                                            $totalPnL = $balanceSheetData['profit_loss'] ?? 0;
+                                            $totalEquity = $baseEquity + $totalPnL;
+                                            $totalLiabilitiesPlusEquity = $totalLiabilities + $totalEquity;
+                                        @endphp
+                                        <div class="row">
+                                            <div class="col-md-6">
+                                                <div class="card border-success">
+                                                    <div class="card-body text-center">
+                                                        <h5 class="text-success">TOTAL ASSETS</h5>
+                                                        <h3 class="text-success">{{ number_format($totalAssets, 2) }}</h3>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <div class="col-md-6">
+                                                <div class="card border-info">
+                                                    <div class="card-body text-center">
+                                                        <h5 class="text-info">TOTAL LIABILITIES + EQUITY</h5>
+                                                        <h3 class="text-info">{{ number_format($totalLiabilitiesPlusEquity, 2) }}</h3>
+                                                        <small class="text-muted">
+                                                            Liabilities: {{ number_format($totalLiabilities, 2) }} + 
+                                                            Equity: {{ number_format($totalEquity, 2) }}
+                                                        </small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="text-center mt-3">
+                                            @php
+                                                $difference = $totalAssets - $totalLiabilitiesPlusEquity;
+                                                $isBalanced = abs($difference) < 0.01;
+                                            @endphp
+                                            <div class="alert alert-{{ $isBalanced ? 'success' : 'warning' }} mb-0">
+                                                <strong>
+                                                    @if($isBalanced)
+                                                        ✅ Balance Sheet is Balanced
+                                                    @else
+                                                        ⚠️ Balance Sheet Difference: {{ number_format($difference, 2) }}
+                                                    @endif
+                                                </strong>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Assets Section -->
                                 <div class="card border-success mb-4">
                                     <div class="card-header bg-success text-white">
@@ -335,7 +397,7 @@
                                         <h6 class="mb-0">EQUITY</h6>
                                     </div>
                                     <div class="card-body">
-                                        @if($balanceSheetData['current']['equity']->count() > 0)
+                                        @if($balanceSheetData['current']['equity']->count() > 0 || isset($balanceSheetData['profit_loss']))
                                             <div class="table-responsive">
                                                 <table class="table table-sm">
                                                     <thead>
@@ -385,13 +447,20 @@
                                                         @endforeach
                                                         
                                                         <!-- Profit & Loss Section -->
+                                                        @php
+                                                            // Debug: Log the profit_loss value
+                                                            \Log::info('View P&L Debug', [
+                                                                'profit_loss_value' => $balanceSheetData['profit_loss'] ?? 'NOT_SET',
+                                                                'balance_sheet_data_keys' => array_keys($balanceSheetData ?? [])
+                                                            ]);
+                                                        @endphp
                                                         <tr class="table-info">
                                                             <td><strong>Profit & Loss</strong></td>
                                                             @if($levelOfDetail === 'detailed')
                                                                 <td></td>
                                                             @endif
                                                             <td class="text-end">
-                                                                <strong>{{ number_format($balanceSheetData['profit_loss'], 2) }}</strong>
+                                                                <strong>{{ number_format($balanceSheetData['profit_loss'] ?? 0, 2) }}</strong>
                                                             </td>
                                                             @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
                                                                 @foreach($comparativeColumns as $column)
@@ -441,8 +510,137 @@
                                                 </table>
                                             </div>
                                         @else
-                                            <p class="text-muted">No equity accounts found.</p>
+                                            @if(isset($balanceSheetData['profit_loss']))
+                                                <div class="table-responsive">
+                                                    <table class="table table-sm">
+                                                        <thead>
+                                                            <tr>
+                                                                <th>Account</th>
+                                                                @if($levelOfDetail === 'detailed')
+                                                                    <th>Code</th>
+                                                                @endif
+                                                                <th class="text-end">Current Period</th>
+                                                                @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                                    @foreach($comparativeColumns as $column)
+                                                                        <th class="text-end">{{ $column['name'] ?: \Carbon\Carbon::parse($column['date'])->format('M d, Y') }}</th>
+                                                                    @endforeach
+                                                                @endif
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            <!-- Profit & Loss Section -->
+                                                            @php
+                                                                // Debug: Log the profit_loss value
+                                                                \Log::info('View P&L Debug (No Equity Accounts)', [
+                                                                    'profit_loss_value' => $balanceSheetData['profit_loss'] ?? 'NOT_SET',
+                                                                    'balance_sheet_data_keys' => array_keys($balanceSheetData ?? [])
+                                                                ]);
+                                                            @endphp
+                                                            <tr class="table-info">
+                                                                <td><strong>Profit & Loss</strong></td>
+                                                                @if($levelOfDetail === 'detailed')
+                                                                    <td></td>
+                                                                @endif
+                                                                <td class="text-end">
+                                                                    <strong>{{ number_format($balanceSheetData['profit_loss'] ?? 0, 2) }}</strong>
+                                                                </td>
+                                                                @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                                    @foreach($comparativeColumns as $column)
+                                                                        <td class="text-end">
+                                                                            <strong>{{ number_format(0, 2) }}</strong>
+                                                                        </td>
+                                                                    @endforeach
+                                                                @endif
+                                                            </tr>
+                                                            
+                                                            <!-- Total Equity -->
+                                                            <tr class="table-primary">
+                                                                <td><strong>Total Equity</strong></td>
+                                                                @if($levelOfDetail === 'detailed')
+                                                                    <td></td>
+                                                                @endif
+                                                                <td class="text-end">
+                                                                    <strong>{{ number_format($balanceSheetData['profit_loss'] ?? 0, 2) }}</strong>
+                                                                </td>
+                                                                @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                                    @foreach($comparativeColumns as $column)
+                                                                        <td class="text-end">
+                                                                            <strong>{{ number_format(0, 2) }}</strong>
+                                                                        </td>
+                                                                    @endforeach
+                                                                @endif
+                                                            </tr>
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            @else
+                                                <p class="text-muted">No equity accounts found.</p>
+                                            @endif
                                         @endif
+                                    </div>
+                                </div>
+
+                                <!-- Total Liabilities + Equity -->
+                                <div class="card mt-3">
+                                    <div class="card-header">
+                                        <h6 class="mb-0">TOTAL LIABILITIES + EQUITY</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        @php
+                                            $totalLiabilities = $balanceSheetData['current']['liabilities']->sum(function($item) {
+                                                return $item->credit_total - $item->debit_total;
+                                            });
+                                            $baseEquity = $balanceSheetData['current']['equity']->sum(function($item) {
+                                                return $item->credit_total - $item->debit_total;
+                                            });
+                                            $totalPnL = $balanceSheetData['profit_loss'] ?? 0;
+                                            $totalEquity = $baseEquity + $totalPnL;
+                                            $totalLiabilitiesPlusEquity = $totalLiabilities + $totalEquity;
+                                        @endphp
+                                        <div class="table-responsive">
+                                            <table class="table table-sm">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Component</th>
+                                                        <th class="text-end">Amount</th>
+                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                            @foreach($comparativeColumns as $column)
+                                                                <th class="text-end">{{ $column['name'] ?: \Carbon\Carbon::parse($column['date'])->format('M d, Y') }}</th>
+                                                            @endforeach
+                                                        @endif
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <tr>
+                                                        <td><strong>Total Liabilities</strong></td>
+                                                        <td class="text-end"><strong>{{ number_format($totalLiabilities, 2) }}</strong></td>
+                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                            @foreach($comparativeColumns as $column)
+                                                                <td class="text-end"><strong>{{ number_format(0, 2) }}</strong></td>
+                                                            @endforeach
+                                                        @endif
+                                                    </tr>
+                                                    <tr>
+                                                        <td><strong>Total Equity (including P&L)</strong></td>
+                                                        <td class="text-end"><strong>{{ number_format($totalEquity, 2) }}</strong></td>
+                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                            @foreach($comparativeColumns as $column)
+                                                                <td class="text-end"><strong>{{ number_format(0, 2) }}</strong></td>
+                                                            @endforeach
+                                                        @endif
+                                                    </tr>
+                                                    <tr class="table-primary">
+                                                        <td><strong>TOTAL LIABILITIES + EQUITY</strong></td>
+                                                        <td class="text-end"><strong>{{ number_format($totalLiabilitiesPlusEquity, 2) }}</strong></td>
+                                                        @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                            @foreach($comparativeColumns as $column)
+                                                                <td class="text-end"><strong>{{ number_format(0, 2) }}</strong></td>
+                                                            @endforeach
+                                                        @endif
+                                                    </tr>
+                                                </tbody>
+                                            </table>
+                                        </div>
                                     </div>
                                 </div>
 
@@ -541,7 +739,22 @@ function exportReport(type) {
     const formData = new FormData(form);
     formData.append('export_type', type);
     
-    const url = '{{ route("accounting.reports.balance-sheet.export") }}?' + new URLSearchParams(formData);
+    // Debug: Log all form data to see what's being collected
+    console.log('All Form Data:', Array.from(formData.entries()));
+    
+    // Convert FormData to URL parameters properly
+    const params = new URLSearchParams();
+    for (let [key, value] of formData.entries()) {
+        if (value !== '') { // Only add non-empty values
+            params.append(key, value);
+        }
+    }
+    
+    const url = '{{ route("accounting.reports.balance-sheet.export") }}?' + params.toString();
+    
+    // Debug: Log the final URL to see what's being sent
+    console.log('Export URL:', url);
+    console.log('URL Parameters:', params.toString());
     
     // Show loading state
     Swal.fire({
