@@ -484,7 +484,7 @@ function validateAndSubmit() {
         }, 100);
     });
 
-// Form validation
+// Form validation and submission
 $('#journalForm').on('submit', function(e) {
     const balance = parseFloat($('#balance').text().replace('TZS ', ''));
     
@@ -509,5 +509,16 @@ $('#journalForm').on('submit', function(e) {
         });
         return false;
     }
+    
+    // If validation passes, show loading state
+    const form = $(this);
+    const submitBtn = form.find('button[type="submit"]');
+    const originalText = submitBtn.html();
+
+    // Disable submit button and show loading
+    submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Processing...');
+    
+    // Allow form submission
+    return true;
 });
 </script>
