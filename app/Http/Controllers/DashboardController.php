@@ -116,7 +116,7 @@ class DashboardController extends Controller
             'amounts' => $amounts
         ]);
     }
-    public function index()
+    public function index(Request $request)
     {
         $user = auth()->user();
         if (!$user) {
@@ -124,6 +124,12 @@ class DashboardController extends Controller
             return redirect()->route('login')->with('error', 'Please login to access the dashboard.');
         }
         $company = $user->company;
+        
+        // Get branch filter
+        $selectedBranchId = $request->get('branch_id', $user->branch_id);
+        
+        // Get available branches for the filter
+        $branches = \App\Models\Branch::where('company_id', $company->id)->get();
         
         // Get balance sheet data
         $balanceSheetData = $this->getBalanceSheetData();
@@ -137,6 +143,8 @@ class DashboardController extends Controller
         // Get recent activities - filter by company through branch and current month
         $recentJournals = Journal::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
+        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+            return $query->where('branch_id', $selectedBranchId);
         })
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
@@ -146,6 +154,8 @@ class DashboardController extends Controller
         
         $recentPayments = Payment::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
+        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+            return $query->where('branch_id', $selectedBranchId);
         })
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
@@ -155,6 +165,8 @@ class DashboardController extends Controller
         
         $recentReceipts = Receipt::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
+        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+            return $query->where('branch_id', $selectedBranchId);
         })
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch', 'customer'])
@@ -166,17 +178,23 @@ class DashboardController extends Controller
         // Loan statistics for Total Loan Amount (only active and completed)
         $loansForTotalAmount = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
+        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+            return $query->where('branch_id', $selectedBranchId);
         })->whereIn('status', ['active', 'completed'])->get();
         
         // All loans for other calculations
         $loans = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
+        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+            return $query->where('branch_id', $selectedBranchId);
         })->whereIn('status', $loans_status_stats)->get();
         
         // Loans for detailed interest calculations (same statuses as report)
         $loansForInterest = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
             ->whereHas('branch', function($query) use ($company) {
                 $query->where('company_id', $company->id);
+            })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+                return $query->where('branch_id', $selectedBranchId);
             })->whereIn('status', ['active', 'written_off', 'defaulted'])->get();
 
         $totalLoanAmount = $loansForTotalAmount->sum('amount_total');
@@ -252,7 +270,7 @@ class DashboardController extends Controller
             $paidInterest += $loanPaidInterest;
         }
 
-        $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
+        $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance($selectedBranchId);
         info('penaltyBalance'.$penaltyBalance);
 
         // Get previous year comparative data
@@ -276,7 +294,9 @@ class DashboardController extends Controller
             'accruedInterest',
             'notDueInterest',
             'paidInterest',
-            'outstandingInterestDetailed'
+            'outstandingInterestDetailed',
+            'branches',
+            'selectedBranchId'
         ));
     }
     

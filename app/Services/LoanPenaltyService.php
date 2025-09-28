@@ -11,7 +11,7 @@ class LoanPenaltyService
     /**
      * Get total penalty balance (debit - credit) from active penalty receivable accounts.
      */
-    public static function getTotalPenaltyBalance(): float
+    public static function getTotalPenaltyBalance($branchId = null): float
     {
         // Retrieve the penalty receivables account ID from the Penalty model
         $penaltyAccountId = Penalty::query()
@@ -26,9 +26,17 @@ class LoanPenaltyService
         }
 
         // Use the GlTransaction model to query for total debit and credit amounts
-        $totals = GlTransaction::query()
-            ->where('chart_account_id', $penaltyAccountId)
-            ->selectRaw('
+        $query = GlTransaction::query()
+            ->where('chart_account_id', $penaltyAccountId);
+            
+        // Filter by branch if provided
+        if ($branchId) {
+            $query->whereHas('journal', function($q) use ($branchId) {
+                $q->where('branch_id', $branchId);
+            });
+        }
+        
+        $totals = $query->selectRaw('
                 SUM(CASE WHEN nature = "debit" THEN amount ELSE 0 END) as total_debit,
                 SUM(CASE WHEN nature = "credit" THEN amount ELSE 0 END) as total_credit
             ')
