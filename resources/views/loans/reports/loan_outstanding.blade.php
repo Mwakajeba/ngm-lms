@@ -69,36 +69,126 @@
 
         
         <div class="row mb-4">
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <div class="border-l-4 border-primary rounded-lg p-4 bg-gray-50">
                     <p class="text-sm font-medium text-gray-500">Total Principal Disbursed</p>
                     <h3 class="text-2xl font-bold mt-1 text-primary">
                         {{ number_format($summary['total_principal_disbursed'] ?? 0, 2) }}
                     </h3>
+                    <small class="text-muted">(Loan amounts given)</small>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <div class="border-l-4 border-info rounded-lg p-4 bg-gray-50">
                     <p class="text-sm font-medium text-gray-500">Total Expected Interest</p>
                     <h3 class="text-2xl font-bold mt-1 text-info">
                         {{ number_format($summary['total_expected_interest'] ?? 0, 2) }}
                     </h3>
+                    <small class="text-muted">(Total interest for all loans)</small>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <div class="border-l-4 border-warning rounded-lg p-4 bg-gray-50">
                     <p class="text-sm font-medium text-gray-500">Total Paid Interest</p>
                     <h3 class="text-2xl font-bold mt-1 text-warning">
                         {{ number_format($summary['total_paid_interest'] ?? 0, 2) }}
                     </h3>
+                    <small class="text-muted">(Already received)</small>
                 </div>
             </div>
-            <div class="col-md-3 mb-3">
+            <div class="col-md-2 mb-3">
                 <div class="border-l-4 border-success rounded-lg p-4 bg-gray-50">
                     <p class="text-sm font-medium text-gray-500">Total Principal Paid</p>
                     <h3 class="text-2xl font-bold mt-1 text-success">
                         {{ number_format($summary['total_principal_paid'] ?? 0, 2) }}
                     </h3>
+                    <small class="text-muted">(Principal repaid)</small>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="border-l-4 border-danger rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-500">Outstanding Interest</p>
+                    <h3 class="text-2xl font-bold mt-1 text-danger">
+                        {{ number_format($summary['total_outstanding_interest'] ?? 0, 2) }}
+                    </h3>
+                    <small class="text-muted">(Due but not paid)</small>
+                </div>
+            </div>
+            <div class="col-md-2 mb-3">
+                <div class="border-l-4 border-secondary rounded-lg p-4 bg-gray-50">
+                    <p class="text-sm font-medium text-gray-500">Accrued Interest</p>
+                    <h3 class="text-2xl font-bold mt-1 text-secondary">
+                        {{ number_format($summary['total_accrued_interest'] ?? 0, 2) }}
+                    </h3>
+                    <small class="text-muted">(Earned but not due)</small>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Interest Relationship Verification -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-info">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0"><i class="bx bx-calculator me-2"></i>Interest Relationship Verification</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Expected Interest (Original)</h6>
+                                    <h4 class="text-primary">{{ number_format($summary['total_expected_interest'] ?? 0, 2) }}</h4>
+                                    <small class="text-muted">(Total interest for all loans)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-center d-flex align-items-center">
+                                <span class="text-muted">=</span>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Interest Paid</h6>
+                                    <h5 class="text-success">{{ number_format($summary['total_paid_interest'] ?? 0, 2) }}</h5>
+                                    <small class="text-muted">(Already received)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-center d-flex align-items-center">
+                                <span class="text-muted">+</span>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Outstanding Interest</h6>
+                                    <h5 class="text-danger">{{ number_format($summary['total_outstanding_interest'] ?? 0, 2) }}</h5>
+                                    <small class="text-muted">(Due but not paid)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-center d-flex align-items-center">
+                                <span class="text-muted">+</span>
+                            </div>
+                            <div class="col-md-2">
+                                <div class="text-center">
+                                    <h6 class="text-muted">Not Due Interest</h6>
+                                    <h5 class="text-warning">{{ number_format($summary['total_not_due_interest'] ?? 0, 2) }}</h5>
+                                    <small class="text-muted">(Future payments)</small>
+                                </div>
+                            </div>
+                            <div class="col-md-1 text-center d-flex align-items-center">
+                                <span class="text-muted">=</span>
+                            </div>
+                        </div>
+                        <hr>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Calculated Expected Interest:</h6>
+                                <h4 class="text-info">{{ number_format($summary['total_calculated_expected_interest'] ?? 0, 2) }}</h4>
+                            </div>
+                            <div class="col-md-6">
+                                <h6 class="text-muted">Difference:</h6>
+                                <h4 class="{{ abs(($summary['total_expected_interest'] ?? 0) - ($summary['total_calculated_expected_interest'] ?? 0)) < 0.01 ? 'text-success' : 'text-warning' }}">
+                                    {{ number_format(($summary['total_expected_interest'] ?? 0) - ($summary['total_calculated_expected_interest'] ?? 0), 2) }}
+                                </h4>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -116,7 +206,7 @@
                             <tr>
                                 <th colspan="10" class="text-center">DISBURSEMENT</th>
                                 <th colspan="2" class="text-center">REPAYMENT</th>
-                                <th colspan="3" class="text-center">OUTSTANDING</th>
+                                <th colspan="6" class="text-center">OUTSTANDING & INTEREST BREAKDOWN</th>
                             </tr>
                             <tr>
                                 <th>Customer</th>
@@ -132,7 +222,9 @@
                                 <th class="text-end">Principal Paid</th>
                                 <th class="text-end">Interest Paid</th>
                                 <th class="text-end">Outstanding Principal</th>
+                                <th class="text-end">Accrued Interest</th>
                                 <th class="text-end">Outstanding Interest</th>
+                                <th class="text-end">Not Due Interest</th>
                                 <th class="text-end">Outstanding Balance</th>
                             </tr>
                         </thead>
@@ -152,16 +244,32 @@
                                     <td class="text-end">{{ number_format($row['principal_paid'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['interest_paid'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['amount'] - $row['principal_paid'], 2) }}</td>
-                                    <td class="text-end">{{ number_format($row['interest'] - $row['interest_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['accrued_interest'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['outstanding_interest'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['not_due_interest'], 2) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($row['outstanding_balance'], 2) }}</td>
-
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="10" class="text-center text-muted">No outstanding data found for the selected criteria.</td>
+                                    <td colspan="17" class="text-center text-muted">No outstanding data found for the selected criteria.</td>
                                 </tr>
                             @endforelse
                         </tbody>
+                        <tfoot class="table-dark">
+                            <tr>
+                                <th colspan="4" class="text-center">TOTALS</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('amount'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('interest'), 2) }}</th>
+                                <th colspan="4"></th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('principal_paid'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('interest_paid'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum(function($row) { return $row['amount'] - $row['principal_paid']; }), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('accrued_interest'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('outstanding_interest'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('not_due_interest'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('outstanding_balance'), 2) }}</th>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>

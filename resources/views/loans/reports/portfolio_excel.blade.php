@@ -8,6 +8,9 @@
         <tr>
             <th colspan="13" style="font-size: 12px; text-align: center; background-color: #E7E6E6;">
                 Report Date: {{ now()->format('F d, Y') }} | As of: {{ \Carbon\Carbon::parse($portfolioData['summary']['as_of_date'] ?? now())->format('F d, Y') }}
+                @if(isset($status) && $status !== 'all')
+                    | Status: {{ $status === 'active_completed' ? 'Active & Completed' : ucfirst($status) }}
+                @endif
             </th>
         </tr>
         <tr></tr>

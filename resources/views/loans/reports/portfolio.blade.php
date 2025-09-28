@@ -33,7 +33,7 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3 mb-3">
+                        <div class="col-md-2 mb-3">
                             <label for="loan_officer_id" class="form-label">Loan Officer</label>
                             <select class="form-select" id="loan_officer_id" name="loan_officer_id">
                                 <option value="">All Loan Officers</option>
@@ -42,7 +42,17 @@
                                 @endforeach
                             </select>
                         </div>
-                        <div class="col-md-3 mb-3 d-flex align-items-end">
+                        <div class="col-md-2 mb-3">
+                            <label for="status" class="form-label">Status</label>
+                            <select class="form-select" id="status" name="status">
+                                <option value="all" {{ $status == 'all' ? 'selected' : '' }}>All Status</option>
+                                <option value="active" {{ $status == 'active' ? 'selected' : '' }}>Active</option>
+                                <option value="completed" {{ $status == 'completed' ? 'selected' : '' }}>Completed</option>
+                                <option value="defaulted" {{ $status == 'defaulted' ? 'selected' : '' }}>Defaulted</option>
+                                <option value="active_completed" {{ ($status == 'active_completed' || !request()->has('status')) ? 'selected' : '' }}>Active & Completed</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3 d-flex align-items-end">
                             <button type="submit" class="btn btn-primary w-100">
                                 <i class="bx bx-search me-1"></i> Apply Filters
                             </button>

@@ -163,12 +163,23 @@ class DashboardController extends Controller
         ->get();
         
         $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed','complete_topup'];
-        // Loan statistics
+        // Loan statistics for Total Loan Amount (only active and completed)
+        $loansForTotalAmount = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
+            $query->where('company_id', $company->id);
+        })->whereIn('status', ['active', 'completed'])->get();
+        
+        // All loans for other calculations
         $loans = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
             $query->where('company_id', $company->id);
         })->whereIn('status', $loans_status_stats)->get();
+        
+        // Loans for detailed interest calculations (same statuses as report)
+        $loansForInterest = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
+            ->whereHas('branch', function($query) use ($company) {
+                $query->where('company_id', $company->id);
+            })->whereIn('status', ['active', 'written_off', 'defaulted'])->get();
 
-        $totalLoanAmount = $loans->sum('amount_total');
+        $totalLoanAmount = $loansForTotalAmount->sum('amount_total');
         $totalPrincipal = $loans->sum('amount');
         $totalInterest = $loans->sum('interest_amount');
 
@@ -177,16 +188,68 @@ class DashboardController extends Controller
         $repaidInterest = 0;
         $outstandingPrincipal = 0;
         $outstandingInterest = 0;
-        foreach ($loans as $loan) {
-            $schedules = \App\Models\LoanSchedule::where('loan_id', $loan->id)->get();
-            foreach ($schedules as $schedule) {
-                $principalPaid = \DB::table('repayments')->where('loan_schedule_id', $schedule->id)->sum('principal');
-                $interestPaid = \DB::table('repayments')->where('loan_schedule_id', $schedule->id)->sum('interest');
-                $repaidPrincipal += $principalPaid;
-                $repaidInterest += $interestPaid;
-                $outstandingPrincipal += max(0, $schedule->principal - $principalPaid);
-                $outstandingInterest += max(0, $schedule->interest - $interestPaid);
+        
+        // Detailed interest breakdown
+        $accruedInterest = 0;
+        $notDueInterest = 0;
+        $paidInterest = 0;
+        $outstandingInterestDetailed = 0;
+        
+        $currentDate = \Carbon\Carbon::now();
+        $currentMonth = $currentDate->format('Y-m');
+        
+        foreach ($loansForInterest as $loan) {
+            $loanAccruedInterest = 0;
+            $loanNotDueInterest = 0;
+            $loanOutstandingInterest = 0;
+            $loanPaidInterest = 0;
+            
+            if ($loan->schedule && $loan->schedule->count() > 0) {
+                foreach ($loan->schedule as $schedule) {
+                    $principalPaid = $schedule->repayments->sum('principal');
+                    $interestPaid = $schedule->repayments->sum('interest');
+                    $repaidPrincipal += $principalPaid;
+                    $repaidInterest += $interestPaid;
+                    $outstandingPrincipal += max(0, $schedule->principal - $principalPaid);
+                    $outstandingInterest += max(0, $schedule->interest - $interestPaid);
+                    
+                    // Calculate detailed interest breakdown per schedule
+                    $scheduleDate = \Carbon\Carbon::parse($schedule->due_date);
+                    $scheduleMonth = $scheduleDate->format('Y-m');
+                    $scheduleInterest = $schedule->interest ?? 0;
+                    
+                    if ($scheduleMonth <= $currentMonth) {
+                        // Interest is due up to this month - what's not paid is outstanding
+                        $loanOutstandingInterest += max(0, $scheduleInterest - $interestPaid);
+                    } else {
+                        // Interest is not yet due
+                        $loanNotDueInterest += $scheduleInterest;
+                    }
+                    
+                    $loanPaidInterest += $interestPaid;
+                }
+            } else {
+                // Fallback to simple calculation if no schedule
+                $loanOutstandingInterest = max(0, ($loan->interest_amount ?? 0) - $loanPaidInterest);
+                $loanNotDueInterest = 0;
+                $loanAccruedInterest = 0;
             }
+            
+            // Calculate accrued interest for this loan (interest earned but not yet due)
+            $loanStartDate = \Carbon\Carbon::parse($loan->disbursed_on);
+            $monthsElapsed = $loanStartDate->diffInMonths($currentDate);
+            $totalLoanMonths = $loan->period ?? 1;
+            
+            if ($monthsElapsed > 0 && $monthsElapsed < $totalLoanMonths) {
+                // Calculate proportional interest earned but not yet due for this loan
+                $loanAccruedInterest = ($loanNotDueInterest * $monthsElapsed) / $totalLoanMonths;
+            }
+            
+            // Add this loan's amounts to totals
+            $accruedInterest += $loanAccruedInterest;
+            $notDueInterest += $loanNotDueInterest;
+            $outstandingInterestDetailed += $loanOutstandingInterest;
+            $paidInterest += $loanPaidInterest;
         }
 
         $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance();
@@ -209,7 +272,11 @@ class DashboardController extends Controller
             'repaidPrincipal',
             'repaidInterest',
             'outstandingPrincipal',
-            'outstandingInterest'
+            'outstandingInterest',
+            'accruedInterest',
+            'notDueInterest',
+            'paidInterest',
+            'outstandingInterestDetailed'
         ));
     }
     

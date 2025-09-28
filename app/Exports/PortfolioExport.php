@@ -14,16 +14,19 @@ use Illuminate\Contracts\View\View;
 class PortfolioExport implements FromView, ShouldAutoSize, WithStyles, WithEvents
 {
     protected $portfolioData;
+    protected $status;
 
-    public function __construct($portfolioData)
+    public function __construct($portfolioData, $status = 'active_completed')
     {
         $this->portfolioData = $portfolioData;
+        $this->status = $status;
     }
 
     public function view(): View
     {
         return view('loans.reports.portfolio_excel', [
-            'portfolioData' => $this->portfolioData
+            'portfolioData' => $this->portfolioData,
+            'status' => $this->status
         ]);
     }
 
