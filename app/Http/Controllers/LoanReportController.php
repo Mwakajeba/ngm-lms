@@ -1998,17 +1998,17 @@ class LoanReportController extends Controller
         // Period metrics
         $periodicRepayments = Repayment::whereBetween('payment_date', [$fromDate, $toDate])
             ->when($branchId, function($q) use ($branchId) {
-                return $q->whereHas('loanSchedule.loan', function($lq) use ($branchId) {
+                return $q->whereHas('schedule.loan', function($lq) use ($branchId) {
                     $lq->where('branch_id', $branchId);
                 });
             })
             ->when($groupId, function($q) use ($groupId) {
-                return $q->whereHas('loanSchedule.loan', function($lq) use ($groupId) {
+                return $q->whereHas('schedule.loan', function($lq) use ($groupId) {
                     $lq->where('group_id', $groupId);
                 });
             })
             ->when($loanOfficerId, function($q) use ($loanOfficerId) {
-                return $q->whereHas('loanSchedule.loan', function($lq) use ($loanOfficerId) {
+                return $q->whereHas('schedule.loan', function($lq) use ($loanOfficerId) {
                     $lq->where('loan_officer_id', $loanOfficerId);
                 });
             })
@@ -2195,7 +2195,7 @@ class LoanReportController extends Controller
 
         $delinquencyData = null;
         if ($showData) {
-            $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays);
+            $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays, $bucket);
             
             // Handle exports
             if ($exportType) {
@@ -2223,8 +2223,9 @@ class LoanReportController extends Controller
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
         $delinquencyDays = $request->get('delinquency_days', 1);
+        $bucket = $request->get('bucket') ?: null;
 
-        $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays);
+        $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays, $bucket);
 
         $filename = 'delinquency_report_' . $asOfDate . '.xlsx';
         
@@ -2241,17 +2242,18 @@ class LoanReportController extends Controller
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
         $delinquencyDays = $request->get('delinquency_days', 1);
+        $bucket = $request->get('bucket') ?: null;
         
         $branches = Branch::all();
         $groups = Group::all();
         $loanOfficers = User::whereHas('loans')->get();
         $company = Company::first();
 
-        $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays);
+        $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays, $bucket);
 
         $pdf = PDF::loadView('loans.reports.delinquency_pdf', compact(
             'delinquencyData', 'branches', 'groups', 'loanOfficers', 'company',
-            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'delinquencyDays'
+            'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'delinquencyDays', 'bucket'
         ));
         
         $pdf->setPaper('A3', 'landscape');
@@ -2265,7 +2267,7 @@ class LoanReportController extends Controller
     /**
      * Get Delinquency Data
      */
-    private function getDelinquencyData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $delinquencyDays = 1)
+    private function getDelinquencyData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $delinquencyDays = 1, $bucket = null)
     {
         $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments'])
             ->where('status', 'active')
@@ -2348,6 +2350,32 @@ class LoanReportController extends Controller
                     'next_due_date' => $this->getNextDueDate($loan),
                 ];
             }
+        }
+
+        // Apply bucket filter if specified
+        if ($bucket && !empty($delinquencyData)) {
+            $delinquencyData = collect($delinquencyData)->filter(function($loan) use ($bucket) {
+                $daysInArrears = $loan['days_in_arrears'];
+                
+                switch ($bucket) {
+                    case '1-30':
+                        return $daysInArrears >= 1 && $daysInArrears <= 30;
+                    case '31-60':
+                        return $daysInArrears >= 31 && $daysInArrears <= 60;
+                    case '61-90':
+                        return $daysInArrears >= 61 && $daysInArrears <= 90;
+                    case '91-180':
+                        return $daysInArrears >= 91 && $daysInArrears <= 180;
+                    case '180+':
+                        return $daysInArrears > 180;
+                    default:
+                        return true;
+                }
+            })->values()->toArray();
+            
+            // Recalculate summary metrics for filtered data
+            $delinquentLoans = count($delinquencyData);
+            $totalDelinquentAmount = collect($delinquencyData)->sum('outstanding_amount');
         }
 
         // Calculate percentages
