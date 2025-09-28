@@ -1185,7 +1185,11 @@ class LoanController extends Controller
 
     public function create()
     {
-        $customers = Customer::with('groups')->where('category', 'Borrower')->get();
+        $branchId = auth()->user()->branch_id;
+        $customers = Customer::with('groups')
+            ->where('category', 'Borrower')
+            ->where('branch_id', $branchId)
+            ->get();
         // Removed heavy debug dump of customers to avoid timeouts
         $products = LoanProduct::where('is_active', true)->get();
 

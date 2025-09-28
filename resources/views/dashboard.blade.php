@@ -102,6 +102,38 @@ use Vinkla\Hashids\Facades\Hashids;
             </div>
         </div>
 
+        <!-- Branch Filter -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center">
+                            <div class="me-3">
+                                <label for="branch_id" class="form-label mb-0"><strong>Filter by Branch:</strong></label>
+                            </div>
+                            <div class="me-3">
+                                <select name="branch_id" id="branch_id" class="form-select" onchange="this.form.submit()">
+                                    <option value="">All Branches</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ $selectedBranchId == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @if($selectedBranchId)
+                                <div class="me-3">
+                                    <span class="badge bg-primary">
+                                        Showing: {{ $branches->where('id', $selectedBranchId)->first()->name ?? 'Selected Branch' }}
+                                    </span>
+                                </div>
+                            @endif
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Quick Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
             @can('view charges')
