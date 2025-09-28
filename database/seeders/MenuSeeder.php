@@ -81,7 +81,7 @@ class MenuSeeder extends Seeder
             'Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [
-                    ['name' => 'Accounting Reports', 'route' => 'reports.index'],
+                    ['name' => 'Accounting Reports', 'route' => 'accounting.reports.index'],
                     ['name' => 'Loans Reports', 'route' => 'reports.loans'],
                     ['name' => 'Customer Reports', 'route' => 'reports.customers'],
                     ['name' => 'Bot Reports', 'route' => 'reports.bot'],

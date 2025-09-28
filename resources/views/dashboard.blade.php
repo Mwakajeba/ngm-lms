@@ -233,8 +233,11 @@ use Vinkla\Hashids\Facades\Hashids;
                             <div class="flex-grow-1">
                                 <p class="mb-0">Outstanding Total</p>
                                 <h4 class="font-weight-bold">TZS {{ number_format(($outstandingPrincipal + $outstandingInterest) ?? 0, 0) }}</h4>
-                                <p class="mb-0" style="font-size: 0.80rem;">Outstanding Interest: <b>TZS {{ number_format($outstandingInterest ?? 0, 0) }}</b></p>
-                                <p class="mb-0" style="font-size: 0.80rem;">Outstanding Principal: <b>TZS {{ number_format($outstandingPrincipal ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Outstanding Interest: <b>TZS {{ number_format($outstandingInterestDetailed ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Accrued Interest: <b>TZS {{ number_format($accruedInterest ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Not Due Interest: <b>TZS {{ number_format($notDueInterest ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Paid Interest: <b>TZS {{ number_format($paidInterest ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Outstanding Principal: <b>TZS {{ number_format($outstandingPrincipal ?? 0, 0) }}</b></p>
                             </div>
                             <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-hourglass'></i></div>
                         </div>

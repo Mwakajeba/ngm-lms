@@ -348,8 +348,11 @@ class LoanReportController extends Controller
             $q->where('name', 'Loan Officer');
         })->get();
 
-        $loansQuery = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer'])
-            ->where('status', 'active');
+        $loansQuery = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
+            ->whereIn('status', ['active', 'written_off', 'defaulted'])
+            ->whereHas('branch', function($query) {
+                $query->where('company_id', auth()->user()->company_id);
+            });
         if ($branchId) {
             $loansQuery->where('branch_id', $branchId);
         }
@@ -363,6 +366,13 @@ class LoanReportController extends Controller
         $totalExpectedInterest = 0;
         $totalPaidInterest = 0;
         $totalPrincipalPaid = 0;
+        $totalOutstandingInterest = 0;
+        $totalAccruedInterest = 0;
+        $totalNotDueInterest = 0;
+        
+        $currentDate = \Carbon\Carbon::parse($asOfDate);
+        $currentMonth = $currentDate->format('Y-m');
+        
         foreach ($loans as $loan) {
             // Calculate repayments breakdown
             $principalPaid = $interestPaid = $feesPaid = $penaltyPaid = 0;
@@ -372,11 +382,55 @@ class LoanReportController extends Controller
                 $feesPaid = $loan->repayments()->sum('fee_amount');
                 $penaltyPaid = $loan->repayments()->sum('penalt_amount');
             }
+            
+            // Calculate detailed interest breakdown from loan schedules
+            $outstandingInterest = 0;
+            $accruedInterest = 0;
+            $notDueInterest = 0;
+            
+            if ($loan->schedule && $loan->schedule->count() > 0) {
+                foreach ($loan->schedule as $schedule) {
+                    $scheduleDate = \Carbon\Carbon::parse($schedule->due_date);
+                    $scheduleMonth = $scheduleDate->format('Y-m');
+                    $scheduleInterest = $schedule->interest ?? 0;
+                    
+                    // Calculate interest paid for this schedule
+                    $scheduleInterestPaid = $schedule->repayments->sum('interest');
+                    
+                    if ($scheduleMonth <= $currentMonth) {
+                        // Interest is due up to this month - what's not paid is outstanding
+                        $outstandingInterest += max(0, $scheduleInterest - $scheduleInterestPaid);
+                    } else {
+                        // Interest is not yet due
+                        $notDueInterest += $scheduleInterest;
+                    }
+                }
+                
+                // Calculate accrued interest (interest earned but not yet due)
+                // This is interest that has been earned based on time elapsed but not yet due
+                $loanStartDate = \Carbon\Carbon::parse($loan->disbursed_on);
+                $monthsElapsed = $loanStartDate->diffInMonths($currentDate);
+                $totalLoanMonths = $loan->period ?? 1;
+                
+                if ($monthsElapsed > 0 && $monthsElapsed < $totalLoanMonths) {
+                    // Calculate proportional interest earned but not yet due
+                    $accruedInterest = ($notDueInterest * $monthsElapsed) / $totalLoanMonths;
+                }
+            } else {
+                // Fallback to simple calculation if no schedule
+                $outstandingInterest = max(0, ($loan->interest_amount ?? 0) - $interestPaid);
+                $notDueInterest = 0;
+                $accruedInterest = 0;
+            }
+            
             // Calculate outstanding balance correctly: (Principal + Interest) - (Principal Paid + Interest Paid)
             $totalLoanAmount = ($loan->amount ?? 0) + ($loan->interest_amount ?? 0);
             $totalPaid = $principalPaid + $interestPaid;
             $outstandingBalance = $totalLoanAmount - $totalPaid;
 
+            // Calculate expected interest verification: Interest Paid + Outstanding Interest + Not Due Interest
+            $calculatedExpectedInterest = $interestPaid + $outstandingInterest + $notDueInterest;
+            
             $outstandingData[] = [
                 'customer' => $loan->customer->name ?? 'N/A',
                 'customer_no' => $loan->customer->customerNo ?? 'N/A',
@@ -393,18 +447,32 @@ class LoanReportController extends Controller
                 'interest_paid' => $interestPaid,
                 'fees_paid' => $feesPaid,
                 'penalty_paid' => $penaltyPaid,
+                'outstanding_interest' => $outstandingInterest,
+                'accrued_interest' => $accruedInterest,
+                'not_due_interest' => $notDueInterest,
+                'calculated_expected_interest' => $calculatedExpectedInterest,
             ];
             $totalPrincipalDisbursed += ($loan->amount ?? 0);
             $totalExpectedInterest += ($loan->interest_amount ?? 0);
             $totalPaidInterest += $interestPaid;
             $totalPrincipalPaid += $principalPaid;
+            $totalOutstandingInterest += $outstandingInterest;
+            $totalAccruedInterest += $accruedInterest;
+            $totalNotDueInterest += $notDueInterest;
         }
 
+        // Calculate total expected interest from components for verification
+        $totalCalculatedExpectedInterest = $totalPaidInterest + $totalOutstandingInterest + $totalNotDueInterest;
+        
         $summary = [
             'total_principal_disbursed' => $totalPrincipalDisbursed,
             'total_expected_interest' => $totalExpectedInterest,
             'total_paid_interest' => $totalPaidInterest,
             'total_principal_paid' => $totalPrincipalPaid,
+            'total_outstanding_interest' => $totalOutstandingInterest,
+            'total_accrued_interest' => $totalAccruedInterest,
+            'total_not_due_interest' => $totalNotDueInterest,
+            'total_calculated_expected_interest' => $totalCalculatedExpectedInterest,
         ];
 
         // Handle export requests
@@ -1602,7 +1670,7 @@ class LoanReportController extends Controller
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
-        $status = $request->get('status') ?: 'all';
+        $status = $request->get('status') ?: 'active_completed';
         $exportType = $request->get('export_type');
 
         $branches = Branch::all();
@@ -1643,13 +1711,13 @@ class LoanReportController extends Controller
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
-        $status = $request->get('status') ?: 'all';
+        $status = $request->get('status') ?: 'active_completed';
 
         $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
 
         $filename = 'loan_portfolio_report_' . $asOfDate . '.xlsx';
         
-        return Excel::download(new PortfolioExport($portfolioData), $filename);
+        return Excel::download(new PortfolioExport($portfolioData, $status), $filename);
     }
 
     /**
@@ -1661,7 +1729,7 @@ class LoanReportController extends Controller
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
-        $status = $request->get('status') ?: 'all';
+        $status = $request->get('status') ?: 'active_completed';
         
         $branches = Branch::all();
         $groups = Group::all();
@@ -1700,7 +1768,11 @@ class LoanReportController extends Controller
             });
 
         if ($status !== 'all') {
-            $query->where('status', $status);
+            if ($status === 'active_completed') {
+                $query->whereIn('status', ['active', 'completed']);
+            } else {
+                $query->where('status', $status);
+            }
         }
 
         $loans = $query->get();
@@ -2549,7 +2621,9 @@ class LoanReportController extends Controller
                         'Principal Paid' => $row['principal_paid'],
                         'Interest Paid' => $row['interest_paid'],
                         'Outstanding Principal' => $row['amount'] - $row['principal_paid'],
-                        'Outstanding Interest' => $row['interest'] - $row['interest_paid'],
+                        'Outstanding Interest' => $row['outstanding_interest'],
+                        'Accrued Interest' => $row['accrued_interest'],
+                        'Not Due Interest' => $row['not_due_interest'],
                         'Outstanding Balance' => $row['outstanding_balance'],
                     ];
                 });
@@ -2572,6 +2646,8 @@ class LoanReportController extends Controller
                     'Interest Paid',
                     'Outstanding Principal',
                     'Outstanding Interest',
+                    'Accrued Interest',
+                    'Not Due Interest',
                     'Outstanding Balance',
                 ];
             }

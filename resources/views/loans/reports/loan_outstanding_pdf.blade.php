@@ -133,6 +133,14 @@
                     <span class="summary-label">Total Interest Paid:</span>
                     <span class="summary-value">{{ number_format($summary['total_paid_interest'], 2) }}</span>
                 </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Outstanding Interest:</span>
+                    <span class="summary-value">{{ number_format($summary['total_outstanding_interest'], 2) }}</span>
+                </div>
+                <div class="summary-item">
+                    <span class="summary-label">Total Accrued Interest:</span>
+                    <span class="summary-value">{{ number_format($summary['total_accrued_interest'], 2) }}</span>
+                </div>
             </div>
         </div>
 
@@ -142,7 +150,7 @@
                 <tr>
                     <th colspan="10" class="text-center">DISBURSEMENT</th>
                     <th colspan="2" class="text-center">REPAYMENT</th>
-                    <th colspan="3" class="text-center">OUTSTANDING</th>
+                    <th colspan="6" class="text-center">OUTSTANDING & INTEREST BREAKDOWN</th>
                 </tr>
                 <tr>
                     <th>Customer</th>
@@ -159,6 +167,8 @@
                     <th class="text-right">Interest Paid</th>
                     <th class="text-right">Outstanding Principal</th>
                     <th class="text-right">Outstanding Interest</th>
+                    <th class="text-right">Accrued Interest</th>
+                    <th class="text-right">Not Due Interest</th>
                     <th class="text-right">Outstanding Balance</th>
                 </tr>
             </thead>
@@ -178,11 +188,28 @@
                         <td class="text-right">{{ number_format($row['principal_paid'], 2) }}</td>
                         <td class="text-right">{{ number_format($row['interest_paid'], 2) }}</td>
                         <td class="text-right">{{ number_format($row['amount'] - $row['principal_paid'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['interest'] - $row['interest_paid'], 2) }}</td>
+                        <td class="text-right">{{ number_format($row['outstanding_interest'], 2) }}</td>
+                        <td class="text-right">{{ number_format($row['accrued_interest'], 2) }}</td>
+                        <td class="text-right">{{ number_format($row['not_due_interest'], 2) }}</td>
                         <td class="text-right">{{ number_format($row['outstanding_balance'], 2) }}</td>
                     </tr>
                 @endforeach
             </tbody>
+            <tfoot>
+                <tr class="total-row">
+                    <th colspan="4" class="text-center">TOTALS</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('amount'), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('interest'), 2) }}</th>
+                    <th colspan="4"></th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('principal_paid'), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('interest_paid'), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum(function($row) { return $row['amount'] - $row['principal_paid']; }), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('outstanding_interest'), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('accrued_interest'), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('not_due_interest'), 2) }}</th>
+                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('outstanding_balance'), 2) }}</th>
+                </tr>
+            </tfoot>
         </table>
     @else
         <div class="text-center" style="padding: 50px;">
