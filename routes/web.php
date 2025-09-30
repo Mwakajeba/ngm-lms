@@ -492,11 +492,11 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::delete('/bank-accounts/{encodedId}', [BankAccountController::class, 'destroy'])->name('bank-accounts.destroy');
 
     // Bank Reconciliation
-    // Use hash id for show/edit routes
-    Route::get('bank-reconciliation/{hash}', [BankReconciliationController::class, 'show'])->name('bank-reconciliation.show');
-    Route::get('bank-reconciliation/{hash}/edit', [BankReconciliationController::class, 'edit'])->name('bank-reconciliation.edit');
     // Keep resource for other methods but avoid conflicting show/edit
     Route::resource('bank-reconciliation', BankReconciliationController::class)->except(['show', 'edit']);
+    // Use hash id for show/edit routes (must come after resource to avoid conflicts)
+    Route::get('bank-reconciliation/{hash}', [BankReconciliationController::class, 'show'])->name('bank-reconciliation.show');
+    Route::get('bank-reconciliation/{hash}/edit', [BankReconciliationController::class, 'edit'])->name('bank-reconciliation.edit');
 
     Route::post('/bank-reconciliation/{bankReconciliation}/add-bank-statement-item', [BankReconciliationController::class, 'addBankStatementItem'])->name('bank-reconciliation.add-bank-statement-item');
     Route::post('/bank-reconciliation/{hash}/match-items', [BankReconciliationController::class, 'matchItems'])->name('bank-reconciliation.match-items');
@@ -573,10 +573,15 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     // Reports Routes
     Route::prefix('reports')->name('reports.')->group(function () {
 
+        // Main Reports Index
+        Route::get("/", function () {
+            return view("reports.index");
+        })->name("index");
+
         // Accounting Reports Index
         Route::get("/accounting-reports", function () {
             return view("reports.index");
-        })->name("index");
+        })->name("accounting");
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');
         // Trial Balance Report
         Route::get('/trial-balance', [App\Http\Controllers\Accounting\Reports\TrialBalanceReportController::class, 'index'])->name('trial-balance');
@@ -621,10 +626,11 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     // Transaction Routes
     Route::get('/transactions/double-entries/{accountId}', [App\Http\Controllers\TransactionController::class, 'doubleEntries'])->name('transactions.doubleEntries');
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
+});
 
-    //route
+//route
 
-    Route::name('loans.reports.')->group(function () {
+Route::name('loans.reports.')->group(function () {
         //////LOANS REPORT ROUTE////////
         Route::get('/loan-disbursement', [LoanReportController::class, 'loanDisbursementReport'])->name('disbursed');
         Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loan-export');
@@ -642,10 +648,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/loan-aging-installment/export-excel', [LoanReportController::class, 'exportLoanAgingInstallmentToExcel'])->name('loan_aging_installment.export_excel');
         Route::get('/loan-aging-installment/export-pdf', [LoanReportController::class, 'exportLoanAgingInstallmentToPdf'])->name('loan_aging_installment.export_pdf');
 
-        // Reports Index
-        Route::get('/reports', function () {
-            return view('loans.reports.index');
-        })->name('reports.index');
+        // Reports Index - Removed to avoid conflict with main reports.index
 
         // Loan Arrears Report
         Route::get('/loan-arrears', [LoanReportController::class, 'loanArrearsReport'])->name('loan_arrears');
@@ -691,7 +694,69 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/npl/export-pdf', [LoanReportController::class, 'exportNPLToPdf'])->name('npl.export_pdf');
     });
 
-});
+    // Loan Reports Routes (accounting.loans.reports.*)
+    Route::prefix('accounting/loans/reports')->name('accounting.loans.reports.')->group(function () {
+        // Loan Portfolio Report
+        Route::get('/portfolio', [LoanReportController::class, 'portfolioReport'])->name('portfolio');
+        Route::get('/portfolio/export-excel', [LoanReportController::class, 'exportPortfolioToExcel'])->name('portfolio.export_excel');
+        Route::get('/portfolio/export-pdf', [LoanReportController::class, 'exportPortfolioToPdf'])->name('portfolio.export_pdf');
+
+        // Loan Performance Report
+        Route::get('/performance', [LoanReportController::class, 'performanceReport'])->name('performance');
+        Route::get('/performance/export-excel', [LoanReportController::class, 'exportPerformanceToExcel'])->name('performance.export_excel');
+        Route::get('/performance/export-pdf', [LoanReportController::class, 'exportPerformanceToPdf'])->name('performance.export_pdf');
+
+        // Delinquency Report
+        Route::get('/delinquency', [LoanReportController::class, 'delinquencyReport'])->name('delinquency');
+        Route::get('/delinquency/export-excel', [LoanReportController::class, 'exportDelinquencyToExcel'])->name('delinquency.export_excel');
+        Route::get('/delinquency/export-pdf', [LoanReportController::class, 'exportDelinquencyToPdf'])->name('delinquency.export_pdf');
+
+        // Loan Disbursement Report
+        Route::get('/disbursed', [LoanReportController::class, 'loanDisbursementReport'])->name('disbursed');
+        Route::get('/disbursed/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loan-export');
+
+        // Loan Repayment Report
+        Route::get('/repayment', [LoanReportController::class, 'getRepaymentReport'])->name('repayment');
+        Route::get('/repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loan-export-repayment');
+
+        // Loan Aging Report
+        Route::get('/loan-aging', [LoanReportController::class, 'loanAgingReport'])->name('loan_aging');
+        Route::get('/loan-aging/export-excel', [LoanReportController::class, 'exportLoanAgingToExcel'])->name('loan_aging.export_excel');
+        Route::get('/loan-aging/export-pdf', [LoanReportController::class, 'exportLoanAgingToPdf'])->name('loan_aging.export_pdf');
+
+        // Loan Aging Installment Report
+        Route::get('/loan-aging-installment', [LoanReportController::class, 'loanAgingInstallmentReport'])->name('loan_aging_installment');
+        Route::get('/loan-aging-installment/export-excel', [LoanReportController::class, 'exportLoanAgingInstallmentToExcel'])->name('loan_aging_installment.export_excel');
+        Route::get('/loan-aging-installment/export-pdf', [LoanReportController::class, 'exportLoanAgingInstallmentToPdf'])->name('loan_aging_installment.export_pdf');
+
+        // Loan Outstanding Report
+        Route::get('/loan-outstanding', [LoanReportController::class, 'loanOutstandingReport'])->name('loan_outstanding');
+
+        // Loan Arrears Report
+        Route::get('/loan-arrears', [LoanReportController::class, 'loanArrearsReport'])->name('loan_arrears');
+        Route::get('/loan-arrears/export-excel', [LoanReportController::class, 'exportLoanArrearsToExcel'])->name('loan_arrears.export_excel');
+        Route::get('/loan-arrears/export-pdf', [LoanReportController::class, 'exportLoanArrearsToPdf'])->name('loan_arrears.export_pdf');
+
+        // Expected vs Collected Report
+        Route::get('/expected-vs-collected', [LoanReportController::class, 'expectedVsCollectedReport'])->name('expected_vs_collected');
+        Route::get('/expected-vs-collected/export-excel', [LoanReportController::class, 'exportExpectedVsCollectedToExcel'])->name('expected_vs_collected.export_excel');
+        Route::get('/expected-vs-collected/export-pdf', [LoanReportController::class, 'exportExpectedVsCollectedToPdf'])->name('expected_vs_collected.export_pdf');
+
+        // Portfolio at Risk (PAR) Report
+        Route::get('/portfolio-at-risk', [LoanReportController::class, 'portfolioAtRiskReport'])->name('portfolio_at_risk');
+        Route::get('/portfolio-at-risk/export-excel', [LoanReportController::class, 'exportPortfolioAtRiskToExcel'])->name('portfolio_at_risk.export_excel');
+        Route::get('/portfolio-at-risk/export-pdf', [LoanReportController::class, 'exportPortfolioAtRiskToPdf'])->name('portfolio_at_risk.export_pdf');
+
+        // Internal Portfolio Analysis Report
+        Route::get('/internal-portfolio-analysis', [LoanReportController::class, 'internalPortfolioAnalysisReport'])->name('internal_portfolio_analysis');
+        Route::get('/internal-portfolio-analysis/export-excel', [LoanReportController::class, 'exportInternalPortfolioAnalysisToExcel'])->name('internal_portfolio_analysis.export_excel');
+        Route::get('/internal-portfolio-analysis/export-pdf', [LoanReportController::class, 'exportInternalPortfolioAnalysisToPdf'])->name('internal_portfolio_analysis.export_pdf');
+
+        // Non Performing Loan Report
+        Route::get('/npl', [LoanReportController::class, 'nonPerformingLoanReport'])->name('npl');
+        Route::get('/npl/export-excel', [LoanReportController::class, 'exportNPLToExcel'])->name('npl.export_excel');
+        Route::get('/npl/export-pdf', [LoanReportController::class, 'exportNPLToPdf'])->name('npl.export_pdf');
+    });
 
 ////////////////////////////////////////////// END ACCOUNTING MANAGEMENT ///////////////////////////////////////////
 

@@ -29,11 +29,13 @@
                                 <button type="button" class="btn btn-info me-2" onclick="refreshBookBalance()" id="refreshBookBalanceBtn">
                                     <i class="bx bx-refresh me-2"></i>Refresh Book Balance
                                 </button>
-                    <form action="{{ route('accounting.bank-reconciliation.complete', $bankReconciliation) }}" method="POST" class="d-inline">
+                    <button type="button" class="btn btn-success me-2" onclick="markAsCompleted()" title="Mark this reconciliation as completed">
+                        <i class="bx bx-check-circle me-2"></i>Mark as Completed
+                    </button>
+                    
+                    <!-- Hidden form for completion -->
+                    <form id="completeForm" action="{{ route('accounting.bank-reconciliation.complete', $bankReconciliation) }}" method="POST" style="display: none;">
                         @csrf
-                        <button type="submit" class="btn btn-success me-2" onclick="return confirm('Mark this reconciliation as completed?')">
-                            <i class="bx bx-check me-2"></i>Complete
-                        </button>
                     </form>
                 @endif
                 <a href="{{ route('accounting.bank-reconciliation.index') }}" class="btn btn-secondary">
@@ -578,5 +580,57 @@ $(document).ready(function() {
         });
     });
 });
+
+// Show success message if exists
+@if(session('success'))
+    Swal.fire({
+        title: 'Success!',
+        text: '{{ session('success') }}',
+        icon: 'success',
+        confirmButtonText: 'OK'
+    });
+@endif
+
+// Show error message if exists
+@if(session('error') || $errors->any())
+    Swal.fire({
+        title: 'Error!',
+        text: '{{ session('error') ?? $errors->first() }}',
+        icon: 'error',
+        confirmButtonText: 'OK'
+    });
+@endif
+
+// Function to mark reconciliation as completed with SweetAlert
+function markAsCompleted() {
+    Swal.fire({
+        title: 'Mark as Completed?',
+        text: 'Are you sure you want to mark this reconciliation as completed? This action cannot be undone.',
+        icon: 'question',
+        showCancelButton: true,
+        confirmButtonColor: '#28a745',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Yes, Mark as Completed',
+        cancelButtonText: 'Cancel',
+        reverseButtons: true
+    }).then((result) => {
+        if (result.isConfirmed) {
+            // Show loading state
+            Swal.fire({
+                title: 'Processing...',
+                text: 'Marking reconciliation as completed',
+                icon: 'info',
+                allowOutsideClick: false,
+                showConfirmButton: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Submit the form
+            document.getElementById('completeForm').submit();
+        }
+    });
+}
 </script>
 @endpush 

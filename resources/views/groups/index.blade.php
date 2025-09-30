@@ -134,7 +134,7 @@
                                                         <button type="button" class="btn btn-sm btn-outline-danger delete-btn"
                                                             title="Delete Group"
                                                             data-group-id="{{ Hashids::encode($group->id) }}"
-                                                            data-group-name="{{ $group->name }}">
+                                                            data-group-name="{{ json_encode($group->name) }}">
                                                             Delete
                                                         </button>
                                                         @endcan

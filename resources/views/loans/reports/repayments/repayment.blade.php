@@ -217,7 +217,7 @@
         formData.append('export_type', type);
         formData.append('export_action', action);
 
-        const url = '{{ route("accounting.loans.reports.loan-repayment") }}?' + new URLSearchParams(Object.fromEntries(formData));
+        const url = '{{ route("accounting.loans.reports.repayment") }}?' + new URLSearchParams(Object.fromEntries(formData));
 
         Swal.fire({
             title: 'Generating Report...',

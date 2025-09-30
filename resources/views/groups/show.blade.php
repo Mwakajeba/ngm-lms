@@ -378,7 +378,16 @@
                 serverSide: false,
                 ajax: {
                     url: '{{ url('group-members-ajax/' . $group->id) }}',
-                    dataSrc: 'data'
+                    dataSrc: 'data',
+                    error: function (xhr) {
+                        console.error('Group members AJAX error:', xhr.status, xhr.statusText);
+                        console.error('Response:', xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Failed to load members',
+                            text: 'Please refresh the page. If it persists, check server logs.'
+                        });
+                    }
                 },
                 columns: [
                     { data: 'member', orderable: false, searchable: true },
@@ -407,7 +416,13 @@
         });
     </script>
     <script>
-        function removeMember(encodedGroupId, memberId, memberName) {
+        // Delegated click handler to avoid inline JS and escaping issues
+            $(document).on('click', '.remove-member-btn', function () {
+            const groupId = $(this).data('group-id');
+            const memberId = $(this).data('member-id');
+            const memberName = $(this).data('member-name');
+            const actionUrl = $(this).data('action-url');
+
             Swal.fire({
                 title: 'Remove Member?',
                 text: `Are you sure you want to remove "${memberName}" from this group? They will be assigned to the individual group.`,
@@ -418,37 +433,29 @@
                 confirmButtonText: 'Yes, remove!',
                 cancelButtonText: 'Cancel'
             }).then((result) => {
-                if (!result.isConfirmed) return;
+                if (result.isConfirmed) {
+                    const form = document.createElement('form');
+                    form.method = 'POST';
+                    form.action = actionUrl || `/groups/${groupId}/members/${memberId}`;
 
-                $.ajax({
-                    url: `{{ url('groups') }}/${encodedGroupId}/members/${memberId}`,
-                    method: 'POST',
-                    data: {
-                        _method: 'DELETE',
-                        _token: '{{ csrf_token() }}'
-                    },
-                    success: function (response) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Removed',
-                            text: response?.message || 'Member removed successfully',
-                            timer: 1200,
-                            showConfirmButton: false
-                        }).then(() => {
-                            $('#groupMembersTable').DataTable().ajax.reload(null, false);
-                        });
-                    },
-                    error: function (xhr) {
-                        const message = xhr?.responseJSON?.message || 'Failed to remove member';
-                        Swal.fire({
-                            icon: 'error',
-                            title: 'Cannot remove member',
-                            text: message
-                        });
-                    }
-                });
+                    const csrfToken = document.createElement('input');
+                    csrfToken.type = 'hidden';
+                    csrfToken.name = '_token';
+                    csrfToken.value = '{{ csrf_token() }}';
+
+                    const methodField = document.createElement('input');
+                    methodField.type = 'hidden';
+                    methodField.name = '_method';
+                    methodField.value = 'DELETE';
+
+                    form.appendChild(csrfToken);
+                    form.appendChild(methodField);
+
+                    document.body.appendChild(form);
+                    form.submit();
+                }
             });
-        }
+        });
     </script>
 @endpush
 

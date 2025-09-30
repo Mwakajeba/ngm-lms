@@ -176,7 +176,12 @@
                 | <strong>Loan Officer:</strong> {{ $loanOfficers->find($loanOfficerId)->name ?? 'N/A' }}
             @endif
             @if($status !== 'all')
-                | <strong>Status:</strong> {{ ucfirst($status) }}
+                | <strong>Status:</strong> 
+                @if($status === 'active_completed')
+                    Active & Completed
+                @else
+                    {{ ucfirst($status) }}
+                @endif
             @endif
         </div>
     </div>

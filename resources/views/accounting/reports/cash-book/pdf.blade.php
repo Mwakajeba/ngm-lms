@@ -104,8 +104,8 @@
             <th>BANK ACCOUNT</th>
             <th>TRANSACTION NO</th>
             <th>REFERENCE NO.</th>
-            <th>CREDIT</th>
             <th>DEBIT</th>
+            <th>CREDIT</th>
             <th>BALANCE</th>
         </tr>
         
@@ -138,21 +138,21 @@
                 <td class="text-left">{{ $transaction['bank_account'] }}</td>
                 <td>{{ $transaction['transaction_no'] }}</td>
                 <td>{{ $transaction['reference_no'] }}</td>
-                <td class="text-right">{{ $credit > 0 ? number_format($credit, 2) : '' }}</td>
                 <td class="text-right">{{ $debit > 0 ? number_format($debit, 2) : '' }}</td>
+                <td class="text-right">{{ $credit > 0 ? number_format($credit, 2) : '' }}</td>
                 <td class="text-right">{{ number_format($running_balance, 2) }}</td>
             </tr>
         @endforeach
         
         <tr class="total-row">
-            <td colspan="5" class="text-right">Total Credit</td>
+            <td colspan="5" class="text-right">Total Debit</td>
             <td class="text-right">{{ number_format($total_receipts, 2) }}</td>
             <td></td>
             <td></td>
         </tr>
         
         <tr class="total-row">
-            <td colspan="5" class="text-right">Total Debit</td>
+            <td colspan="5" class="text-right">Total Credit</td>
             <td></td>
             <td class="text-right">{{ number_format($total_payments, 2) }}</td>
             <td></td>

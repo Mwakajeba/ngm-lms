@@ -298,7 +298,7 @@ class LoanController extends Controller
             $branchId = auth()->user()->branch_id;
             $status = $request->get('status', 'active'); // Default to active loans
 
-            $loans = Loan::with(['customer', 'product', 'branch', 'group', 'loanOfficer'])
+            $loans = Loan::with(['customer', 'product', 'branch', 'group', 'loanOfficer', 'approvals'])
                 ->where('branch_id', $branchId)
                 ->where('status', $status)
                 ->select('loans.*');
@@ -380,6 +380,20 @@ class LoanController extends Controller
                 ->addColumn('formatted_date', function ($loan) {
                     return $loan->date_applied ? \Carbon\Carbon::parse($loan->date_applied)->format('M d, Y') : 'N/A';
                 })
+                ->addColumn('comment', function ($loan) {
+                    // Don't show comment for active loans
+                    if ($loan->status === 'active') {
+                        return '<span class="text-muted">-</span>';
+                    }
+                    
+                    $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
+                    if ($latestApproval && $latestApproval->comments) {
+                        return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
+                                    <small class="text-muted">' . e($latestApproval->comments) . '</small>
+                                </div>';
+                    }
+                    return '<span class="text-muted">-</span>';
+                })
                 ->addColumn('actions', function ($loan) {
                     $actions = '';
                     $encodedId = \Vinkla\Hashids\Facades\Hashids::encode($loan->id);
@@ -452,7 +466,7 @@ class LoanController extends Controller
                 ->filterColumn('formatted_date', function ($query, $keyword) {
                     $query->whereRaw("LOWER(date_applied) LIKE LOWER(?)", ["%{$keyword}%"]);
                 })
-                ->rawColumns(['customer_name', 'status_badge', 'actions'])
+                ->rawColumns(['customer_name', 'status_badge', 'comment', 'actions'])
                 ->make(true);
         }
 
@@ -1171,7 +1185,11 @@ class LoanController extends Controller
 
     public function create()
     {
-        $customers = Customer::with('groups')->where('category', 'Borrower')->get();
+        $branchId = auth()->user()->branch_id;
+        $customers = Customer::with('groups')
+            ->where('category', 'Borrower')
+            ->where('branch_id', $branchId)
+            ->get();
         // Removed heavy debug dump of customers to avoid timeouts
         $products = LoanProduct::where('is_active', true)->get();
 

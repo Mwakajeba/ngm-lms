@@ -110,12 +110,50 @@
         <div class="report-title">BALANCE SHEET</div>
         <div class="report-date">As of {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}</div>
         @if(isset($balanceSheetData['filters']['branch_id']) && $balanceSheetData['filters']['branch_id'] != 'all')
-            <div class="report-details">Branch: {{ $branches->where('id', $balanceSheetData['filters']['branch_id'])->first()->name ?? 'N/A' }}</div>
+            <div class="report-details">Branch: {{ collect($branches)->where('id', $balanceSheetData['filters']['branch_id'])->first()['name'] ?? 'N/A' }}</div>
         @endif
         <div class="report-details">
             {{ ucfirst($reportingType) }} Basis | 
             {{ ucfirst($balanceSheetData['filters']['level_of_detail']) }} Level |
             Generated on {{ now()->format('F d, Y \\a\\t g:i A') }}
+        </div>
+    </div>
+
+    <!-- Balance Sheet Summary -->
+    <div class="balance-summary">
+        <h3 style="text-align: center; background-color: #6F42C1; color: white; padding: 10px; margin: 20px 0;">BALANCE SHEET SUMMARY</h3>
+        <table style="margin-bottom: 20px;">
+            <tr>
+                <td style="width: 50%; text-align: center; padding: 15px; border: 2px solid #28a745;">
+                    <h4 style="color: #28a745; margin: 0;">TOTAL ASSETS</h4>
+                    <h2 style="color: #28a745; margin: 10px 0;">{{ number_format($balanceSheetData['current']['assets']->sum(function($item) { return $item->debit_total - $item->credit_total; }), 2) }}</h2>
+                </td>
+                <td style="width: 50%; text-align: center; padding: 15px; border: 2px solid #17a2b8;">
+                    <h4 style="color: #17a2b8; margin: 0;">TOTAL LIABILITIES + EQUITY</h4>
+                    <h2 style="color: #17a2b8; margin: 10px 0;">{{ number_format(($balanceSheetData['current']['liabilities']->sum(function($item) { return $item->credit_total - $item->debit_total; }) + $balanceSheetData['current']['equity']->sum(function($item) { return $item->credit_total - $item->debit_total; }) + $balanceSheetData['profit_loss']), 2) }}</h2>
+                    <small style="color: #666;">
+                        Liabilities: {{ number_format($balanceSheetData['current']['liabilities']->sum(function($item) { return $item->credit_total - $item->debit_total; }), 2) }} + 
+                        Equity: {{ number_format($balanceSheetData['current']['equity']->sum(function($item) { return $item->credit_total - $item->debit_total; }) + $balanceSheetData['profit_loss'], 2) }}
+                    </small>
+                </td>
+            </tr>
+        </table>
+        @php
+            $totalAssets = $balanceSheetData['current']['assets']->sum(function($item) { return $item->debit_total - $item->credit_total; });
+            $totalLiabilities = $balanceSheetData['current']['liabilities']->sum(function($item) { return $item->credit_total - $item->debit_total; });
+            $totalEquity = $balanceSheetData['current']['equity']->sum(function($item) { return $item->credit_total - $item->debit_total; }) + $balanceSheetData['profit_loss'];
+            $totalLiabilitiesPlusEquity = $totalLiabilities + $totalEquity;
+            $difference = $totalAssets - $totalLiabilitiesPlusEquity;
+            $isBalanced = abs($difference) < 0.01;
+        @endphp
+        <div class="balance-check {{ $isBalanced ? 'success' : 'danger' }}" style="text-align: center; margin: 20px 0;">
+            <strong>
+                @if($isBalanced)
+                    Balance Sheet is Balanced
+                @else
+                    Balance Sheet Difference: {{ number_format($difference, 2) }}
+                @endif
+            </strong>
         </div>
     </div>
 
@@ -264,7 +302,7 @@
     <!-- Equity Section -->
     <div class="section">
         <h3>EQUITY</h3>
-        @if($balanceSheetData['current']['equity']->count() > 0)
+        @if($balanceSheetData['current']['equity']->count() > 0 || isset($balanceSheetData['profit_loss']))
             <table class="table">
                 <thead>
                     <tr>
@@ -364,11 +402,144 @@
                 </tbody>
             </table>
         @else
-            <p>No equity accounts found.</p>
+            @if(isset($balanceSheetData['profit_loss']))
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Account</th>
+                            @if($balanceSheetData['filters']['level_of_detail'] === 'detailed')
+                                <th>Code</th>
+                            @endif
+                            <th class="text-end">Current Period</th>
+                            @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                                @foreach($balanceSheetData['comparative'] as $columnName => $data)
+                                    <th class="text-end">{{ $columnName }}</th>
+                                @endforeach
+                            @endif
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <!-- Profit & Loss Section -->
+                        <tr class="pnl-row">
+                            <td><strong>Profit & Loss</strong></td>
+                            @if($balanceSheetData['filters']['level_of_detail'] === 'detailed')
+                                <td></td>
+                            @endif
+                            <td class="text-end">
+                                <strong>{{ number_format($balanceSheetData['profit_loss'], 2) }}</strong>
+                            </td>
+                            @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                                @foreach($balanceSheetData['comparative'] as $columnName => $comparativeData)
+                                    @php
+                                        // Calculate comparative P&L - simplified for now
+                                        $compPnL = 0; // Default to 0 for comparative P&L
+                                    @endphp
+                                    <td class="text-end">
+                                        <strong>{{ number_format($compPnL, 2) }}</strong>
+                                    </td>
+                                @endforeach
+                            @endif
+                        </tr>
+                        
+                        <!-- Total Equity -->
+                        <tr class="total-row">
+                            <td><strong>Total Equity</strong></td>
+                            @if($balanceSheetData['filters']['level_of_detail'] === 'detailed')
+                                <td></td>
+                            @endif
+                            <td class="text-end">
+                                <strong>{{ number_format($balanceSheetData['profit_loss'], 2) }}</strong>
+                            </td>
+                            @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                                @foreach($balanceSheetData['comparative'] as $columnName => $comparativeData)
+                                    <td class="text-end">
+                                        <strong>{{ number_format(0, 2) }}</strong>
+                                    </td>
+                                @endforeach
+                            @endif
+                        </tr>
+                    </tbody>
+                </table>
+            @else
+                <p>No equity accounts found.</p>
+            @endif
         @endif
     </div>
 
-
+    <!-- Total Liabilities + Equity Breakdown -->
+    <div class="liabilities-equity-breakdown">
+        <h3 style="text-align: center; background-color: #17a2b8; color: white; padding: 10px; margin: 20px 0;">TOTAL LIABILITIES + EQUITY BREAKDOWN</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Component</th>
+                    <th class="text-center">Amount</th>
+                    @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                        @foreach($balanceSheetData['comparative'] as $columnName => $data)
+                            <th class="text-center">{{ $columnName }}</th>
+                        @endforeach
+                    @endif
+                </tr>
+            </thead>
+            <tbody>
+                @php
+                    $totalLiabilities = $balanceSheetData['current']['liabilities']->sum(function($item) { return $item->credit_total - $item->debit_total; });
+                    $baseEquity = $balanceSheetData['current']['equity']->sum(function($item) { return $item->credit_total - $item->debit_total; });
+                    $totalPnL = $balanceSheetData['profit_loss'];
+                    $totalEquity = $baseEquity + $totalPnL;
+                    $totalLiabilitiesPlusEquity = $totalLiabilities + $totalEquity;
+                @endphp
+                <tr>
+                    <td><strong>Total Liabilities</strong></td>
+                    <td class="text-right"><strong>{{ number_format($totalLiabilities, 2) }}</strong></td>
+                    @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                        @foreach($balanceSheetData['comparative'] as $columnName => $comparativeData)
+                            @php
+                                $comparativeLiabilities = collect($comparativeData['liabilities'] ?? [])->sum(function($item) {
+                                    return $item->credit_total - $item->debit_total;
+                                });
+                            @endphp
+                            <td class="text-right"><strong>{{ number_format($comparativeLiabilities, 2) }}</strong></td>
+                        @endforeach
+                    @endif
+                </tr>
+                <tr>
+                    <td><strong>Total Equity (including P&L)</strong></td>
+                    <td class="text-right"><strong>{{ number_format($totalEquity, 2) }}</strong></td>
+                    @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                        @foreach($balanceSheetData['comparative'] as $columnName => $comparativeData)
+                            @php
+                                $comparativeEquity = collect($comparativeData['equity'] ?? [])->sum(function($item) {
+                                    return $item->credit_total - $item->debit_total;
+                                });
+                                $comparativePnL = 0; // Simplified for now
+                                $comparativeTotalEquity = $comparativeEquity + $comparativePnL;
+                            @endphp
+                            <td class="text-right"><strong>{{ number_format($comparativeTotalEquity, 2) }}</strong></td>
+                        @endforeach
+                    @endif
+                </tr>
+                <tr class="total-row">
+                    <td><strong>TOTAL LIABILITIES + EQUITY</strong></td>
+                    <td class="text-right"><strong>{{ number_format($totalLiabilitiesPlusEquity, 2) }}</strong></td>
+                    @if(isset($balanceSheetData['comparative']) && count($balanceSheetData['comparative']) > 0)
+                        @foreach($balanceSheetData['comparative'] as $columnName => $comparativeData)
+                            @php
+                                $comparativeLiabilities = collect($comparativeData['liabilities'] ?? [])->sum(function($item) {
+                                    return $item->credit_total - $item->debit_total;
+                                });
+                                $comparativeEquity = collect($comparativeData['equity'] ?? [])->sum(function($item) {
+                                    return $item->credit_total - $item->debit_total;
+                                });
+                                $comparativeTotal = $comparativeLiabilities + $comparativeEquity;
+                            @endphp
+                            <td class="text-right"><strong>{{ number_format($comparativeTotal, 2) }}</strong></td>
+                        @endforeach
+                    @endif
+                </tr>
+            </tbody>
+        </table>
+    </div>
 
     <div class="footer">
         <p>This is a computer generated document. No signature is required.</p>
