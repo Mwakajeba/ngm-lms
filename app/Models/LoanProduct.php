@@ -21,6 +21,7 @@ class LoanProduct extends Model
         'minimum_period',
         'maximum_period',
         'grace_period', // Added grace period
+        'maximum_number_of_loans', // Added maximum number of loans
         'top_up_type',
         'top_up_type_value',
         'has_cash_collateral',
@@ -68,6 +69,7 @@ class LoanProduct extends Model
         'has_approval_levels' => 'boolean',
         'minimum_period' => 'integer',
         'maximum_period' => 'integer',
+        'maximum_number_of_loans' => 'integer',
         'fees_ids' => 'array',
         'penalty_ids' => 'array',
         'is_active' => 'boolean',
@@ -210,6 +212,68 @@ class LoanProduct extends Model
     }
 
     /**
+     * Check if customer has reached maximum number of loans for this product
+     */
+    public function hasReachedMaxLoans(int $customerId): bool
+    {
+        // If no maximum is set, allow unlimited loans
+        if (is_null($this->maximum_number_of_loans)) {
+            return false;
+        }
+
+        // Count active loans for this customer and product
+        $activeLoansCount = \App\Models\Loan::where('customer_id', $customerId)
+            ->where('product_id', $this->id)
+            ->where('status', 'active')
+            ->count();
+
+        return $activeLoansCount >= $this->maximum_number_of_loans;
+    }
+
+    /**
+     * Get the remaining number of loans a customer can have for this product
+     */
+    public function getRemainingLoans(int $customerId): int
+    {
+        // If no maximum is set, return -1 (unlimited)
+        if (is_null($this->maximum_number_of_loans)) {
+            return -1;
+        }
+
+        // Count active loans for this customer and product
+        $activeLoansCount = \App\Models\Loan::where('customer_id', $customerId)
+            ->where('product_id', $this->id)
+            ->where('status', 'active')
+            ->count();
+
+        return max(0, $this->maximum_number_of_loans - $activeLoansCount);
+    }
+
+    /**
+     * Get loan statistics for a specific customer and this product
+     */
+    public function getCustomerLoanStats(int $customerId): array
+    {
+        $activeLoansCount = \App\Models\Loan::where('customer_id', $customerId)
+            ->where('product_id', $this->id)
+            ->where('status', 'active')
+            ->count();
+
+        $totalLoansCount = \App\Models\Loan::where('customer_id', $customerId)
+            ->where('product_id', $this->id)
+            ->count();
+
+        return [
+            'active_loans' => $activeLoansCount,
+            'total_loans' => $totalLoansCount,
+            'max_loans' => $this->maximum_number_of_loans,
+            'remaining_loans' => $this->getRemainingLoans($customerId),
+            'has_limit' => !is_null($this->maximum_number_of_loans),
+            'can_create_loan' => !$this->hasReachedMaxLoans($customerId)
+        ];
+    }
+
+    /**
      * Calculate the top-up amount for a given loan amount
      */
     public function topupAmount(float $loanAmount): float
@@ -243,7 +307,7 @@ class LoanProduct extends Model
 
         // Get the first penalty ID from the array
         $penaltyId = is_array($this->penalty_ids) ? $this->penalty_ids[0] : $this->penalty_ids;
-        
+
         return Penalty::find($penaltyId);
     }
 
@@ -257,7 +321,7 @@ class LoanProduct extends Model
         }
 
         $penaltyIds = is_array($this->penalty_ids) ? $this->penalty_ids : [$this->penalty_ids];
-        
+
         return Penalty::whereIn('id', $penaltyIds)->get();
     }
 
@@ -271,7 +335,7 @@ class LoanProduct extends Model
         }
 
         $feeIds = is_array($this->fees_ids) ? $this->fees_ids : [$this->fees_ids];
-        
+
         return Fee::whereIn('id', $feeIds)->get();
     }
 

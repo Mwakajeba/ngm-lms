@@ -1231,7 +1231,27 @@ class LoanController extends Controller
             }
         }
 
-        // Check kama mteja tayari ana mkopo wa bidhaa hii
+        // Check if customer has reached maximum number of loans for this product
+        if ($product->hasReachedMaxLoans($validated['customer_id'])) {
+            $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
+            $maxLoans = $product->maximum_number_of_loans;
+
+            \Log::info("Maximum loan validation triggered", [
+                'customer_id' => $validated['customer_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'max_loans' => $maxLoans,
+                'remaining_loans' => $remainingLoans
+            ]);
+
+            if ($remainingLoans === 0) {
+                return redirect()->back()->withErrors([
+                    'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans.",
+                ])->withInput();
+            }
+        }
+
+        // Check if customer already has an active loan for this product (for top-up logic)
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
             ->where('status', 'active')
@@ -1517,7 +1537,7 @@ class LoanController extends Controller
 
 
         \Log::info('LoanController@update reached');
-        $decoded =Hashids::decode($encodedId);
+        $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Invalid loan ID.']);
         }
@@ -2020,14 +2040,25 @@ class LoanController extends Controller
             }
         }
 
-        //check if member already has a loan with the same product
-        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
-            ->where('product_id', $validated['product_id'])
-            ->where('status', '=', 'active')
-            ->exists();
-        if ($existingLoan) {
-            return back()->withErrors(['error' => 'Member already has a loan with the same product.']);
+        // Check if customer has reached maximum number of loans for this product
+        if ($product->hasReachedMaxLoans($validated['customer_id'])) {
+            $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
+            $maxLoans = $product->maximum_number_of_loans;
+
+            \Log::info("Maximum loan validation triggered in applicationStore", [
+                'customer_id' => $validated['customer_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'max_loans' => $maxLoans,
+                'remaining_loans' => $remainingLoans
+            ]);
+
+            if ($remainingLoans === 0) {
+                return back()->withErrors(['error' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans."]);
+            }
         }
+
+       
 
         try {
             DB::beginTransaction();
