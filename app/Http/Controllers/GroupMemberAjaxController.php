@@ -19,12 +19,20 @@ class GroupMemberAjaxController extends Controller
         ])->get();
 
         $data = $members->map(function ($customer) use ($group) {
-            $hasActiveLoan = $customer->loans->count() > 0;
+            // Always enable the button; backend will block if member has active loans in this group
+            $button = '<button type="button" class="btn btn-sm btn-outline-danger js-remove-member"'
+                . ' data-encoded-group="' . e(Hashids::encode($group->id)) . '"'
+                . ' data-member-id="' . e($customer->id) . '"'
+                . ' data-member-name="' . e($customer->name) . '"'
+                . ' title="Remove Member">'
+                . '<i class="bx bx-trash"></i>'
+                . '</button>';
+
             return [
                 'member' => '<div class="d-flex align-items-center"><div class="avatar-sm bg-light-primary rounded-circle d-flex align-items-center justify-content-center me-2"><i class="bx bx-user font-size-16"></i></div><div><strong>' . e($customer->name) . '</strong><br><small class="text-muted">' . e($customer->phone1 ?? 'No phone') . '</small></div></div>',
                 'joined_date' => $customer->pivot->joined_date ? \Carbon\Carbon::parse($customer->pivot->joined_date)->format('M d, Y') : 'N/A',
                 'notes' => '<small class="text-muted">' . e(\Str::limit($customer->pivot->notes ?? '', 50)) . '</small>',
-                'actions' => '<button type="button" class="btn btn-sm btn-outline-danger" onclick="removeMember(\'' . Hashids::encode($group->id) . '\',' . $customer->id . ',\'' . e($customer->name) . '\')" title="Remove Member" ' . ($hasActiveLoan ? 'disabled' : '') . '><i class="bx bx-trash"></i></button>'
+                'actions' => $button,
             ];
         });
 
