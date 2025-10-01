@@ -1922,7 +1922,9 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
@@ -1980,7 +1982,9 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
         $company = Company::first();
 
         $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
