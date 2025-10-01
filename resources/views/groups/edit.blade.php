@@ -38,7 +38,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         </div>
                         @endif
 
-                        <form action="{{ route('groups.update', Hashids::encode($group->id)) }}" method="POST">
+                        <form action="{{ route('groups.update', Hashids::encode($group->id)) }}" onsubmit="return handleSubmit(this)" method="POST">
                             @csrf
                             @method('PUT')
 
@@ -238,4 +238,45 @@ use Vinkla\Hashids\Facades\Hashids;
         }
     });
 </script>
+@endpush
+
+<!-- DISABLED FORM SUBMISSION -->
+@push('scripts')
+    <script>
+        function handleSubmit(form) {
+            // Prevent multiple submissions
+            if (form.dataset.submitted === "true") return false;
+            form.dataset.submitted = "true";
+
+            // Disable ALL submit buttons in this form
+            form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.setAttribute('aria-disabled', 'true');
+
+                const label = btn.querySelector('.label');
+                const spinner = btn.querySelector('.spinner');
+                if (label) label.textContent = 'Processing...';
+                if (spinner) spinner.classList.remove('hidden');
+            });
+
+            // Optional: block whole page clicks while submitting
+            const ov = document.getElementById('pageOverlay');
+            if (ov) ov.classList.remove('hidden');
+
+            // Allow the submit to proceed
+            return true;
+        }
+
+        // Optional safety: prevent Enter-key spamming multiple submits in some browsers
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                // Only submit on Enter when focused on a button or inside a textarea (adjust to your UX)
+                if (active && active.tagName !== 'TEXTAREA' && active.type !== 'submit') {
+                    // e.preventDefault(); // uncomment if Enter should NOT submit forms
+                }
+            }
+        });
+    </script>
 @endpush

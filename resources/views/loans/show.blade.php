@@ -831,7 +831,7 @@
                                             <div class="row g-3">
                                                 <div class="col-md-6">
                                                     <label class="form-label">Document Type</label>
-                                                    <select class="form-select document-type" name="file_type_id" required>
+                                                    <select class="form-select document-type" name="filetypes[]" required>
                                                         <option value="">-- Select Document Type --</option>
                                                         @foreach($filetypes as $file)
                                                             <option value="{{ $file->id }}">{{ $file->name }}</option>
@@ -841,7 +841,7 @@
                                                 <div class="col-md-6">
                                                     <label class="form-label">Choose File</label>
                                                     <div class="input-group">
-                                                        <input type="file" class="form-control document-file" name="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                                        <input type="file" class="form-control document-file" name="files[]" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
                                                         <button type="button" class="btn btn-outline-danger remove-document-btn">
                                                             <i class="bx bx-trash"></i>
                                                         </button>
@@ -1880,8 +1880,8 @@
                                                                                                 <div class="col-md-6">
                                                                                                     <label class="form-label">Choose File</label>
                                                                                                     <div class="input-group">
-                                                                                                        <input type="file" class="form-control document-file" name="documents[]" 
-                                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                                                                                        <input type="file" class="form-control document-file" name="files[]" 
+                                                                                                            accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
                                                                                                         <button type="button" class="btn btn-outline-danger remove-document-btn">
                                                                                                             <i class="bx bx-trash"></i>
                                                                                                         </button>
@@ -1939,8 +1939,8 @@
                                                                                             <div class="col-md-6">
                                                                                                 <label class="form-label">Choose File</label>
                                                                                                 <div class="input-group">
-                                                                                                    <input type="file" class="form-control document-file" name="documents[]" 
-                                                                                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required>
+                                                                                                    <input type="file" class="form-control document-file" name="files[]" 
+                                                                                                        accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
                                                                                                     <button type="button" class="btn btn-outline-danger remove-document-btn">
                                                                                                         <i class="bx bx-trash"></i>
                                                                                                     </button>
