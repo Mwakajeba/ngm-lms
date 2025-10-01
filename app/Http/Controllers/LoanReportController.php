@@ -152,6 +152,8 @@ class LoanReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download');
 
@@ -162,6 +164,16 @@ class LoanReportController extends Controller
         if ($branchId) {
             $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
+            });
+        }
+        if ($groupId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($groupId) {
+                $query->where('group_id', $groupId);
+            });
+        }
+        if ($loanOfficerId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($loanOfficerId) {
+                $query->where('loan_officer_id', $loanOfficerId);
             });
         }
 
@@ -180,8 +192,12 @@ class LoanReportController extends Controller
 
         // 4. Pata data ya branch
         $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
 
-        return view('loans.reports.repayments.repayment', compact('repayments', 'summary', 'startDate', 'endDate', 'branches'));
+        return view('loans.reports.repayments.repayment', compact('repayments', 'summary', 'startDate', 'endDate', 'branches','loanOfficers','groups'));
     }
 
 
@@ -191,16 +207,28 @@ class LoanReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download');
 
         // 2. Unda query ya malipo
-        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+        $repaymentsQuery = Repayment::with(['loan.customer','loan.group', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
         if ($branchId) {
             $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
+            });
+        }
+        if ($groupId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($groupId) {
+                $query->where('group_id', $groupId);
+            });
+        }
+        if ($loanOfficerId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($loanOfficerId) {
+                $query->where('loan_officer_id', $loanOfficerId);
             });
         }
 
@@ -2503,12 +2531,16 @@ class LoanReportController extends Controller
     {
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $exportType = $request->get('export_type');
 
         $branches = Branch::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
         $company = Company::first();
+        $groups = Group::all();
 
         $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('loan_officer_id') || $request->isMethod('get');
         $nplData = null;
@@ -2519,7 +2551,7 @@ class LoanReportController extends Controller
             'provision_total' => 0,
         ];
         if ($showData) {
-            $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+            $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId, $groupId);
             if (count($nplData) > 0) {
                 $nplSummary['total_npl_loans'] = count($nplData);
                 $nplSummary['total_npl_amount'] = collect($nplData)->sum('outstanding');
@@ -2532,15 +2564,15 @@ class LoanReportController extends Controller
                 return $this->exportNPLToPdf($request);
             }
         }
-        return view('loans.reports.npl_report', compact('nplData', 'nplSummary', 'branches', 'loanOfficers', 'company', 'asOfDate', 'branchId', 'loanOfficerId', 'showData'));
+        return view('loans.reports.npl_report', compact('nplData', 'nplSummary', 'branches', 'loanOfficers', 'company', 'asOfDate', 'branchId', 'loanOfficerId', 'showData','groups') );
     }
 
     /**
      * Query NPL data from database
      */
-    private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null)
+    private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null, $groupId = null)
     {
-        $query = Loan::with(['customer', 'branch', 'loanOfficer', 'collaterals', 'schedule.repayments'])
+        $query = Loan::with(['customer', 'branch','group','loanOfficer', 'collaterals', 'schedule.repayments'])
             ->where('status', 'active')
             ->whereDate('disbursed_on', '<=', $asOfDate);
         if ($branchId) {
@@ -2548,6 +2580,9 @@ class LoanReportController extends Controller
         }
         if ($loanOfficerId) {
             $query->where('loan_officer_id', $loanOfficerId);
+        }
+        if ($groupId) {
+            $query->where('group_id', $groupId);
         }
         $loans = $query->get();
         $nplData = [];
@@ -2613,6 +2648,7 @@ class LoanReportController extends Controller
     {
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
         $filename = 'npl_report_' . $asOfDate . '.xlsx';
@@ -2627,7 +2663,8 @@ class LoanReportController extends Controller
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
-        $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+        $groupId = $request->get('group_id');
+        $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId, $groupId);
         $company = Company::first();
         $pdf = \PDF::loadView('loans.reports.npl_report_pdf', compact('nplData', 'asOfDate', 'branchId', 'loanOfficerId', 'company'));
         $pdf->setPaper('A3', 'landscape');
