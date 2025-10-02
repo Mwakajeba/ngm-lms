@@ -93,4 +93,10 @@ class LoanSchedule extends Model
         $totalPrincipalPaid = $this->repayments->sum('principal');
         return $totalPrincipalPaid >= $this->principal;
     }
+    //checkif penalty is paid
+    public function fullPenaltyPaid()
+    {
+        $totalPenaltyPaid = $this->repayments->sum('penalty_amount');
+        return $totalPenaltyPaid >= $this->penalty_amount;
+    }
 }
