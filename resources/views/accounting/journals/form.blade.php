@@ -3,6 +3,7 @@
     method="POST" 
     enctype="multipart/form-data"
     id="journalForm"
+    onsubmit="return handleSubmit(this)"
 >
     @csrf
     @if(isset($journal))
@@ -231,13 +232,13 @@
             </button>
             @if(isset($journal))
                 @can('edit journal')
-                <button type="submit" class="btn btn-outline-primary" id="submitBtn" style="display: none; opacity: 0.6;">
+                <button type="submit" class="btn btn-outline-primary" id="submitBtn" style="display: none;">
                     <i class="bx bx-save me-1"></i>Update Journal Entry
                 </button>
                 @endcan
             @else
                 @can('create journal')
-                <button type="submit" class="btn btn-outline-primary" id="submitBtn" style="display: none; opacity: 0.6;">
+                <button type="submit" class="btn btn-outline-primary" id="submitBtn" style="display: none;">
                     <i class="bx bx-save me-1"></i>Create Journal Entry
                 </button>
                 @endcan
@@ -448,6 +449,12 @@ function calculateTotals() {
     }
 
 function validateAndSubmit() {
+    // Check if form is already submitted
+    const form = document.getElementById('journalForm');
+    if (form && form.dataset.submitted === "true") {
+        return false;
+    }
+    
     const balance = parseFloat($('#balance').text().replace('TZS ', ''));
     
     if (balance !== 0) {
@@ -484,16 +491,8 @@ function validateAndSubmit() {
         }, 100);
     });
 
-// Disable all submit buttons when any submit button is clicked
-$(document).on('click', 'button[type="submit"]', function() {
-    // Disable all submit buttons immediately
-    $('button[type="submit"]').prop('disabled', true);
-});
-
-// Form validation and submission
-$('#journalForm').on('submit', function(e) {
-    e.preventDefault(); // Always prevent default first
-    
+// Form validation before submission
+function validateForm() {
     const balance = parseFloat($('#balance').text().replace('TZS ', ''));
     
     if (balance !== 0) {
@@ -516,19 +515,61 @@ $('#journalForm').on('submit', function(e) {
         return false;
     }
     
-    // If validation passes, show loading state
-    const form = $(this);
-    const submitButtons = form.find('button[type="submit"]');
-    const originalText = submitButtons.first().html();
-
-    // Determine if this is create or update operation
-    const isUpdate = @if(isset($journal)) true @else false @endif;
-    const loadingText = isUpdate ? 'Updating...' : 'Adding...';
-
-    // Disable ALL submit buttons and show loading
-    submitButtons.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>' + loadingText);
-    
-    // Submit the form programmatically
-    form[0].submit();
-});
+    return true;
+}
 </script>
+
+@push('scripts')
+    <script>
+        function handleSubmit(form) {
+            // Validate form first
+            if (!validateForm()) {
+                return false;
+            }
+            
+            // Prevent multiple submissions
+            if (form.dataset.submitted === "true") return false;
+            form.dataset.submitted = "true";
+
+            // Disable ALL submit buttons in this form
+            form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.setAttribute('aria-disabled', 'true');
+
+                const label = btn.querySelector('.label');
+                const spinner = btn.querySelector('.spinner');
+                if (label) label.textContent = 'Processing...';
+                if (spinner) spinner.classList.remove('hidden');
+            });
+
+            // Also disable the validate button
+            const validateBtn = document.querySelector('button[onclick="validateAndSubmit()"]');
+            if (validateBtn) {
+                validateBtn.disabled = true;
+                validateBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+
+            // Add loading overlay to prevent any further interactions
+            const overlay = document.createElement('div');
+            overlay.id = 'form-loading-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+            overlay.innerHTML = '<div style="background: white; padding: 20px; border-radius: 8px; text-align: center;"><i class="bx bx-loader-alt bx-spin" style="font-size: 24px; color: #007bff;"></i><br><span style="margin-top: 10px; display: block;">Processing...</span></div>';
+            document.body.appendChild(overlay);
+
+            // Allow the submit to proceed
+            return true;
+        }
+
+        // Optional safety: prevent Enter-key spamming multiple submits in some browsers
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                // Only submit on Enter when focused on a button or inside a textarea (adjust to your UX)
+                if (active && active.tagName !== 'TEXTAREA' && active.type !== 'submit') {
+                    // e.preventDefault(); // uncomment if Enter should NOT submit forms
+                }
+            }
+        });
+    </script>
+@endpush
