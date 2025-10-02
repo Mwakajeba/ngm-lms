@@ -231,13 +231,13 @@
             </button>
             @if(isset($journal))
                 @can('edit journal')
-                <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
+                <button type="submit" class="btn btn-outline-primary" id="submitBtn" style="display: none; opacity: 0.6;">
                     <i class="bx bx-save me-1"></i>Update Journal Entry
                 </button>
                 @endcan
             @else
                 @can('create journal')
-                <button type="submit" class="btn btn-primary" id="submitBtn" style="display: none;">
+                <button type="submit" class="btn btn-outline-primary" id="submitBtn" style="display: none; opacity: 0.6;">
                     <i class="bx bx-save me-1"></i>Create Journal Entry
                 </button>
                 @endcan
@@ -484,6 +484,12 @@ function validateAndSubmit() {
         }, 100);
     });
 
+// Disable all submit buttons when any submit button is clicked
+$(document).on('click', 'button[type="submit"]', function() {
+    // Disable all submit buttons immediately
+    $('button[type="submit"]').prop('disabled', true);
+});
+
 // Form validation and submission
 $('#journalForm').on('submit', function(e) {
     e.preventDefault(); // Always prevent default first
@@ -512,15 +518,15 @@ $('#journalForm').on('submit', function(e) {
     
     // If validation passes, show loading state
     const form = $(this);
-    const submitBtn = form.find('button[type="submit"]');
-    const originalText = submitBtn.html();
+    const submitButtons = form.find('button[type="submit"]');
+    const originalText = submitButtons.first().html();
 
     // Determine if this is create or update operation
     const isUpdate = @if(isset($journal)) true @else false @endif;
     const loadingText = isUpdate ? 'Updating...' : 'Adding...';
 
-    // Disable submit button and show loading
-    submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>' + loadingText);
+    // Disable ALL submit buttons and show loading
+    submitButtons.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>' + loadingText);
     
     // Submit the form programmatically
     form[0].submit();
