@@ -171,7 +171,11 @@ class CollectMatureInterestJob implements ShouldQueue
         $penaltyConfig = $product->penalty;
 
         $graceDays = $product->grace_period ?? 0;
-        $deductionType = $product->penalt_deduction_criteria; // 'daily bases' or 'full amount'
+        // frequency from penalty config; fallback to product setting ('daily_bases'|'full_amount')
+        $frequency = $penaltyConfig->charge_frequency ?? null;
+        if (!$frequency) {
+            $frequency = ($product->penalt_deduction_criteria === 'daily_bases') ? 'daily' : 'one_time';
+        }
         $penaltyRateType = $penaltyConfig->penalty_type ?? 'percentage'; // 'percentage' or 'fixed amount'
         $penaltyAmountSetting = $penaltyConfig->amount ?? 0;
         $criteria = $penaltyConfig->deduction_type;
@@ -179,7 +183,7 @@ class CollectMatureInterestJob implements ShouldQueue
         // Preload all schedules with repayments & also next schedule date
         $schedules = $loan->schedule()
             ->with(['repayments:id,loan_schedule_id,penalt_amount,fee_amount,interest,principal'])
-            ->where('due_date', '<', Carbon::today()->subDays($graceDays))
+            ->where('due_date', '<', Carbon::today())
             ->orderBy('due_date')
             ->get()
             ->values();
@@ -195,15 +199,22 @@ class CollectMatureInterestJob implements ShouldQueue
             $nextScheduleDates[$i] = $dueDates->get($i + 1) ?? null;
         }
 
+        // Process all unpaid schedules - charge penalty for each unpaid schedule
         foreach ($schedules as $i => $schedule) {
-            // Check full paid
+            // Respect grace period: skip schedules still within grace window
+            $graceEndDate = Carbon::parse($schedule->due_date)->addDays($graceDays);
+            if (Carbon::today()->lte($graceEndDate)) {
+                continue;
+            }
+            
+            // Check if schedule is fully paid - skip if paid
             $paidAmount = $schedule->repayments->sum(
                 fn($rep) => $rep->penalt_amount + $rep->fee_amount + $rep->interest + $rep->principal
             );
 
             $installmentAmount = $schedule->interest + $schedule->principal + $schedule->fee_amount + $schedule->penalty_amount;
             if ($paidAmount >= $installmentAmount) {
-                continue;
+                continue; // Skip fully paid schedules
             }
 
             // Penalty end date (day before next schedule)
@@ -215,16 +226,17 @@ class CollectMatureInterestJob implements ShouldQueue
                 continue;
             }
 
-            // Skip if penalty already exists
+            // Skip if penalty already exists for this schedule today (for daily penalties)
+            // or if penalty already exists for this schedule (for one-time penalties)
             $exists = GlTransaction::where('chart_account_id', $penaltyConfig->penalty_receivables_account_id)
                 ->where('transaction_type', 'Penalty')
                 ->where('transaction_id', $schedule->id)
                 ->where('customer_id', $loan->customer_id)
-                ->when($deductionType === 'daily bases', fn($q) => $q->whereDate('date', Carbon::today()))
+                ->when($frequency === 'daily', fn($q) => $q->whereDate('date', Carbon::today()))
                 ->exists();
 
             if ($exists) {
-                continue;
+                continue; // Skip if penalty already charged for this schedule
             }
 
             // Determine base amount for penalty calculation
@@ -236,8 +248,8 @@ class CollectMatureInterestJob implements ShouldQueue
                 default => $loan->amount,
             };
 
-            // Calculate penalty
-            if ($deductionType === 'daily bases') {
+            // Calculate penalty for this unpaid schedule
+            if ($frequency === 'daily') {
                 $daysOverdue = max(1, Carbon::today()->diffInDays(
                     Carbon::parse($schedule->due_date)->addDays($graceDays)
                 ));
@@ -246,16 +258,17 @@ class CollectMatureInterestJob implements ShouldQueue
                     : round($penaltyAmountSetting / 30, 2);
                 $penaltyAmount = $dailyAmount * $daysOverdue;
             } else {
+                // One-time penalty for this schedule
                 $penaltyAmount = $penaltyRateType === 'percentage'
                     ? round($base * $penaltyAmountSetting / 100, 2)
                     : round($penaltyAmountSetting, 2);
             }
 
             if ($penaltyAmount <= 0) {
-                continue;
+                continue; // Skip if no penalty amount
             }
 
-            // Insert transactions in one go
+            // Charge penalty for this unpaid schedule
             $glData = [
                 [
                     'chart_account_id' => $penaltyConfig->penalty_receivables_account_id,

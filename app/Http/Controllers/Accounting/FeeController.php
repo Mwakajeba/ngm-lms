@@ -89,6 +89,7 @@ class FeeController extends Controller
 
         $user = auth()->user();
         $companyId = $user->company_id ?? $request->company_id ?? Company::first()->id ?? 1;
+        $branchId = $user->branch_id ?? $request->branch_id ?? Branch::first()->id ?? 1;
 
         $fee = Fee::create([
             'name' => $request->name,
@@ -100,7 +101,7 @@ class FeeController extends Controller
             'deduction_criteria' => $request->deduction_criteria,
             'include_in_schedule' => $request->has('include_in_schedule'),
             'company_id' => $companyId,
-            'branch_id' => $request->branch_id,
+            'branch_id' => $branchId,
             'created_by' => $user->id,
             'updated_by' => $user->id,
         ]);
@@ -189,6 +190,7 @@ class FeeController extends Controller
 
         $user = auth()->user();
         $companyId = $user->company_id ?? $request->company_id ?? Company::first()->id ?? 1;
+        $branchId = $user->branch_id ?? $request->branch_id ?? Branch::first()->id ?? 1;
 
         $fee->update([
             'name' => $request->name,
@@ -200,7 +202,7 @@ class FeeController extends Controller
             'deduction_criteria' => $request->deduction_criteria,
             'include_in_schedule' => $request->has('include_in_schedule'),
             'company_id' => $companyId,
-            'branch_id' => $request->branch_id,
+            'branch_id' => $branchId,
             'updated_by' => $user->id,
         ]);
 
