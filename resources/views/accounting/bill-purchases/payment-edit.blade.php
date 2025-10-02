@@ -88,7 +88,7 @@
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Supplier</label>
-                                    <select name="supplier_id" class="form-select @error('supplier_id') is-invalid @enderror">
+                                    <select name="supplier_id" class="form-select select2-single @error('supplier_id') is-invalid @enderror">
                                         <option value="">-- Select Supplier --</option>
                                         @foreach($suppliers as $supplier)
                                             <option value="{{ $supplier->id }}" 

@@ -48,6 +48,7 @@ use App\Http\Controllers\Reports\BotLiquidAssetsController;
 use App\Http\Controllers\Reports\BotComplaintsReportController;
 use App\Http\Controllers\Reports\BotDepositsBorrowingsController;
 use App\Http\Controllers\Reports\BotAgentBankingController;
+use App\Http\Controllers\EmailController;
 use App\Http\Controllers\Reports\BotLoansDisbursedController;
 use App\Http\Controllers\Reports\BotGeographicalDistributionController;
 use App\Http\Controllers\SubscriptionController;
@@ -291,10 +292,12 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     Route::get('/payment-voucher-approval', [SettingsController::class, 'paymentVoucherApprovalSettings'])->name('payment-voucher-approval');
     Route::put('/payment-voucher-approval', [SettingsController::class, 'updatePaymentVoucherApprovalSettings'])->name('payment-voucher-approval.update');
 
-    // Bulk Email Settings
-    Route::get('/bulk-email', [\App\Http\Controllers\BulkEmailController::class, 'index'])->name('bulk-email');
-    Route::post('/bulk-email/send', [\App\Http\Controllers\BulkEmailController::class, 'send'])->name('bulk-email.send');
-    Route::get('/bulk-email/recipients', [\App\Http\Controllers\BulkEmailController::class, 'getRecipients'])->name('bulk-email.recipients');
+    // Bulk Email Settings (Super Admin only)
+    Route::middleware(['role:super-admin'])->group(function () {
+        Route::get('/bulk-email', [\App\Http\Controllers\BulkEmailController::class, 'index'])->name('bulk-email');
+        Route::post('/bulk-email/send', [\App\Http\Controllers\BulkEmailController::class, 'send'])->name('bulk-email.send');
+        Route::get('/bulk-email/recipients', [\App\Http\Controllers\BulkEmailController::class, 'getRecipients'])->name('bulk-email.recipients');
+    });
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -643,6 +646,11 @@ Route::name('loans.reports.')->group(function () {
         Route::get('/loan-aging/export-excel', [LoanReportController::class, 'exportLoanAgingToExcel'])->name('loan_aging.export_excel');
         Route::get('/loan-aging/export-pdf', [LoanReportController::class, 'exportLoanAgingToPdf'])->name('loan_aging.export_pdf');
 
+        // Loan Portfolio Tracking Report
+        Route::get('/portfolio-tracking', [LoanReportController::class, 'portfolioTrackingReport'])->name('portfolio_tracking');
+        Route::get('/portfolio-tracking/export-excel', [LoanReportController::class, 'exportPortfolioTrackingToExcel'])->name('portfolio_tracking.export_excel');
+        Route::get('/portfolio-tracking/export-pdf', [LoanReportController::class, 'exportPortfolioTrackingToPdf'])->name('portfolio_tracking.export_pdf');
+
         // Loan Aging Installment Report
         Route::get('/loan-aging-installment', [LoanReportController::class, 'loanAgingInstallmentReport'])->name('loan_aging_installment');
         Route::get('/loan-aging-installment/export-excel', [LoanReportController::class, 'exportLoanAgingInstallmentToExcel'])->name('loan_aging_installment.export_excel');
@@ -979,6 +987,14 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::post('sms/bulk', [App\Http\Controllers\DashboardController::class, 'sendBulkSms'])->name('sms.bulk');
+
+// Email Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/emails/compose', [EmailController::class, 'index'])->name('emails.compose');
+    Route::get('/emails/microfinances', [EmailController::class, 'getMicrofinances'])->name('emails.microfinances');
+    Route::post('/emails/send', [EmailController::class, 'sendBulkEmails'])->name('emails.send');
+    Route::post('/emails/test', [EmailController::class, 'testEmail'])->name('emails.test');
+});
 
 Route::post('/logout', function () {
     Auth::logout();

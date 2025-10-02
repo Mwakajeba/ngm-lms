@@ -282,7 +282,7 @@
         <div class="report-title">STATEMENT OF CHANGES IN EQUITY</div>
         <div class="report-date">For the period from {{ \Carbon\Carbon::parse($fromDate)->format('F d, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('F d, Y') }}</div>
         @if(isset($changesEquityData['filters']['branch_id']) && $changesEquityData['filters']['branch_id'] != 'all')
-        <div class="report-details">Branch: {{ $branches->where('id', $changesEquityData['filters']['branch_id'])->first()->name ?? 'N/A' }}</div>
+        <div class="report-details">Branch: {{ collect($branches)->where('id', $changesEquityData['filters']['branch_id'])->first()['name'] ?? 'N/A' }}</div>
         @endif
         <div class="report-details">
             Generated on {{ now()->format('F d, Y \a\t g:i A') }}

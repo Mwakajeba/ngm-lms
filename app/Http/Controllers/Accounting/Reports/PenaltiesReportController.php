@@ -25,8 +25,8 @@ class PenaltiesReportController extends Controller
         $penaltyId = $request->get('penalty_id', 'all');
         $penaltyType = $request->get('penalty_type', 'all'); // 'income' or 'receivables'
 
-        // Get user's assigned branches
-        $branches = $user->branches()->where('company_id', $company->id)->get();
+        // Get user's assigned branches only
+        $branches = $user->branches()->where('branches.company_id', $company->id)->get();
         
         // Get all penalties from penalties table (filtered by company through branch)
         $penalties = \App\Models\Penalty::whereHas('branch', function($query) use ($company) {
@@ -104,9 +104,18 @@ class PenaltiesReportController extends Controller
             ->whereIn('gl.chart_account_id', $chartAccountIds)
             ->whereBetween('gl.date', [$startDate, $endDate]);
 
-        // Apply branch filter
-        if ($branchId !== 'all') {
+        // Apply branch filter: 'all' means all assigned branches
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl.branch_id', $assignedBranchIds);
+            }
         }
 
         $query->select(

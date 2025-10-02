@@ -9,7 +9,7 @@
         <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
             ['label' => 'Bill Purchases', 'url' => route('accounting.bill-purchases'), 'icon' => 'bx bx-receipt'],
-            ['label' => 'Bill #' . $bill->reference, 'url' => '#', 'icon' => 'bx bx-show']
+            ['label' => 'Bill #' . $billPurchase->reference, 'url' => '#', 'icon' => 'bx bx-show']
         ]" />
         <h6 class="mb-0 text-uppercase">BILL PURCHASE DETAILS</h6>
         <hr />
@@ -259,6 +259,7 @@
                                                             <a href="{{ route('accounting.bill-purchases.edit', $billPurchase) }}" class="btn btn-warning">
                                 <i class="bx bx-edit me-1"></i> Edit Bill
                             </a>
+                            @if($billPurchase->payments()->count() == 0)
                             <form action="{{ route('accounting.bill-purchases.destroy', $billPurchase) }}" method="POST" 
                                   onsubmit="return confirm('Are you sure you want to delete this bill?')">
                                 @csrf
@@ -267,6 +268,11 @@
                                     <i class="bx bx-trash me-1"></i> Delete Bill
                                 </button>
                             </form>
+                            @else
+                            <button type="button" class="btn btn-danger" disabled title="Cannot delete bill with existing payments">
+                                <i class="bx bx-trash me-1"></i> Delete Bill
+                            </button>
+                            @endif
                         </div>
                     </div>
                 </div>

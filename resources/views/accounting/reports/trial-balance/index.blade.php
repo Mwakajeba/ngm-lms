@@ -65,11 +65,13 @@
                                     </select>
                                 </div>
 
-                                <!-- Branch -->
+                                <!-- Branch (Assigned) -->
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="all">All Branches</option>
+                                        @if(($branches->count() ?? 0) > 1)
+                                            <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->name }}
@@ -430,22 +432,20 @@ function exportReport(type) {
     
     const url = '{{ route("accounting.reports.trial-balance.export") }}?' + new URLSearchParams(formData);
     
-    // Show loading state
-    Swal.fire({
-        title: 'Generating Report...',
-        text: 'Please wait while we prepare your ' + type.toUpperCase() + ' report.',
-        allowOutsideClick: false,
-        didOpen: () => {
-            Swal.showLoading();
-        }
-    });
+    // Show simple loading message
+    const loadingMsg = document.createElement('div');
+    loadingMsg.innerHTML = 'Generating ' + type.toUpperCase() + ' report...';
+    loadingMsg.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:#333;color:white;padding:20px;border-radius:5px;z-index:9999;';
+    document.body.appendChild(loadingMsg);
     
     // Download the file
     window.location.href = url;
 
-    // close the loading state after a short delay
+    // Remove loading message after a short delay
     setTimeout(() => {
-        Swal.close();
+        if (loadingMsg.parentNode) {
+            loadingMsg.parentNode.removeChild(loadingMsg);
+        }
     }, 2000);
 }
 

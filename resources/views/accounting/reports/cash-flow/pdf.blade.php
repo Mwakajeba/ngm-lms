@@ -281,8 +281,11 @@
         <div class="company-name">{{ $company->name ?? 'Company Name' }}</div>
         <div class="report-title">CASH FLOW STATEMENT</div>
         <div class="report-date">For the period from {{ \Carbon\Carbon::parse($fromDate)->format('F d, Y') }} to {{ \Carbon\Carbon::parse($toDate)->format('F d, Y') }}</div>
-        @if(isset($cashFlowData['filters']['branch_id']) && $cashFlowData['filters']['branch_id'] != 'all')
-        <div class="report-details">Branch: {{ $branches->where('id', $cashFlowData['filters']['branch_id'])->first()->name ?? 'N/A' }}</div>
+        @php
+            $showBranch = isset($cashFlowData['filters']['branch_id']);
+        @endphp
+        @if($showBranch)
+        <div class="report-details">Branch: {{ $branchName ?? 'All Branches' }}</div>
         @endif
         <div class="report-details">
             Generated on {{ now()->format('F d, Y \a\t g:i A') }}

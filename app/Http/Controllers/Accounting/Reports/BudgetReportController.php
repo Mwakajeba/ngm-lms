@@ -194,11 +194,14 @@ class BudgetReportController extends Controller
     {
         $budgetData = $this->getBudgetReportData($request);
         
+        $user = Auth::user();
+        $company = $user->company ?? \App\Models\Company::find($user->company_id);
+        
         $pdf = \PDF::loadView('accounting.reports.budget-report.pdf', [
             'items' => $budgetData['items'],
             'summary' => $budgetData['summary'],
             'filters' => $budgetData['filters'],
-            'company' => Auth::user()->company,
+            'company' => $company,
             'generated_at' => now()->format('d/m/Y H:i:s'),
         ]);
 

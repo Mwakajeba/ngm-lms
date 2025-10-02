@@ -17,6 +17,41 @@
 </head>
 <body>
     <div class="header">
+        @php
+        $logoData = null;
+        if(isset($company) && !empty($company->logo)){
+            $raw = ltrim($company->logo, '/');
+            if (strpos($raw, 'storage/') === 0) {
+                $raw = substr($raw, strlen('storage/'));
+            }
+            
+            // Try multiple paths
+            $paths = [
+                public_path('storage/' . $raw),
+                public_path($raw),
+                storage_path('app/public/' . $raw),
+                public_path('images/' . $raw)
+            ];
+            
+            foreach($paths as $path) {
+                if (file_exists($path)) {
+                    $mime = mime_content_type($path) ?: 'image/png';
+                    $logoData = 'data:' . $mime . ';base64,' . base64_encode(file_get_contents($path));
+                    break;
+                }
+            }
+        }
+        @endphp
+        @if($logoData)
+            <img src="{{ $logoData }}" alt="{{ $company->name ?? 'Company' }} Logo" style="max-height: 70px; max-width: 200px; object-fit: contain; display:block; margin:0 auto 8px;"/>
+        @else
+            <!-- Debug: Company logo not found -->
+            @if(isset($company))
+                <p style="font-size: 10px; color: #666;">Debug: Company: {{ $company->name ?? 'N/A' }}, Logo: {{ $company->logo ?? 'N/A' }}</p>
+            @else
+                <p style="font-size: 10px; color: #666;">Debug: Company data not available</p>
+            @endif
+        @endif
         <h2>Budget vs Actual Report</h2>
         <p>Period: {{ $filters['date_from'] }} to {{ $filters['date_to'] }}</p>
         <p>Generated: {{ $generated_at }}</p>

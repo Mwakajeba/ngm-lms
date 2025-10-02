@@ -104,21 +104,24 @@
         table {
             width: 100%;
             border-collapse: collapse;
-            margin-bottom: 20px;
+            margin-bottom: 16px;
         }
 
         th,
         td {
-            border: 1px solid #ddd;
-            padding: 6px;
-            text-align: left;
+            border: 1px solid #e6e6e6;
+            padding: 8px;
             font-size: 10px;
         }
 
         th {
-            background-color: #f2f2f2;
+            background-color: #f7f7f7;
             font-weight: bold;
             text-align: center;
+        }
+
+        tbody tr:nth-child(even) {
+            background-color: #fafafa;
         }
 
         .text-right {
@@ -161,6 +164,21 @@
         .balance-row {
             background-color: #e9ecef;
             font-weight: bold;
+        }
+
+        .badges {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 10px;
+            background: #f8f9fa;
+            border: 1px solid #e6e6e6;
+        }
+
+        .section-title {
+            font-size: 12px;
+            font-weight: bold;
+            margin: 10px 0;
         }
 
         .filter-info {
@@ -222,16 +240,19 @@
 
     <!-- Filter Information -->
     <div class="filter-info">
-        <strong>Report Filters:</strong><br>
-        Penalty: {{ $penaltyName }} |
-        Account Type: {{ $penaltyTypeName }} |
-        Branch: {{ $branchName }}
+        <table style="width:100%; border: 0; margin-bottom: 0;">
+            <tr>
+                <td style="border:0; padding: 2px 0;"><strong>Penalty:</strong> <span class="badges">{{ $penaltyName }}</span></td>
+                <td style="border:0; padding: 2px 0;"><strong>Account Type:</strong> <span class="badges">{{ $penaltyTypeName }}</span></td>
+                <td style="border:0; padding: 2px 0;"><strong>Branch:</strong> <span class="badges">{{ $branchName }}</span></td>
+            </tr>
+        </table>
     </div>
 
 
     <!-- Penalties Details -->
     <div class="penalties-section">
-        <div class="summary-title">Penalties Transaction Details</div>
+        <div class="section-title">Penalties Transaction Details</div>
         @if($penaltiesData['data']->count() > 0)
         <table>
             <thead>
@@ -256,13 +277,12 @@
             </tbody>
             <tfoot>
                 <tr class="balance-row">
-                    <td colspan="4"><strong>TOTAL BALANCE</strong></td>
+                    <td colspan="4" class="text-right"><strong>TOTAL BALANCE</strong></td>
                     <td class="text-right">
                         <strong class="{{ $penaltiesData['summary']['balance'] >= 0 ? 'text-success' : 'text-danger' }}">
                             {{ number_format($penaltiesData['summary']['balance'], 2) }}
                         </strong>
                     </td>
-                    <td colspan="3"></td>
                 </tr>
             </tfoot>
         </table>

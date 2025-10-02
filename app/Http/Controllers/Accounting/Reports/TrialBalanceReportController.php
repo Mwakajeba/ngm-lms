@@ -19,20 +19,18 @@ class TrialBalanceReportController extends Controller
         $user = Auth::user();
         $company = $user->company;
         
-        // Get branches for admin users
-        $branches = [];
-        if ($user->hasRole('admin')) {
-            $branches = DB::table('branches')
-                ->where('company_id', $company->id)
-                ->select('id', 'name')
-                ->get();
-        }
+        // Get branches visible to the user: only assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
 
         // Set default values
         $startDate = $request->get('start_date', now()->startOfMonth()->format('Y-m-d'));
         $endDate = $request->get('end_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
-        $branchId = $request->get('branch_id', $user->branch_id);
+        $branchParam = $request->get('branch_id');
+        $branchId = ($branches->count() > 1 && $branchParam === 'all') ? 'all' : ($branchParam ?: ($branches->first()->id ?? null));
         $layout = $request->get('layout', 'single_column');
         $levelOfDetail = $request->get('level_of_detail', 'detailed');
 
@@ -104,9 +102,18 @@ class TrialBalanceReportController extends Controller
             ->where('account_class_groups.company_id', $company->id)
             ->whereBetween('gl_transactions.date', [$startDate, $endDate]);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter for assigned branches / all assigned
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add reporting type filter (cash vs accrual)
@@ -313,9 +320,18 @@ class TrialBalanceReportController extends Controller
             ->where('account_class_groups.company_id', $company->id)
             ->whereBetween('gl_transactions.date', [$startDate, $endDate]);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter for assigned branches / all assigned
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add reporting type filter (cash vs accrual)
@@ -394,14 +410,11 @@ class TrialBalanceReportController extends Controller
     {
         $user = Auth::user();
         
-        // Get branches for header
-        $branches = [];
-        if ($user->hasRole('admin')) {
-            $branches = DB::table('branches')
-                ->where('company_id', $company->id)
-                ->select('id', 'name')
-                ->get();
-        }
+        // Get branches for header - load for all users, not just admins
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
         
         // Get layout and branchId from trial balance data
         $layout = $trialBalanceData['layout'] ?? 'single';

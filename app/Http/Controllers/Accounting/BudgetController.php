@@ -56,6 +56,8 @@ class BudgetController extends Controller
      */
     public function create()
     {
+        $this->authorize('create', Budget::class);
+        
         $user = Auth::user();
         $accounts = ChartAccount::whereHas('accountClassGroup', function ($query) {
             $query->where('company_id', Auth::user()->company_id);
@@ -69,6 +71,8 @@ class BudgetController extends Controller
      */
     public function store(Request $request)
     {
+        $this->authorize('create', Budget::class);
+        
         $request->validate([
             'name' => 'required|string|max:255',
             'year' => 'required|integer|min:2020|max:2030',
@@ -130,6 +134,8 @@ public function show(Budget $budget)
      */
     public function edit(Budget $budget)
     {
+        $this->authorize('update', $budget);
+        
         // Ensure user can only edit budgets from their branch
         if ($budget->branch_id !== Auth::user()->branch_id) {
             abort(403, 'You can only edit budgets from your own branch.');
@@ -149,6 +155,8 @@ public function show(Budget $budget)
      */
     public function update(Request $request, Budget $budget)
     {
+        $this->authorize('update', $budget);
+        
         // Ensure user can only update budgets from their branch
         if ($budget->branch_id !== Auth::user()->branch_id) {
             abort(403, 'You can only update budgets from your own branch.');
@@ -200,6 +208,8 @@ public function show(Budget $budget)
      */
     public function destroy(Budget $budget)
     {
+        $this->authorize('delete', $budget);
+        
         // Ensure user can only delete budgets from their branch
         
         try {
@@ -489,6 +499,8 @@ public function show(Budget $budget)
      */
     public function exportExcel(Budget $budget)
     {
+        $this->authorize('view budget details', $budget);
+        
         // Ensure user can only export budgets from their branch
         if ($budget->branch_id !== Auth::user()->branch_id) {
             abort(403, 'You can only export budgets from your own branch.');
@@ -580,6 +592,8 @@ public function show(Budget $budget)
      */
     public function exportPdf(Budget $budget)
     {
+        $this->authorize('view budget details', $budget);
+        
         // Ensure user can only export budgets from their branch
         if ($budget->branch_id !== Auth::user()->branch_id) {
             abort(403, 'You can only export budgets from your own branch.');
