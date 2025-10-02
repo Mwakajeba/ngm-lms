@@ -620,8 +620,8 @@
                                                     $paymentPercentage = $item->payment_percentage;
                                                     $completed = $loan->status === 'completed';
                                                     $penaltyPaid = $item->PenaltyPaid();
-                                                    $penaltAmount = $item->penalty_amount;
-                                                    dd($penaltyPaid, $penaltAmount);
+                                                    // $penaltAmount = $item->penalty_amount;
+                                                    // dd($penaltyPaid, $penaltAmount);
 
                                                 @endphp
                                                 <tr
@@ -657,12 +657,12 @@
                                                                 <i class="bx bx-credit-card me-1"></i>Repay
                                                             </button>
                                                         @endif
-                                                        @if($item->PenaltyPaid() < $item->penalty_amount)
+                                                        {{-- @if($item->PenaltyPaid() < $item->penalty_amount)
                                                             <button type="button" class="btn btn-sm btn-warning ms-1"
                                                                 onclick="removePenalty('{{ $item->id }}', '{{ number_format($item->penalty_amount, 2) }}')">
                                                                 <i class="bx bx-x-circle me-1"></i>Remove Penalty
                                                             </button>
-                                                        @endif
+                                                        @endif --}}
                                                     </td>
                                                 </tr>
                                             @endforeach
