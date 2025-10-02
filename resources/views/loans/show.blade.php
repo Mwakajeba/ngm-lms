@@ -620,8 +620,6 @@
                                                     $paymentPercentage = $item->payment_percentage;
                                                     $completed = $loan->status === 'completed';
                                                     $isPenaltyPaid = $item->fullPenaltyPaid();
-                                                   
-
                                                 @endphp
                                                 <tr
                                                     class="{{ $isFullyPaid ? 'table-success' : ($paidAmount > 0 ? 'table-warning' : '') }}">
