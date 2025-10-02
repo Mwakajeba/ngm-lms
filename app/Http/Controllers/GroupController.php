@@ -882,7 +882,7 @@ class GroupController extends Controller
 
             // Add member to target group
             $targetGroup->members()->attach($request->member_id, [
-                'joined_date' => now()->format('Y M D')
+                'joined_date' => now()->format('Y-m-d')
             ]);
             \Log::info('[GroupTransfer] Attached member to target group', [
                 'member_id' => $member->id,
