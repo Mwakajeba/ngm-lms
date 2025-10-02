@@ -212,6 +212,7 @@ class GroupController extends Controller
         // Only allow group leader to be selected from members of this group
         $groupMemberIds = \DB::table('group_members')
             ->where('group_id', $group->id)
+            ->where('group_id', '!=', 1)
             ->pluck('customer_id')
             ->toArray();
 
@@ -305,8 +306,9 @@ class GroupController extends Controller
                 if ($existing) {
                     $existing->delete();
                 }
+                $groupMember = GroupMember::where('group_id', $group->id);
 
-                GroupMember::create([
+                $groupMember->update([
                     'group_id' => $group->id,
                     'customer_id' => $request->group_leader,
                     'joined_date' => now()->format('Y-m-d')
