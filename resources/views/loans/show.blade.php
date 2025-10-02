@@ -654,12 +654,12 @@
                                                                 <i class="bx bx-credit-card me-1"></i>Repay
                                                             </button>
                                                         @endif
-                                                        {{-- @if(!$isPenaltyPaid)
+                                                        @if(!$isPenaltyPaid)
                                                             <button type="button" class="btn btn-sm btn-warning ms-1"
                                                                 onclick="removePenalty('{{ $item->id }}', '{{ number_format($item->penalty_amount, 2) }}')">
                                                                 <i class="bx bx-x-circle me-1"></i>Remove Penalty
                                                             </button>
-                                                        @endif --}}
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
