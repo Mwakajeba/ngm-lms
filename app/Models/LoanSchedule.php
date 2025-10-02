@@ -99,4 +99,9 @@ class LoanSchedule extends Model
         $totalPenaltyPaid = $this->repayments->sum('penalty_amount');
         return $totalPenaltyPaid >= $this->penalty_amount;
     }
+
+    //penalty is paid
+    public function PenaltyPaid(){
+        return $this->repayments->sum('penalty_amount');
+    }
 }
