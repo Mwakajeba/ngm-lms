@@ -73,7 +73,7 @@
                                                 <i class="bx bx-wallet me-1"></i>Bank Account <span class="text-danger">*</span>
                                             </label>
                                             <select
-                                                class="form-select form-select-lg mt-2 @error('bank_account_id') is-invalid @enderror"
+                                                class="form-select form-select-lg select2-single mt-2 @error('bank_account_id') is-invalid @enderror"
                                                 id="bank_account_id" name="bank_account_id" required>
                                                 <option value="">-- Select Bank Account --</option>
                                                 @foreach($bankAccounts as $bankAccount)
@@ -106,7 +106,7 @@
                                                                 Payee Type <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select form-select-lg @error('payee_type') is-invalid @enderror"
+                                                                class="form-select form-select-lg select2-single @error('payee_type') is-invalid @enderror"
                                                                 id="payee_type" name="payee_type" required>
                                                                 <option value="">-- Select Payee Type --</option>
                                                                 <option value="customer" {{ old('payee_type', $paymentVoucher->payee_type) == 'customer' ? 'selected' : '' }}>Customer</option>
@@ -126,7 +126,7 @@
                                                                 Select Customer <span class="text-danger">*</span>
                                             </label>
                                             <select
-                                                class="form-select form-select-lg @error('customer_id') is-invalid @enderror"
+                                                class="form-select form-select-lg select2-single @error('customer_id') is-invalid @enderror"
                                                 id="customer_id" name="customer_id">
                                                                 <option value="">-- Select Customer --</option>
                                                     @foreach($customers as $customer)
@@ -432,6 +432,14 @@
                 theme: 'bootstrap-5'
             });
 
+            // Initialize Select2 for all select elements with select2-single class
+            $('.select2-single').select2({
+                placeholder: 'Select an option',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
+
             // Initialize with existing line items (already rendered in HTML)
             // No need to add sample items since they're already in the DOM
 
@@ -459,6 +467,9 @@
                 if (!validateForm()) {
                     return false;
                 }
+
+                // Disable submit button and show loading state
+                $('#updateBtn').prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-2"></i>Updating...');
 
                 // Submit form
                 this.submit();

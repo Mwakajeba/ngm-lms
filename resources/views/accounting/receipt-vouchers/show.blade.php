@@ -21,13 +21,20 @@
                     <p class="text-muted mb-0">View receipt voucher information</p>
                 </div>
                 <div>
+                    @can('edit receipt voucher')
                     <a href="{{ route('accounting.receipt-vouchers.edit', Hashids::encode($receiptVoucher->id)) }}"
                         class="btn btn-primary me-2">
                         <i class="bx bx-edit me-2"></i>Edit Receipt Voucher
                     </a>
+                    @endcan
                     <a href="{{ route('accounting.receipt-vouchers.export-pdf', Hashids::encode($receiptVoucher->id)) }}" class="btn btn-success me-2">
                         <i class="bx bx-file me-2"></i>Export PDF
                     </a>
+                    @can('delete receipt voucher')
+                    <button type="button" class="btn btn-outline-danger me-2" onclick="deleteReceiptVoucher()">
+                        <i class="bx bx-trash me-2"></i>Delete
+                    </button>
+                    @endcan
                     <a href="{{ route('accounting.receipt-vouchers.index') }}" class="btn btn-secondary">
                         <i class="bx bx-arrow-back me-2"></i>Back to Receipt Vouchers
                     </a>

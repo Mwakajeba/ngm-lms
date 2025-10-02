@@ -386,17 +386,10 @@
                         <div class="d-flex gap-2 flex-wrap">
                             @if($paymentVoucher->reference_type === 'manual')
                             @can('edit payment voucher')
-                            @if(!$paymentVoucher->isFullyApproved())
                             <a href="{{ route('accounting.payment-vouchers.edit', $paymentVoucher->hash_id) }}"
                                 class="btn btn-primary">
                                 <i class="bx bx-edit me-1"></i>Edit
                             </a>
-                            @else
-                            <button type="button" class="btn btn-outline-secondary" disabled
-                                title="Cannot edit: Payment voucher is approved">
-                                <i class="bx bx-lock me-1"></i>Edit (Locked)
-                            </button>
-                            @endif
                             @endcan
                             @can('view payment vouchers')
                             <a href="{{ route('accounting.payment-vouchers.index') }}" class="btn btn-secondary">
@@ -424,16 +417,9 @@
                             @endif
 
                             @can('delete payment voucher')
-                            @if(!$paymentVoucher->isFullyApproved())
                             <button type="button" class="btn btn-outline-danger" onclick="deletePaymentVoucher()">
                                 <i class="bx bx-trash me-1"></i>Delete
                             </button>
-                            @else
-                            <button type="button" class="btn btn-outline-secondary" disabled
-                                title="Cannot delete: Payment voucher is approved">
-                                <i class="bx bx-lock me-1"></i>Delete (Locked)
-                            </button>
-                            @endif
                             @endcan
                             <a href="{{ route('accounting.payment-vouchers.export-pdf', $paymentVoucher->hash_id) }}" class="btn btn-outline-danger">
                                 <i class="bx bx-file me-1"></i>Export PDF
@@ -476,16 +462,9 @@
                                     class="btn btn-sm btn-primary">
                                     <i class="bx bx-download me-1"></i>Download
                                 </a>
-                                @if(!$paymentVoucher->isFullyApproved())
                                 <button type="button" class="btn btn-sm btn-outline-danger" onclick="deleteAttachment()">
                                     <i class="bx bx-trash me-1"></i>Remove
                                 </button>
-                                @else
-                                <button type="button" class="btn btn-sm btn-outline-secondary" disabled
-                                    title="Cannot remove: Payment voucher is approved">
-                                    <i class="bx bx-lock me-1"></i>Remove (Locked)
-                                </button>
-                                @endif
                             </div>
                         </div>
                     </div>
