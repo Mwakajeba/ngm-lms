@@ -72,41 +72,7 @@ class LoanRepaymentController extends Controller
                 'difference' => abs($paymentAmount - $settleAmount)
             ]);
 
-            // Check if this is a settle repayment (amount matches settle amount within 0.01 tolerance)
-            $isSettleRepayment = abs($paymentAmount - $settleAmount) <= 0.01;
 
-            if ($isSettleRepayment) {
-                Log::info('Processing settle repayment', [
-                    'loan_id' => $request->loan_id,
-                    'amount' => $paymentAmount,
-                    'settle_amount' => $settleAmount
-                ]);
-
-                // Use settle repayment process
-                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
-                $paymentData = [
-                    'bank_chart_account_id' => $bankAccount->chart_account_id,
-                    'bank_account_id' => $request->bank_account_id,
-                    'payment_date' => $request->payment_date,
-                    'notes' => 'Settle repayment - pays current interest and all remaining principal'
-                ];
-
-                $result = $this->repaymentService->processSettleRepayment($request->loan_id, $paymentAmount, $paymentData);
-
-                if ($result['success']) {
-                    $message = "Loan settled successfully. ";
-                    $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
-                    $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
-
-                    if ($result['loan_closed']) {
-                        $message .= " Loan has been closed.";
-                    }
-
-                    return redirect()->back()->with('success', $message);
-                } else {
-                    return redirect()->back()->with('error', 'Failed to process settle repayment.');
-                }
-            } else {
                 Log::info('Processing normal repayment', [
                     'loan_id' => $request->loan_id,
                     'amount' => $paymentAmount,
@@ -160,7 +126,7 @@ class LoanRepaymentController extends Controller
                 Log::info('Repayment processing result', $result);
 
                 return redirect()->back()->with('success', 'Repayment recorded successfully!');
-            }
+
 
         } catch (\Exception $e) {
             Log::error('Loan repayment error: ' . $e->getMessage());
@@ -560,6 +526,49 @@ class LoanRepaymentController extends Controller
                 'success' => false,
                 'message' => 'Failed to generate receipt: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function storeSettlementRepayment(Request $request)
+    {
+        // Check if this is a settle repayment (amount matches settle amount within 0.01 tolerance)
+        // Get loan and check if amount matches settle amount
+        $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($request->loan_id);
+        $settleAmount = $loan->total_amount_to_settle;
+        $paymentAmount = $request->amount;
+        $isSettleRepayment = abs($paymentAmount - $settleAmount) <= 0.01;
+
+        if ($isSettleRepayment) {
+            Log::info('Processing settle repayment', [
+                'loan_id' => $request->loan_id,
+                'amount' => $paymentAmount,
+                'settle_amount' => $settleAmount
+            ]);
+
+            // Use settle repayment process
+            $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            $paymentData = [
+                'bank_chart_account_id' => $bankAccount->chart_account_id,
+                'bank_account_id' => $request->bank_account_id,
+                'payment_date' => $request->payment_date,
+                'notes' => 'Settle repayment - pays current interest and all remaining principal'
+            ];
+
+            $result = $this->repaymentService->processSettleRepayment($request->loan_id, $paymentAmount, $paymentData);
+
+            if ($result['success']) {
+                $message = "Loan settled successfully. ";
+                $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
+                $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
+
+                if ($result['loan_closed']) {
+                    $message .= " Loan has been closed.";
+                }
+
+                return redirect()->back()->with('success', $message);
+            } else {
+                return redirect()->back()->with('error', 'Failed to process settle repayment.');
+            }
         }
     }
 }

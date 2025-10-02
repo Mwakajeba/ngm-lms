@@ -44,7 +44,10 @@ class GroupController extends Controller
         $loanOfficers = User::where('branch_id', $branchId)->get();
 
         // Get all customer IDs who are already members of any group
-        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
+        $allGroupMemberIds = \DB::table('group_members')
+            ->where('group_id', '!=', 1)
+            ->pluck('customer_id')
+            ->toArray();
 
         // Only customers in 'Borrower' category who are not in any group can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
@@ -73,12 +76,6 @@ class GroupController extends Controller
                         $customer = Customer::find($value);
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
-                        }
-
-                        // Check if customer is already a member of any group
-                        $isInAnyGroup = \DB::table('group_members')->where('customer_id', $value)->exists();
-                        if ($isInAnyGroup) {
-                            $fail('The selected group leader is already a member of another group.');
                         }
                     }
                 }
