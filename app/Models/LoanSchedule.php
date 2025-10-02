@@ -27,6 +27,7 @@ class LoanSchedule extends Model
         return $this->hasMany(Repayment::class, 'loan_schedule_id');
     }
 
+
     /**
      * Get the total amount paid for this schedule
      */
@@ -96,12 +97,12 @@ class LoanSchedule extends Model
     //checkif penalty is paid
     public function fullPenaltyPaid()
     {
-        $totalPenaltyPaid = $this->repayments->sum('penalty_amount');
+        $totalPenaltyPaid = $this->repayments->sum('penalt_amount');
         return $totalPenaltyPaid >= $this->penalty_amount;
     }
 
     //penalty is paid
     public function PenaltyPaid(){
-        return $this->repayments->sum('penalty_amount');
+        return $this->repayments->sum('penalt_amount');
     }
 }
