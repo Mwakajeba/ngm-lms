@@ -77,12 +77,6 @@ class GroupController extends Controller
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
                         }
-
-                        // Check if customer is already a member of any group
-                        $isInAnyGroup = \DB::table('group_members')->where('customer_id', $value)->exists();
-                        if ($isInAnyGroup) {
-                            $fail('The selected group leader is already a member of another group.');
-                        }
                     }
                 }
             ],
