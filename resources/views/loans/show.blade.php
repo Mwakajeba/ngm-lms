@@ -620,7 +620,7 @@
                                                     $paymentPercentage = $item->payment_percentage;
                                                     $completed = $loan->status === 'completed';
                                                     $isPenaltyPaid = $item->fullPenaltyPaid();
-                                                    dd($item, $isPenaltyPaid);
+                                                   
 
                                                 @endphp
                                                 <tr
