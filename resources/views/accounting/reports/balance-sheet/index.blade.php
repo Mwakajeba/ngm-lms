@@ -465,9 +465,7 @@
                                                             @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
                                                                 @foreach($comparativeColumns as $column)
                                                                     @php
-                                                                        // Calculate comparative P&L - simplified for now
-                                                                        $comparativeData = $balanceSheetData['comparative'][$column['name']] ?? [];
-                                                                        $compPnL = 0; // Default to 0 for comparative P&L
+                                                                        $compPnL = $balanceSheetData['comparative_profit_loss'][$column['name']] ?? 0;
                                                                     @endphp
                                                                     <td class="text-end">
                                                                         <strong>{{ number_format($compPnL, 2) }}</strong>
@@ -475,7 +473,113 @@
                                                                 @endforeach
                                                             @endif
                                                         </tr>
+
+                                                        @if($levelOfDetail === 'summary')
+                                                        @php
+                                                            $equityColl = ($balanceSheetData['current']['equity'] ?? collect());
+                                                            // Prefer an explicit capital/share label; otherwise choose the dominant equity line by absolute balance
+                                                            $currentBusinessCapitalItem = $equityColl->first(function($item){
+                                                                $g = strtolower($item->group_name ?? '');
+                                                                $a = strtolower($item->account_name ?? '');
+                                                                return str_contains($g, 'capital') || str_contains($a, 'capital') || str_contains($a, 'share') || str_contains($g, 'share');
+                                                            });
+                                                            if (!$currentBusinessCapitalItem) {
+                                                                $currentBusinessCapitalItem = $equityColl->sortByDesc(function($it){
+                                                                    $bal = ($it->credit_total ?? 0) - ($it->debit_total ?? 0);
+                                                                    return abs($bal);
+                                                                })->first();
+                                                            }
+                                                            // Compute base amount
+                                                            $currentBusinessCapital = $currentBusinessCapitalItem ? (($currentBusinessCapitalItem->credit_total ?? 0) - ($currentBusinessCapitalItem->debit_total ?? 0)) : 0;
+                                                            // Derive a human label similar to dashboard (prefer account/group name containing capital/share)
+                                                            $currentBusinessCapitalName = null;
+                                                            if ($currentBusinessCapitalItem) {
+                                                                $currentBusinessCapitalName = $currentBusinessCapitalItem->account_name ?? $currentBusinessCapitalItem->group_name ?? null;
+                                                            }
+                                                            if (!$currentBusinessCapitalName) {
+                                                                // Try scan all equity items for any name with capital/share
+                                                                foreach ($equityColl as $it) {
+                                                                    $g = $it->group_name ?? '';
+                                                                    $a = $it->account_name ?? '';
+                                                                    if (stripos($a, 'capital') !== false || stripos($g, 'capital') !== false || stripos($a, 'share') !== false || stripos($g, 'share') !== false) {
+                                                                        $currentBusinessCapitalName = $a ?: $g;
+                                                                        break;
+                                                                    }
+                                                                }
+                                                            }
+                                                        @endphp
+                                                        <tr>
+                                                            <td>
+                                                                @php
+                                                                    $currentBusinessCapitalName = $currentBusinessCapitalItem->group_name ?? ($currentBusinessCapitalItem->account_name ?? null);
+                                                                @endphp
+                                                                <strong>{{ $currentBusinessCapitalName ?? 'Capital' }}</strong>
+                                                                @if($currentBusinessCapitalName)
+                                                                    <br><small class="text-muted">{{ $currentBusinessCapitalName }}</small>
+                                                                @endif
+                                                            </td>
+                                                            <td class="text-end">
+                                                                <strong>{{ number_format($currentBusinessCapital, 2) }}</strong>
+                                                            </td>
+                                                            @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                                @foreach($comparativeColumns as $column)
+                                                                    @php
+                                                                        $compData = $balanceSheetData['comparative'][$column['name']] ?? [];
+                                                                        $compEquityColl = collect($compData['equity'] ?? []);
+                                                                        $compCapitalItem = $compEquityColl->first(function($item){
+                                                                            $g = strtolower($item->group_name ?? '');
+                                                                            $a = strtolower($item->account_name ?? '');
+                                                                            return str_contains($g, 'capital') || str_contains($a, 'capital') || str_contains($a, 'share') || str_contains($g, 'share');
+                                                                        });
+                                                                        if (!$compCapitalItem) {
+                                                                            $compCapitalItem = $compEquityColl->sortByDesc(function($it){
+                                                                                $bal = ($it->credit_total ?? 0) - ($it->debit_total ?? 0);
+                                                                                return abs($bal);
+                                                                            })->first();
+                                                                        }
+                                                                        $compCapital = $compCapitalItem ? (($compCapitalItem->credit_total ?? 0) - ($compCapitalItem->debit_total ?? 0)) : 0;
+                                                                        $compCapitalName = $compCapitalItem->group_name ?? ($compCapitalItem->account_name ?? null);
+                                                                    @endphp
+                                                                    <td class="text-end">
+                                                                        <strong>{{ number_format($compCapital, 2) }}</strong>
+                                                                        @if($compCapitalName)
+                                                                            <br><small class="text-muted">{{ $compCapitalName }}</small>
+                                                                        @endif
+                                                                    </td>
+                                                                @endforeach
+                                                            @endif
+                                                        </tr>
+                                                        @endif
                                                         
+                                                        <!-- Equity (excluding P&L) -->
+                                                        @php
+                                                            $baseEquityCurrent = $balanceSheetData['current']['equity']->sum(function($item) {
+                                                                return $item->credit_total - $item->debit_total;
+                                                            });
+                                                        @endphp
+                                                        <tr>
+                                                            <td><strong>Equity (excluding P&L)</strong></td>
+                                                            @if($levelOfDetail === 'detailed')
+                                                                <td></td>
+                                                            @endif
+                                                            <td class="text-end">
+                                                                <strong>{{ number_format($baseEquityCurrent, 2) }}</strong>
+                                                            </td>
+                                                            @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
+                                                                @foreach($comparativeColumns as $column)
+                                                                    @php
+                                                                        $comparativeData = $balanceSheetData['comparative'][$column['name']] ?? [];
+                                                                        $compBaseEquity = collect($comparativeData['equity'] ?? [])->sum(function($item){
+                                                                            return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
+                                                                        });
+                                                                    @endphp
+                                                                    <td class="text-end">
+                                                                        <strong>{{ number_format($compBaseEquity, 2) }}</strong>
+                                                                    </td>
+                                                                @endforeach
+                                                            @endif
+                                                        </tr>
+
                                                         <!-- Total Equity -->
                                                         @php
                                                             $totalEquity = $balanceSheetData['current']['equity']->sum(function($item) {
@@ -493,12 +597,12 @@
                                                             @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
                                                                 @foreach($comparativeColumns as $column)
                                                                     @php
-                                                                        $comparativeData = $balanceSheetData['comparative'][$column['name']] ?? [];
-                                                                        $compEquity = collect($comparativeData['equity'] ?? [])->sum(function($item) {
-                                                                            return $item->credit_total - $item->debit_total;
-                                                                        });
-                                                                        
-                                                                        $compTotalEquity = $compEquity; // Simplified for now
+                                                                    $comparativeData = $balanceSheetData['comparative'][$column['name']] ?? [];
+                                                                    $compEquity = collect($comparativeData['equity'] ?? [])->sum(function($item) {
+                                                                        return $item->credit_total - $item->debit_total;
+                                                                    });
+                                                                    $compPnL = $balanceSheetData['comparative_profit_loss'][$column['name']] ?? 0;
+                                                                    $compTotalEquity = $compEquity + $compPnL;
                                                                     @endphp
                                                                     <td class="text-end">
                                                                         <strong>{{ number_format($compTotalEquity, 2) }}</strong>
@@ -642,7 +746,7 @@
                                                                     $compEquity = collect($comp['equity'] ?? [])->sum(function($item){
                                                                         return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
                                                                     });
-                                                                    $compPnL = 0; // not aggregated; keep zero unless provided
+                                                                    $compPnL = $balanceSheetData['comparative_profit_loss'][$column['name']] ?? 0;
                                                                     $compTotalEquity = $compEquity + $compPnL;
                                                                 @endphp
                                                                 <td class="text-end"><strong>{{ number_format($compTotalEquity, 2) }}</strong></td>
@@ -662,7 +766,7 @@
                                                                     $compEquity = collect($comp['equity'] ?? [])->sum(function($item){
                                                                         return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
                                                                     });
-                                                                    $compPnL = 0;
+                                                                    $compPnL = $balanceSheetData['comparative_profit_loss'][$column['name']] ?? 0;
                                                                     $compTotalLiabPlusEquity = $compTotalLiab + ($compEquity + $compPnL);
                                                                 @endphp
                                                                 <td class="text-end"><strong>{{ number_format($compTotalLiabPlusEquity, 2) }}</strong></td>
