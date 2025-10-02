@@ -121,7 +121,7 @@
         <div class="company-name">{{ $company->name }}</div>
         <div class="report-title">CUSTOMER PERFORMANCE REPORT</div>
         <div class="report-info">
-            Period: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }} | 
+            Period: {{ \Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('d/m/Y') }} |
             Generated: {{ now()->format('d/m/Y H:i:s') }}
         </div>
     </div>
@@ -129,82 +129,12 @@
     <!-- Filter Information -->
     <div class="filter-info">
         <strong>Report Filters:</strong><br>
-        Branch: {{ $branchName }} | 
-        Customer: {{ $customerName }} | 
-        Performance Level: {{ $performanceMetricName }} | 
+        Branch: {{ $branchName }} |
+        Customer: {{ $customerName }} |
+        Performance Level: {{ $performanceMetricName }} |
         Risk Level: {{ $riskLevelName }}
     </div>
 
-    <!-- Summary Section -->
-    <div class="summary-section">
-        <h3>Performance Summary</h3>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <div class="summary-label">Total Customers</div>
-                <div class="summary-value text-primary">{{ number_format($performanceData['summary']['total_customers']) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Excellent (90-100)</div>
-                <div class="summary-value text-success">{{ number_format($performanceData['summary']['excellent_performers']) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Good (70-89)</div>
-                <div class="summary-value text-info">{{ number_format($performanceData['summary']['good_performers']) }}</div>
-            </div>
-        </div>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <div class="summary-label">Average (50-69)</div>
-                <div class="summary-value text-warning">{{ number_format($performanceData['summary']['average_performers']) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Poor (0-49)</div>
-                <div class="summary-value text-danger">{{ number_format($performanceData['summary']['poor_performers']) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Average Score</div>
-                <div class="summary-value text-secondary">{{ number_format($performanceData['summary']['average_performance_score'], 1) }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Risk Level Summary -->
-    <div class="summary-section">
-        <h3>Risk Level Distribution</h3>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <div class="summary-label">Low Risk</div>
-                <div class="summary-value text-success">{{ number_format($performanceData['summary']['low_risk_customers']) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Medium Risk</div>
-                <div class="summary-value text-warning">{{ number_format($performanceData['summary']['medium_risk_customers']) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">High Risk</div>
-                <div class="summary-value text-danger">{{ number_format($performanceData['summary']['high_risk_customers']) }}</div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Financial Summary -->
-    <div class="summary-section">
-        <h3>Financial Summary</h3>
-        <div class="summary-grid">
-            <div class="summary-item">
-                <div class="summary-label">Total Loan Amount</div>
-                <div class="summary-value text-primary">{{ number_format($performanceData['summary']['total_loan_amount'], 2) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Total Repayments</div>
-                <div class="summary-value text-success">{{ number_format($performanceData['summary']['total_repayments'], 2) }}</div>
-            </div>
-            <div class="summary-item">
-                <div class="summary-label">Total Collateral</div>
-                <div class="summary-value text-info">{{ number_format($performanceData['summary']['total_collateral'], 2) }}</div>
-            </div>
-        </div>
-    </div>
 
     <!-- Performance Details -->
     <div class="performance-section">
@@ -223,16 +153,22 @@
                         <th class="text-right">Loan Amount</th>
                         <th class="text-right">Repayments</th>
                         <th class="text-right">Collateral</th>
-                        <th class="text-center">Repayment Rate (%)</th>
-                        <th class="text-center">Avg Days Overdue</th>
-                        <th class="text-center">Performance Score</th>
-                        <th>Risk Level</th>
-                        <th class="text-center">Overdue</th>
-                        <th class="text-center">Active</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @php
+                        $totalLoans = 0;
+                        $totalLoanAmount = 0;
+                        $totalRepayments = 0;
+                        $totalCollateral = 0;
+                    @endphp
                     @foreach($performanceData['data'] as $index => $customer)
+                        @php
+                            $totalLoans += $customer['total_loans'];
+                            $totalLoanAmount += $customer['total_loan_amount'];
+                            $totalRepayments += $customer['total_repayments'];
+                            $totalCollateral += $customer['total_collateral'];
+                        @endphp
                         <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td>{{ $customer['customer_no'] }}</td>
@@ -244,51 +180,15 @@
                             <td class="text-right">{{ number_format($customer['total_loan_amount'], 2) }}</td>
                             <td class="text-right">{{ number_format($customer['total_repayments'], 2) }}</td>
                             <td class="text-right">{{ number_format($customer['total_collateral'], 2) }}</td>
-                            <td class="text-center">
-                                <span class="{{ 
-                                    $customer['repayment_rate'] >= 80 ? 'text-success' : 
-                                    ($customer['repayment_rate'] >= 60 ? 'text-warning' : 'text-danger') 
-                                }}">
-                                    {{ number_format($customer['repayment_rate'], 1) }}%
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="{{ 
-                                    $customer['average_days_overdue'] <= 7 ? 'text-success' : 
-                                    ($customer['average_days_overdue'] <= 30 ? 'text-warning' : 'text-danger') 
-                                }}">
-                                    {{ number_format($customer['average_days_overdue'], 0) }}d
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="{{ 
-                                    $customer['performance_score'] >= 90 ? 'text-success' : 
-                                    ($customer['performance_score'] >= 70 ? 'text-info' : 
-                                    ($customer['performance_score'] >= 50 ? 'text-warning' : 'text-danger')) 
-                                }}">
-                                    {{ number_format($customer['performance_score'], 1) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="{{ 
-                                    $customer['risk_level'] === 'low' ? 'text-success' : 
-                                    ($customer['risk_level'] === 'medium' ? 'text-warning' : 'text-danger') 
-                                }}">
-                                    {{ ucfirst($customer['risk_level']) }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="{{ $customer['overdue_loans_count'] > 0 ? 'text-danger' : 'text-success' }}">
-                                    {{ $customer['overdue_loans_count'] }}
-                                </span>
-                            </td>
-                            <td class="text-center">
-                                <span class="text-info">
-                                    {{ $customer['active_loans_count'] }}
-                                </span>
-                            </td>
                         </tr>
                     @endforeach
+                    <tr>
+                        <td colspan="6" class="text-right" style="font-weight: bold;">TOTAL</td>
+                        <td class="text-center" style="font-weight: bold;">{{ $totalLoans }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($totalLoanAmount, 2) }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($totalRepayments, 2) }}</td>
+                        <td class="text-right" style="font-weight: bold;">{{ number_format($totalCollateral, 2) }}</td>
+                    </tr>
                 </tbody>
             </table>
         @else
