@@ -27,6 +27,7 @@ class LoanSchedule extends Model
         return $this->hasMany(Repayment::class, 'loan_schedule_id');
     }
 
+
     /**
      * Get the total amount paid for this schedule
      */
