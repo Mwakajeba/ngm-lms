@@ -70,7 +70,7 @@
                                 <!-- Account -->
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="account_id" class="form-label">Account</label>
-                                    <select class="form-select" id="account_id" name="account_id">
+                                    <select class="form-select select2-single" id="account_id" name="account_id">
                                         <option value="">All Accounts</option>
                                         @foreach($accounts as $account)
                                             <option value="{{ $account->id }}" {{ $accountId == $account->id ? 'selected' : '' }}>
@@ -82,12 +82,13 @@
                             </div>
 
                             <div class="row">
-                                <!-- Branch (Admin Only) -->
-                                @if($user->hasRole('admin'))
+                                <!-- Branch (Assigned) -->
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="">All Branches</option>
+                                        @if(($branches->count() ?? 0) > 1)
+                                            <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->name }}
@@ -95,7 +96,6 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                @endif
 
                                 <!-- Show Opening Balance -->
                                 <div class="col-md-6 col-lg-3 mb-3">
@@ -188,6 +188,7 @@
                                                             <th>Date</th>
                                                             <th>Account Code</th>
                                                             <th>Account Name</th>
+                                                            <th>Customer</th>
                                                             <th>Transaction ID</th>
                                                             <th>Description</th>
                                                             <th class="text-end">Debit</th>
@@ -210,7 +211,7 @@
                                                                         $previousTransaction = $generalLedgerData['transactions'][$loop->index - 1] ?? null;
                                                                     @endphp
                                                                     <tr class="table-secondary">
-                                                                        <td colspan="5"><strong>Total for {{ $previousTransaction->account_code }} - {{ $previousTransaction->account_name }}</strong></td>
+                                                                        <td colspan="6"><strong>Total for {{ $previousTransaction->account_code }} - {{ $previousTransaction->account_name }}</strong></td>
                                                                         <td class="text-end"><strong>{{ number_format($accountTotalDebit, 2) }}</strong></td>
                                                                         <td class="text-end"><strong>{{ number_format($accountTotalCredit, 2) }}</strong></td>
                                                                         <td class="text-end"><strong>{{ number_format($accountTotalDebit - $accountTotalCredit, 2) }}</strong></td>
@@ -226,6 +227,7 @@
                                                                         <td>{{ \Carbon\Carbon::parse($startDate)->subDay()->format('M d, Y') }}</td>
                                                                         <td>{{ $transaction->account_code }}</td>
                                                                         <td>{{ $transaction->account_name }}</td>
+                                                                        <td>N/A</td>
                                                                         <td>OPENING BALANCE</td>
                                                                         <td>Balance brought forward</td>
                                                                         <td class="text-end">{{ $openingAmount >= 0 ? number_format($openingAmount, 2) : '' }}</td>
@@ -245,6 +247,7 @@
                                                                 <td>{{ \Carbon\Carbon::parse($transaction->date)->format('M d, Y') }}</td>
                                                                 <td>{{ $transaction->account_code }}</td>
                                                                 <td>{{ $transaction->account_name }}</td>
+                                                                <td>{{ $transaction->customer_name ?? 'N/A' }}</td>
                                                                 <td>{{ $transaction->transaction_id }}</td>
                                                                 <td>{{ $transaction->description }}</td>
                                                                 <td class="text-end">{{ $transaction->nature === 'debit' ? number_format($transaction->amount, 2) : '' }}</td>
@@ -267,7 +270,7 @@
                                                                 $lastTransaction = end($generalLedgerData['transactions']);
                                                             @endphp
                                                             <tr class="table-secondary">
-                                                                <td colspan="5"><strong>Total for {{ $lastTransaction->account_code }} - {{ $lastTransaction->account_name }}</strong></td>
+                                                                <td colspan="6"><strong>Total for {{ $lastTransaction->account_code }} - {{ $lastTransaction->account_name }}</strong></td>
                                                                 <td class="text-end"><strong>{{ number_format($accountTotalDebit, 2) }}</strong></td>
                                                                 <td class="text-end"><strong>{{ number_format($accountTotalCredit, 2) }}</strong></td>
                                                                 <td class="text-end"><strong>{{ number_format($accountTotalDebit - $accountTotalCredit, 2) }}</strong></td>
@@ -334,6 +337,13 @@ $(document).ready(function() {
             columnDefs: [
                 { targets: [5, 6, 7], className: 'text-end' }
             ]
+        });
+    }
+    if ($('.select2-single').length && $.fn.select2) {
+        $('.select2-single').select2({
+            width: '100%',
+            placeholder: 'All Accounts',
+            allowClear: true
         });
     }
 });

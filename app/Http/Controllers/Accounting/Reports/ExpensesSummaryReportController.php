@@ -25,12 +25,15 @@ class ExpensesSummaryReportController extends Controller
         $branchId = $request->get('branch_id', 'all');
         $groupBy = $request->get('group_by', 'account'); // account, group, date
         $sortBy = $request->get('sort_by', 'amount'); // amount, date, account
+        
+        // Get comparative columns from request
+        $comparativeColumns = $request->get('comparative_columns', []);
 
         // Get branches for filter
         $branches = $company->branches;
 
         // Get expenses summary data
-        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy);
+        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy, $comparativeColumns);
 
         return view('accounting.reports.expenses-summary.index', compact(
             'expensesData',
@@ -40,12 +43,13 @@ class ExpensesSummaryReportController extends Controller
             'branchId',
             'groupBy',
             'sortBy',
+            'comparativeColumns',
             'branches',
             'user'
         ));
     }
 
-    private function getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy)
+    private function getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy, $comparativeColumns = [])
     {
         $user = Auth::user();
         $company = $user->company;
@@ -158,8 +162,26 @@ class ExpensesSummaryReportController extends Controller
             }
         }
 
+        // Process comparative data
+        $comparativeData = [];
+        if (!empty($comparativeColumns)) {
+            foreach ($comparativeColumns as $column) {
+                if (!empty($column['start_date']) && !empty($column['end_date'])) {
+                    $comparativeData[$column['name']] = $this->getExpensesData(
+                        $column['start_date'], 
+                        $column['end_date'], 
+                        $reportingType, 
+                        $branchId, 
+                        $groupBy, 
+                        $sortBy
+                    );
+                }
+            }
+        }
+
         return [
             'expenses' => $expenses,
+            'comparative' => $comparativeData,
             'summary' => [
                 'total_expenses' => $totalExpenses,
                 'total_transactions' => $totalTransactions,
@@ -191,9 +213,12 @@ class ExpensesSummaryReportController extends Controller
         $groupBy = $request->get('group_by', 'account');
         $sortBy = $request->get('sort_by', 'amount');
         $exportType = $request->get('export_type', 'pdf');
+        
+        // Get comparative columns from request
+        $comparativeColumns = $request->get('comparative_columns', []);
 
         // Get expenses data
-        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy);
+        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy, $comparativeColumns);
 
         if ($exportType === 'pdf') {
             return $this->exportPdf($expensesData, $company, $startDate, $endDate, $reportingType);

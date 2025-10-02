@@ -146,7 +146,7 @@
                                                                 Select Supplier <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select form-select-lg @error('supplier_id') is-invalid @enderror"
+                                                                class="form-select form-select-lg select2-single @error('supplier_id') is-invalid @enderror"
                                                                 id="supplier_id" name="supplier_id">
                                                                 <option value="">-- Select Supplier --</option>
                                                                 @foreach($suppliers as $supplier)

@@ -83,6 +83,43 @@
                                     </div>
                                 </div>
                             </div>
+                            
+                            <!-- Comparative Columns Section -->
+                            <div class="row mt-4">
+                                <div class="col-12">
+                                    <div class="d-flex justify-content-between align-items-center mb-3">
+                                        <h6 class="mb-0">Comparative Columns</h6>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="addComparative()">
+                                            <i class="bx bx-plus me-1"></i> Add Comparative Column
+                                        </button>
+                                    </div>
+                                    <div id="comparatives_container">
+                                        @if(!empty($comparativeColumns))
+                                            @foreach($comparativeColumns as $idx => $col)
+                                                <div class="row g-2 align-items-end mb-2 comparative-row">
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Name</label>
+                                                        <input type="text" class="form-control" name="comparative_columns[{{ $idx }}][name]" value="{{ $col['name'] ?? ('Comparative '.($idx+1)) }}" placeholder="e.g. Previous Period">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">Start Date</label>
+                                                        <input type="date" class="form-control" name="comparative_columns[{{ $idx }}][start_date]" value="{{ $col['start_date'] ?? '' }}">
+                                                    </div>
+                                                    <div class="col-md-3">
+                                                        <label class="form-label">End Date</label>
+                                                        <input type="date" class="form-control" name="comparative_columns[{{ $idx }}][end_date]" value="{{ $col['end_date'] ?? '' }}">
+                                                    </div>
+                                                    <div class="col-md-3 text-end">
+                                                        <button type="button" class="btn btn-outline-danger" onclick="this.closest('.comparative-row').remove()">
+                                                            <i class="bx bx-trash"></i>
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                         </form>
                     </div>
                 </div>
@@ -162,7 +199,7 @@
                         <div>
                             <strong>Report Period:</strong> {{ Carbon\Carbon::parse($startDate)->format('d/m/Y') }} to {{ Carbon\Carbon::parse($endDate)->format('d/m/Y') }} | 
                             <strong>Reporting Type:</strong> {{ ucfirst($reportingType) }} | 
-                            <strong>Branch:</strong> {{ $branchId === 'all' ? 'All Branches' : $branches->where('id', $branchId)->first()->name ?? 'N/A' }} |
+                            <strong>Branch:</strong> {{ $branchId === 'all' ? 'All Branches' : collect($branches)->where('id', $branchId)->first()['name'] ?? 'N/A' }} |
                             <strong>Grouped By:</strong> {{ ucfirst($groupBy) }}
                         </div>
                     </div>
@@ -187,6 +224,11 @@
                                             <th class="text-end">Total Debit</th>
                                             <th class="text-end">Total Credit</th>
                                             <th class="text-end">Net Amount</th>
+                                            @if(!empty($expensesData['comparative']))
+                                                @foreach($expensesData['comparative'] as $columnName => $compData)
+                                                    <th class="text-end">{{ $columnName }} Amount</th>
+                                                @endforeach
+                                            @endif
                                             <th class="text-center">Account Count</th>
                                             <th class="text-center">Transaction Count</th>
                                         </tr>
@@ -198,6 +240,11 @@
                                             <th>Account Group</th>
                                             <th>Description</th>
                                             <th class="text-end">Amount</th>
+                                            @if(!empty($expensesData['comparative']))
+                                                @foreach($expensesData['comparative'] as $columnName => $compData)
+                                                    <th class="text-end">{{ $columnName }} Amount</th>
+                                                @endforeach
+                                            @endif
                                         </tr>
                                     @endif
                                 </thead>
@@ -211,6 +258,15 @@
                                                 <td class="text-end fw-bold">
                                                     {{ number_format($expense->net_amount, 2) }}
                                                 </td>
+                                                @if(!empty($expensesData['comparative']))
+                                                    @foreach($expensesData['comparative'] as $columnName => $compData)
+                                                        @php
+                                                            $compGroup = collect($compData['expenses'])->firstWhere('group_name', $expense->group_name);
+                                                            $compAmount = $compGroup ? $compGroup->net_amount : 0;
+                                                        @endphp
+                                                        <td class="text-end">{{ number_format($compAmount, 2) }}</td>
+                                                    @endforeach
+                                                @endif
                                                 <td class="text-center">{{ $expense->account_count }}</td>
                                                 <td class="text-center">{{ $expense->transaction_count }}</td>
                                             @else
@@ -222,11 +278,20 @@
                                                 <td class="text-end fw-bold">
                                                     {{ number_format($expense->amount, 2) }}
                                                 </td>
+                                                @if(!empty($expensesData['comparative']))
+                                                    @foreach($expensesData['comparative'] as $columnName => $compData)
+                                                        @php
+                                                            $compTransaction = collect($compData['expenses'])->firstWhere('transaction_id', $expense->transaction_id);
+                                                            $compAmount = $compTransaction ? $compTransaction->amount : 0;
+                                                        @endphp
+                                                        <td class="text-end">{{ number_format($compAmount, 2) }}</td>
+                                                    @endforeach
+                                                @endif
                                             @endif
                                         </tr>
                                     @empty
                                         <tr>
-                                            <td colspan="{{ $groupBy === 'group' ? 6 : 6 }}" class="text-center text-muted py-4">
+                                            <td colspan="{{ $groupBy === 'group' ? (6 + count($expensesData['comparative'] ?? [])) : (6 + count($expensesData['comparative'] ?? [])) }}" class="text-center text-muted py-4">
                                                 <i class="bx bx-info-circle me-2"></i>No expenses found for the selected criteria
                                             </td>
                                         </tr>
@@ -375,6 +440,33 @@ function exportReport(type) {
     setTimeout(() => {
         Swal.close();
     }, 2000);
+}
+
+function addComparative() {
+    const container = document.getElementById('comparatives_container');
+    const idx = container.querySelectorAll('.comparative-row').length;
+    const row = document.createElement('div');
+    row.className = 'row g-2 align-items-end mb-2 comparative-row';
+    row.innerHTML = `
+        <div class="col-md-3">
+            <label class="form-label">Name</label>
+            <input type="text" class="form-control" name="comparative_columns[${idx}][name]" value="Comparative ${idx + 1}" placeholder="e.g. Previous Period">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">Start Date</label>
+            <input type="date" class="form-control" name="comparative_columns[${idx}][start_date]">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label">End Date</label>
+            <input type="date" class="form-control" name="comparative_columns[${idx}][end_date]">
+        </div>
+        <div class="col-md-3 text-end">
+            <button type="button" class="btn btn-outline-danger" onclick="this.closest('.comparative-row').remove()">
+                <i class="bx bx-trash"></i>
+            </button>
+        </div>
+    `;
+    container.appendChild(row);
 }
 </script>
 @endsection 

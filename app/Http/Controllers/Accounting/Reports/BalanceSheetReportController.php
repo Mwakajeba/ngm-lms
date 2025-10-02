@@ -17,31 +17,23 @@ class BalanceSheetReportController extends Controller
         $user = Auth::user();
         $company = $user->company;
         
-        // Get branches for users
-        $branches = [];
-        if ($user->hasRole('admin')) {
-            // Admin users can see all branches
-            $branches = DB::table('branches')
-                ->where('company_id', $company->id)
-                ->select('id', 'name')
-                ->get();
-        } else {
-            // Non-admin users can see their assigned branches
-            $branches = $user->branches()
-                ->select('branches.id', 'branches.name')
-                ->get();
-        }
+        // Get branches visible to the user: only assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
 
         // Set default values
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $reportingType = $request->get('reporting_type', 'accrual');
         
-        // Set default branch ID
-        $defaultBranchId = $user->branch_id;
-        if (!$defaultBranchId && !empty($branches)) {
-            $defaultBranchId = $branches->first()->id;
+        // Determine selected branch: allow 'all' only if user has >1 assigned branches
+        $branchParam = $request->get('branch_id');
+        if ($branches->count() > 1 && $branchParam === 'all') {
+            $branchId = 'all';
+        } else {
+            $branchId = $branchParam ?: ($branches->first()->id ?? null);
         }
-        $branchId = $request->get('branch_id', $defaultBranchId);
         $levelOfDetail = $request->get('level_of_detail', 'summary');
 
         // Get comparative columns from request
@@ -120,9 +112,20 @@ class BalanceSheetReportController extends Controller
             ->where('account_class_groups.company_id', $company->id)
             ->where('gl_transactions.date', '<=', $asOfDate);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter for assigned branches / all assigned
+        $user = auth()->user();
+        $assignedBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            // limit to assigned branches only
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add reporting type filter (cash vs accrual)
@@ -324,9 +327,19 @@ class BalanceSheetReportController extends Controller
             ->where('account_class_groups.company_id', $company->id)
             ->where('gl_transactions.date', '<=', $asOfDate);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter for assigned branches / all assigned
+        $user = auth()->user();
+        $assignedBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add reporting type filter (cash vs accrual)
@@ -413,8 +426,18 @@ class BalanceSheetReportController extends Controller
             ->where('gl_transactions.date', '<=', $asOfDate)
             ->whereIn('account_class.name', ['income', 'revenue', 'expenses', 'expense']);
 
-        if ($branchId && $branchId != 'all') {
+        $user = Auth::user();
+        $assignedBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         if ($reportingType === 'cash') {

@@ -55,7 +55,7 @@
                                              <i class="bx bx-calendar me-1"></i>
                                              {{ __('app.budget_year') }} <span class="text-danger">*</span>
                                          </label>
-                                         <select class="form-select @error('year') is-invalid @enderror" name="year" required>
+                                         <select class="form-select select2-single @error('year') is-invalid @enderror" name="year" required>
                                              <option value="">{{ __('app.select') }} {{ __('app.budget_year') }}</option>
                                              @for($year = date('Y') - 2; $year <= date('Y') + 3; $year++)
                                                  <option value="{{ $year }}" {{ old('year') == $year ? 'selected' : '' }}>
@@ -133,7 +133,7 @@
                                                                         <a href="{{ route('accounting.budgets.index') }}" class="btn btn-secondary">
                                     <i class="bx bx-x"></i> {{ __('app.cancel') }}
                                         </a>
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" id="submitBtn" class="btn btn-primary">
                                             <i class="bx bx-save"></i> {{ __('app.create_budget') }}
                                         </button>
                                     </div>
@@ -165,7 +165,7 @@
                                      <i class="bx bx-account me-1"></i>
                                                                                   {{ __('app.account') }} <span class="text-danger">*</span>
                                  </label>
-                                 <select class="form-select account-select" name="budget_lines[{index}][account_id]" required>
+                                 <select class="form-select select2-single account-select" name="budget_lines[{index}][account_id]" required>
                                                                                   <option value="">{{ __('app.select_account') }}</option>
                                      @foreach($accounts as $account)
                                          <option value="{{ $account->id }}">
@@ -198,7 +198,7 @@
                                      <i class="bx bx-category me-1"></i>
                                                                                   {{ __('app.category') }} <span class="text-danger">*</span>
                                  </label>
-                                 <select class="form-select category-select" name="budget_lines[{index}][category]" required>
+                                 <select class="form-select select2-single category-select" name="budget_lines[{index}][category]" required>
                                                                                   <option value="">{{ __('app.select_category') }}</option>
                                                                             <option value="Revenue">{{ __('app.revenue') }}</option>
                                        <option value="Expense">{{ __('app.expense') }}</option>
@@ -232,19 +232,31 @@ $(document).ready(function() {
     let lineIndex = 0;
     const accounts = @json($accounts);
     
+    // Initialize Select2 for existing selects
+    function initSelect2(context) {
+        const scope = context ? $(context) : $(document);
+        scope.find('select.select2-single').select2({ width: '100%' });
+    }
+    initSelect2();
+
     // Add budget line
     $('#addBudgetLine').click(function() {
         const template = document.getElementById('budgetLineTemplate').innerHTML;
         const newLine = template.replace(/{index}/g, lineIndex);
         
-        $('#budgetLinesContainer').append(newLine);
+        const $node = $(newLine);
+        $('#budgetLinesContainer').append($node);
         lineIndex++;
         
         // Update line numbers
         updateLineNumbers();
         
         // Add animation
-        $('.budget-line-item').last().hide().fadeIn(300);
+        const $last = $('.budget-line-item').last();
+        $last.hide().fadeIn(300);
+
+        // Initialize select2 on newly added selects
+        initSelect2($last);
     });
     
     // Remove budget line
@@ -274,9 +286,19 @@ $(document).ready(function() {
     
     // Form validation
     $('#budgetForm').submit(function(e) {
+        // Disable submit button to prevent double submission
+        const submitBtn = $('#submitBtn');
+        submitBtn.prop('disabled', true);
+        submitBtn.addClass('opacity-50');
+        submitBtn.html('<i class="bx bx-loader-alt bx-spin me-1"></i> {{ __('app.processing') ?? 'Processing...' }}');
+
         const lines = $('.budget-line-item');
         if (lines.length === 0) {
             e.preventDefault();
+            // Re-enable on validation error
+            submitBtn.prop('disabled', false);
+            submitBtn.removeClass('opacity-50');
+            submitBtn.html('<i class="bx bx-save"></i> {{ __('app.create_budget') }}');
             Swal.fire({
                 icon: 'warning',
                 title: '{{ __('app.no_budget_lines') }}',
@@ -303,6 +325,10 @@ $(document).ready(function() {
         
         if (hasDuplicates) {
             e.preventDefault();
+            // Re-enable on validation error
+            submitBtn.prop('disabled', false);
+            submitBtn.removeClass('opacity-50');
+            submitBtn.html('<i class="bx bx-save"></i> {{ __('app.create_budget') }}');
             Swal.fire({
                 icon: 'error',
                 title: '{{ __('app.duplicate_accounts') }}',
@@ -322,7 +348,7 @@ $(document).ready(function() {
     // });
     
     // Auto-select current year
-    $('select[name="year"]').val('{{ date("Y") }}');
+    $('select[name="year"]').val('{{ date("Y") }}').trigger('change');
     
     // Add hover effects
     $('.budget-line-item').hover(

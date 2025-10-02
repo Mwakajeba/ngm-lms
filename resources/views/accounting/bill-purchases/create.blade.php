@@ -60,7 +60,7 @@
                                 <!-- Supplier Information -->
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Supplier <span class="text-danger">*</span></label>
-                                    <select name="supplier_id" class="form-select @error('supplier_id') is-invalid @enderror" required>
+                                    <select name="supplier_id" class="form-select select2-single @error('supplier_id') is-invalid @enderror" required>
                                         <option value="">-- Select Supplier --</option>
                                         @foreach($suppliers as $supplier)
                                             <option value="{{ $supplier->id }}" {{ old('supplier_id') == $supplier->id ? 'selected' : '' }}>
@@ -74,7 +74,7 @@
                                 <!-- Accounting Information -->
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Credit Account (Accounts Payable) <span class="text-danger">*</span></label>
-                                    <select name="credit_account" class="form-select @error('credit_account') is-invalid @enderror" required>
+                                    <select name="credit_account" class="form-select select2-single @error('credit_account') is-invalid @enderror" required>
                                         <option value="">-- Select Credit Account --</option>
                                         @foreach($chartAccounts as $account)
                                             <option value="{{ $account->id }}" {{ old('credit_account') == $account->id ? 'selected' : '' }}>
@@ -108,7 +108,7 @@
                                 <div class="line-item row mb-3" data-index="0">
                                     <div class="col-md-4">
                                         <label class="form-label fw-bold">Debit Account <span class="text-danger">*</span></label>
-                                        <select name="line_items[0][debit_account]" class="form-select debit-account" required>
+                                        <select name="line_items[0][debit_account]" class="form-select debit-account select2-single" required data-placeholder="Select account">
                                             <option value="">-- Select Account --</option>
                                             @foreach($chartAccounts as $account)
                                                 <option value="{{ $account->id }}">
@@ -164,12 +164,12 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="col-md-6">
+                                <div class="col-md-4">
                                     <div class="d-grid gap-2">
-                                        <button type="submit" class="btn btn-primary">
-                                            <i class="bx bx-save me-1"></i> Create Bill
+                                        <button type="submit" class="btn btn-primary btn-sm js-submit-once">
+                                            <i class="bx bx-save me-1"></i> Create
                                         </button>
-                                        <a href="{{ route('accounting.bill-purchases') }}" class="btn btn-outline-secondary">
+                                        <a href="{{ route('accounting.bill-purchases') }}" class="btn btn-outline-secondary btn-sm">
                                             <i class="bx bx-arrow-back me-1"></i> Cancel
                                         </a>
                                     </div>
@@ -257,12 +257,15 @@ $(document).ready(function() {
         $('#totalAmount').val(total.toFixed(2));
     }
 
-    // Form validation
-    $('#billForm').submit(function(e) {
+    // Prevent double submit: disable and fade submit button
+    $('#billForm').on('submit', function(e) {
+        const btn = $(this).find('.js-submit-once');
+        btn.prop('disabled', true).addClass('disabled').css({ opacity: 0.6, cursor: 'not-allowed' });
         const total = parseFloat($('#totalAmount').val()) || 0;
         if (total <= 0) {
             e.preventDefault();
             alert('Please add at least one line item with a valid amount.');
+            btn.prop('disabled', false).removeClass('disabled').css({ opacity: 1, cursor: 'pointer' });
             return false;
         }
     });

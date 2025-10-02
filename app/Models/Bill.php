@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\LogsActivity;
+use App\Helpers\HashIdHelper;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -178,5 +179,37 @@ class Bill extends Model
     {
         $totalPaid = $this->payments()->sum('amount');
         $this->update(['paid' => $totalPaid]);
+    }
+
+    /**
+     * Resolve model binding using hash ID.
+     */
+    public function resolveRouteBinding($value, $field = null)
+    {
+        if ($field === 'hash_id' || $field === null) {
+            $id = HashIdHelper::decode($value);
+            if ($id !== null) {
+                return $this->findOrFail($id);
+            }
+        }
+        
+        // If not a hash ID, try as regular ID
+        return $this->findOrFail($value);
+    }
+
+    /**
+     * Get the hash ID for this model.
+     */
+    public function getHashIdAttribute()
+    {
+        return HashIdHelper::encode($this->id);
+    }
+
+    /**
+     * Get the hash ID for routing.
+     */
+    public function getRouteKey()
+    {
+        return HashIdHelper::encode($this->id);
     }
 }

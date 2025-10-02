@@ -57,10 +57,23 @@ class DashboardController extends Controller
     /**
      * Endpoint for delinquency loan buckets (current year)
      */
-    public function delinquencyLoanBuckets()
+    public function delinquencyLoanBuckets(Request $request)
     {
         $year = now()->year;
         $company = auth()->user()->company;
+        $user = auth()->user();
+        
+        // Get branch filter from request
+        $selectedBranchId = $request->get('branch_id');
+        
+        // Get user's assigned branches
+        $userBranchIds = $user->branches()->where('company_id', $company->id)->pluck('branches.id')->toArray();
+        
+        // If no assigned branches, use all company branches
+        if (empty($userBranchIds)) {
+            $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
+        }
+        
         // Define buckets (days overdue)
         $buckets = [
             '1-30 days' => [1, 30],
@@ -73,12 +86,23 @@ class DashboardController extends Controller
         $labels = [];
         $values = [];
         foreach ($buckets as $label => [$min, $max]) {
-            $count = \App\Models\Loan::whereYear('disbursed_on', $year)
+            $query = \App\Models\Loan::whereYear('disbursed_on', $year)
                 ->whereHas('branch', function($q) use ($company) {
                     $q->where('company_id', $company->id);
                 })
-                ->where('status', 'active')
-                ->whereHas('schedule', function($q) use ($min, $max) {
+                ->where('status', 'active');
+            
+            // Apply branch filter
+            if ($selectedBranchId) {
+                $query->where('branch_id', $selectedBranchId);
+            } else {
+                // If no specific branch selected, filter by user's assigned branches
+                if (!empty($userBranchIds)) {
+                    $query->whereIn('branch_id', $userBranchIds);
+                }
+            }
+            
+            $count = $query->whereHas('schedule', function($q) use ($min, $max) {
                     $q->whereRaw('DATEDIFF(CURDATE(), due_date) BETWEEN ? AND ?', [$min, $max]);
                 })
                 ->count();
@@ -93,21 +117,45 @@ class DashboardController extends Controller
     /**
      * Endpoint for loan product disbursement data (current year)
      */
-    public function loanProductDisbursement()
+    public function loanProductDisbursement(Request $request)
     {
         $year = now()->year;
         $company = auth()->user()->company;
+        $user = auth()->user();
+        
+        // Get branch filter from request
+        $selectedBranchId = $request->get('branch_id');
+        
+        // Get user's assigned branches
+        $userBranchIds = $user->branches()->where('company_id', $company->id)->pluck('branches.id')->toArray();
+        
+        // If no assigned branches, use all company branches
+        if (empty($userBranchIds)) {
+            $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
+        }
+        
         $products = \App\Models\LoanProduct::all();
 
         $productNames = [];
         $amounts = [];
         foreach ($products as $product) {
-            $total = \App\Models\Loan::where('product_id', $product->id)
+            $query = \App\Models\Loan::where('product_id', $product->id)
                 ->whereYear('disbursed_on', $year)
                 ->whereHas('branch', function($q) use ($company) {
                     $q->where('company_id', $company->id);
-                })
-                ->sum('amount');
+                });
+            
+            // Apply branch filter
+            if ($selectedBranchId) {
+                $query->where('branch_id', $selectedBranchId);
+            } else {
+                // If no specific branch selected, filter by user's assigned branches
+                if (!empty($userBranchIds)) {
+                    $query->whereIn('branch_id', $userBranchIds);
+                }
+            }
+            
+            $total = $query->sum('amount');
             $productNames[] = $product->name;
             $amounts[] = $total;
         }
@@ -128,14 +176,17 @@ class DashboardController extends Controller
         // Get branch filter
         $selectedBranchId = $request->get('branch_id', $user->branch_id);
         
-        // Get available branches for the filter
-        $branches = \App\Models\Branch::where('company_id', $company->id)->get();
+        // Get available branches for the filter - only user's assigned branches
+        $branches = $user->branches()->where('company_id', $company->id)->get();
+        
+        // Get user's assigned branch IDs for filtering
+        $userBranchIds = $branches->pluck('id')->toArray();
         
         // Get balance sheet data
-        $balanceSheetData = $this->getBalanceSheetData();
+        $balanceSheetData = $this->getBalanceSheetData($selectedBranchId, $userBranchIds);
         
         // Get comprehensive financial report data
-        $financialReportData = $this->getFinancialReportData();
+        $financialReportData = $this->getFinancialReportData($selectedBranchId, $userBranchIds);
         
         // Get current month
         $currentMonth = now()->format('Y-m');
@@ -145,6 +196,8 @@ class DashboardController extends Controller
             $query->where('company_id', $company->id);
         })->when($selectedBranchId, function($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
+        }, function($query) use ($userBranchIds) {
+            return $query->whereIn('branch_id', $userBranchIds);
         })
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
@@ -156,6 +209,8 @@ class DashboardController extends Controller
             $query->where('company_id', $company->id);
         })->when($selectedBranchId, function($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
+        }, function($query) use ($userBranchIds) {
+            return $query->whereIn('branch_id', $userBranchIds);
         })
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch'])
@@ -167,6 +222,8 @@ class DashboardController extends Controller
             $query->where('company_id', $company->id);
         })->when($selectedBranchId, function($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
+        }, function($query) use ($userBranchIds) {
+            return $query->whereIn('branch_id', $userBranchIds);
         })
         ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
         ->with(['user', 'branch', 'customer'])
@@ -180,6 +237,8 @@ class DashboardController extends Controller
             $query->where('company_id', $company->id);
         })->when($selectedBranchId, function($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
+        }, function($query) use ($userBranchIds) {
+            return $query->whereIn('branch_id', $userBranchIds);
         })->whereIn('status', ['active', 'completed'])->get();
         
         // All loans for other calculations
@@ -187,6 +246,8 @@ class DashboardController extends Controller
             $query->where('company_id', $company->id);
         })->when($selectedBranchId, function($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
+        }, function($query) use ($userBranchIds) {
+            return $query->whereIn('branch_id', $userBranchIds);
         })->whereIn('status', $loans_status_stats)->get();
         
         // Loans for detailed interest calculations (same statuses as report)
@@ -195,6 +256,8 @@ class DashboardController extends Controller
                 $query->where('company_id', $company->id);
             })->when($selectedBranchId, function($query) use ($selectedBranchId) {
                 return $query->where('branch_id', $selectedBranchId);
+            }, function($query) use ($userBranchIds) {
+                return $query->whereIn('branch_id', $userBranchIds);
             })->whereIn('status', ['active', 'written_off', 'defaulted'])->get();
 
         $totalLoanAmount = $loansForTotalAmount->sum('amount_total');
@@ -274,7 +337,7 @@ class DashboardController extends Controller
         info('penaltyBalance'.$penaltyBalance);
 
         // Get previous year comparative data
-        $previousYearData = $this->getPreviousYearData();
+        $previousYearData = $this->getPreviousYearData($selectedBranchId, $userBranchIds);
 
         return view('dashboard', compact(
             'balanceSheetData',
@@ -300,16 +363,26 @@ class DashboardController extends Controller
         ));
     }
     
-    private function getBalanceSheetData()
+    private function getBalanceSheetData($selectedBranchId = null, $userBranchIds = [])
     {
         $company = auth()->user()->company;
         
         // Get balance sheet data directly from gl_transactions
-        $balanceSheetData = DB::table('gl_transactions')
+        $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
             ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
             ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
-            ->where('account_class_groups.company_id', $company->id)
+            ->where('account_class_groups.company_id', $company->id);
+        
+        // Apply branch filter
+        if ($selectedBranchId) {
+            $query->where('gl_transactions.branch_id', $selectedBranchId);
+        } else {
+            // If no specific branch selected, filter by user's assigned branches
+            $query->whereIn('gl_transactions.branch_id', $userBranchIds);
+        }
+        
+        $balanceSheetData = $query
             ->select(
                 'account_class.name as class_name',
                 'account_class_groups.group_code as class_code',
@@ -360,16 +433,26 @@ class DashboardController extends Controller
         return $balanceSheetData;
     }
     
-    private function getFinancialReportData()
+    private function getFinancialReportData($selectedBranchId = null, $userBranchIds = [])
     {
         $company = auth()->user()->company;
         
         // Get all chart accounts with their balances grouped by account class
-        $chartAccountsData = DB::table('gl_transactions')
+        $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
             ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
             ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
-            ->where('account_class_groups.company_id', $company->id)
+            ->where('account_class_groups.company_id', $company->id);
+        
+        // Apply branch filter
+        if ($selectedBranchId) {
+            $query->where('gl_transactions.branch_id', $selectedBranchId);
+        } else {
+            // If no specific branch selected, filter by user's assigned branches
+            $query->whereIn('gl_transactions.branch_id', $userBranchIds);
+        }
+        
+        $chartAccountsData = $query
             ->select(
                 'chart_accounts.id as account_id',
                 'chart_accounts.account_name as account',
@@ -454,19 +537,29 @@ class DashboardController extends Controller
         ];
     }
     
-    private function getPreviousYearData()
+    private function getPreviousYearData($selectedBranchId = null, $userBranchIds = [])
     {
         $company = auth()->user()->company;
         $currentYear = date('Y');
         $previousYear = $currentYear - 1;
         
         // Get previous year financial data by account
-        $previousYearData = DB::table('gl_transactions')
+        $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
             ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
             ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
             ->where('account_class_groups.company_id', $company->id)
-            ->whereYear('gl_transactions.date', $previousYear)
+            ->whereYear('gl_transactions.date', $previousYear);
+        
+        // Apply branch filter
+        if ($selectedBranchId) {
+            $query->where('gl_transactions.branch_id', $selectedBranchId);
+        } else {
+            // If no specific branch selected, filter by user's assigned branches
+            $query->whereIn('gl_transactions.branch_id', $userBranchIds);
+        }
+        
+        $previousYearData = $query
             ->select(
                 'chart_accounts.id as account_id',
                 'chart_accounts.account_name as account',
