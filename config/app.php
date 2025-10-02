@@ -232,5 +232,8 @@ return [
 
     ],
 
+    'post_max_size' => '64M',
+
+
 
 ];

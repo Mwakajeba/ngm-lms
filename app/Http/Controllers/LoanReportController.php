@@ -30,6 +30,10 @@ class LoanReportController extends Controller
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
         $branchId = $request->input('branch_id');
         $companyId = $request->input('company_id');
+        $groupId = $request->input('group_id');
+        // Get the authenticated user if they are a loan officer
+        $loanOfficerId = $request->input('loan_officer_id');
+
 
         info('start date: ' . $startDate);
         info('end date: ' . $endDate);
@@ -38,7 +42,7 @@ class LoanReportController extends Controller
         // Unda query ya loans na uweke filters
         //$loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
             //->where('status', 'active')
-        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])   
+        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer', 'group'])
             ->whereBetween('disbursed_on', [$startDate, $endDate]);
 
         // Weka filter ya branch
@@ -51,6 +55,12 @@ class LoanReportController extends Controller
             $loansQuery->whereHas('product', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             });
+        }
+        if ($groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
         }
 
         $disbursements = $loansQuery->get();
@@ -66,9 +76,13 @@ class LoanReportController extends Controller
         // Pata list ya branches na companies kwa ajili ya dropdown
         $branches = Branch::all();
         $companies = Company::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('roles', function($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
 
         // Rudi na view ya ripoti
-        return view('loans.reports.disbursed', compact('disbursements', 'summary', 'branches', 'companies'));
+        return view('loans.reports.disbursed', compact('disbursements', 'summary', 'branches', 'companies','groups','loanOfficers'));
     }
 
 
@@ -79,12 +93,15 @@ class LoanReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
         $companyId = $request->input('company_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download'); // 'download' ni default
 
         // 2. Unda query ya loans na uweke filters kama ilivyo kwenye method ya report
-        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
+        $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer','group'])
             ->whereBetween('disbursed_on', [$startDate, $endDate]);
 
         if ($branchId) {
@@ -95,6 +112,12 @@ class LoanReportController extends Controller
             $loansQuery->whereHas('product', function ($query) use ($companyId) {
                 $query->where('company_id', $companyId);
             });
+        }
+        if( $groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+        if( $loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
         }
 
         $disbursements = $loansQuery->get();
@@ -129,6 +152,8 @@ class LoanReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download');
 
@@ -139,6 +164,16 @@ class LoanReportController extends Controller
         if ($branchId) {
             $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
+            });
+        }
+        if ($groupId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($groupId) {
+                $query->where('group_id', $groupId);
+            });
+        }
+        if ($loanOfficerId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($loanOfficerId) {
+                $query->where('loan_officer_id', $loanOfficerId);
             });
         }
 
@@ -157,8 +192,12 @@ class LoanReportController extends Controller
 
         // 4. Pata data ya branch
         $branches = Branch::all();
+        $groups = Group::all();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
 
-        return view('loans.reports.repayments.repayment', compact('repayments', 'summary', 'startDate', 'endDate', 'branches'));
+        return view('loans.reports.repayments.repayment', compact('repayments', 'summary', 'startDate', 'endDate', 'branches','loanOfficers','groups'));
     }
 
 
@@ -168,16 +207,28 @@ class LoanReportController extends Controller
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
         $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download');
 
         // 2. Unda query ya malipo
-        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+        $repaymentsQuery = Repayment::with(['loan.customer','loan.group', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
             ->whereBetween('payment_date', [$startDate, $endDate]);
 
         if ($branchId) {
             $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
+            });
+        }
+        if ($groupId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($groupId) {
+                $query->where('group_id', $groupId);
+            });
+        }
+        if ($loanOfficerId) {
+            $repaymentsQuery->whereHas('loan', function ($query) use ($loanOfficerId) {
+                $query->where('loan_officer_id', $loanOfficerId);
             });
         }
 
@@ -223,15 +274,15 @@ class LoanReportController extends Controller
         $agingData = [];
         $loansQuery = Loan::with(['customer', 'branch', 'loanOfficer'])
             ->where('status', 'active');
-        
+
         if ($branchId) {
             $loansQuery->where('branch_id', $branchId);
         }
-        
+
         if ($loanOfficerId) {
             $loansQuery->where('loan_officer_id', $loanOfficerId);
         }
-        
+
         $loans = $loansQuery->get();
 
         foreach ($loans as $loan) {
@@ -369,10 +420,10 @@ class LoanReportController extends Controller
         $totalOutstandingInterest = 0;
         $totalAccruedInterest = 0;
         $totalNotDueInterest = 0;
-        
+
         $currentDate = \Carbon\Carbon::parse($asOfDate);
         $currentMonth = $currentDate->format('Y-m');
-        
+
         foreach ($loans as $loan) {
             // Calculate repayments breakdown
             $principalPaid = $interestPaid = $feesPaid = $penaltyPaid = 0;
@@ -382,21 +433,21 @@ class LoanReportController extends Controller
                 $feesPaid = $loan->repayments()->sum('fee_amount');
                 $penaltyPaid = $loan->repayments()->sum('penalt_amount');
             }
-            
+
             // Calculate detailed interest breakdown from loan schedules
             $outstandingInterest = 0;
             $accruedInterest = 0;
             $notDueInterest = 0;
-            
+
             if ($loan->schedule && $loan->schedule->count() > 0) {
                 foreach ($loan->schedule as $schedule) {
                     $scheduleDate = \Carbon\Carbon::parse($schedule->due_date);
                     $scheduleMonth = $scheduleDate->format('Y-m');
                     $scheduleInterest = $schedule->interest ?? 0;
-                    
+
                     // Calculate interest paid for this schedule
                     $scheduleInterestPaid = $schedule->repayments->sum('interest');
-                    
+
                     if ($scheduleMonth <= $currentMonth) {
                         // Interest is due up to this month - what's not paid is outstanding
                         $outstandingInterest += max(0, $scheduleInterest - $scheduleInterestPaid);
@@ -405,13 +456,13 @@ class LoanReportController extends Controller
                         $notDueInterest += $scheduleInterest;
                     }
                 }
-                
+
                 // Calculate accrued interest (interest earned but not yet due)
                 // This is interest that has been earned based on time elapsed but not yet due
                 $loanStartDate = \Carbon\Carbon::parse($loan->disbursed_on);
                 $monthsElapsed = $loanStartDate->diffInMonths($currentDate);
                 $totalLoanMonths = $loan->period ?? 1;
-                
+
                 if ($monthsElapsed > 0 && $monthsElapsed < $totalLoanMonths) {
                     // Calculate proportional interest earned but not yet due
                     $accruedInterest = ($notDueInterest * $monthsElapsed) / $totalLoanMonths;
@@ -422,7 +473,7 @@ class LoanReportController extends Controller
                 $notDueInterest = 0;
                 $accruedInterest = 0;
             }
-            
+
             // Calculate outstanding balance correctly: (Principal + Interest) - (Principal Paid + Interest Paid)
             $totalLoanAmount = ($loan->amount ?? 0) + ($loan->interest_amount ?? 0);
             $totalPaid = $principalPaid + $interestPaid;
@@ -430,7 +481,7 @@ class LoanReportController extends Controller
 
             // Calculate expected interest verification: Interest Paid + Outstanding Interest + Not Due Interest
             $calculatedExpectedInterest = $interestPaid + $outstandingInterest + $notDueInterest;
-            
+
             $outstandingData[] = [
                 'customer' => $loan->customer->name ?? 'N/A',
                 'customer_no' => $loan->customer->customerNo ?? 'N/A',
@@ -463,7 +514,7 @@ class LoanReportController extends Controller
 
         // Calculate total expected interest from components for verification
         $totalCalculatedExpectedInterest = $totalPaidInterest + $totalOutstandingInterest + $totalNotDueInterest;
-        
+
         $summary = [
             'total_principal_disbursed' => $totalPrincipalDisbursed,
             'total_expected_interest' => $totalExpectedInterest,
@@ -501,7 +552,7 @@ class LoanReportController extends Controller
     {
         $branch = $branchId ? Branch::find($branchId) : null;
         $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
-        
+
         return \Maatwebsite\Excel\Facades\Excel::download(new class($agingData, $asOfDate, $branch, $loanOfficer) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithTitle, \Maatwebsite\Excel\Concerns\WithStyles, \Maatwebsite\Excel\Concerns\ShouldAutoSize {
             private $agingData;
             private $asOfDate;
@@ -584,7 +635,7 @@ class LoanReportController extends Controller
         $branch = $branchId ? Branch::find($branchId) : null;
         $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
         $company = Company::first(); // Get the first company record
-        
+
         $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('loans.reports.loan_aging_pdf', [
             'agingData' => $agingData,
             'asOfDate' => $asOfDate,
@@ -592,10 +643,10 @@ class LoanReportController extends Controller
             'loanOfficer' => $loanOfficer,
             'company' => $company,
         ]);
-        
+
         // Set PDF to landscape orientation
         $pdf->setPaper('A4', 'landscape');
-        
+
         return $pdf->download('loan_aging_report_' . $asOfDate . '.pdf');
     }
 
@@ -726,7 +777,7 @@ class LoanReportController extends Controller
 
         foreach ($loans as $loan) {
             $overdueSchedules = $loan->schedule;
-            
+
             if ($overdueSchedules->isEmpty()) {
                 continue;
             }
@@ -740,10 +791,10 @@ class LoanReportController extends Controller
             foreach ($overdueSchedules as $schedule) {
                 $dueDate = Carbon::parse($schedule->due_date);
                 $asOfDateCarbon = Carbon::parse($asOfDate);
-                
+
                 // Calculate days past due
                 $daysPastDue = $asOfDateCarbon->diffInDays($dueDate, false);
-                
+
                 // Calculate outstanding principal for this schedule
                 $principalPaid = $schedule->repayments->sum('principal');
                 $principalDue = $schedule->principal - $principalPaid;
@@ -810,10 +861,10 @@ class LoanReportController extends Controller
         if ($request->ajax()) {
             return $this->getArrearsDataForDataTables($request);
         }
-        
+
         // Load initial arrears data
         $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
-        
+
         return view('loans.reports.loan_arrears', compact('branches', 'groups', 'loanOfficers', 'branchId', 'groupId', 'loanOfficerId', 'arrearsData'));
     }
 
@@ -825,7 +876,7 @@ class LoanReportController extends Controller
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
-        
+
         $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
 
         return response()->json([
@@ -843,7 +894,7 @@ class LoanReportController extends Controller
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
-        
+
         $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
 
         $data = [
@@ -865,7 +916,7 @@ class LoanReportController extends Controller
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
-        
+
         $arrearsData = $this->getArrearsData($branchId, $groupId, $loanOfficerId);
 
         // Get company details
@@ -898,7 +949,7 @@ class LoanReportController extends Controller
     private function getArrearsData($branchId = null, $groupId = null, $loanOfficerId = null)
     {
         $today = Carbon::now();
-        
+
         $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
                           ->where('status', 'active');
 
@@ -926,11 +977,11 @@ class LoanReportController extends Controller
             // Check each schedule item for overdue amounts
             foreach ($loan->schedule->sortBy('due_date') as $schedule) {
                 $dueDate = Carbon::parse($schedule->due_date);
-                
+
                 if ($dueDate->lt($today) && $schedule->remaining_amount > 0) {
                     $totalArrears += $schedule->remaining_amount;
                     $overdueSchedules[] = $schedule;
-                    
+
                     if (!$firstOverdueDate) {
                         $firstOverdueDate = $dueDate;
                         $daysInArrears = round($firstOverdueDate->diffInDays($today));
@@ -1002,9 +1053,9 @@ class LoanReportController extends Controller
 
         // Get the expected vs collected data
         $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
-        
+
         return view('loans.reports.expected_vs_collected', compact(
-            'branches', 'groups', 'loanOfficers', 'startDate', 'endDate', 
+            'branches', 'groups', 'loanOfficers', 'startDate', 'endDate',
             'branchId', 'groupId', 'loanOfficerId', 'reportData'
         ));
     }
@@ -1019,7 +1070,7 @@ class LoanReportController extends Controller
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
-        
+
         $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
 
         $data = [
@@ -1045,7 +1096,7 @@ class LoanReportController extends Controller
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
-        
+
         $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
 
         // Get company and filter details
@@ -1215,9 +1266,9 @@ class LoanReportController extends Controller
 
         // Get the PAR data
         $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
-        
+
         return view('loans.reports.portfolio_at_risk', compact(
-            'branches', 'groups', 'loanOfficers', 'asOfDate', 
+            'branches', 'groups', 'loanOfficers', 'asOfDate',
             'branchId', 'groupId', 'loanOfficerId', 'parDays', 'parData'
         ));
     }
@@ -1232,7 +1283,7 @@ class LoanReportController extends Controller
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $parDays = $request->input('par_days', 30);
-        
+
         $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
 
         $data = [
@@ -1258,7 +1309,7 @@ class LoanReportController extends Controller
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $parDays = $request->input('par_days', 30);
-        
+
         $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
 
         // Get company and filter details
@@ -1293,7 +1344,7 @@ class LoanReportController extends Controller
     private function getPortfolioAtRiskData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)
     {
         $asOfDateCarbon = Carbon::parse($asOfDate);
-        
+
         $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
                           ->where('status', 'active');
 
@@ -1322,15 +1373,15 @@ class LoanReportController extends Controller
             // Calculate outstanding balance from schedule
             $totalDue = 0;
             $totalPaid = 0;
-            
+
             foreach ($loan->schedule as $schedule) {
                 $scheduleDue = ($schedule->principal ?? 0) + ($schedule->interest ?? 0) + ($schedule->fee_amount ?? 0);
                 $schedulePaid = $schedule->repayments->sum('amount');
-                
+
                 $totalDue += $scheduleDue;
                 $totalPaid += $schedulePaid;
             }
-            
+
             $outstandingBalance = $totalDue - $totalPaid;
 
             // Skip loans with no outstanding balance
@@ -1342,19 +1393,19 @@ class LoanReportController extends Controller
             $overdueAmount = 0;
             foreach ($loan->schedule as $schedule) {
                 $dueDate = Carbon::parse($schedule->due_date);
-                
+
                 if ($dueDate->lte($asOfDateCarbon)) {
                     $scheduleDue = ($schedule->principal ?? 0) + ($schedule->interest ?? 0) + ($schedule->fee_amount ?? 0);
                     $schedulePaid = $schedule->repayments->sum('amount');
                     $scheduleRemaining = $scheduleDue - $schedulePaid;
-                    
+
                     if ($scheduleRemaining > 0) {
                         $daysPastDue = $asOfDateCarbon->diffInDays($dueDate);
                         $overdueAmount += $scheduleRemaining;
-                        
+
                         if ($daysPastDue >= $parDays) {
                             $isAtRisk = true;
-                            
+
                             if (!$oldestOverdueDate || $dueDate->lt($oldestOverdueDate)) {
                                 $oldestOverdueDate = $dueDate;
                                 $daysInArrears = $daysPastDue;
@@ -1457,7 +1508,7 @@ class LoanReportController extends Controller
         ];
 
         $filename = 'internal_portfolio_analysis_' . date('Y_m_d_His') . '.xlsx';
-        
+
         return Excel::download(new InternalPortfolioAnalysisExport($analysisData, $filters, $company), $filename);
     }
 
@@ -1487,7 +1538,7 @@ class LoanReportController extends Controller
         ];
 
         $filename = 'internal_portfolio_analysis_' . date('Y_m_d_His') . '.pdf';
-        
+
         $pdf = PDF::loadView('loans.reports.internal_portfolio_analysis_pdf', $data);
         $pdf->setPaper('A3', 'landscape');
         $pdf->setOptions([
@@ -1506,7 +1557,7 @@ class LoanReportController extends Controller
     private function getInternalPortfolioAnalysisData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)
     {
         $asOfDateCarbon = Carbon::parse($asOfDate);
-        
+
         $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
                           ->where('status', 'active');
 
@@ -1536,26 +1587,26 @@ class LoanReportController extends Controller
             // Calculate outstanding balance and overdue amounts from schedule
             $totalDue = 0;
             $totalPaid = 0;
-            
+
             foreach ($loan->schedule as $schedule) {
                 $scheduleDue = ($schedule->principal ?? 0) + ($schedule->interest ?? 0) + ($schedule->fee_amount ?? 0);
                 $schedulePaid = $schedule->repayments->sum('amount');
                 $scheduleRemaining = $scheduleDue - $schedulePaid;
-                
+
                 $totalDue += $scheduleDue;
                 $totalPaid += $schedulePaid;
-                
+
                 $dueDate = Carbon::parse($schedule->due_date);
-                
+
                 if ($scheduleRemaining > 0) {
                     if ($dueDate->lte($asOfDateCarbon)) {
                         // Overdue amounts
                         $daysPastDue = $asOfDateCarbon->diffInDays($dueDate);
                         $overdueAmount += $scheduleRemaining;
-                        
+
                         if ($daysPastDue >= $parDays) {
                             $isAtRisk = true;
-                            
+
                             if (!$oldestOverdueDate || $dueDate->lt($oldestOverdueDate)) {
                                 $oldestOverdueDate = $dueDate;
                                 $daysInArrears = $daysPastDue;
@@ -1567,7 +1618,7 @@ class LoanReportController extends Controller
                     }
                 }
             }
-            
+
             $outstandingBalance = $totalDue - $totalPaid;
 
             // Skip loans with no outstanding balance
@@ -1679,13 +1730,13 @@ class LoanReportController extends Controller
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
-        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('group_id') || 
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('group_id') ||
                    $request->has('loan_officer_id') || $request->has('status') || $request->isMethod('get');
 
         $portfolioData = null;
         if ($showData) {
             $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
-            
+
             // Handle exports
             if ($exportType) {
                 if ($exportType === 'excel') {
@@ -1716,7 +1767,7 @@ class LoanReportController extends Controller
         $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
 
         $filename = 'loan_portfolio_report_' . $asOfDate . '.xlsx';
-        
+
         return Excel::download(new PortfolioExport($portfolioData, $status), $filename);
     }
 
@@ -1730,7 +1781,7 @@ class LoanReportController extends Controller
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
         $status = $request->get('status') ?: 'active_completed';
-        
+
         $branches = Branch::all();
         $groups = Group::all();
         $loanOfficers = User::whereHas('loans')->get();
@@ -1742,12 +1793,12 @@ class LoanReportController extends Controller
             'portfolioData', 'branches', 'groups', 'loanOfficers', 'company',
             'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'status'
         ));
-        
+
         $pdf->setPaper('A3', 'landscape');
         $pdf->setOptions(['margin-left' => 10, 'margin-right' => 10, 'margin-top' => 10, 'margin-bottom' => 10]);
-        
+
         $filename = 'loan_portfolio_report_' . $asOfDate . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 
@@ -1777,7 +1828,7 @@ class LoanReportController extends Controller
 
         $loans = $query->get();
         $portfolioData = [];
-        
+
         $totalDisbursed = 0;
         $totalOutstanding = 0;
         $totalPaid = 0;
@@ -1789,25 +1840,25 @@ class LoanReportController extends Controller
         foreach ($loans as $loan) {
             // Calculate loan metrics using correct field names from migration
             $disbursedAmount = $loan->amount ?? 0; // Use 'amount' field for disbursed amount
-            
+
             // Calculate total due - prefer loan amount_total, fallback to amount + interest
             $totalDue = $loan->amount_total ?? 0;
             if ($totalDue == 0) {
                 $totalDue = $disbursedAmount + ($loan->interest_amount ?? 0);
             }
-            
+
             // If we still have no total due and there's a schedule, use schedule calculation
             if ($totalDue == 0 && $loan->schedule->count() > 0) {
                 $totalDue = $loan->schedule->sum(function($schedule) {
                     return $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0);
                 });
             }
-            
+
             // If still no total due, fallback to disbursed amount
             if ($totalDue == 0) {
                 $totalDue = $disbursedAmount;
             }
-            
+
             // Calculate total repaid - try from schedule repayments first, then direct repayments
             $totalRepaid = 0;
             if ($loan->schedule->count() > 0) {
@@ -1820,19 +1871,19 @@ class LoanReportController extends Controller
                 // Fallback to direct repayments
                 $totalRepaid = $loan->repayments->sum('amount') ?? 0;
             }
-            
+
             $outstandingAmount = max(0, $totalDue - $totalRepaid);
-            
+
             // Calculate performance metrics
             $repaymentRate = $totalDue > 0 ? ($totalRepaid / $totalDue) * 100 : 0;
-            
+
             // Use loan model attributes if available, otherwise calculate
             $daysInArrears = 0;
             if (method_exists($loan, 'getDaysInArrearsAttribute')) {
                 $daysInArrears = $loan->days_in_arrears ?? 0;
             }
             $isInArrears = $daysInArrears > 0;
-            
+
             // Loan status metrics
             if ($loan->status === 'active') $activeLoans++;
             elseif ($loan->status === 'completed') $completedLoans++;
@@ -1899,17 +1950,19 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
-        $showData = $request->has('from_date') || $request->has('to_date') || $request->has('branch_id') || 
+        $showData = $request->has('from_date') || $request->has('to_date') || $request->has('branch_id') ||
                    $request->has('group_id') || $request->has('loan_officer_id') || $request->isMethod('get');
 
         $performanceData = null;
         if ($showData) {
             $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
-            
+
             // Handle exports
             if ($exportType) {
                 if ($exportType === 'excel') {
@@ -1940,7 +1993,7 @@ class LoanReportController extends Controller
         $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
 
         $filename = 'loan_performance_report_' . $fromDate . '_to_' . $toDate . '.xlsx';
-        
+
         return Excel::download(new PerformanceExport($performanceData), $filename);
     }
 
@@ -1954,10 +2007,12 @@ class LoanReportController extends Controller
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
-        
+
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
         $company = Company::first();
 
         $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
@@ -1966,12 +2021,12 @@ class LoanReportController extends Controller
             'performanceData', 'branches', 'groups', 'loanOfficers', 'company',
             'fromDate', 'toDate', 'branchId', 'groupId', 'loanOfficerId'
         ));
-        
+
         $pdf->setPaper('A3', 'landscape');
         $pdf->setOptions(['margin-left' => 10, 'margin-right' => 10, 'margin-top' => 10, 'margin-bottom' => 10]);
-        
+
         $filename = 'loan_performance_report_' . $fromDate . '_to_' . $toDate . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 
@@ -1994,7 +2049,7 @@ class LoanReportController extends Controller
 
         $loans = $query->get();
         $performanceData = [];
-        
+
         // Period metrics
         $periodicRepayments = Repayment::whereBetween('payment_date', [$fromDate, $toDate])
             ->when($branchId, function($q) use ($branchId) {
@@ -2036,12 +2091,12 @@ class LoanReportController extends Controller
                 });
             });
             $outstandingAmount = $totalDue - $totalPaid;
-            
+
             // Performance metrics
             $daysInArrears = $loan->days_in_arrears ?? 0;
             $isInArrears = $daysInArrears > 0;
             $repaymentRate = $totalDue > 0 ? ($totalPaid / $totalDue) * 100 : 0;
-            
+
             if ($isInArrears) {
                 $loansInArrears++;
                 $totalDaysInArrears += $daysInArrears;
@@ -2190,13 +2245,13 @@ class LoanReportController extends Controller
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
-        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('group_id') || 
+        $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('group_id') ||
                    $request->has('loan_officer_id') || $request->has('bucket') || $request->isMethod('get');
 
         $delinquencyData = null;
         if ($showData) {
             $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays, $bucket);
-            
+
             // Handle exports
             if ($exportType) {
                 if ($exportType === 'excel') {
@@ -2228,7 +2283,7 @@ class LoanReportController extends Controller
         $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays, $bucket);
 
         $filename = 'delinquency_report_' . $asOfDate . '.xlsx';
-        
+
         return Excel::download(new DelinquencyExport($delinquencyData), $filename);
     }
 
@@ -2243,7 +2298,7 @@ class LoanReportController extends Controller
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
         $delinquencyDays = $request->get('delinquency_days', 1);
         $bucket = $request->get('bucket') ?: null;
-        
+
         $branches = Branch::all();
         $groups = Group::all();
         $loanOfficers = User::whereHas('loans')->get();
@@ -2255,12 +2310,12 @@ class LoanReportController extends Controller
             'delinquencyData', 'branches', 'groups', 'loanOfficers', 'company',
             'asOfDate', 'branchId', 'groupId', 'loanOfficerId', 'delinquencyDays', 'bucket'
         ));
-        
+
         $pdf->setPaper('A3', 'landscape');
         $pdf->setOptions(['margin-left' => 10, 'margin-right' => 10, 'margin-top' => 10, 'margin-bottom' => 10]);
-        
+
         $filename = 'delinquency_report_' . $asOfDate . '.pdf';
-        
+
         return $pdf->download($filename);
     }
 
@@ -2283,12 +2338,12 @@ class LoanReportController extends Controller
 
         $loans = $query->get();
         $delinquencyData = [];
-        
+
         $totalLoans = $loans->count();
         $delinquentLoans = 0;
         $totalDelinquentAmount = 0;
         $totalOutstanding = 0;
-        
+
         // Delinquency buckets
         $bucket1to30 = ['count' => 0, 'amount' => 0]; // 1-30 days
         $bucket31to60 = ['count' => 0, 'amount' => 0]; // 31-60 days
@@ -2306,11 +2361,11 @@ class LoanReportController extends Controller
             });
             $outstandingAmount = $totalDue - $totalPaid;
             $totalOutstanding += $outstandingAmount;
-            
+
             // Get days in arrears
             $daysInArrears = $loan->days_in_arrears ?? 0;
             $isDelinquent = $daysInArrears >= $delinquencyDays;
-            
+
             if ($isDelinquent) {
                 $delinquentLoans++;
                 $totalDelinquentAmount += $outstandingAmount;
@@ -2356,7 +2411,7 @@ class LoanReportController extends Controller
         if ($bucket && !empty($delinquencyData)) {
             $delinquencyData = collect($delinquencyData)->filter(function($loan) use ($bucket) {
                 $daysInArrears = $loan['days_in_arrears'];
-                
+
                 switch ($bucket) {
                     case '1-30':
                         return $daysInArrears >= 1 && $daysInArrears <= 30;
@@ -2372,7 +2427,7 @@ class LoanReportController extends Controller
                         return true;
                 }
             })->values()->toArray();
-            
+
             // Recalculate summary metrics for filtered data
             $delinquentLoans = count($delinquencyData);
             $totalDelinquentAmount = collect($delinquencyData)->sum('outstanding_amount');
@@ -2476,12 +2531,16 @@ class LoanReportController extends Controller
     {
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $exportType = $request->get('export_type');
 
         $branches = Branch::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
         $company = Company::first();
+        $groups = Group::all();
 
         $showData = $request->has('as_of_date') || $request->has('branch_id') || $request->has('loan_officer_id') || $request->isMethod('get');
         $nplData = null;
@@ -2492,7 +2551,7 @@ class LoanReportController extends Controller
             'provision_total' => 0,
         ];
         if ($showData) {
-            $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+            $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId, $groupId);
             if (count($nplData) > 0) {
                 $nplSummary['total_npl_loans'] = count($nplData);
                 $nplSummary['total_npl_amount'] = collect($nplData)->sum('outstanding');
@@ -2505,15 +2564,15 @@ class LoanReportController extends Controller
                 return $this->exportNPLToPdf($request);
             }
         }
-        return view('loans.reports.npl_report', compact('nplData', 'nplSummary', 'branches', 'loanOfficers', 'company', 'asOfDate', 'branchId', 'loanOfficerId', 'showData'));
+        return view('loans.reports.npl_report', compact('nplData', 'nplSummary', 'branches', 'loanOfficers', 'company', 'asOfDate', 'branchId', 'loanOfficerId', 'showData','groups') );
     }
 
     /**
      * Query NPL data from database
      */
-    private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null)
+    private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null, $groupId = null)
     {
-        $query = Loan::with(['customer', 'branch', 'loanOfficer', 'collaterals', 'schedule.repayments'])
+        $query = Loan::with(['customer', 'branch','group','loanOfficer', 'collaterals', 'schedule.repayments'])
             ->where('status', 'active')
             ->whereDate('disbursed_on', '<=', $asOfDate);
         if ($branchId) {
@@ -2522,15 +2581,18 @@ class LoanReportController extends Controller
         if ($loanOfficerId) {
             $query->where('loan_officer_id', $loanOfficerId);
         }
+        if ($groupId) {
+            $query->where('group_id', $groupId);
+        }
         $loans = $query->get();
         $nplData = [];
-        
+
         foreach ($loans as $loan) {
             $maxDpd = 0;
             $hasNplSchedule = false;
             $totalOutstanding = 0;
             $nplOutstanding = 0;
-            
+
             foreach ($loan->schedule as $schedule) {
                 // Calculate outstanding amount for this schedule
                 $totalDue = $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0);
@@ -2539,7 +2601,7 @@ class LoanReportController extends Controller
                 });
                 $outstanding = $totalDue - $totalPaid;
                 $totalOutstanding += $outstanding;
-                
+
                 // Check if this schedule is overdue and has outstanding amount
                 if ($schedule->due_date < $asOfDate && $outstanding > 0) {
                     $dpd = Carbon::parse($asOfDate)->diffInDays(Carbon::parse($schedule->due_date), false);
@@ -2554,7 +2616,7 @@ class LoanReportController extends Controller
                     }
                 }
             }
-            
+
             // Only include loans that have NPL schedules (overdue > 90 days with outstanding amounts)
             if ($hasNplSchedule && $nplOutstanding > 0) {
                 $nplData[] = [
@@ -2586,6 +2648,7 @@ class LoanReportController extends Controller
     {
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
+        $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
         $filename = 'npl_report_' . $asOfDate . '.xlsx';
@@ -2600,7 +2663,8 @@ class LoanReportController extends Controller
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
-        $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId);
+        $groupId = $request->get('group_id');
+        $nplData = $this->getNPLData($asOfDate, $branchId, $loanOfficerId, $groupId);
         $company = Company::first();
         $pdf = \PDF::loadView('loans.reports.npl_report_pdf', compact('nplData', 'asOfDate', 'branchId', 'loanOfficerId', 'company'));
         $pdf->setPaper('A3', 'landscape');
@@ -2615,7 +2679,7 @@ class LoanReportController extends Controller
     {
         $branch = $branchId ? Branch::find($branchId) : null;
         $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
-        
+
         return \Maatwebsite\Excel\Facades\Excel::download(new class($outstandingData, $summary, $asOfDate, $branch, $loanOfficer) implements \Maatwebsite\Excel\Concerns\FromCollection, \Maatwebsite\Excel\Concerns\WithHeadings, \Maatwebsite\Excel\Concerns\WithTitle, \Maatwebsite\Excel\Concerns\WithStyles, \Maatwebsite\Excel\Concerns\ShouldAutoSize {
             private $outstandingData;
             private $summary;
@@ -2702,7 +2766,7 @@ class LoanReportController extends Controller
         $branch = $branchId ? Branch::find($branchId) : null;
         $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
         $company = Company::first();
-        
+
         $pdf = \PDF::loadView('loans.reports.loan_outstanding_pdf', compact('outstandingData', 'summary', 'asOfDate', 'branch', 'loanOfficer', 'company'));
         $pdf->setPaper('A3', 'landscape');
         $filename = 'loan_outstanding_balance_' . $asOfDate . '.pdf';

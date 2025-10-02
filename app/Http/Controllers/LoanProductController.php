@@ -35,7 +35,7 @@ class LoanProductController extends Controller
     public function create()
     {
         // Get chart accounts for dropdowns
-    $chartAccounts = ChartAccount::all();
+        $chartAccounts = ChartAccount::all();
 
         // Get fees and penalties for dropdowns
         $fees = Fee::where('status', 'active')->get();
@@ -109,7 +109,7 @@ class LoanProductController extends Controller
      */
     public function store(Request $request)
     {
-    $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products',
             'product_type' => 'required|string|max:100',
             'minimum_interest_rate' => 'required|numeric|min:0|max:100',
@@ -121,6 +121,7 @@ class LoanProductController extends Controller
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
             'grace_period' => 'nullable|integer|min:0',
+            'maximum_number_of_loans' => 'nullable|integer|min:1',
             'penalt_deduction_criteria' => 'nullable|string',
             'has_top_up' => 'boolean',
             'top_up_type' => 'nullable|required_if:has_top_up,1|string|max:50',
@@ -176,16 +177,18 @@ class LoanProductController extends Controller
         $approvalLevelsHidden = $request->input('approval_levels_hidden');
         $approvalLevels = [];
         if (is_string($approvalLevelsHidden) && strlen(trim($approvalLevelsHidden)) > 0) {
-            $approvalLevels = array_values(array_filter(array_map('trim', explode(',', $approvalLevelsHidden)), function($v){ return $v !== ''; }));
+            $approvalLevels = array_values(array_filter(array_map('trim', explode(',', $approvalLevelsHidden)), function ($v) {
+                return $v !== '';
+            }));
         } elseif (is_array($request->approval_levels)) {
             $approvalLevels = array_map('strval', $request->approval_levels);
         }
 
         // Validate approval levels if provided
         if (!empty($approvalLevels)) {
-            $validRoleIds = \App\Models\Role::pluck('id')->map(fn($id)=>(string)$id)->toArray();
+            $validRoleIds = \App\Models\Role::pluck('id')->map(fn($id) => (string) $id)->toArray();
             foreach ($approvalLevels as $rid) {
-                if (!in_array((string)$rid, $validRoleIds, true)) {
+                if (!in_array((string) $rid, $validRoleIds, true)) {
                     return redirect()->back()
                         ->withErrors(['approval_levels' => 'Invalid role ID "' . $rid . '" in approval levels.'])
                         ->withInput();
@@ -202,7 +205,7 @@ class LoanProductController extends Controller
 
             // Handle fees_ids - map from fees_id array to fees_ids
             if ($request->has('fees_id')) {
-                $data['fees_ids'] = array_filter($request->input('fees_id', []), function($value) {
+                $data['fees_ids'] = array_filter($request->input('fees_id', []), function ($value) {
                     return !empty($value);
                 });
             } else {
@@ -211,7 +214,7 @@ class LoanProductController extends Controller
 
             // Handle penalty_ids - map from penalty_id array to penalty_ids
             if ($request->has('penalty_id')) {
-                $data['penalty_ids'] = array_filter($request->input('penalty_id', []), function($value) {
+                $data['penalty_ids'] = array_filter($request->input('penalty_id', []), function ($value) {
                     return !empty($value);
                 });
             } else {
@@ -285,7 +288,7 @@ class LoanProductController extends Controller
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
         // Get chart accounts for dropdowns
-    $chartAccounts = ChartAccount::all();
+        $chartAccounts = ChartAccount::all();
 
         // Get fees and penalties for dropdowns
         $fees = Fee::where('status', 'active')->get();
@@ -366,7 +369,7 @@ class LoanProductController extends Controller
 
         $loanProduct = LoanProduct::findOrFail($decoded[0]);
 
-    $validator = Validator::make($request->all(), [
+        $validator = Validator::make($request->all(), [
             'name' => 'required|string|max:255|unique:loan_products,name,' . $loanProduct->id,
             'product_type' => 'required|string|max:100',
             'minimum_interest_rate' => 'required|numeric|min:0|max:100',
@@ -378,6 +381,7 @@ class LoanProductController extends Controller
             'minimum_period' => 'required|integer|min:1',
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
             'grace_period' => 'nullable|integer|min:0', // Add grace period validation
+            'maximum_number_of_loans' => 'nullable|integer|min:1',
             'has_top_up' => 'boolean',
             'top_up_type' => 'nullable|required_if:has_top_up,1|string|max:50',
             'top_up_type_value' => 'nullable|required_if:top_up_type,percentage,fixed_amount|numeric|min:0',
@@ -432,16 +436,18 @@ class LoanProductController extends Controller
         $approvalLevelsHidden = $request->input('approval_levels_hidden');
         $approvalLevels = [];
         if (is_string($approvalLevelsHidden) && strlen(trim($approvalLevelsHidden)) > 0) {
-            $approvalLevels = array_values(array_filter(array_map('trim', explode(',', $approvalLevelsHidden)), function($v){ return $v !== ''; }));
+            $approvalLevels = array_values(array_filter(array_map('trim', explode(',', $approvalLevelsHidden)), function ($v) {
+                return $v !== '';
+            }));
         } elseif (is_array($request->approval_levels)) {
             $approvalLevels = array_map('strval', $request->approval_levels);
         }
 
         // Validate approval levels if provided
         if (!empty($approvalLevels)) {
-            $validRoleIds = \App\Models\Role::pluck('id')->map(fn($id)=>(string)$id)->toArray();
+            $validRoleIds = \App\Models\Role::pluck('id')->map(fn($id) => (string) $id)->toArray();
             foreach ($approvalLevels as $rid) {
-                if (!in_array((string)$rid, $validRoleIds, true)) {
+                if (!in_array((string) $rid, $validRoleIds, true)) {
                     return redirect()->back()
                         ->withErrors(['approval_levels' => 'Invalid role ID "' . $rid . '" in approval levels.'])
                         ->withInput();
@@ -458,7 +464,7 @@ class LoanProductController extends Controller
 
             // Handle fees_ids - map from fees_id array to fees_ids
             if ($request->has('fees_id')) {
-                $data['fees_ids'] = array_filter($request->input('fees_id', []), function($value) {
+                $data['fees_ids'] = array_filter($request->input('fees_id', []), function ($value) {
                     return !empty($value);
                 });
             } else {
@@ -467,7 +473,7 @@ class LoanProductController extends Controller
 
             // Handle penalty_ids - map from penalty_id array to penalty_ids
             if ($request->has('penalty_id')) {
-                $data['penalty_ids'] = array_filter($request->input('penalty_id', []), function($value) {
+                $data['penalty_ids'] = array_filter($request->input('penalty_id', []), function ($value) {
                     return !empty($value);
                 });
             } else {

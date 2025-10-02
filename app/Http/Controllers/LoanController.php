@@ -1249,7 +1249,27 @@ class LoanController extends Controller
             }
         }
 
-        // Check kama mteja tayari ana mkopo wa bidhaa hii
+        // Check if customer has reached maximum number of loans for this product
+        if ($product->hasReachedMaxLoans($validated['customer_id'])) {
+            $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
+            $maxLoans = $product->maximum_number_of_loans;
+
+            \Log::info("Maximum loan validation triggered", [
+                'customer_id' => $validated['customer_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'max_loans' => $maxLoans,
+                'remaining_loans' => $remainingLoans
+            ]);
+
+            if ($remainingLoans === 0) {
+                return redirect()->back()->withErrors([
+                    'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans.",
+                ])->withInput();
+            }
+        }
+
+        // Check if customer already has an active loan for this product (for top-up logic)
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
             ->where('status', 'active')
@@ -1535,7 +1555,7 @@ class LoanController extends Controller
 
 
         \Log::info('LoanController@update reached');
-        $decoded =Hashids::decode($encodedId);
+        $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Invalid loan ID.']);
         }
@@ -1909,23 +1929,68 @@ class LoanController extends Controller
 
     public function loanDocument(Request $request)
     {
+        $maxFileSize = config('upload.max_file_size', 10240); // 10MB default
+        $allowedMimes = config('upload.allowed_mimes', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']);
+        
         $request->validate([
             'loan_id' => 'required|exists:loans,id',
-            'file_type_id' => 'required|exists:filetypes,id',
-            'file' => 'required|file|max:25600',
+            'filetypes' => 'required|array|min:1',
+            'filetypes.*' => 'required|exists:filetypes,id',
+            'files' => 'required|array|min:1',
+            'files.*' => 'required|file|max:' . $maxFileSize . '|mimes:' . implode(',', $allowedMimes),
         ]);
+        info($request->all());
 
-        // Step 2: Store file in public storage
-        $filePath = $request->file('file')->store('loan_documents', 'public');
+        $loanId = $request->loan_id;
+        $filetypes = $request->filetypes;
+        $files = $request->file('files');
 
-        // Step 3: Save record in loan_files
-        LoanFile::create([
-            'loan_id' => $request->loan_id,
-            'file_type_id' => $request->file_type_id,
-            'file_path' => $filePath,
-        ]);
+        $uploadedCount = 0;
+        $errors = [];
 
-        return back()->with('success', 'Document uploaded successfully.');
+        try {
+            DB::beginTransaction();
+
+            foreach ($files as $index => $file) {
+                if (isset($filetypes[$index])) {
+                    // Store file in configured storage
+                    $storagePath = config('upload.storage_path', 'loan_documents');
+                    $storageDisk = config('upload.storage_disk', 'public');
+                    $filePath = $file->store($storagePath, $storageDisk);
+                    
+                    // Get original filename
+                    $originalName = $file->getClientOriginalName();
+                    
+                    // Save record in loan_files
+                    LoanFile::create([
+                        'loan_id' => $loanId,
+                        'file_type_id' => $filetypes[$index],
+                        'file_path' => $filePath,
+                        'original_name' => $originalName,
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ]);
+                    
+                    $uploadedCount++;
+                }
+            }
+
+            DB::commit();
+
+            if ($uploadedCount > 0) {
+                $message = $uploadedCount === 1 
+                    ? 'Document uploaded successfully.' 
+                    : "{$uploadedCount} documents uploaded successfully.";
+                return back()->with('success', $message);
+            } else {
+                return back()->withErrors(['error' => 'No files were uploaded.']);
+            }
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Document upload error: ' . $e->getMessage());
+            return back()->withErrors(['error' => 'Failed to upload documents. Please try again.']);
+        }
     }
     ///////////////////ADD GUARANTOR/////////////////
     public function addGuarantor(Request $request, Loan $loan)
@@ -2038,14 +2103,25 @@ class LoanController extends Controller
             }
         }
 
-        //check if member already has a loan with the same product
-        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
-            ->where('product_id', $validated['product_id'])
-            ->where('status', '=', 'active')
-            ->exists();
-        if ($existingLoan) {
-            return back()->withErrors(['error' => 'Member already has a loan with the same product.']);
+        // Check if customer has reached maximum number of loans for this product
+        if ($product->hasReachedMaxLoans($validated['customer_id'])) {
+            $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
+            $maxLoans = $product->maximum_number_of_loans;
+
+            \Log::info("Maximum loan validation triggered in applicationStore", [
+                'customer_id' => $validated['customer_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'max_loans' => $maxLoans,
+                'remaining_loans' => $remainingLoans
+            ]);
+
+            if ($remainingLoans === 0) {
+                return back()->withErrors(['error' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans."]);
+            }
         }
+
+       
 
         try {
             DB::beginTransaction();

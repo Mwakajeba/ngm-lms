@@ -96,6 +96,7 @@
                 <th style="width: 8%">Repayment Date</th>
                 <th style="width: 8%">Amount Paid</th>
                 <th style="width: 8%">Payment Method</th>
+                 <th scope="col">Loan Officer</th>
                 <th style="width: 12%">Customer Name</th>
                 <th style="width: 8%">Loan No</th>
                 <th style="width: 10%">Loan Product</th>
@@ -105,6 +106,7 @@
                 <th style="width: 8%">Penalties</th>
                 <th style="width: 8%">Balance</th>
                 <th style="width: 8%">Branch</th>
+                 <th scope="col">Group Name</th>
             </tr>
         </thead>
         <tbody>
@@ -119,7 +121,8 @@
             <tr>
                 <td>{{ \Carbon\Carbon::parse($repayment->repayment_date)->format('M d, Y') }}</td>
                 <td class="text-right">{{ number_format($repayment->amount, 2) }}</td>
-                <td>{{ $repayment->payment_method ?? 'N/A' }}</td>
+                <td>{{ $repayment->chartAccount->account_name ?? 'N/A' }}</td>
+                 <td>{{ $repayment->loan->loanOfficer->name ?? 'N/A' }}</td>
                 <td>{{ $repayment->loan->customer->name ?? 'N/A' }}</td>
                 <td>{{ $repayment->loan->loanNo ?? 'N/A'}}</td>
                 <td>{{ $repayment->loan->product->name ?? 'N/A' }}</td>
@@ -129,6 +132,7 @@
                 <td class="text-right">{{ number_format($repayment->penalt_amount, 2) }}</td>
                 <td class="text-right">{{ number_format($repayment->loan->balance, 2) }}</td>
                 <td>{{ $repayment->loan->branch->name ?? 'N/A' }}</td>
+                <td>{{ $repayment->loan->group->name ?? 'N/A' }}</td>
             </tr>
             @php
                 $totalPaid += $summary['total_paid'];

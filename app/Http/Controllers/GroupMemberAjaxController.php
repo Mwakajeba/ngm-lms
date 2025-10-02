@@ -29,11 +29,13 @@ class GroupMemberAjaxController extends Controller
                     'data-member-id="' . e($customer->pivot->id) . '" ' .
                     'data-member-name="' . e($customer->name) . '" ' .
                     'data-action-url="' . e(route('group-members.destroy', ['encodedId' => Hashids::encode($group->id), 'member' => $customer->pivot->id])) . '" ' .
-                    'title="Remove Member" ' . ($hasActiveLoan ? 'disabled' : '') . '>' .
+                    'title="Remove Member"' .
+                    ($hasActiveLoan ? ' disabled' : '') . '>' .
                     '<i class="bx bx-trash"></i></button>'
-            ];
-        });
+                ];
+            });
 
-        return response()->json(['data' => $data]);
-    }
-}
+            // Return or use $data as needed, for example:
+            return response()->json(['data' => $data]); 
+            }
+        }
