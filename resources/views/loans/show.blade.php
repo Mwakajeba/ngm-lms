@@ -620,8 +620,6 @@
                                                     $paymentPercentage = $item->payment_percentage;
                                                     $completed = $loan->status === 'completed';
                                                     $isPenaltyPaid = $item->fullPenaltyPaid();
-                                                   
-
                                                 @endphp
                                                 <tr
                                                     class="{{ $isFullyPaid ? 'table-success' : ($paidAmount > 0 ? 'table-warning' : '') }}">
@@ -656,7 +654,7 @@
                                                                 <i class="bx bx-credit-card me-1"></i>Repay
                                                             </button>
                                                         @endif
-                                                        @if($item->penalty_amount > 0 && !$isPenaltyPaid)
+                                                        @if(!$isPenaltyPaid)
                                                             <button type="button" class="btn btn-sm btn-warning ms-1"
                                                                 onclick="removePenalty('{{ $item->id }}', '{{ number_format($item->penalty_amount, 2) }}')">
                                                                 <i class="bx bx-x-circle me-1"></i>Remove Penalty
