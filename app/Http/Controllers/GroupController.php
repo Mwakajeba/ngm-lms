@@ -722,6 +722,8 @@ class GroupController extends Controller
     {
         // Decode group ID
         $decoded = Hashids::decode($encodedId);
+        $decodeMemberId = Hashids::decode($memberId)[0] ?? null;
+        info("data that come", ['memberId' => $decodeMemberId, 'encodedId' => $encodedId, 'decoded' => $decoded]);
         if (empty($decoded)) {
             \Log::warning('[GroupRemove] Group decode failed', ['encoded' => $encodedId]);
             if ($request->ajax()) {
