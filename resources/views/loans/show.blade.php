@@ -621,7 +621,6 @@
                                                     $completed = $loan->status === 'completed';
                                                     $penaltyPaid = $item->repayments;
                                                     $penaltAmount = $item->penalty_amount;
-                                                    dd($penaltyPaid, $penaltAmount);
 
                                                 @endphp
                                                 <tr
