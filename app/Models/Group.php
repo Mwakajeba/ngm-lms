@@ -95,6 +95,35 @@ class Group extends Model
     }
 
     /**
+     * Check if a specific member has any ongoing (not completed) loans within this group.
+     */
+    public function memberHasOngoingLoans(int $customerId): bool
+    {
+        // Fetch loans for this member in this group and check non-completed status
+        $loans = Loan::where('customer_id', $customerId)
+            ->where('group_id', $this->id)
+            ->get(['status']);
+
+        foreach ($loans as $loan) {
+            $status = is_string($loan->status) ? strtolower($loan->status) : '';
+            if ($status !== Loan::STATUS_COMPLETE) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Return the special "Individual" group id used as a fallback on member removal.
+     */
+    public static function getIndividualGroupId(): int
+    {
+        // Convention: group id 1 is the built-in "Individual" group
+        return 1;
+    }
+
+    /**
      * Get the count of members in this group.
      */
     public function getMembersCountAttribute()

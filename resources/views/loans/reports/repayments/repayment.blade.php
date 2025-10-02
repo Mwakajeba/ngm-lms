@@ -58,11 +58,33 @@
                                 </div>
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
-                                    <select class="form-select" id="branch_id" name="branch_id">
+                                    <select class="form-select select2-single" id="branch_id" name="branch_id">
                                         <option value="">All Branches</option>
                                         @foreach($branches as $branch)
                                         <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
                                             {{ $branch->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="col-md-6 col-lg-3 mb-3">
+                                    <label for="group_id" class="form-label">Group</label>
+                                    <select class="form-select select2-single" id="group_id" name="group_id">
+                                        <option value="">All Groups</option>
+                                        @foreach($groups as $group)
+                                        <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
+                                            {{ $group->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                 <div class="col-md-6 col-lg-3 mb-3">
+                                    <label for="loan_officer_id" class="form-label">Loan Officer</label>
+                                    <select class="form-select select2-single" id="loan_officer_id" name="loan_officer_id">
+                                        <option value="">All Loan Officer</option>
+                                        @foreach($loanOfficers as $laonOfficer)
+                                        <option value="{{ $laonOfficer->id }}" {{ request('loan_officer_id') == $laonOfficer->id ? 'selected' : '' }}>
+                                            {{ $laonOfficer->name }}
                                         </option>
                                         @endforeach
                                     </select>
@@ -157,6 +179,7 @@
                                         <th scope="col">Repayment Date</th>
                                         <th scope="col">Amount Paid</th>
                                         <th scope="col">Payment Method</th>
+                                         <th scope="col">Loan Officer</th>
                                         <th scope="col">Customer Name</th>
                                         <th scope="col">Loan No</th>
                                         <th scope="col">Loan Product</th>
@@ -166,6 +189,7 @@
                                         <th scope="col">Penalties</th>
                                         <th scope="col">Balance</th>
                                         <th scope="col">Branch</th>
+                                         <th scope="col">Group Naame</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -181,7 +205,8 @@
                                             2
                                         ) }}
                                         </td>
-                                        <td>{{ $repayment->payment_method ?? 'N/A'}}</td>
+                                        <td>{{ $repayment->chartAccount->account_name ?? 'N/A'}}</td>
+                                        <td>{{ $repayment->loan->loanOfficer->name ?? 'N/A' }}</td>
                                         <td>{{ $repayment->loan->customer->name ?? 'N/A' }}</td>
                                         <td>{{ $repayment->loan->loanNo ?? 'N/A'}}</td>
                                         <td>{{ $repayment->loan->product->name ?? 'N/A' }}</td>
@@ -191,6 +216,7 @@
                                         <td class="text-right">{{ number_format($repayment->penalt_amount, 2) }}</td>
                                         <td class="text-right">{{ number_format($repayment->loan->balance, 2) }}</td>
                                         <td>{{ $repayment->loan->branch->name ?? 'N/A' }}</td>
+                                        <td>{{ $repayment->loan->group->name ?? 'N/A' }}</td>
                                     </tr>
                                     @endforeach
                                 </tbody>
