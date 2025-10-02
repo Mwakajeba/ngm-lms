@@ -402,9 +402,19 @@ class CustomerController extends Controller
 
             // Sync group membership
             DB::table('group_members')->where('customer_id', $customer->id)->delete();
+            // Save group membership
             if ($request->filled('group_id')) {
                 DB::table('group_members')->insert([
                     'group_id' => $request->group_id,
+                    'customer_id' => $customer->id,
+                    'status' => 'active',
+                    'joined_date' => now()->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('group_members')->insert([
+                    'group_id' => 1,
                     'customer_id' => $customer->id,
                     'status' => 'active',
                     'joined_date' => now()->toDateString(),

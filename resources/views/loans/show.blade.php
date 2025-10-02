@@ -616,7 +616,7 @@
                                                     $totalDue = $item->total_due;
                                                     $paidAmount = $item->paid_amount;
                                                     $remainingAmount = $item->remaining_amount;
-                                                    $isFullyPaid = $item->is_fully_paid;
+                                                    $isFullyPaid = $item->fullPrincipalPaid();
                                                     $paymentPercentage = $item->payment_percentage;
                                                     $completed = $loan->status === 'completed';
 
@@ -1525,7 +1525,7 @@
     <div class="modal fade" id="repayScheduleModal" tabindex="-1" aria-labelledby="repayScheduleModalLabel"
         aria-hidden="true">
         <div class="modal-dialog modal-lg">
-            <form action="{{ route('repayments.store') }}" method="POST" class="modal-content">
+            <form action="{{ route('repayments.store') }}"  method="POST" class="modal-content">
                 @csrf
                 <input type="hidden" name="loan_id" value="{{ $loan->id }}">
                 <div class="modal-header bg-primary text-white">
@@ -1606,11 +1606,11 @@
                                 <label for="payment_amount" class="form-label">Amount</label>
                                 <input type="number" step="0.01" class="form-control" name="amount" id="payment_amount"
                                     required>
-                                <small class="text-muted">
+                                {{-- <small class="text-muted">
                                     <strong>Settle Amount:</strong> TZS
                                     {{ number_format($loan->total_amount_to_settle, 2) }}
                                     (pays current interest + all remaining principal)
-                                </small>
+                                </small> --}}
                             </div>
                         </div>
 
@@ -1726,6 +1726,7 @@
     </div>
 
 @endsection
+
 
 @push('scripts')
     <script>
@@ -1880,7 +1881,7 @@
                                                                                                 <div class="col-md-6">
                                                                                                     <label class="form-label">Choose File</label>
                                                                                                     <div class="input-group">
-                                                                                                        <input type="file" class="form-control document-file" name="files[]" 
+                                                                                                        <input type="file" class="form-control document-file" name="files[]"
                                                                                                             accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
                                                                                                         <button type="button" class="btn btn-outline-danger remove-document-btn">
                                                                                                             <i class="bx bx-trash"></i>
@@ -1939,7 +1940,7 @@
                                                                                             <div class="col-md-6">
                                                                                                 <label class="form-label">Choose File</label>
                                                                                                 <div class="input-group">
-                                                                                                    <input type="file" class="form-control document-file" name="files[]" 
+                                                                                                    <input type="file" class="form-control document-file" name="files[]"
                                                                                                         accept=".pdf,.jpg,.jpeg,.png,.doc,.docx,.xls,.xlsx" required>
                                                                                                     <button type="button" class="btn btn-outline-danger remove-document-btn">
                                                                                                         <i class="bx bx-trash"></i>
@@ -2764,10 +2765,10 @@
                                                                                                                                 }
 
                                                                                                                                 @media print {
-                                                                                                                                    body { 
-                                                                                                                                        font-family: 'Courier New', monospace; 
-                                                                                                                                        font-size: 10px; 
-                                                                                                                                        margin: 0; 
+                                                                                                                                    body {
+                                                                                                                                        font-family: 'Courier New', monospace;
+                                                                                                                                        font-size: 10px;
+                                                                                                                                        margin: 0;
                                                                                                                                         padding: 5px;
                                                                                                                                         width: 280px;
                                                                                                                                         max-width: 280px;
@@ -2795,10 +2796,10 @@
                                                                                                                                     }
                                                                                                                                 }
 
-                                                                                                                                body { 
-                                                                                                                                    font-family: 'Courier New', monospace; 
-                                                                                                                                    font-size: 10px; 
-                                                                                                                                    margin: 0; 
+                                                                                                                                body {
+                                                                                                                                    font-family: 'Courier New', monospace;
+                                                                                                                                    font-size: 10px;
+                                                                                                                                    margin: 0;
                                                                                                                                     padding: 5px;
                                                                                                                                     width: 280px;
                                                                                                                                     max-width: 280px;
@@ -3006,7 +3007,7 @@
                             images.forEach((image, index) => {
                                 imagesHtml += `
                                                                                                                                             <div class="col-md-3 mb-3">
-                                                                                                                                                <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;" 
+                                                                                                                                                <img src="${image}" class="img-fluid rounded shadow-sm" style="height: 150px; object-fit: cover; width: 100%;"
                                                                                                                                                      onclick="openImageModal('${image}')" role="button">
                                                                                                                                             </div>
                                                                                                                                         `;
@@ -3128,7 +3129,7 @@
                                                                                                                                             <div class="col-md-3 mb-2">
                                                                                                                                                 <div class="position-relative">
                                                                                                                                                     <img src="${image}" class="img-fluid rounded" style="height: 100px; object-fit: cover; width: 100%;">
-                                                                                                                                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1" 
+                                                                                                                                                    <button type="button" class="btn btn-sm btn-danger position-absolute top-0 end-0 m-1"
                                                                                                                                                             onclick="removeFile('${imagePath}', 'image', ${collateralId})">
                                                                                                                                                         <i class="bx bx-x"></i>
                                                                                                                                                     </button>
@@ -3151,7 +3152,7 @@
                                                                                                                                                     <a href="${doc.url}" target="_blank" class="btn btn-sm btn-outline-primary me-2">
                                                                                                                                                         <i class="bx bx-download"></i>
                                                                                                                                                     </a>
-                                                                                                                                                    <button type="button" class="btn btn-sm btn-outline-danger" 
+                                                                                                                                                    <button type="button" class="btn btn-sm btn-outline-danger"
                                                                                                                                                             onclick="removeFile('${documentPath}', 'document', ${collateralId})">
                                                                                                                                                         <i class="bx bx-trash"></i>
                                                                                                                                                     </button>
@@ -3582,14 +3583,14 @@
 
                                                                                                                                         <div class="mb-3">
                                                                                                                                             <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
-                                                                                                                                            <input type="number" class="form-control" id="topup_amount" 
+                                                                                                                                            <input type="number" class="form-control" id="topup_amount"
                                                                                                                                                     placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
                                                                                                                                             <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
                                                                                                                                         </div>
 
                                                                                                                                         <div class="mb-3">
                                                                                                                                             <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
-                                                                                                                                            <textarea class="form-control" id="topup_purpose" rows="3" 
+                                                                                                                                            <textarea class="form-control" id="topup_purpose" rows="3"
                                                                                                                                                         placeholder="Please describe the purpose of this top-up loan..."></textarea>
                                                                                                                                         </div>
 
@@ -3604,7 +3605,7 @@
 
                                                                                                                                         <div class="mb-3">
                                                                                                                                             <label for="topup_period" class="form-label">Additional Period</label>
-                                                                                                                                            <input type="number" class="form-control" id="topup_period" 
+                                                                                                                                            <input type="number" class="form-control" id="topup_period"
                                                                                                                                                     value="12" min="1" max="60" required>
                                                                                                                                             <small class="text-muted">How many additional periods do you need?</small>
                                                                                                                                         </div>
