@@ -619,7 +619,7 @@
                                                     $isFullyPaid = $item->fullPrincipalPaid();
                                                     $paymentPercentage = $item->payment_percentage;
                                                     $completed = $loan->status === 'completed';
-                                                    $penaltyPaid = $item->repayments;
+                                                    $penaltyPaid = $item->PenaltyPaid();
                                                     $penaltAmount = $item->penalty_amount;
                                                     dd($penaltyPaid, $penaltAmount);
 
