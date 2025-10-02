@@ -41,7 +41,9 @@ class GroupController extends Controller
     {
         $branchId = auth()->user()->branch_id;
 
-        $loanOfficers = User::where('branch_id', $branchId)->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
 
         // Get all customer IDs who are already members of any group
         $allGroupMemberIds = \DB::table('group_members')
@@ -112,10 +114,20 @@ class GroupController extends Controller
 
             // Only create a GroupMember if a group leader was provided and is valid
             if ($request->filled('group_leader')) {
+                // Check if group leader is a member in the individual group (group_id = 1)
+                $individualGroupId = Group::getIndividualGroupId();
+                $existing = GroupMember::where('group_id', $individualGroupId)
+                    ->where('customer_id', $request->group_leader)
+                    ->first();
+
+                if ($existing) {
+                    $existing->delete();
+                }
+
                 GroupMember::create([
                     'group_id' => $group->id,
                     'customer_id' => $request->group_leader,
-                    'joined_date' => now()->format('Y M D')
+                    'joined_date' => now()->format('Y-m-d')
                 ]);
             }
 
@@ -200,6 +212,7 @@ class GroupController extends Controller
         // Only allow group leader to be selected from members of this group
         $groupMemberIds = \DB::table('group_members')
             ->where('group_id', $group->id)
+            ->where('group_id', '!=', 1)
             ->pluck('customer_id')
             ->toArray();
 
@@ -282,12 +295,25 @@ class GroupController extends Controller
                 'meeting_time' => $request->meeting_time,
             ]);
 
-            // Optionally, if you allow updating group members elsewhere, ensure only Borrowers are added
-            // Example: (pseudo-code, adapt as needed)
-            // foreach ($request->members as $memberId) {
-            //     $member = Customer::where('id', $memberId)->where('category', 'Borrower')->first();
-            //     if ($member) { /* add to group */ }
-            // }
+            // Only create a GroupMember if a group leader was provided and is valid
+            if ($request->filled('group_leader')) {
+                // Check if group leader is a member in the individual group (group_id = 1)
+                $individualGroupId = Group::getIndividualGroupId();
+                $existing = GroupMember::where('group_id', $individualGroupId)
+                    ->where('customer_id', $request->group_leader)
+                    ->first();
+
+                if ($existing) {
+                    $existing->delete();
+                }
+                $groupMember = GroupMember::where('group_id', $group->id);
+
+                $groupMember->update([
+                    'group_id' => $group->id,
+                    'customer_id' => $request->group_leader,
+                    'joined_date' => now()->format('Y-m-d')
+                ]);
+            }
 
             return redirect()->route('groups.index')->with('success', 'Group updated successfully!');
         } catch (\Exception $e) {
