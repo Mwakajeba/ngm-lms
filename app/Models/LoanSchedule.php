@@ -88,4 +88,9 @@ class LoanSchedule extends Model
     {
         return $this->loan && $this->loan->status === Loan::STATUS_ACTIVE;
     }
+    public function fullPrincipalPaid()
+    {
+        $totalPrincipalPaid = $this->repayments->sum('principal');
+        return $totalPrincipalPaid >= $this->principal;
+    }
 }

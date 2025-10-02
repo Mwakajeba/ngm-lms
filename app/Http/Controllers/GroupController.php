@@ -44,7 +44,10 @@ class GroupController extends Controller
         $loanOfficers = User::where('branch_id', $branchId)->get();
 
         // Get all customer IDs who are already members of any group
-        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
+        $allGroupMemberIds = \DB::table('group_members')
+            ->where('group_id', '!=', 1)
+            ->pluck('customer_id')
+            ->toArray();
 
         // Only customers in 'Borrower' category who are not in any group can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
