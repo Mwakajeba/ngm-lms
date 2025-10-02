@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Controllers\Controller;
 use App\Services\BulkEmailService;
+use App\Models\EmailLog;
 use App\Models\Microfinance;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -25,7 +26,7 @@ class BulkEmailController extends Controller
     {
         // Get count of available recipients
         $recipientCount = Microfinance::withValidEmails()->count();
-        
+
         return view('bulk-email.index', compact('recipientCount'));
     }
 
@@ -108,9 +109,14 @@ class BulkEmailController extends Controller
     /**
      * Get recipient count and preview
      */
-    public function getRecipients(): JsonResponse
+    public function getRecipients(Request $request): JsonResponse
     {
         try {
+            // Check if logs data is requested
+            if ($request->has('logs') && $request->logs) {
+                return $this->getEmailLogs($request);
+            }
+
             $microfinances = Microfinance::withValidEmails()->get();
             
             $recipients = $microfinances->map(function ($microfinance) {
@@ -131,6 +137,71 @@ class BulkEmailController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch recipients',
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get email logs for DataTable
+     */
+    private function getEmailLogs(Request $request): JsonResponse
+    {
+        try {
+            $query = EmailLog::query();
+
+            // Apply search filter
+            if ($request->has('search') && $request->search['value']) {
+                $searchValue = $request->search['value'];
+                $query->where(function($q) use ($searchValue) {
+                    $q->where('recipient_email', 'like', "%{$searchValue}%")
+                      ->orWhere('recipient_name', 'like', "%{$searchValue}%")
+                      ->orWhere('subject', 'like', "%{$searchValue}%")
+                      ->orWhere('status', 'like', "%{$searchValue}%");
+                });
+            }
+
+            // Apply status filter
+            if ($request->has('status') && $request->status && $request->status !== 'all') {
+                $query->where('status', $request->status);
+            }
+
+            // Get total count
+            $totalRecords = $query->count();
+
+            // Check if this is an export request
+            if ($request->has('export') && $request->export) {
+                // Return all records for export (no pagination)
+                $logs = $query->orderBy('id', 'desc')->get();
+                
+                return response()->json([
+                    'success' => true,
+                    'data' => $logs
+                ]);
+            }
+
+            // Apply pagination for DataTable
+            $start = $request->start ?? 0;
+            $length = $request->length ?? 25;
+            
+            $logs = $query->orderBy('id', 'desc')
+                        ->offset($start)
+                        ->limit($length)
+                        ->get();
+
+            return response()->json([
+                'draw' => intval($request->draw ?? 1),
+                'recordsTotal' => $totalRecords,
+                'recordsFiltered' => $totalRecords,
+                'data' => $logs
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'draw' => intval($request->draw ?? 1),
+                'recordsTotal' => 0,
+                'recordsFiltered' => 0,
+                'data' => [],
                 'error' => $e->getMessage()
             ], 500);
         }

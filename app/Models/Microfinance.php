@@ -11,24 +11,45 @@ class Microfinance extends Model
 
     protected $fillable = [
         'name',
-        'email'
+        'email',
+    ];
+
+    protected $casts = [
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
 
     /**
-     * Get the microfinance's display name
+     * Scope to get only records with valid email addresses
      */
-    public function getDisplayNameAttribute()
+    public function scopeWithValidEmail($query)
+    {
+        return $query->whereNotNull('email')
+                    ->where('email', '!=', '')
+                    ->whereRaw('email REGEXP "^[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\\.[A-Za-z]{2,}$"');
+    }
+
+    /**
+     * Alias to match existing controller usage: withValidEmails()
+     */
+    public function scopeWithValidEmails($query)
+    {
+        return $this->scopeWithValidEmail($query);
+    }
+
+    /**
+     * Get formatted name for email
+     */
+    public function getFormattedNameAttribute()
     {
         return $this->name ?: 'Valued Customer';
     }
 
     /**
-     * Scope to get only microfinances with valid emails
+     * Accessor used by existing bulk email flow: display_name
      */
-    public function scopeWithValidEmails($query)
+    public function getDisplayNameAttribute()
     {
-        return $query->whereNotNull('email')
-                    ->where('email', '!=', '')
-                    ->where('email', 'like', '%@%');
+        return $this->formatted_name;
     }
 }

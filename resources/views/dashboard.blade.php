@@ -124,7 +124,7 @@ use Vinkla\Hashids\Facades\Hashids;
                             @if($selectedBranchId)
                                 <div class="me-3">
                                     <span class="badge bg-primary">
-                                        Showing: {{ $branches->where('id', $selectedBranchId)->first()->name ?? 'Selected Branch' }}
+                                        Showing: {{ collect($branches)->where('id', $selectedBranchId)->first()['name'] ?? 'Selected Branch' }}
                                     </span>
                                 </div>
                             @endif

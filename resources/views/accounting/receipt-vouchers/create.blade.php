@@ -67,7 +67,7 @@
                                                 <i class="bx bx-wallet me-1"></i>Bank Account <span
                                                     class="text-danger">*</span>
                                             </label>
-                                            <select class="form-select @error('bank_account_id') is-invalid @enderror"
+                                            <select class="form-select select2-single @error('bank_account_id') is-invalid @enderror"
                                                 id="bank_account_id" name="bank_account_id" data-live-search="true"
                                                 required>
                                                 <option value="">-- Select Bank Account --</option>
@@ -101,7 +101,7 @@
                                                                 Payee Type <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('payee_type') is-invalid @enderror"
+                                                                class="form-select select2-single @error('payee_type') is-invalid @enderror"
                                                                 id="payee_type" name="payee_type" required>
                                                                 <option value="">-- Select Payee Type --</option>
                                                                 <option value="customer" {{ old('payee_type') == 'customer' ? 'selected' : '' }}>Customer</option>
@@ -120,7 +120,7 @@
                                                                 Select Customer <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('customer_id') is-invalid @enderror"
+                                                                class="form-select select2-single @error('customer_id') is-invalid @enderror"
                                                                 id="customer_id" name="customer_id">
                                                                 <option value="">-- Select Customer --</option>
                                                                 @foreach($customers as $customer)
@@ -304,6 +304,13 @@
     <script>
         $(document).ready(function () {
             let lineItemCount = 0;
+
+            // Initialize Select2 for all select fields
+            $('.select2-single').select2({
+                placeholder: 'Select an option',
+                allowClear: true,
+                width: '100%'
+            });
 
             // Handle payee type change
             $('#payee_type').change(function () {

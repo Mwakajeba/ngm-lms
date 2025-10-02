@@ -103,6 +103,12 @@
             Period: {{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }} |
             @endif
             Basis: {{ ucfirst($reportType) }}
+            @if(isset($groupBy))
+            | Group By: {{ ucfirst($groupBy) }}
+            @endif
+            @if(isset($branchName))
+            | Branch: {{ $branchName }}
+            @endif
         </div>
     </div>
 
@@ -113,6 +119,7 @@
                 <th>Date</th>
                 <th>Account Code</th>
                 <th>Account Name</th>
+                <th>Customer</th>
                 <th>Transaction ID</th>
                 <th>Description</th>
                 <th class="text-end">Debit</th>
@@ -132,7 +139,7 @@
             @if($currentAccount !== null)
             <!-- Account Total Row -->
             <tr class="account-total">
-                <td colspan="5"><strong>Total for {{ $transaction->account_code }}</strong></td>
+                <td colspan="6"><strong>Total for {{ $transaction->account_code }}</strong></td>
                 <td class="text-end"><strong>{{ number_format($accountTotalDebit, 2) }}</strong></td>
                 <td class="text-end"><strong>{{ number_format($accountTotalCredit, 2) }}</strong></td>
                 <td class="text-end"><strong>{{ number_format($accountTotalDebit - $accountTotalCredit, 2) }}</strong></td>
@@ -148,6 +155,7 @@
                 <td>{{ \Carbon\Carbon::parse($startDate)->subDay()->format('M d, Y') }}</td>
                 <td>{{ $transaction->account_code }}</td>
                 <td>{{ $transaction->account_name }}</td>
+                <td>N/A</td>
                 <td>OPENING BALANCE</td>
                 <td>Balance brought forward</td>
                 <td class="text-end">{{ $openingAmount >= 0 ? number_format($openingAmount, 2) : '' }}</td>
@@ -167,6 +175,7 @@
                 <td>{{ \Carbon\Carbon::parse($transaction->date)->format('M d, Y') }}</td>
                 <td>{{ $transaction->account_code }}</td>
                 <td>{{ $transaction->account_name }}</td>
+                <td>{{ $transaction->customer_name ?? 'N/A' }}</td>
                 <td>{{ $transaction->transaction_id }}</td>
                 <td>{{ $transaction->description }}</td>
                 <td class="text-end">{{ $transaction->nature === 'debit' ? number_format($transaction->amount, 2) : '' }}</td>
@@ -189,7 +198,7 @@
             $lastTransaction = end($generalLedgerData['transactions']);
             @endphp
             <tr class="account-total">
-                <td colspan="5"><strong>Total for {{ $lastTransaction->account_code }} - {{ $lastTransaction->account_name }}</strong></td>
+                <td colspan="6"><strong>Total for {{ $lastTransaction->account_code }} - {{ $lastTransaction->account_name }}</strong></td>
                 <td class="text-end"><strong>{{ number_format($accountTotalDebit, 2) }}</strong></td>
                 <td class="text-end"><strong>{{ number_format($accountTotalCredit, 2) }}</strong></td>
                 <td class="text-end"><strong>{{ number_format($accountTotalDebit - $accountTotalCredit, 2) }}</strong></td>

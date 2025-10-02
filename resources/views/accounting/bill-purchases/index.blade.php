@@ -165,6 +165,7 @@
                                                     <i class="bx bx-money"></i>
                                                 </a>
                                             @endif
+                                            @if($bill->payments()->count() == 0)
                                             <form action="{{ route('accounting.bill-purchases.destroy', $bill) }}" 
                                                   method="POST" 
                                                   onsubmit="return confirm('Are you sure you want to delete this bill?')"
@@ -175,6 +176,11 @@
                                                     <i class="bx bx-trash"></i>
                                                 </button>
                                             </form>
+                                            @else
+                                            <button type="button" class="btn btn-sm btn-outline-danger" disabled title="Cannot delete bill with existing payments">
+                                                <i class="bx bx-trash"></i>
+                                            </button>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>

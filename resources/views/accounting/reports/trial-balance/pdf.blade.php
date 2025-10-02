@@ -88,24 +88,38 @@ use App\Models\Company;
 
         .logo-wrapper {
             text-align: center;
-            margin-bottom: 10px;
+            margin-bottom: 15px;
+            padding: 10px 0;
         }
 
         .logo-wrapper img {
-            max-height: 70px;
+            max-height: 80px;
+            max-width: 200px;
+            height: auto;
+            width: auto;
+            object-fit: contain;
         }
+
     </style>
 </head>
 
 <body>
     @php
-
     $companyModel = isset($company) ? $company : (function_exists('current_company') ? current_company() : null);
-    $logoUrl = ($companyModel && !empty($companyModel->logo)) ? asset('storage/' . $companyModel->logo) : null;
+    $logoData = null;
+
+    if ($companyModel && !empty($companyModel->logo)) {
+    // Check if logo exists in storage and encode as base64 for DomPDF
+    $logoPath = storage_path('app/public/' . $companyModel->logo);
+    if (file_exists($logoPath)) {
+    $logoData = 'data:image/png;base64,' . base64_encode(file_get_contents($logoPath));
+    }
+    }
     @endphp
-    @if($logoUrl)
+
+    @if($logoData)
     <div class="logo-wrapper">
-        <img src="{{ $logoUrl }}" alt="Company Logo">
+        <img src="{{ $logoData }}" alt="{{ $companyModel->name ?? 'Company' }} Logo" style="max-height: 70px; max-width: 200px;">
     </div>
     @endif
     <!-- Report Header -->
@@ -118,7 +132,7 @@ use App\Models\Company;
         <div class="report-date">From {{ \Carbon\Carbon::parse($startDate)->format('F d, Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('F d, Y') }}</div>
         @endif
         @if(isset($branchId) && $branchId != 'all')
-        <div class="report-details">Branch: {{ $branches->where('id', $branchId)->first()->name ?? 'N/A' }}</div>
+        <div class="report-details">Branch: {{ collect($branches)->where('id', $branchId)->first()['name'] ?? 'N/A' }}</div>
         @endif
         <div class="report-details">
             {{ ucfirst($reportingType) }} Basis |
@@ -166,13 +180,7 @@ use App\Models\Company;
                 @if(isset($account->sum) && floatval($account->sum) != 0)
                 @php
                 $sumVal = floatval($account->sum ?? 0);
-                $isCredit = isset($account->nature) ? ($account->nature === 'credit') : ($sumVal < 0);
-                    $currentDebit=$isCredit ? 0 : abs($sumVal);
-                    $currentCredit=$isCredit ? abs($sumVal) : 0;
-                    $totalDebit +=$currentDebit;
-                    $totalCredit +=$currentCredit;
-                    @endphp
-                    <tr>
+                $isCredit = isset($account->nature) ? ($account->nature === 'credit') : ($sumVal < 0); $currentDebit=$isCredit ? 0 : abs($sumVal); $currentCredit=$isCredit ? abs($sumVal) : 0; $totalDebit +=$currentDebit; $totalCredit +=$currentCredit; @endphp <tr>
                     <td>{{ $account->account }}</td>
                     <td class="account-code">{{ $account->account_code }}</td>
                     <td class="text-end">{{ $currentDebit ? number_format($currentDebit, 2) : '-' }}</td>
@@ -186,14 +194,7 @@ use App\Models\Company;
                     $compDebit = 0; $compCredit = 0;
                     if ($compAccount) {
                     $compSum = floatval($compAccount->sum ?? 0);
-                    $compIsCredit = isset($compAccount->nature) ? ($compAccount->nature === 'credit') : ($compSum < 0);
-                        $compDebit=$compIsCredit ? 0 : abs($compSum);
-                        $compCredit=$compIsCredit ? abs($compSum) : 0;
-                        }
-                        $comparativeTotals[$columnName]['debit']=($comparativeTotals[$columnName]['debit'] ?? 0) + $compDebit;
-                        $comparativeTotals[$columnName]['credit']=($comparativeTotals[$columnName]['credit'] ?? 0) + $compCredit;
-                        @endphp
-                        <td class="text-end">{{ $compDebit ? number_format($compDebit, 2) : '-' }}</td>
+                    $compIsCredit = isset($compAccount->nature) ? ($compAccount->nature === 'credit') : ($compSum < 0); $compDebit=$compIsCredit ? 0 : abs($compSum); $compCredit=$compIsCredit ? abs($compSum) : 0; } $comparativeTotals[$columnName]['debit']=($comparativeTotals[$columnName]['debit'] ?? 0) + $compDebit; $comparativeTotals[$columnName]['credit']=($comparativeTotals[$columnName]['credit'] ?? 0) + $compCredit; @endphp <td class="text-end">{{ $compDebit ? number_format($compDebit, 2) : '-' }}</td>
                         <td class="text-end">{{ $compCredit ? number_format($compCredit, 2) : '-' }}</td>
                         @endforeach
                         @endif
@@ -240,9 +241,7 @@ use App\Models\Company;
                         @php
                         $sumVal = floatval($account->sum ?? 0);
                         $balance = $sumVal; // sum is signed; negative means credit
-                        if ($balance < 0) { $totalCredit +=abs($balance); } else { $totalDebit +=$balance; }
-                            @endphp
-                            <tr>
+                        if ($balance < 0) { $totalCredit +=abs($balance); } else { $totalDebit +=$balance; } @endphp <tr>
                             <td>{{ $account->account }}</td>
                             <td class="account-code">{{ $account->account_code }}</td>
                             <td class="text-end">{{ $balance < 0 ? '('.number_format(abs($balance), 2).')' : number_format($balance, 2) }}</td>
@@ -322,26 +321,10 @@ use App\Models\Company;
                             if (($openingDr + $openingCr + $changeDr + $changeCr + $closingDr + $closingCr) == 0 && isset($account->sum)) {
                             $sumVal = floatval($account->sum);
                             $changeDr = $sumVal > 0 ? $sumVal : 0;
-                            $changeCr = $sumVal < 0 ? abs($sumVal) : 0;
-                                $closingDr=$changeDr;
-                                $closingCr=$changeCr;
-                                }
-
-                                $openingDiff=$openingDr - $openingCr;
-                                $changeDiff=$changeDr - $changeCr;
-                                $closingDiff=$closingDr - $closingCr;
-                                $difference=$closingDiff;
-
-                                $totalOpeningDr +=$openingDiff> 0 ? $openingDiff : 0;
-                                $totalOpeningCr += $openingDiff < 0 ? abs($openingDiff) : 0;
-                                    $totalChangeDr +=$changeDiff> 0 ? $changeDiff : 0;
-                                    $totalChangeCr += $changeDiff < 0 ? abs($changeDiff) : 0;
-                                        $totalClosingDr +=$closingDiff> 0 ? $closingDiff : 0;
-                                        $totalClosingCr += $closingDiff < 0 ? abs($closingDiff) : 0;
-                                            $totalDiff +=$difference;
-                                            @endphp
-                                            @if($openingDiff !=0 || $changeDiff !=0 || $closingDiff !=0)
-                                            <tr>
+                            $changeCr = $sumVal < 0 ? abs($sumVal) : 0; $closingDr=$changeDr; $closingCr=$changeCr; } $openingDiff=$openingDr - $openingCr; $changeDiff=$changeDr - $changeCr; $closingDiff=$closingDr - $closingCr; $difference=$closingDiff; $totalOpeningDr +=$openingDiff> 0 ? $openingDiff : 0;
+                                $totalOpeningCr += $openingDiff < 0 ? abs($openingDiff) : 0; $totalChangeDr +=$changeDiff> 0 ? $changeDiff : 0;
+                                    $totalChangeCr += $changeDiff < 0 ? abs($changeDiff) : 0; $totalClosingDr +=$closingDiff> 0 ? $closingDiff : 0;
+                                        $totalClosingCr += $closingDiff < 0 ? abs($closingDiff) : 0; $totalDiff +=$difference; @endphp @if($openingDiff !=0 || $changeDiff !=0 || $closingDiff !=0) <tr>
                                             <td>{{ $account->account ?? $account->account_name ?? '' }}</td>
                                             <td class="account-code">{{ $account->account_code ?? '' }}</td>
                                             <td class="text-end">{{ $openingDiff > 0 ? number_format($openingDiff, 2) : '-' }}</td>

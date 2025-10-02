@@ -35,8 +35,8 @@ class GeneralLedgerReportController extends Controller
             ->orderBy('chart_accounts.account_code')
             ->get();
 
-        // Get branches for filter
-        $branches = $company->branches;
+        // Get branches for filter: only user's assigned branches
+        $branches = $user->branches()->where('branches.company_id', $company->id)->get();
 
         // Get general ledger data
         $generalLedgerData = $this->getGeneralLedgerData(
@@ -73,6 +73,7 @@ class GeneralLedgerReportController extends Controller
         $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
             ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
+            ->leftJoin('customers as c', 'gl_transactions.customer_id', '=', 'c.id')
             ->where('account_class_groups.company_id', $company->id)
             ->whereBetween('gl_transactions.date', [$startDate, $endDate]);
 
@@ -82,8 +83,18 @@ class GeneralLedgerReportController extends Controller
         }
 
         // Add branch filter
-        if ($branchId) {
+        // Branch filter: 'all' means all assigned branches
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add reporting type filter (cash vs accrual)
@@ -106,7 +117,8 @@ class GeneralLedgerReportController extends Controller
                 'gl_transactions.*',
                 'chart_accounts.account_name',
                 'chart_accounts.account_code',
-                'account_class_groups.name as group_name'
+                'account_class_groups.name as group_name',
+                'c.name as customer_name'
             )
             ->orderBy('chart_accounts.account_code')
             ->orderBy('gl_transactions.date')
@@ -116,7 +128,8 @@ class GeneralLedgerReportController extends Controller
                 'gl_transactions.*',
                 'chart_accounts.account_name',
                 'chart_accounts.account_code',
-                'account_class_groups.name as group_name'
+                'account_class_groups.name as group_name',
+                'c.name as customer_name'
             )
             ->orderBy('gl_transactions.date')
             ->orderBy('chart_accounts.account_code')
@@ -126,7 +139,8 @@ class GeneralLedgerReportController extends Controller
                 'gl_transactions.*',
                 'chart_accounts.account_name',
                 'chart_accounts.account_code',
-                'account_class_groups.name as group_name'
+                'account_class_groups.name as group_name',
+                'c.name as customer_name'
             )
             ->orderBy('gl_transactions.transaction_id')
             ->orderBy('gl_transactions.transaction_type')
@@ -136,7 +150,7 @@ class GeneralLedgerReportController extends Controller
         $transactions = $query->get();
 
         // Calculate opening balances if requested
-        $openingBalances = [];
+        $openingBalances = collect();
         if ($showOpeningBalance) {
             $openingBalances = $this->getOpeningBalances($startDate, $accountId, $branchId, $reportType);
         }
@@ -175,8 +189,17 @@ class GeneralLedgerReportController extends Controller
             $query->where('gl_transactions.chart_account_id', $accountId);
         }
 
-        if ($branchId) {
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         if ($reportType === 'cash') {
@@ -208,6 +231,10 @@ class GeneralLedgerReportController extends Controller
 
     private function processTransactions($transactions, $openingBalances, $groupBy)
     {
+        // Ensure opening balances is a collection for safe ->get() access
+        if (!($openingBalances instanceof \Illuminate\Support\Collection)) {
+            $openingBalances = collect($openingBalances ?: []);
+        }
         $processedData = [];
         $runningBalances = [];
 
@@ -295,12 +322,30 @@ class GeneralLedgerReportController extends Controller
 
     private function exportPdf($generalLedgerData, $company, $startDate, $endDate, $reportType)
     {
+        // Determine branch name for header
+        $user = Auth::user();
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        $branchId = $generalLedgerData['filters']['branch_id'] ?? null;
+        $branchName = 'All Branches';
+        if ($branchId === 'all' && ($branches->count() ?? 0) <= 1) {
+            $branchName = optional($branches->first())->name ?? 'All Branches';
+        } elseif ($branchId && $branchId !== 'all') {
+            $branch = $branches->firstWhere('id', $branchId);
+            $branchName = $branch->name ?? 'Unknown Branch';
+        }
+
         $pdf = Pdf::loadView('accounting.reports.general-ledger.pdf', [
             'generalLedgerData' => $generalLedgerData,
             'company' => $company,
             'startDate' => $startDate,
             'endDate' => $endDate,
-            'reportType' => $reportType
+            'reportType' => $reportType,
+            'groupBy' => $generalLedgerData['filters']['group_by'] ?? 'account',
+            'branchName' => $branchName
         ]);
 
         $filename = 'general_ledger_' . $startDate . '_to_' . $endDate . '_' . $reportType . '.pdf';

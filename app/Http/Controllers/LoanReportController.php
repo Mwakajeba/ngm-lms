@@ -1288,6 +1288,308 @@ class LoanReportController extends Controller
     }
 
     /**
+     * Loan Portfolio Tracking Report - Filters and view
+     */
+    public function portfolioTrackingReport(Request $request)
+    {
+        $fromDate = $request->get('from_date', now()->startOfMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $groupBy = $request->get('group_by', 'day'); // day, week, month
+
+        // Get user's assigned branches
+        $user = auth()->user();
+        $userBranches = $user->branches()->active()->get();
+        
+        // If user has access to multiple branches, add "All Branches" option
+        $branches = $userBranches;
+        if ($userBranches->count() > 1) {
+            $branches = $userBranches->prepend((object)[
+                'id' => 'all',
+                'name' => 'All Branches',
+                'branch_name' => 'All Branches'
+            ]);
+        }
+
+        $groups = \App\Models\Group::all();
+        $loanOfficers = \App\Models\User::whereHas('loans')->get();
+
+        $showData = $request->has('from_date') || $request->has('to_date') || $request->has('branch_id') || $request->has('group_id') || $request->has('loan_officer_id');
+        $trackingData = [];
+        if ($showData) {
+            $trackingData = $this->buildPortfolioTrackingData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId, $groupBy);
+        }
+
+        return view('loans.reports.portfolio_tracking', compact(
+            'fromDate','toDate','branchId','groupId','loanOfficerId','groupBy','branches','groups','loanOfficers','showData','trackingData'
+        ));
+    }
+
+    /**
+     * Export Portfolio Tracking to Excel
+     */
+    public function exportPortfolioTrackingToExcel(Request $request)
+    {
+        $fromDate = $request->get('from_date', now()->startOfMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $groupBy = $request->get('group_by', 'day');
+
+        $rows = $this->buildPortfolioTrackingData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId, $groupBy);
+
+        $heading = [
+            'Group', 
+            $groupBy !== 'day' ? 'Date Range' : null,
+            'Customer Name', 'Loan Officer', 'Loan Product', 'Loan Account No.', 'Disbursement Date', 'Maturity Date',
+            'Amount Disbursed', 'Interest', 'Total Amount (Principal + Interest)', 'Principal Paid', 'Interest Paid', 'Penalties Paid',
+            'Outstanding Principal', 'Outstanding Interest', 'Amount Overdue', 'Days in Arrears', 'Loan Status'
+        ];
+        $heading = array_filter($heading); // Remove null values
+
+        $data = [
+            'headings' => $heading,
+            'rows' => array_map(function($r) use ($groupBy) { 
+                $values = [
+                    $r['group'],
+                    $r['customer_name'],
+                    $r['loan_officer'],
+                    $r['loan_product'],
+                    $r['loan_account_no'],
+                    $r['disbursement_date'],
+                    $r['maturity_date'],
+                    $r['amount_disbursed'],
+                    $r['interest'],
+                    $r['total_amount'],
+                    $r['principal_paid'],
+                    $r['interest_paid'],
+                    $r['penalties_paid'],
+                    $r['outstanding_principal'],
+                    $r['outstanding_interest'],
+                    $r['amount_overdue'],
+                    $r['days_in_arrears'],
+                    $r['loan_status']
+                ];
+                
+                // Insert date range if not day grouping
+                if ($groupBy !== 'day') {
+                    array_splice($values, 1, 0, [$r['date_range'] ?? '']);
+                }
+                
+                return $values;
+            }, $rows)
+        ];
+
+        return \Maatwebsite\Excel\Facades\Excel::download(new \App\Exports\GenericArrayExport($data), 'loan_portfolio_tracking_'.$fromDate.'_'.$toDate.'.xlsx');
+    }
+
+    /**
+     * Export Portfolio Tracking to PDF
+     */
+    public function exportPortfolioTrackingToPdf(Request $request)
+    {
+        $fromDate = $request->get('from_date', now()->startOfMonth()->format('Y-m-d'));
+        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $branchId = $request->get('branch_id') ?: null;
+        $groupId = $request->get('group_id') ?: null;
+        $loanOfficerId = $request->get('loan_officer_id') ?: null;
+        $groupBy = $request->get('group_by', 'day');
+
+        $rows = $this->buildPortfolioTrackingData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId, $groupBy);
+
+        $company = \App\Models\Company::first();
+        $pdf = \PDF::loadView('loans.reports.portfolio_tracking_pdf', [
+            'rows' => $rows,
+            'fromDate' => $fromDate,
+            'toDate' => $toDate,
+            'groupBy' => $groupBy,
+            'company' => $company,
+        ])->setPaper('A3', 'landscape');
+
+        return $pdf->download('loan_portfolio_tracking_'.$fromDate.'_'.$toDate.'.pdf');
+    }
+
+    /**
+     * Build tracking data rows according to filters
+     */
+    private function buildPortfolioTrackingData($fromDate, $toDate, $branchId = null, $groupId = null, $loanOfficerId = null, $groupBy = 'day')
+    {
+        $from = \Carbon\Carbon::parse($fromDate)->startOfDay();
+        $to = \Carbon\Carbon::parse($toDate)->endOfDay();
+
+        // Get user's assigned branches
+        $user = auth()->user();
+        $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+
+        $loans = \App\Models\Loan::with(['customer','branch','group','loanOfficer','product','schedule.repayments','repayments'])
+            ->whereIn('branch_id', $userBranchIds) // Filter by user's assigned branches
+            ->when($branchId && $branchId !== 'all', fn($q) => $q->where('branch_id', $branchId))
+            ->when($groupId, fn($q) => $q->where('group_id', $groupId))
+            ->when($loanOfficerId, fn($q) => $q->where('loan_officer_id', $loanOfficerId))
+            ->whereBetween('disbursed_on', [$from->toDateString(), $to->toDateString()])
+            ->get();
+
+        $rows = [];
+        $groupedData = [];
+
+        foreach ($loans as $loan) {
+            // Basic amounts
+            $disbursedAmount = $loan->amount ?? 0;
+            $interestAmount = $loan->interest_amount ?? 0;
+
+            $totalDue = $loan->amount_total ?? ($disbursedAmount + $interestAmount);
+            if ($totalDue == 0 && $loan->schedule->count() > 0) {
+                $totalDue = $loan->schedule->sum(function($s){ return ($s->principal ?? 0) + ($s->interest ?? 0) + ($s->fee_amount ?? 0); });
+            }
+
+            // Paid breakdown
+            $principalPaid = 0; $interestPaid = 0; $penaltiesPaid = 0;
+            if ($loan->schedule->count() > 0) {
+                foreach ($loan->schedule as $s) {
+                    $principalPaid += $s->repayments->sum('principal');
+                    $interestPaid += $s->repayments->sum('interest');
+                    $penaltiesPaid += $s->repayments->sum('penalt_amount');
+                }
+            } else {
+                $principalPaid = $loan->repayments->sum('principal');
+                $interestPaid = $loan->repayments->sum('interest');
+                $penaltiesPaid = $loan->repayments->sum('penalt_amount');
+            }
+
+            $outstandingPrincipal = max(0, ($loan->amount ?? 0) - $principalPaid);
+            $outstandingInterest = max(0, ($loan->interest_amount ?? 0) - $interestPaid);
+
+            // Overdue and days in arrears
+            $amountOverdue = 0; $daysInArrears = 0;
+            if ($loan->schedule->count() > 0) {
+                foreach ($loan->schedule as $s) {
+                    $due = ($s->principal ?? 0) + ($s->interest ?? 0) + ($s->fee_amount ?? 0);
+                    $paid = $s->repayments->sum('amount');
+                    $remain = max(0, $due - $paid);
+                    if ($remain > 0 && \Carbon\Carbon::parse($s->due_date)->lte(now())) {
+                        $amountOverdue += $remain;
+                        $daysInArrears = max($daysInArrears, now()->diffInDays(\Carbon\Carbon::parse($s->due_date)));
+                    }
+                }
+            }
+
+            // Group key and date range
+            $disbursedDate = \Carbon\Carbon::parse($loan->disbursed_on);
+            $groupKey = match($groupBy) {
+                'week' => $disbursedDate->startOfWeek()->format('Y-m-d'),
+                'month' => $disbursedDate->format('Y-m'),
+                default => $disbursedDate->format('Y-m-d')
+            };
+
+            // Calculate date range for group
+            $dateRange = match($groupBy) {
+                'week' => $disbursedDate->startOfWeek()->format('M d') . ' - ' . $disbursedDate->endOfWeek()->format('M d, Y'),
+                'month' => $disbursedDate->format('F Y'),
+                default => $disbursedDate->format('M d, Y')
+            };
+
+            $loanData = [
+                'group' => $groupKey,
+                'date_range' => $dateRange,
+                'customer_name' => $loan->customer->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'loan_product' => $loan->product->name ?? 'N/A',
+                'loan_account_no' => $loan->loanNo ?? '-',
+                'disbursement_date' => $loan->disbursed_on ? \Carbon\Carbon::parse($loan->disbursed_on)->format('Y-m-d') : '-',
+                'maturity_date' => $loan->last_repayment_date ? \Carbon\Carbon::parse($loan->last_repayment_date)->format('Y-m-d') : '-',
+                'amount_disbursed' => round($disbursedAmount, 2),
+                'interest' => round($interestAmount, 2),
+                'total_amount' => round($totalDue, 2),
+                'principal_paid' => round($principalPaid, 2),
+                'interest_paid' => round($interestPaid, 2),
+                'penalties_paid' => round($penaltiesPaid, 2),
+                'outstanding_principal' => round($outstandingPrincipal, 2),
+                'outstanding_interest' => round($outstandingInterest, 2),
+                'amount_overdue' => round($amountOverdue, 2),
+                'days_in_arrears' => $daysInArrears,
+                'loan_status' => $loan->status ?? 'N/A',
+            ];
+
+            // Group data for summary rows
+            if (!isset($groupedData[$groupKey])) {
+                $groupedData[$groupKey] = [
+                    'date_range' => $dateRange,
+                    'loans' => [],
+                    'summary' => [
+                        'total_loans' => 0,
+                        'total_disbursed' => 0,
+                        'total_interest' => 0,
+                        'total_amount' => 0,
+                        'total_principal_paid' => 0,
+                        'total_interest_paid' => 0,
+                        'total_penalties_paid' => 0,
+                        'total_outstanding_principal' => 0,
+                        'total_outstanding_interest' => 0,
+                        'total_overdue' => 0,
+                        'max_days_arrears' => 0,
+                    ]
+                ];
+            }
+
+            $groupedData[$groupKey]['loans'][] = $loanData;
+            $groupedData[$groupKey]['summary']['total_loans']++;
+            $groupedData[$groupKey]['summary']['total_disbursed'] += $disbursedAmount;
+            $groupedData[$groupKey]['summary']['total_interest'] += $interestAmount;
+            $groupedData[$groupKey]['summary']['total_amount'] += $totalDue;
+            $groupedData[$groupKey]['summary']['total_principal_paid'] += $principalPaid;
+            $groupedData[$groupKey]['summary']['total_interest_paid'] += $interestPaid;
+            $groupedData[$groupKey]['summary']['total_penalties_paid'] += $penaltiesPaid;
+            $groupedData[$groupKey]['summary']['total_outstanding_principal'] += $outstandingPrincipal;
+            $groupedData[$groupKey]['summary']['total_outstanding_interest'] += $outstandingInterest;
+            $groupedData[$groupKey]['summary']['total_overdue'] += $amountOverdue;
+            $groupedData[$groupKey]['summary']['max_days_arrears'] = max($groupedData[$groupKey]['summary']['max_days_arrears'], $daysInArrears);
+        }
+
+        // Build final rows with grouping
+        foreach ($groupedData as $groupKey => $groupData) {
+            // Add summary row first if not day grouping
+            if ($groupBy !== 'day') {
+                $rows[] = [
+                    'group' => $groupKey,
+                    'date_range' => $groupData['date_range'],
+                    'customer_name' => "SUMMARY ({$groupData['summary']['total_loans']} loans)",
+                    'loan_officer' => '',
+                    'loan_product' => '',
+                    'loan_account_no' => '',
+                    'disbursement_date' => '',
+                    'maturity_date' => '',
+                    'amount_disbursed' => round($groupData['summary']['total_disbursed'], 2),
+                    'interest' => round($groupData['summary']['total_interest'], 2),
+                    'total_amount' => round($groupData['summary']['total_amount'], 2),
+                    'principal_paid' => round($groupData['summary']['total_principal_paid'], 2),
+                    'interest_paid' => round($groupData['summary']['total_interest_paid'], 2),
+                    'penalties_paid' => round($groupData['summary']['total_penalties_paid'], 2),
+                    'outstanding_principal' => round($groupData['summary']['total_outstanding_principal'], 2),
+                    'outstanding_interest' => round($groupData['summary']['total_outstanding_interest'], 2),
+                    'amount_overdue' => round($groupData['summary']['total_overdue'], 2),
+                    'days_in_arrears' => $groupData['summary']['max_days_arrears'],
+                    'loan_status' => '',
+                    'is_summary' => true,
+                ];
+            }
+
+            // Add individual loan rows
+            foreach ($groupData['loans'] as $loanData) {
+                $rows[] = $loanData;
+            }
+        }
+
+        // Sort by group then date
+        usort($rows, function($a,$b){
+            return [$a['group'],$a['disbursement_date']] <=> [$b['group'],$b['disbursement_date']];
+        });
+
+        return $rows;
+    }
+    /**
      * Get Portfolio at Risk data
      */
     private function getPortfolioAtRiskData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)

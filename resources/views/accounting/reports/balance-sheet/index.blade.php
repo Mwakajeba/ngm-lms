@@ -65,7 +65,7 @@
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        @if($user->hasRole('admin'))
+                                        @if(($branches->count() ?? 0) > 1)
                                             <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
                                         @endif
                                         @foreach($branches as $branch)
@@ -146,7 +146,7 @@
                                     <h6 class="text-muted mb-2">BALANCE SHEET</h6>
                                     <p class="mb-1">As of {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}</p>
                                     @if($branchId && $branchId != 'all' && !empty($branches))
-                                        <p class="mb-1 text-muted">Branch: {{ $branches->where('id', $branchId)->first()['name'] ?? 'N/A' }}</p>
+                                        <p class="mb-1 text-muted">Branch: {{ collect($branches)->where('id', $branchId)->first()['name'] ?? 'N/A' }}</p>
                                     @endif
                                     <p class="mb-0 text-muted small">
                                         {{ ucfirst($reportingType) }} Basis | 
@@ -616,7 +616,19 @@
                                                         <td class="text-end"><strong>{{ number_format($totalLiabilities, 2) }}</strong></td>
                                                         @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
                                                             @foreach($comparativeColumns as $column)
-                                                                <td class="text-end"><strong>{{ number_format(0, 2) }}</strong></td>
+                                                                @php
+                                                                    $comp = $balanceSheetData['comparative'][$column['name']] ?? [];
+                                                                    $compTotalLiab = collect($comp['liabilities'] ?? [])->sum(function($item){
+                                                                        return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
+                                                                    });
+                                                                    $compEquity = collect($comp['equity'] ?? [])->sum(function($item){
+                                                                        return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
+                                                                    });
+                                                                    $compPnL = 0; // if available separately, compute; else keep 0
+                                                                    $compTotalEquity = $compEquity + $compPnL;
+                                                                    $compTotalLiabPlusEquity = $compTotalLiab + $compTotalEquity;
+                                                                @endphp
+                                                                <td class="text-end"><strong>{{ number_format($compTotalLiab, 2) }}</strong></td>
                                                             @endforeach
                                                         @endif
                                                     </tr>
@@ -625,7 +637,15 @@
                                                         <td class="text-end"><strong>{{ number_format($totalEquity, 2) }}</strong></td>
                                                         @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
                                                             @foreach($comparativeColumns as $column)
-                                                                <td class="text-end"><strong>{{ number_format(0, 2) }}</strong></td>
+                                                                @php
+                                                                    $comp = $balanceSheetData['comparative'][$column['name']] ?? [];
+                                                                    $compEquity = collect($comp['equity'] ?? [])->sum(function($item){
+                                                                        return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
+                                                                    });
+                                                                    $compPnL = 0; // not aggregated; keep zero unless provided
+                                                                    $compTotalEquity = $compEquity + $compPnL;
+                                                                @endphp
+                                                                <td class="text-end"><strong>{{ number_format($compTotalEquity, 2) }}</strong></td>
                                                             @endforeach
                                                         @endif
                                                     </tr>
@@ -634,7 +654,18 @@
                                                         <td class="text-end"><strong>{{ number_format($totalLiabilitiesPlusEquity, 2) }}</strong></td>
                                                         @if(isset($comparativeColumns) && count($comparativeColumns) > 0)
                                                             @foreach($comparativeColumns as $column)
-                                                                <td class="text-end"><strong>{{ number_format(0, 2) }}</strong></td>
+                                                                @php
+                                                                    $comp = $balanceSheetData['comparative'][$column['name']] ?? [];
+                                                                    $compTotalLiab = collect($comp['liabilities'] ?? [])->sum(function($item){
+                                                                        return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
+                                                                    });
+                                                                    $compEquity = collect($comp['equity'] ?? [])->sum(function($item){
+                                                                        return ($item->credit_total ?? 0) - ($item->debit_total ?? 0);
+                                                                    });
+                                                                    $compPnL = 0;
+                                                                    $compTotalLiabPlusEquity = $compTotalLiab + ($compEquity + $compPnL);
+                                                                @endphp
+                                                                <td class="text-end"><strong>{{ number_format($compTotalLiabPlusEquity, 2) }}</strong></td>
                                                             @endforeach
                                                         @endif
                                                     </tr>
