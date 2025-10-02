@@ -202,14 +202,14 @@ class ReceiptVoucherController extends Controller
      */
     public function store(Request $request)
     {
-
+        \Log::info('Receipt voucher store method called');
 
         $validator = Validator::make($request->all(), [
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'payee_type' => 'required|in:customer,other',
-            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'customer_id' => 'nullable|required_if:payee_type,customer|exists:customers,id',
             'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
             'description' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf|max:2048',
@@ -221,12 +221,14 @@ class ReceiptVoucherController extends Controller
 
         if ($validator->fails()) {
             \Log::error('Receipt voucher validation failed:', $validator->errors()->toArray());
+            \Log::error('Request data that failed validation:', $request->all());
             return redirect()->back()
                 ->withErrors($validator)
                 ->withInput();
         }
 
         \Log::info('Validation passed, proceeding with creation');
+        \Log::info('Request data:', $request->all());
 
         try {
             return $this->runTransaction(function () use ($request) {
@@ -248,20 +250,26 @@ class ReceiptVoucherController extends Controller
                     $payeeType = 'customer';
                     $payeeId = $request->customer_id;
                     $payeeName = null;
+                    $customerId = $request->customer_id;
+                    $supplierId = null;
                 } else {
                     $payeeType = 'other';
                     $payeeId = null;
                     $payeeName = $request->payee_name;
+                    $customerId = null;
+                    $supplierId = null;
                 }
 
                 \Log::info('Payee information:', [
                     'type' => $payeeType,
                     'id' => $payeeId,
-                    'name' => $payeeName
+                    'name' => $payeeName,
+                    'payee_type_request' => $request->payee_type,
+                    'payee_name_request' => $request->payee_name
                 ]);
 
                 // Create receipt
-                $receipt = Receipt::create([
+                $receiptData = [
                     'reference' => $request->reference ?: 'RV-' . strtoupper(uniqid()),
                     'reference_type' => 'manual',
                     'reference_number' => $request->reference,
@@ -274,11 +282,17 @@ class ReceiptVoucherController extends Controller
                     'payee_type' => $payeeType,
                     'payee_id' => $payeeId,
                     'payee_name' => $payeeName,
+                    'customer_id' => $customerId,
+                    'supplier_id' => $supplierId,
                     'branch_id' => $user->branch_id,
                     'approved' => true, // Auto-approve for now
                     'approved_by' => $user->id,
                     'approved_at' => now(),
-                ]);
+                ];
+
+                \Log::info('Receipt data to be created:', $receiptData);
+
+                $receipt = Receipt::create($receiptData);
 
                 \Log::info('Receipt created successfully:', ['receipt_id' => $receipt->id]);
 
@@ -301,31 +315,44 @@ class ReceiptVoucherController extends Controller
                 // Create GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
 
+                // Prepare description for GL transactions
+                $glDescription = $request->description ?: "Receipt voucher {$receipt->reference}";
+                if ($payeeType === 'other' && $payeeName) {
+                    $glDescription = $payeeName . ' - ' . $glDescription;
+                }
+
                 // Debit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
-                    'customer_id' => $payeeType === 'customer' ? $payeeId : null,
+                    'customer_id' => $customerId,
+                    'supplier_id' => $supplierId,
                     'amount' => $totalAmount,
                     'nature' => 'debit',
                     'transaction_id' => $receipt->id,
                     'transaction_type' => 'receipt',
                     'date' => $request->date,
-                    'description' => $request->description ?: "Receipt voucher {$receipt->reference}",
+                    'description' => $glDescription,
                     'branch_id' => $user->branch_id,
                     'user_id' => $user->id,
                 ]);
 
                 // Credit each chart account
                 foreach ($request->line_items as $lineItem) {
+                    $lineItemDescription = $lineItem['description'] ?: "Receipt voucher {$receipt->reference}";
+                    if ($payeeType === 'other' && $payeeName) {
+                        $lineItemDescription = $payeeName . ' - ' . $lineItemDescription;
+                    }
+                    
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
-                        'customer_id' => $payeeType === 'customer' ? $payeeId : null,
+                        'customer_id' => $customerId,
+                        'supplier_id' => $supplierId,
                         'amount' => $lineItem['amount'],
                         'nature' => 'credit',
                         'transaction_id' => $receipt->id,
                         'transaction_type' => 'receipt',
                         'date' => $request->date,
-                        'description' => $lineItem['description'] ?: "Receipt voucher {$receipt->reference}",
+                        'description' => $lineItemDescription,
                         'branch_id' => $user->branch_id,
                         'user_id' => $user->id,
                     ]);
@@ -439,7 +466,7 @@ class ReceiptVoucherController extends Controller
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'payee_type' => 'required|in:customer,other',
-            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'customer_id' => 'nullable|required_if:payee_type,customer|exists:customers,id',
             'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
             'description' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf|max:2048',
@@ -528,6 +555,12 @@ class ReceiptVoucherController extends Controller
                 // Create new GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
 
+                // Prepare description for GL transactions
+                $glDescription = $request->description ?: "Receipt voucher {$receiptVoucher->reference}";
+                if ($payeeType === 'other' && $payeeName) {
+                    $glDescription = $payeeName . ' - ' . $glDescription;
+                }
+
                 // Debit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
@@ -537,13 +570,18 @@ class ReceiptVoucherController extends Controller
                     'transaction_id' => $receiptVoucher->id,
                     'transaction_type' => 'receipt',
                     'date' => $request->date,
-                    'description' => $request->description ?: "Receipt voucher {$receiptVoucher->reference}",
+                    'description' => $glDescription,
                     'branch_id' => $user->branch_id,
                     'user_id' => $user->id,
                 ]);
 
                 // Credit each chart account
                 foreach ($request->line_items as $lineItem) {
+                    $lineItemDescription = $lineItem['description'] ?: "Receipt voucher {$receiptVoucher->reference}";
+                    if ($payeeType === 'other' && $payeeName) {
+                        $lineItemDescription = $payeeName . ' - ' . $lineItemDescription;
+                    }
+                    
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
                         'customer_id' => $payeeType === 'customer' ? $payeeId : null,
@@ -552,7 +590,7 @@ class ReceiptVoucherController extends Controller
                         'transaction_id' => $receiptVoucher->id,
                         'transaction_type' => 'receipt',
                         'date' => $request->date,
-                        'description' => $lineItem['description'] ?: "Receipt voucher {$receiptVoucher->reference}",
+                        'description' => $lineItemDescription,
                         'branch_id' => $user->branch_id,
                         'user_id' => $user->id,
                     ]);
@@ -761,7 +799,7 @@ class ReceiptVoucherController extends Controller
             'date' => 'required|date',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'payee_type' => 'required|in:customer,other',
-            'customer_id' => 'required_if:payee_type,customer|exists:customers,id',
+            'customer_id' => 'nullable|required_if:payee_type,customer|exists:customers,id',
             'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
             'description' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf|max:2048',

@@ -448,6 +448,13 @@ class Payment extends Model
         $bankAccount = $this->bankAccount;
         $date = $this->date;
         $description = $this->description ?: "Payment voucher {$this->reference}";
+        
+        // Prepare description for GL transactions
+        $glDescription = $description;
+        if ($this->payee_type === 'other' && $this->payee_name) {
+            $glDescription = $this->payee_name . ' - ' . $glDescription;
+        }
+        
         $branchId = $this->branch_id;
         $userId = $this->user_id;
 
@@ -461,13 +468,18 @@ class Payment extends Model
             'transaction_id' => $this->id,
             'transaction_type' => 'payment',
             'date' => $date,
-            'description' => $description,
+            'description' => $glDescription,
             'branch_id' => $branchId,
             'user_id' => $userId,
         ]);
 
         // Debit each expense line
         foreach ($this->paymentItems as $item) {
+            $itemDescription = $item->description ?: $description;
+            if ($this->payee_type === 'other' && $this->payee_name) {
+                $itemDescription = $this->payee_name . ' - ' . $itemDescription;
+            }
+            
             GlTransaction::create([
                 'chart_account_id' => $item->chart_account_id,
                 'customer_id' => $this->customer_id,
@@ -477,7 +489,7 @@ class Payment extends Model
                 'transaction_id' => $this->id,
                 'transaction_type' => 'payment',
                 'date' => $date,
-                'description' => $item->description ?: $description,
+                'description' => $itemDescription,
                 'branch_id' => $branchId,
                 'user_id' => $userId,
             ]);

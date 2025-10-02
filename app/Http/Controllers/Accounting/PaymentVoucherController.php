@@ -328,6 +328,12 @@ class PaymentVoucherController extends Controller
                 if ($payment->approved) {
                     $bankAccount = BankAccount::find($request->bank_account_id);
 
+                    // Prepare description for GL transactions
+                    $glDescription = $request->description ?: "Payment voucher {$payment->reference}";
+                    if ($payeeType === 'other' && $payeeName) {
+                        $glDescription = $payeeName . ' - ' . $glDescription;
+                    }
+
                     // Credit bank account
                     GlTransaction::create([
                         'chart_account_id' => $bankAccount->chart_account_id,
@@ -338,13 +344,18 @@ class PaymentVoucherController extends Controller
                         'transaction_id' => $payment->id,
                         'transaction_type' => 'payment',
                         'date' => $request->date,
-                        'description' => $request->description ?: "Payment voucher {$payment->reference}",
+                        'description' => $glDescription,
                         'branch_id' => $user->branch_id,
                         'user_id' => $user->id,
                     ]);
 
                     // Debit each chart account
                     foreach ($request->line_items as $lineItem) {
+                        $lineItemDescription = $lineItem['description'] ?: "Payment voucher {$payment->reference}";
+                        if ($payeeType === 'other' && $payeeName) {
+                            $lineItemDescription = $payeeName . ' - ' . $lineItemDescription;
+                        }
+                        
                         GlTransaction::create([
                             'chart_account_id' => $lineItem['chart_account_id'],
                             'customer_id' => $request->customer_id,
@@ -354,7 +365,7 @@ class PaymentVoucherController extends Controller
                             'transaction_id' => $payment->id,
                             'transaction_type' => 'payment',
                             'date' => $request->date,
-                            'description' => $lineItem['description'] ?: "Payment voucher {$payment->reference}",
+                            'description' => $lineItemDescription,
                             'branch_id' => $user->branch_id,
                             'user_id' => $user->id,
                         ]);
@@ -557,6 +568,12 @@ class PaymentVoucherController extends Controller
                 // Create new GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
 
+                // Prepare description for GL transactions
+                $glDescription = $request->description ?: "Payment voucher {$paymentVoucher->reference}";
+                if ($payeeType === 'other' && $payeeName) {
+                    $glDescription = $payeeName . ' - ' . $glDescription;
+                }
+
                 // Credit bank account
                 GlTransaction::create([
                     'chart_account_id' => $bankAccount->chart_account_id,
@@ -567,13 +584,18 @@ class PaymentVoucherController extends Controller
                     'transaction_id' => $paymentVoucher->id,
                     'transaction_type' => 'payment',
                     'date' => $request->date,
-                    'description' => $request->description ?: "Payment voucher {$paymentVoucher->reference}",
+                    'description' => $glDescription,
                     'branch_id' => $user->branch_id,
                     'user_id' => $user->id,
                 ]);
 
                 // Debit each chart account
                 foreach ($request->line_items as $lineItem) {
+                    $lineItemDescription = $lineItem['description'] ?: "Payment voucher {$paymentVoucher->reference}";
+                    if ($payeeType === 'other' && $payeeName) {
+                        $lineItemDescription = $payeeName . ' - ' . $lineItemDescription;
+                    }
+                    
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
                         'customer_id' => $request->customer_id,
@@ -583,7 +605,7 @@ class PaymentVoucherController extends Controller
                         'transaction_id' => $paymentVoucher->id,
                         'transaction_type' => 'payment',
                         'date' => $request->date,
-                        'description' => $lineItem['description'] ?: "Payment voucher {$paymentVoucher->reference}",
+                        'description' => $lineItemDescription,
                         'branch_id' => $user->branch_id,
                         'user_id' => $user->id,
                     ]);
