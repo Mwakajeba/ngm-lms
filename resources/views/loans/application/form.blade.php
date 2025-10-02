@@ -16,7 +16,7 @@
 @endif
 
 <form action="{{ $isEdit ? route('loans.application.update', Vinkla\Hashids\Facades\Hashids::encode($loanApplication->id)) : route('loans.application.store') }}"
-    method="POST" enctype="multipart/form-data">
+    method="POST" enctype="multipart/form-data" onsubmit="return handleSubmit(this)">
     @csrf
     @if($isEdit) @method('PUT') @endif
 
@@ -317,3 +317,46 @@
         }
     });
 </script>
+
+@push('scripts')
+    <script>
+        function handleSubmit(form) {
+            // Prevent multiple submissions
+            if (form.dataset.submitted === "true") return false;
+            form.dataset.submitted = "true";
+
+            // Disable ALL submit buttons in this form
+            form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.setAttribute('aria-disabled', 'true');
+
+                const label = btn.querySelector('.label');
+                const spinner = btn.querySelector('.spinner');
+                if (label) label.textContent = 'Processing...';
+                if (spinner) spinner.classList.remove('hidden');
+            });
+
+            // Add loading overlay to prevent any further interactions
+            const overlay = document.createElement('div');
+            overlay.id = 'form-loading-overlay';
+            overlay.style.cssText = 'position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.3); z-index: 9999; display: flex; align-items: center; justify-content: center;';
+            overlay.innerHTML = '<div style="background: white; padding: 20px; border-radius: 8px; text-align: center;"><i class="bx bx-loader-alt bx-spin" style="font-size: 24px; color: #007bff;"></i><br><span style="margin-top: 10px; display: block;">Processing...</span></div>';
+            document.body.appendChild(overlay);
+
+            // Allow the submit to proceed
+            return true;
+        }
+
+        // Optional safety: prevent Enter-key spamming multiple submits in some browsers
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                // Only submit on Enter when focused on a button or inside a textarea (adjust to your UX)
+                if (active && active.tagName !== 'TEXTAREA' && active.type !== 'submit') {
+                    // e.preventDefault(); // uncomment if Enter should NOT submit forms
+                }
+            }
+        });
+    </script>
+@endpush

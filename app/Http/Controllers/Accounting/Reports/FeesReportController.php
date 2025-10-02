@@ -25,7 +25,14 @@ class FeesReportController extends Controller
         $feeId = $request->get('fee_id', 'all');
 
         // Get user's assigned branches
-        $branches = $user->branches()->where('company_id', $company->id)->get();
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->get();
+
+        // If user has only one assigned branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
         
         // Get all fees from fees table
         $fees = \App\Models\Fee::where('company_id', $company->id)
@@ -86,9 +93,34 @@ class FeesReportController extends Controller
             ->whereIn('gl.chart_account_id', $chartAccountIds)
             ->whereBetween('gl.date', [$startDate, $endDate]);
 
-        // Apply branch filter
-        if ($branchId !== 'all') {
-            $query->where('gl.branch_id', $branchId);
+        // Constrain to user's assigned branches always
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        // If user has no branches assigned, return empty result
+        if (empty($assignedBranchIds)) {
+            return [
+                'data' => collect([]),
+                'summary' => [
+                    'total_debit' => 0,
+                    'total_credit' => 0,
+                    'total_transactions' => 0,
+                    'unique_fees' => 0,
+                    'unique_customers' => 0,
+                    'balance' => 0
+                ]
+            ];
+        }
+
+        if ($branchId === 'all') {
+            // Sum across only assigned branches
+            $query->whereIn('gl.branch_id', $assignedBranchIds);
+        } else {
+            // Ensure selected branch is within assigned branches
+            $query->where('gl.branch_id', $branchId)
+                  ->whereIn('gl.branch_id', $assignedBranchIds);
         }
 
         $query->select(
