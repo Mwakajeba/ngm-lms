@@ -304,8 +304,12 @@ use Vinkla\Hashids\Facades\Hashids;
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Get current branch filter from URL or form
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchId = urlParams.get('branch_id') || '';
+            
             // Loan Product Disbursement Chart
-            fetch('/dashboard/loan-product-disbursement')
+            fetch('/dashboard/loan-product-disbursement' + (branchId ? '?branch_id=' + branchId : ''))
                 .then(response => response.json())
                 .then(data => {
                     const ctx = document.getElementById('loanProductChart').getContext('2d');
@@ -354,7 +358,7 @@ use Vinkla\Hashids\Facades\Hashids;
                 });
 
             // Delinquency Loan Pie Chart
-            fetch('/dashboard/delinquency-loan-buckets')
+            fetch('/dashboard/delinquency-loan-buckets' + (branchId ? '?branch_id=' + branchId : ''))
                 .then(response => response.json())
                 .then(data => {
                     const ctx = document.getElementById('delinquencyLoanChart').getContext('2d');
