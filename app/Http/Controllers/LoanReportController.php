@@ -77,9 +77,16 @@ class LoanReportController extends Controller
         $branches = Branch::all();
         $companies = Company::all();
         $groups = Group::all();
+        // Only show loan officers assigned to the selected branch (if any)
         $loanOfficers = User::whereHas('roles', function($q) {
             $q->where('name', 'like', '%officer%');
-        })->get();
+        })
+        ->when($branchId, function($query) use ($branchId) {
+            $query->whereHas('branches', function($q) use ($branchId) {
+            $q->where('branches.id', $branchId);
+            });
+        })
+        ->get();
 
         // Rudi na view ya ripoti
         return view('loans.reports.disbursed', compact('disbursements', 'summary', 'branches', 'companies','groups','loanOfficers'));
@@ -195,7 +202,13 @@ class LoanReportController extends Controller
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
-        })->get();
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         return view('loans.reports.repayments.repayment', compact('repayments', 'summary', 'startDate', 'endDate', 'branches','loanOfficers','groups'));
     }
@@ -267,9 +280,15 @@ class LoanReportController extends Controller
 
         // Get all branches and loan officers for filter dropdown
         $branches = Branch::all();
-        $loanOfficers = User::whereHas('roles', function($q) {
+        $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
-        })->get();
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         $agingData = [];
         $loansQuery = Loan::with(['customer', 'branch', 'loanOfficer'])
@@ -395,9 +414,15 @@ class LoanReportController extends Controller
 
         // Get all branches and loan officers for filter dropdowns
         $branches = \App\Models\Branch::all();
-        $loanOfficers = \App\Models\User::whereHas('roles', function($q) {
-            $q->where('name', 'Loan Officer');
-        })->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         $loansQuery = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
             ->whereIn('status', ['active', 'written_off', 'defaulted'])
@@ -663,9 +688,15 @@ class LoanReportController extends Controller
         $agingData = $this->getInstallmentAgingData($asOfDate, $branchId, $loanOfficerId);
 
         $branches = Branch::orderBy('name')->get();
-        $loanOfficers = User::whereHas('roles', function($query) {
-            $query->where('name', 'loan_officer');
-        })->orderBy('name')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         return view('loans.reports.loan_aging_installment', compact(
             'agingData', 'asOfDate', 'branch', 'loanOfficer', 'branches', 'loanOfficers'
@@ -849,9 +880,15 @@ class LoanReportController extends Controller
     {
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function($query) {
-            $query->where('name', 'Loan Officer');
-        })->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
@@ -1047,9 +1084,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function($query) {
-            $query->where('name', 'Loan Officer');
-        })->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         // Get the expected vs collected data
         $reportData = $this->getExpectedVsCollectedData($startDate, $endDate, $branchId, $groupId, $loanOfficerId);
@@ -1262,7 +1305,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         // Get the PAR data
         $parData = $this->getPortfolioAtRiskData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
@@ -1353,7 +1404,7 @@ class LoanReportController extends Controller
         // Get user's assigned branches
         $user = auth()->user();
         $userBranches = $user->branches()->active()->get();
-        
+
         // If user has access to multiple branches, add "All Branches" option
         $branches = $userBranches;
         if ($userBranches->count() > 1) {
@@ -1365,7 +1416,15 @@ class LoanReportController extends Controller
         }
 
         $groups = \App\Models\Group::all();
-        $loanOfficers = \App\Models\User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
 
         $showData = $request->has('from_date') || $request->has('to_date') || $request->has('branch_id') || $request->has('group_id') || $request->has('loan_officer_id');
         $trackingData = [];
@@ -1393,7 +1452,7 @@ class LoanReportController extends Controller
         $rows = $this->buildPortfolioTrackingData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId, $groupBy);
 
         $heading = [
-            'Group', 
+            'Group',
             $groupBy !== 'day' ? 'Date Range' : null,
             'Customer Name', 'Loan Officer', 'Loan Product', 'Loan Account No.', 'Disbursement Date', 'Maturity Date',
             'Amount Disbursed', 'Interest', 'Total Amount (Principal + Interest)', 'Principal Paid', 'Interest Paid', 'Penalties Paid',
@@ -1403,7 +1462,7 @@ class LoanReportController extends Controller
 
         $data = [
             'headings' => $heading,
-            'rows' => array_map(function($r) use ($groupBy) { 
+            'rows' => array_map(function($r) use ($groupBy) {
                 $values = [
                     $r['group'],
                     $r['customer_name'],
@@ -1424,12 +1483,12 @@ class LoanReportController extends Controller
                     $r['days_in_arrears'],
                     $r['loan_status']
                 ];
-                
+
                 // Insert date range if not day grouping
                 if ($groupBy !== 'day') {
                     array_splice($values, 1, 0, [$r['date_range'] ?? '']);
                 }
-                
+
                 return $values;
             }, $rows)
         ];
@@ -1776,7 +1835,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         $analysisData = $this->getInternalPortfolioAnalysisData($asOfDate, $branchId, $groupId, $loanOfficerId, $parDays);
@@ -2028,7 +2095,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
@@ -2086,7 +2161,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         $portfolioData = $this->getPortfolioData($asOfDate, $branchId, $groupId, $loanOfficerId, $status);
@@ -2254,7 +2337,13 @@ class LoanReportController extends Controller
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
-        })->get();
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
@@ -2314,7 +2403,13 @@ class LoanReportController extends Controller
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
-        })->get();
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         $performanceData = $this->getPerformanceData($fromDate, $toDate, $branchId, $groupId, $loanOfficerId);
@@ -2543,7 +2638,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         // Determine if we should show data (when form is submitted)
@@ -2603,7 +2706,15 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('loans')->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
 
         $delinquencyData = $this->getDelinquencyData($asOfDate, $branchId, $groupId, $loanOfficerId, $delinquencyDays, $bucket);
@@ -2840,7 +2951,13 @@ class LoanReportController extends Controller
         $branches = Branch::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
-        })->get();
+        })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
         $company = Company::first();
         $groups = Group::all();
 
