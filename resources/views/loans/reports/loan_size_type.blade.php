@@ -10,6 +10,21 @@
 
     <div class="card mb-3">
       <div class="card-body">
+        @if(isset($company))
+        <div class="row mb-3 align-items-center">
+          <div class="col-md-8 d-flex align-items-center">
+            <div>
+              <h5 class="mb-1">{{ $company->name ?? 'Company' }}</h5>
+              <small class="text-muted">TIN: {{ $company->tin ?? '-' }} | Phone: {{ $company->phone ?? '-' }}</small><br>
+              <small class="text-muted">Address: {{ $company->address ?? '-' }}</small>
+              <small class="text-muted">Email: {{ $company->email ?? '-' }}</small>
+            </div>
+          </div>
+          <div class="col-md-4 text-md-end">
+            <small class="text-muted">Period: {{ ($startDate && $endDate) ? ($startDate.' - '.$endDate) : 'All Time' }}</small>
+          </div>
+        </div>
+        @endif
         <form method="GET" class="row g-3">
           <div class="col-md-3">
             <label class="form-label">Start Date</label>
@@ -30,7 +45,8 @@
           </div>
           <div class="col-md-3 d-flex align-items-end">
             <button type="submit" class="btn btn-primary me-2"><i class="bx bx-search"></i> Filter</button>
-            <a href="{{ route('reports.loan-size-type.export', request()->all()) }}" class="btn btn-outline-success"><i class="bx bx-file"></i> Export Excel</a>
+            <a href="{{ route('reports.loan-size-type.export', request()->all()) }}" class="btn btn-outline-success me-2"><i class="bx bx-file"></i> Export Excel</a>
+            <a href="{{ route('reports.loan-size-type.export-pdf', request()->all()) }}" class="btn btn-outline-danger"><i class="bx bx-file-pdf"></i> Export PDF</a>
           </div>
         </form>
       </div>

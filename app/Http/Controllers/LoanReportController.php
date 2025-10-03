@@ -297,6 +297,7 @@ class LoanReportController extends Controller
             'startDate' => $startDate,
             'endDate' => $endDate,
             'branchId' => $branchId,
+            'company' => $company,
         ]);
     }
 
@@ -305,6 +306,15 @@ class LoanReportController extends Controller
         $view = $this->loanSizeTypeReport($request);
         $data = $view->getData();
         return \Maatwebsite\Excel\Facades\Excel::download(new LoanSizeTypeExport($data['rows'], $data['grand'], $data['startDate'], $data['endDate']), 'loan_size_type_report.xlsx');
+    }
+
+    public function loanSizeTypeExportPdf(Request $request)
+    {
+        $view = $this->loanSizeTypeReport($request);
+        $data = $view->getData();
+        $data['company'] = auth()->user()->company;
+        $pdf = \PDF::loadView('loans.reports.loan_size_type_pdf', $data)->setPaper('a3', 'landscape');
+        return $pdf->download('loan_size_type_report.pdf');
     }
 
 
