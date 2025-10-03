@@ -42,9 +42,10 @@ class PenaltyController extends Controller
         })->orderBy('account_name')->get();
         $statusOptions = Penalty::getStatusOptions();
         $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
+        $chargeFrequencyOptions = Penalty::getChargeFrequencyOptions();
         $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.penalties.create', compact('penaltyIncomeAccounts', 'penaltyReceivablesAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
+        return view('accounting.penalties.create', compact('penaltyIncomeAccounts', 'penaltyReceivablesAccounts', 'statusOptions', 'penaltyTypeOptions', 'chargeFrequencyOptions', 'deductionTypeOptions'));
     }
 
     public function store(Request $request)
@@ -54,6 +55,7 @@ class PenaltyController extends Controller
             'penalty_income_account_id' => 'required|exists:chart_accounts,id',
             'penalty_receivables_account_id' => 'required|exists:chart_accounts,id',
             'penalty_type' => 'required|in:fixed,percentage',
+            'charge_frequency' => 'required|in:daily,one_time',
             'amount' => 'required|numeric|min:0',
             'deduction_type' => 'required|in:over_due_principal_amount,over_due_interest_amount,over_due_principal_and_interest,total_principal_amount_released',
             'description' => 'nullable|string',
@@ -71,6 +73,7 @@ class PenaltyController extends Controller
             'penalty_income_account_id' => $request->penalty_income_account_id,
             'penalty_receivables_account_id' => $request->penalty_receivables_account_id,
             'penalty_type' => $request->penalty_type,
+            'charge_frequency' => $request->charge_frequency,
             'amount' => $request->amount,
             'deduction_type' => $request->deduction_type,
             'description' => $request->description,
@@ -116,9 +119,10 @@ class PenaltyController extends Controller
         })->orderBy('account_name')->get();
         $statusOptions = Penalty::getStatusOptions();
         $penaltyTypeOptions = Penalty::getPenaltyTypeOptions();
+        $chargeFrequencyOptions = Penalty::getChargeFrequencyOptions();
         $deductionTypeOptions = Penalty::getDeductionTypeOptions();
 
-        return view('accounting.penalties.edit', compact('penalty', 'penaltyIncomeAccounts', 'penaltyReceivablesAccounts', 'statusOptions', 'penaltyTypeOptions', 'deductionTypeOptions'));
+        return view('accounting.penalties.edit', compact('penalty', 'penaltyIncomeAccounts', 'penaltyReceivablesAccounts', 'statusOptions', 'penaltyTypeOptions', 'chargeFrequencyOptions', 'deductionTypeOptions'));
     }
 
     public function update(Request $request, $encodedId)
@@ -136,6 +140,7 @@ class PenaltyController extends Controller
             'penalty_income_account_id' => 'required|exists:chart_accounts,id',
             'penalty_receivables_account_id' => 'required|exists:chart_accounts,id',
             'penalty_type' => 'required|in:fixed,percentage',
+            'charge_frequency' => 'required|in:daily,one_time',
             'amount' => 'required|numeric|min:0',
             'deduction_type' => 'required|in:over_due_principal_amount,over_due_interest_amount,over_due_principal_and_interest,total_principal_amount_released',
             'description' => 'nullable|string',
@@ -153,6 +158,7 @@ class PenaltyController extends Controller
             'penalty_income_account_id' => $request->penalty_income_account_id,
             'penalty_receivables_account_id' => $request->penalty_receivables_account_id,
             'penalty_type' => $request->penalty_type,
+            'charge_frequency' => $request->charge_frequency,
             'amount' => $request->amount,
             'deduction_type' => $request->deduction_type,
             'description' => $request->description,
