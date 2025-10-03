@@ -16,6 +16,7 @@ return new class extends Migration {
             $table->foreignId('penalty_income_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->foreignId('penalty_receivables_account_id')->constrained('chart_accounts')->onDelete('cascade');
             $table->enum('penalty_type', ['fixed', 'percentage'])->default('fixed');
+            $table->enum('charge_frequency', ['daily', 'one_time'])->default('one_time');
             $table->decimal('amount', 15, 2)->default(0);
             $table->enum('deduction_type', [
                 'over_due_principal_amount',

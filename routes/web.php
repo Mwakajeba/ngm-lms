@@ -827,6 +827,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loan-calculator/export-excel', [LoanCalculatorController::class, 'exportExcel'])->name('loan-calculator.export-excel');
     Route::get('loan-calculator/history', [LoanCalculatorController::class, 'history'])->name('loan-calculator.history');
     Route::post('loan-calculator/save', [LoanCalculatorController::class, 'save'])->name('loan-calculator.save');
+
+    // Loan size type report
+    Route::get('reports/loan-size-type', [LoanReportController::class, 'loanSizeTypeReport'])->name('reports.loan-size-type');
+    Route::get('reports/loan-size-type/export', [LoanReportController::class, 'loanSizeTypeExport'])->name('reports.loan-size-type.export');
 });
 
 ////////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////
