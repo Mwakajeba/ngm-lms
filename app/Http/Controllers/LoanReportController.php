@@ -19,6 +19,7 @@ use App\Exports\PortfolioExport;
 use App\Exports\PerformanceExport;
 use App\Exports\DelinquencyExport;
 use App\Exports\InternalPortfolioAnalysisExport;
+use App\Exports\LoanSizeTypeExport;
 use PDF;
 
 class LoanReportController extends Controller
@@ -175,6 +176,135 @@ class LoanReportController extends Controller
 
         // Rudi na ujumbe wa kosa ikiwa aina ya export haijatambuliwa
         return response()->json(['message' => 'Invalid export type.'], 400);
+    }
+
+    /**
+     * Loan Size Type report (bucket loans by principal into ranges)
+     */
+    public function loanSizeTypeReport(Request $request)
+    {
+        $user = auth()->user();
+        $company = $user->company;
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        $buckets = [
+            ['label' => '0 - 500,000', 'min' => 0, 'max' => 500000],
+            ['label' => '500,000 - 1,000,000', 'min' => 500000, 'max' => 1000000],
+            ['label' => '1,000,000 - 2,000,000', 'min' => 1000000, 'max' => 2000000],
+            ['label' => '2,000,000 - 5,000,000', 'min' => 2000000, 'max' => 5000000],
+            ['label' => '5,000,000 - 10,000,000', 'min' => 5000000, 'max' => 10000000],
+            ['label' => 'ABOVE 10,000,000', 'min' => 10000000, 'max' => null],
+        ];
+
+        $today = Carbon::today();
+
+        $results = [];
+        $grand = [
+            'count' => 0,
+            'loan_amount' => 0,
+            'interest' => 0,
+            'total_loan' => 0,
+            'total_outstanding' => 0,
+            'arrears_count' => 0,
+            'arrears_amount' => 0,
+            'delayed_count' => 0,
+            'delayed_amount' => 0,
+            'outstanding_in_delayed' => 0,
+        ];
+
+        foreach ($buckets as $bucket) {
+            $loans = Loan::query()
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate){
+                    $q->whereBetween('disbursed_on', [$startDate, $endDate]);
+                })
+                ->whereIn('branch_id', $assignedBranchIds)
+                ->when($branchId && $branchId !== 'all', function($q) use ($branchId){
+                    $q->where('branch_id', $branchId);
+                })
+                ->when(!is_null($bucket['max']), function($q) use ($bucket){
+                    $q->whereBetween('amount', [$bucket['min'], $bucket['max']]);
+                }, function($q) use ($bucket){
+                    $q->where('amount', '>', $bucket['min']);
+                })
+                ->with(['repayments', 'schedule'])
+                ->get();
+
+            $count = $loans->count();
+            $loanAmount = (float) $loans->sum('amount');
+            $interest = (float) $loans->sum('interest_amount');
+            $totalLoan = $loanAmount + $interest;
+
+            // Outstanding principal = principal - principal repaid
+            $totalOutstanding = (float) $loans->sum(function($loan){
+                $principalPaid = $loan->repayments->sum('principal');
+                return max(0, ($loan->amount ?? 0) - $principalPaid);
+            });
+
+            // Arrears = schedules past due with remaining > 0
+            $arrearsCount = 0; $arrearsAmount = 0; $delayedCount = 0; $delayedAmount = 0; $outstandingInDelayed = 0;
+            foreach ($loans as $loan) {
+                foreach ($loan->schedule as $sch) {
+                    $remaining = max(0, ($sch->principal + $sch->interest + $sch->fee_amount + $sch->penalty_amount) - ($sch->repayments->sum('principal') + $sch->repayments->sum('interest') + $sch->repayments->sum('fee_amount') + $sch->repayments->sum('penalt_amount')));
+                    if ($remaining <= 0) continue;
+
+                    if (Carbon::parse($sch->due_date)->lt($today)) {
+                        // in arrears
+                        $arrearsCount++;
+                        $arrearsAmount += $remaining;
+                    }
+                    // delayed: after due_date but within grace window
+                    if ($sch->end_grace_date && Carbon::parse($sch->due_date)->lt($today) && Carbon::parse($sch->end_grace_date)->gte($today)) {
+                        $delayedCount++;
+                        $delayedAmount += $remaining;
+                        $outstandingInDelayed += max(0, $sch->principal - $sch->repayments->sum('principal'));
+                    }
+                }
+            }
+
+            $row = [
+                'label' => $bucket['label'],
+                'count' => $count,
+                'loan_amount' => $loanAmount,
+                'interest' => $interest,
+                'total_loan' => $totalLoan,
+                'total_outstanding' => $totalOutstanding,
+                'arrears_count' => $arrearsCount,
+                'arrears_amount' => $arrearsAmount,
+                'delayed_count' => $delayedCount,
+                'delayed_amount' => $delayedAmount,
+                'outstanding_in_delayed' => $outstandingInDelayed,
+            ];
+
+            // grand totals
+            foreach ($grand as $k => $v) {
+                $grand[$k] += $row[$k] ?? 0;
+            }
+
+            $results[] = $row;
+        }
+
+        return view('loans.reports.loan_size_type', [
+            'rows' => $results,
+            'grand' => $grand,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'branchId' => $branchId,
+        ]);
+    }
+
+    public function loanSizeTypeExport(Request $request)
+    {
+        $view = $this->loanSizeTypeReport($request);
+        $data = $view->getData();
+        return \Maatwebsite\Excel\Facades\Excel::download(new LoanSizeTypeExport($data['rows'], $data['grand'], $data['startDate'], $data['endDate']), 'loan_size_type_report.xlsx');
     }
 
 
