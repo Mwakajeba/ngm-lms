@@ -20,6 +20,7 @@ use App\Exports\PerformanceExport;
 use App\Exports\DelinquencyExport;
 use App\Exports\InternalPortfolioAnalysisExport;
 use App\Exports\LoanSizeTypeExport;
+use App\Exports\GenericArrayExport;
 use PDF;
 
 class LoanReportController extends Controller
@@ -315,6 +316,143 @@ class LoanReportController extends Controller
         $data['company'] = auth()->user()->company;
         $pdf = \PDF::loadView('loans.reports.loan_size_type_pdf', $data)->setPaper('a3', 'landscape');
         return $pdf->download('loan_size_type_report.pdf');
+    }
+
+    /**
+     * Monthly Loan Performance Report
+     * Columns: Month, Loan Given, Interest, Total Loan+Interest, Total Amount Collected, Outstanding, Actual Interest Collected, Performance%
+     */
+    public function monthlyPerformanceReport(Request $request)
+    {
+        $user = auth()->user();
+        $company = $user->company;
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')->toArray();
+
+        // Build months range
+        $start = $startDate ? Carbon::parse($startDate)->startOfMonth() : Carbon::now()->startOfYear();
+        $end = $endDate ? Carbon::parse($endDate)->endOfMonth() : Carbon::now()->endOfMonth();
+
+        $months = [];
+        $cursor = $start->copy();
+        while ($cursor <= $end) {
+            $months[] = $cursor->format('Y-m');
+            $cursor->addMonthNoOverflow();
+        }
+
+        // Preload loans and repayments within range
+        $loans = Loan::query()
+            ->select('id','amount','interest_amount','disbursed_on','branch_id')
+            ->whereBetween('disbursed_on', [$start->toDateString(), $end->toDateString()])
+            ->whereIn('branch_id', $assignedBranchIds)
+            ->when($branchId && $branchId !== 'all', fn($q)=>$q->where('branch_id',$branchId))
+            ->get();
+
+        // Preload ALL repayments for cohort loans (lifetime), regardless of payment date
+        $repayments = Repayment::query()
+            ->select('loan_id','payment_date','principal','interest','fee_amount','penalt_amount')
+            ->when($branchId && $branchId !== 'all', function($q) use ($assignedBranchIds, $branchId){
+                // Join to loans to filter branch
+                $q->whereIn('loan_id', Loan::where('branch_id',$branchId)->pluck('id'));
+            }, function($q) use ($assignedBranchIds){
+                $q->whereIn('loan_id', Loan::whereIn('branch_id',$assignedBranchIds)->pluck('id'));
+            })
+            ->get();
+
+        $rows = [];
+        $grand = [
+            'loan_given' => 0,
+            'interest' => 0,
+            'total_loan' => 0,
+            'collected' => 0,
+            'outstanding' => 0,
+            'actual_interest_collected' => 0,
+        ];
+
+        foreach ($months as $ym) {
+            [$y,$m] = explode('-', $ym);
+            $loanGiven = (float) $loans->filter(function($l) use($y,$m){
+                return Carbon::parse($l->disbursed_on)->format('Y')==$y && Carbon::parse($l->disbursed_on)->format('m')==$m;
+            })->sum('amount');
+            $interest = (float) $loans->filter(function($l) use($y,$m){
+                return Carbon::parse($l->disbursed_on)->format('Y')==$y && Carbon::parse($l->disbursed_on)->format('m')==$m;
+            })->sum('interest_amount');
+            $totalLoan = $loanGiven + $interest;
+            // Cohort repayments: sum all repayments (up to end date) for loans disbursed in this month
+            $cohortLoanIds = $loans->filter(function($l) use($y,$m){
+                return Carbon::parse($l->disbursed_on)->format('Y')==$y && Carbon::parse($l->disbursed_on)->format('m')==$m;
+            })->pluck('id')->all();
+
+            $collected = (float) $repayments->whereIn('loan_id', $cohortLoanIds)
+                ->sum(function($r){
+                    return ($r->principal ?? 0) + ($r->interest ?? 0) + ($r->fee_amount ?? 0) + ($r->penalt_amount ?? 0);
+                });
+            $outstanding = max(0, $totalLoan - $collected);
+            $actualInterestCollected = min($interest, max(0, $collected - $loanGiven));
+            $performance = $totalLoan > 0 ? round(min(1, $collected / $totalLoan) * 100, 2) : 0;
+
+            $rows[] = [
+                'month' => Carbon::createFromDate((int)$y,(int)$m,1)->format('M Y'),
+                'loan_given' => $loanGiven,
+                'interest' => $interest,
+                'total_loan' => $totalLoan,
+                'collected' => $collected,
+                'outstanding' => $outstanding,
+                'actual_interest_collected' => $actualInterestCollected,
+                'performance' => $performance,
+            ];
+
+            $grand['loan_given'] += $loanGiven;
+            $grand['interest'] += $interest;
+            $grand['total_loan'] += $totalLoan;
+            $grand['collected'] += $collected;
+            $grand['outstanding'] += $outstanding;
+            $grand['actual_interest_collected'] += $actualInterestCollected;
+        }
+
+        return view('loans.reports.monthly_performance', [
+            'rows' => $rows,
+            'grand' => $grand,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'branchId' => $branchId,
+            'company' => $company,
+        ]);
+    }
+
+    public function monthlyPerformanceExport(Request $request)
+    {
+        $view = $this->monthlyPerformanceReport($request);
+        $data = $view->getData();
+        $headings = ['MONTH','LOAN GIVEN','INTEREST','TOTAL LOAN + INTEREST','TOTAL AMOUNT COLLECTED','OUTSTANDING','ACTUAL INTEREST COLLECTED','PERFORMANCE %'];
+        $array = [];
+        foreach ($data['rows'] as $r) {
+            $array[] = [
+                $r['month'],
+                $r['loan_given'],
+                $r['interest'],
+                $r['total_loan'],
+                $r['collected'],
+                $r['outstanding'],
+                $r['actual_interest_collected'],
+                $r['performance']
+            ];
+        }
+        return \Maatwebsite\Excel\Facades\Excel::download(new GenericArrayExport($array, $headings), 'monthly_loan_performance.xlsx');
+    }
+
+    public function monthlyPerformanceExportPdf(Request $request)
+    {
+        $view = $this->monthlyPerformanceReport($request);
+        $data = $view->getData();
+        $pdf = \PDF::loadView('loans.reports.monthly_performance_pdf', $data)->setPaper('a4', 'landscape');
+        return $pdf->download('monthly_loan_performance.pdf');
     }
 
 

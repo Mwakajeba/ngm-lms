@@ -84,6 +84,22 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <!-- Monthly Loan Performance Report -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-secondary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-pie-chart fs-1 text-secondary"></i>
+                                        </div>
+                                        <h5 class="card-title">Monthly Loan Performance</h5>
+                                        <p class="card-text">Monthly view of loan given, interest, collections, outstanding and performance.</p>
+                                        <a href="{{ route('reports.monthly-performance') }}" class="btn btn-secondary">
+                                            <i class="bx bx-file me-1"></i> View Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                             @can('view loan delinquency report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
