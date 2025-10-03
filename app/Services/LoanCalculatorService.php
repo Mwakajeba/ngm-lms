@@ -223,17 +223,33 @@ class LoanCalculatorService
             $interest = $remainingBalance * $ratePerPeriod;
             $principalPayment = $monthlyPayment - $interest;
             
+            // Round components
+            $interest = round($interest, 2);
+            $principalPayment = round($principalPayment, 2);
+
+            // On final installment, adjust principal to clear remaining balance to zero
+            if ($i === $period) {
+                $principalPayment = round($remainingBalance, 2);
+                // Recompute interest to keep total payment aligned
+                $interest = round($monthlyPayment - $principalPayment, 2);
+            }
+
+            $newRemaining = round($remainingBalance - $principalPayment, 2);
+            if (abs($newRemaining) < 0.05) { // clamp tiny rounding drift
+                $newRemaining = 0.0;
+            }
+
             $schedule[] = [
                 'installment_number' => $i,
                 'due_date' => $startDate->copy()->addMonths($i)->format('Y-m-d'),
-                'principal' => round($principalPayment, 2),
-                'interest' => round($interest, 2),
+                'principal' => $principalPayment,
+                'interest' => $interest,
                 'fee_amount' => 0, // Will be calculated separately
-                'total_amount' => round($monthlyPayment, 2),
-                'remaining_balance' => round($remainingBalance - $principalPayment, 2)
+                'total_amount' => round($principalPayment + $interest, 2),
+                'remaining_balance' => max(0, $newRemaining)
             ];
             
-            $remainingBalance -= $principalPayment;
+            $remainingBalance = $newRemaining;
         }
         
         return [
@@ -261,20 +277,34 @@ class LoanCalculatorService
         
         for ($i = 1; $i <= $period; $i++) {
             $interest = $remainingBalance * $ratePerPeriod;
-            $totalInterest += $interest;
-            $totalPayment = $monthlyPrincipal + $interest;
-            
+            $principalForRow = $monthlyPrincipal;
+
+            // On final installment, adjust principal to remaining
+            if ($i === $period) {
+                $principalForRow = round($remainingBalance, 2);
+            }
+
+            $interest = round($interest, 2);
+            $principalForRow = round($principalForRow, 2);
+            $totalPayment = $principalForRow + $interest;
+
+            $newRemaining = round($remainingBalance - $principalForRow, 2);
+            if (abs($newRemaining) < 0.05) {
+                $newRemaining = 0.0;
+            }
+
             $schedule[] = [
                 'installment_number' => $i,
                 'due_date' => $startDate->copy()->addMonths($i)->format('Y-m-d'),
-                'principal' => round($monthlyPrincipal, 2),
-                'interest' => round($interest, 2),
+                'principal' => $principalForRow,
+                'interest' => $interest,
                 'fee_amount' => 0, // Will be calculated separately
                 'total_amount' => round($totalPayment, 2),
-                'remaining_balance' => round($remainingBalance - $monthlyPrincipal, 2)
+                'remaining_balance' => max(0, $newRemaining)
             ];
             
-            $remainingBalance -= $monthlyPrincipal;
+            $remainingBalance = $newRemaining;
+            $totalInterest += $interest;
         }
         
         return [
@@ -300,7 +330,7 @@ class LoanCalculatorService
             if ($fee->status !== 'active') continue;
             
             $feeAmount = $this->calculateFeeAmount($fee, $principal);
-            $feeApplication = $this->determineFeeApplication($fee, $period);
+            $feeApplication = $this->determineFeeApplication($fee, $period, $feeAmount);
             
             $fees[] = [
                 'fee_id' => $fee->id,
@@ -330,10 +360,11 @@ class LoanCalculatorService
     /**
      * Determine how fee is applied
      */
-    private function determineFeeApplication(Fee $fee, int $period): array
+    private function determineFeeApplication(Fee $fee, int $period, float $computedFeeAmount): array
     {
         $criteria = $fee->deduction_criteria;
-        $totalFee = $fee->fee_type === 'percentage' ? $fee->amount : $fee->amount;
+        // Use computed monetary amount regardless of type (percentage already applied)
+        $totalFee = $computedFeeAmount;
         
         switch ($criteria) {
             case 'distribute_fee_evenly_to_all_repayments':
@@ -450,25 +481,39 @@ class LoanCalculatorService
             // Calculate installment amounts
             $principal = $interestCalculation['monthly_principal'] ?? ($params['amount'] / $period);
             $interest = $interestCalculation['monthly_interest'] ?? ($interestCalculation['monthly_payment'] - $principal);
+
+            // Round
+            $principal = round($principal, 2);
+            $interest = round($interest, 2);
+
+            // On final installment, adjust principal to clear remaining
+            if ($i === $period - 1) {
+                $principal = round($remainingBalance, 2);
+            }
             
             // Calculate fees for this installment
             $installmentFees = $this->calculateInstallmentFees($i, $period, $fees, $params['amount']);
             
             // Update remaining balance
-            $remainingBalance -= $principal;
+            $newRemaining = round($remainingBalance - $principal, 2);
+            if (abs($newRemaining) < 0.05) {
+                $newRemaining = 0.0;
+            }
             
             $schedule[] = [
                 'installment_number' => $i + 1,
                 'due_date' => $dueDate->format('Y-m-d'),
                 'end_date' => $endDate->format('Y-m-d'),
                 'end_grace_date' => $endGraceDate->format('Y-m-d'),
-                'principal' => round($principal, 2),
-                'interest' => round($interest, 2),
+                'principal' => $principal,
+                'interest' => $interest,
                 'fee_amount' => round($installmentFees, 2),
                 'penalty_amount' => 0, // Calculated when overdue
                 'total_amount' => round($principal + $interest + $installmentFees, 2),
-                'remaining_balance' => round($remainingBalance, 2)
+                'remaining_balance' => max(0, $newRemaining)
             ];
+
+            $remainingBalance = $newRemaining;
         }
         
         return $schedule;
