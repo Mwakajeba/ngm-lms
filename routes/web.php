@@ -831,6 +831,7 @@ Route::middleware(['auth'])->group(function () {
     // Loan size type report
     Route::get('reports/loan-size-type', [LoanReportController::class, 'loanSizeTypeReport'])->name('reports.loan-size-type');
     Route::get('reports/loan-size-type/export', [LoanReportController::class, 'loanSizeTypeExport'])->name('reports.loan-size-type.export');
+    Route::get('reports/loan-size-type/export-pdf', [LoanReportController::class, 'loanSizeTypeExportPdf'])->name('reports.loan-size-type.export-pdf');
 });
 
 ////////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////
