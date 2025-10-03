@@ -385,7 +385,7 @@ class LoanController extends Controller
                     if ($loan->status === 'active') {
                         return '<span class="text-muted">-</span>';
                     }
-                    
+
                     $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
                     if ($latestApproval && $latestApproval->comments) {
                         return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
@@ -1827,10 +1827,24 @@ class LoanController extends Controller
 
             \DB::transaction(function () use ($loan, $loanId) {
                 // ...existing code...
+                // get all the loan ids of the schedules
+                $scheduleIds = \DB::table('loan_schedules')->where('loan_id', $loanId)->pluck('id')->toArray();
                 // Delete GL Transactions for this loan
                 \DB::table('gl_transactions')
                     ->where('transaction_id', $loanId)
                     ->where('transaction_type', 'Loan Disbursement')
+                    ->delete();
+
+                // delete penalty gl transactions
+                \DB::table('gl_transactions')
+                    ->whereIn('transaction_id', $scheduleIds)
+                    ->where('transaction_type', 'Penalty')
+                    ->delete();
+
+                //delete interest gl transactions
+                \DB::table('gl_transactions')
+                    ->whereIn('transaction_id', $scheduleIds)
+                    ->where('transaction_type', 'Mature Interest')
                     ->delete();
 
                 // Delete Payments and PaymentItems for this loan
@@ -1931,7 +1945,7 @@ class LoanController extends Controller
     {
         $maxFileSize = config('upload.max_file_size', 10240); // 10MB default
         $allowedMimes = config('upload.allowed_mimes', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']);
-        
+
         $request->validate([
             'loan_id' => 'required|exists:loans,id',
             'filetypes' => 'required|array|min:1',
@@ -1957,10 +1971,10 @@ class LoanController extends Controller
                     $storagePath = config('upload.storage_path', 'loan_documents');
                     $storageDisk = config('upload.storage_disk', 'public');
                     $filePath = $file->store($storagePath, $storageDisk);
-                    
+
                     // Get original filename
                     $originalName = $file->getClientOriginalName();
-                    
+
                     // Save record in loan_files
                     LoanFile::create([
                         'loan_id' => $loanId,
@@ -1970,7 +1984,7 @@ class LoanController extends Controller
                         'file_size' => $file->getSize(),
                         'mime_type' => $file->getMimeType(),
                     ]);
-                    
+
                     $uploadedCount++;
                 }
             }
@@ -1978,8 +1992,8 @@ class LoanController extends Controller
             DB::commit();
 
             if ($uploadedCount > 0) {
-                $message = $uploadedCount === 1 
-                    ? 'Document uploaded successfully.' 
+                $message = $uploadedCount === 1
+                    ? 'Document uploaded successfully.'
                     : "{$uploadedCount} documents uploaded successfully.";
                 return back()->with('success', $message);
             } else {
@@ -2121,7 +2135,7 @@ class LoanController extends Controller
             }
         }
 
-       
+
 
         try {
             DB::beginTransaction();
