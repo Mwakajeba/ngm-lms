@@ -76,6 +76,7 @@ class RolePermissionSeeder extends Seeder
             'view loan product details',
             'deactivate loan product',
             'manage loan products',
+            'view completed loans',
 
             'view groups',
             'create group',
