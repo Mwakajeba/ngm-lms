@@ -23,7 +23,7 @@ class BalanceSheetReportController extends Controller
         $comparatives = (array) $request->input('comparatives', []);
         $branchId = $request->input('branch_id');
         $reportingType = $request->input('reporting_type', 'accrual'); // accrual|cash
-        $viewType = $request->input('view_type', 'summary'); // summary|detailed
+        $viewType = strtolower($request->input('view_type', 'detailed')); // summary|detailed
 
         // Branch scope
         $assignedBranchIds = $user->branches()
@@ -372,7 +372,7 @@ class BalanceSheetReportController extends Controller
         $comparatives = (array) $request->input('comparatives', []);
         $branchId = $request->input('branch_id');
         $reportingType = $request->input('reporting_type', 'accrual');
-        $viewType = $request->input('view_type', 'summary');
+        $viewType = strtolower($request->input('view_type', 'detailed'));
         $exportType = $request->input('export_type', 'pdf');
 
         // Get the same data as index method

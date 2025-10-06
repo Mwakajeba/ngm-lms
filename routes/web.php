@@ -938,6 +938,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('loans/{loan}/appdestroy', [LoanController::class, 'appDestroy'])->name('loans.appdestroy');
     Route::get('loans/{loan}/appshow', [LoanController::class, 'appShow'])->name('loans.appshow');
     Route::post('/loan-files', [LoanController::class, 'loanDocument'])->name('loan-documents.store');
+    Route::delete('/loan-documents/{loanFile}', [LoanController::class, 'destroyLoanDocument'])->name('loan-documents.destroy');
     Route::post('/loans/{loan}/guarantors', [LoanController::class, 'addGuarantor'])->name('loans.addGuarantor');
     Route::delete('/loans/{loan}/guarantors/{guarantor}', [LoanController::class, 'removeGuarantor'])->name('loans.removeGuarantor');
 

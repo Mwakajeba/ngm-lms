@@ -771,7 +771,7 @@
                                             <tr>
                                                 <th>#</th>
                                                 <th>Document Name</th>
-                                                <th class="text-end pe-4">>Actions</th>
+                                                <th class="text-end pe-4">Actions</th>
                                             </tr>
                                         </thead>
                                         <tbody>
