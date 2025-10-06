@@ -2361,6 +2361,7 @@ class LoanController extends Controller
                 'period' => $validated['period'],
                 'interest' => $validated['interest'],
                 'amount' => $validated['amount'],
+                'interest_amount' => $loanApplication->calculateInterestAmount($validated['interest']),
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
                 'amount_total' => $validated['amount'] + $loanApplication->calculateInterestAmount($validated['interest']),
@@ -2368,6 +2369,8 @@ class LoanController extends Controller
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
             ];
+
+            info($updateData);
             // If loan was rejected, change status back to applied and reset approvals
             if ($loanApplication->status === 'rejected') {
                 $updateData['status'] = 'applied';
