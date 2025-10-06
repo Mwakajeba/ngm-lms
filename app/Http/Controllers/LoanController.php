@@ -2055,24 +2055,6 @@ class LoanController extends Controller
         }
     }
 
-    ////////////////////DELETE LOAN DOCUMENT/////////////////////
-    public function destroyLoanDocument(LoanFile $loanFile)
-    {
-        try {
-            // Delete physical file if exists
-            $storageDisk = config('upload.storage_disk', 'public');
-            if ($loanFile->file_path && \Storage::disk($storageDisk)->exists($loanFile->file_path)) {
-                \Storage::disk($storageDisk)->delete($loanFile->file_path);
-            }
-
-            $loanFile->delete();
-
-            return response()->json(['success' => true, 'message' => 'Document deleted successfully.']);
-        } catch (\Exception $e) {
-            \Log::error('Failed to delete loan document: ' . $e->getMessage());
-            return response()->json(['success' => false, 'message' => 'Failed to delete document.'], 500);
-        }
-    }
 
     ////////////////////DELETE LOAN DOCUMENT/////////////////////
     public function destroyLoanDocument(LoanFile $loanFile)
