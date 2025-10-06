@@ -1233,6 +1233,10 @@ class LoanController extends Controller
 
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
+        // Restrict application if product has no approval levels
+        if (!$product->has_approval_levels) {
+            return back()->withErrors(['error' => 'Loan application must have level of approval.'])->withInput();
+        }
         $this->validateProductLimits($validated, $product);
 
         // 🔐 Check collateral OUTSIDE transaction
@@ -2140,8 +2144,8 @@ class LoanController extends Controller
         try {
             DB::beginTransaction();
 
-            // Determine initial status based on approval levels
-            $initialStatus = $product->has_approval_levels ? Loan::STATUS_APPLIED : Loan::STATUS_ACTIVE;
+            // All loan applications start as 'applied' status
+            $initialStatus = Loan::STATUS_APPLIED;
 
             $loan = Loan::create([
                 'product_id' => $validated['product_id'],
@@ -2172,16 +2176,12 @@ class LoanController extends Controller
                 'amount_total' => $validated['amount'] + $interestAmount,
             ]);
 
-            // If no approval levels required, process disbursement immediately
-            if (!$product->has_approval_levels) {
-                $this->processLoanDisbursement($loan);
-            }
+            // Note: For loan applications, we don't disburse immediately even if no approval levels are required
+            // The disbursement will happen during the approval process when a bank account is selected
 
             DB::commit();
 
-            $message = $product->has_approval_levels
-                ? 'Loan application submitted successfully and awaiting approval.'
-                : 'Loan application created and disbursed successfully.';
+            $message = 'Loan application submitted successfully and awaiting approval.';
 
             return redirect()->route('loans.by-status', 'applied')->with('success', $message);
         } catch (\Throwable $th) {
