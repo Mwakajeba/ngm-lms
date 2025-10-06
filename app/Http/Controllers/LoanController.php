@@ -1964,8 +1964,13 @@ class LoanController extends Controller
 
     public function loanDocument(Request $request)
     {
-        $maxFileSize = config('upload.max_file_size', 10240); // 10MB default
-        $allowedMimes = config('upload.allowed_mimes', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx']);
+        $maxFileSize = (int) config('upload.max_file_size', 102400); // in KB
+        $allowedMimes = (array) config('upload.allowed_mimes', ['pdf','jpg','jpeg','png','doc','docx','xls','xlsx','txt']);
+
+        // Early check for file presence and upload validity to produce clearer errors
+        if (!$request->hasFile('files')) {
+            return back()->withErrors(['files' => 'No files were received by the server. Please try again.']);
+        }
 
         $request->validate([
             'loan_id' => 'required|exists:loans,id',
@@ -1974,7 +1979,27 @@ class LoanController extends Controller
             'files' => 'required|array|min:1',
             'files.*' => 'required|file|max:' . $maxFileSize . '|mimes:' . implode(',', $allowedMimes),
         ]);
-        info($request->all());
+
+        // Validate each uploaded file is valid at PHP level and provide helpful messages
+        foreach ((array) $request->file('files') as $idx => $uploaded) {
+            if (!$uploaded) {
+                return back()->withErrors(["files.$idx" => 'File not received by PHP (empty upload).']);
+            }
+            if (!$uploaded->isValid()) {
+                $errorCode = $uploaded->getError();
+                $errorMessage = match ($errorCode) {
+                    UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the server limit (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the form limit (MAX_FILE_SIZE).',
+                    UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                    UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                    UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
+                    default => 'The file failed to upload due to an unknown error.',
+                };
+                return back()->withErrors(["files.$idx" => $errorMessage]);
+            }
+        }
 
         $loanId = $request->loan_id;
         $filetypes = $request->filetypes;
@@ -2023,8 +2048,29 @@ class LoanController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            \Log::error('Document upload error: ' . $e->getMessage());
-            return back()->withErrors(['error' => 'Failed to upload documents. Please try again.']);
+            \Log::error('Document upload error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors(['error' => 'Failed to upload documents: ' . $e->getMessage()]);
+        }
+    }
+
+    ////////////////////DELETE LOAN DOCUMENT/////////////////////
+    public function destroyLoanDocument(LoanFile $loanFile)
+    {
+        try {
+            // Delete physical file if exists
+            $storageDisk = config('upload.storage_disk', 'public');
+            if ($loanFile->file_path && \Storage::disk($storageDisk)->exists($loanFile->file_path)) {
+                \Storage::disk($storageDisk)->delete($loanFile->file_path);
+            }
+
+            $loanFile->delete();
+
+            return response()->json(['success' => true, 'message' => 'Document deleted successfully.']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete loan document: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to delete document.'], 500);
         }
     }
 
