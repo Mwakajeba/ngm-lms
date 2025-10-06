@@ -1814,84 +1814,101 @@ class LoanController extends Controller
             Log::info("=== LOAN EDIT METHOD ===", ["encoded_id" => $encodedId, "loan_id" => $loan->id, "loan_data" => ["amount" => $loan->amount, "interest" => $loan->interest, "period" => $loan->period, "interest_cycle" => $loan->interest_cycle, "customer_id" => $loan->customer_id, "group_id" => $loan->group_id, "product_id" => $loan->product_id, "bank_account_id" => $loan->bank_account_id, "loan_officer_id" => $loan->loan_officer_id, "sector" => $loan->sector]]);
             $loanId = $loan->id;
 
-            // Check for repayments
-            $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
-            if ($repaymentCount > 0) {
-                return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
-            }
-
-            // Check for receipts with reference_number = loanId and reference_type = 'Loan Disbursement'
-            $receiptCount = \DB::table('receipts')
-                ->where('reference_number', $loanId)
-                ->where('reference_type', 'Loan Disbursement')
-                ->count();
-            if ($receiptCount > 0) {
-                return redirect()->route('loans.list')->withErrors(['error' => 'This loan has receipts. Please delete receipts first before deleting the loan.']);
-            }
-
-            \DB::transaction(function () use ($loan, $loanId) {
-                // ...existing code...
-                // get all the loan ids of the schedules
-                $scheduleIds = \DB::table('loan_schedules')->where('loan_id', $loanId)->pluck('id')->toArray();
-                // Delete GL Transactions for this loan
-                \DB::table('gl_transactions')
-                    ->where('transaction_id', $loanId)
-                    ->where('transaction_type', 'Loan Disbursement')
-                    ->delete();
-
-                // delete penalty gl transactions
-                \DB::table('gl_transactions')
-                    ->whereIn('transaction_id', $scheduleIds)
-                    ->where('transaction_type', 'Penalty')
-                    ->delete();
-
-                //delete interest gl transactions
-                \DB::table('gl_transactions')
-                    ->whereIn('transaction_id', $scheduleIds)
-                    ->where('transaction_type', 'Mature Interest')
-                    ->delete();
-
-                // Delete Payments and PaymentItems for this loan
-                $payments = \DB::table('payments')
-                    ->where('reference_type', 'Loan Payment')
-                    ->where('reference', $loanId)
-                    ->get();
-                $paymentIds = $payments->pluck('id')->toArray();
-                if (!empty($paymentIds)) {
-                    \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
+            // If loan is active, perform full cleanup (receipts/journals/etc). Otherwise, delete loan directly
+            if ($loan->status === Loan::STATUS_ACTIVE) {
+                // Check for repayments
+                $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
+                if ($repaymentCount > 0) {
+                    return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
                 }
-                \DB::table('payments')
-                    ->where('reference_type', 'Loan Payment')
-                    ->where('reference', $loanId)
-                    ->delete();
 
-                // Delete Loan Schedule
-                \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
-
-                // Delete Journals and JournalItems if table exists
-                if (\Schema::hasTable('journals')) {
-                    // Find journals by reference_type and either reference (loanId) or reference_number (JRN-...)
-                    $journals = \DB::table('journals')
+                \DB::transaction(function () use ($loan, $loanId) {
+                    // Delete Receipts and Receipt Items related to this loan disbursement
+                    $receiptIds = \DB::table('receipts')
                         ->where('reference_type', 'Loan Disbursement')
-                        ->where(function ($query) use ($loanId) {
-                            $query->where('reference', $loanId);
-                        })
-                        ->get();
-                    $journalIds = $journals->pluck('id')->toArray();
-                    if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
-                        \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
+                        ->where('reference_number', $loanId)
+                        ->pluck('id')
+                        ->toArray();
+                    if (!empty($receiptIds)) {
+                        \DB::table('receipt_items')->whereIn('receipt_id', $receiptIds)->delete();
+                        \DB::table('receipts')->whereIn('id', $receiptIds)->delete();
                     }
-                    \DB::table('journals')
-                        ->where('reference_type', 'Loan Disbursement')
+
+                    // get all the loan schedule ids
+                    $scheduleIds = \DB::table('loan_schedules')->where('loan_id', $loanId)->pluck('id')->toArray();
+
+                    // Delete GL Transactions for this loan
+                    \DB::table('gl_transactions')
+                        ->where('transaction_id', $loanId)
+                        ->where('transaction_type', 'Loan Disbursement')
+                        ->delete();
+
+                    // delete penalty gl transactions
+                    if (!empty($scheduleIds)) {
+                        \DB::table('gl_transactions')
+                            ->whereIn('transaction_id', $scheduleIds)
+                            ->where('transaction_type', 'Penalty')
+                            ->delete();
+
+                        // delete interest gl transactions
+                        \DB::table('gl_transactions')
+                            ->whereIn('transaction_id', $scheduleIds)
+                            ->where('transaction_type', 'Mature Interest')
+                            ->delete();
+                    }
+
+                    // Delete Payments and PaymentItems for this loan
+                    $payments = \DB::table('payments')
+                        ->where('reference_type', 'Loan Payment')
+                        ->where('reference', $loanId)
+                        ->get();
+                    $paymentIds = $payments->pluck('id')->toArray();
+                    if (!empty($paymentIds)) {
+                        \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
+                    }
+                    \DB::table('payments')
+                        ->where('reference_type', 'Loan Payment')
                         ->where('reference', $loanId)
                         ->delete();
-                }
 
-                // Delete the loan itself
-                $loan->delete();
-            });
+                    // Delete Loan Schedule
+                    \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
 
-            return redirect()->route('loans.list')->with('success', 'Loan and related records deleted successfully.');
+                    // Delete Journals and JournalItems if table exists
+                    if (\Schema::hasTable('journals')) {
+                        $journalsQuery = \DB::table('journals')
+                            ->where('reference_type', 'Loan Disbursement')
+                            ->where(function ($query) use ($loanId) {
+                                // force string comparison to avoid numeric coercion errors
+                                $query->where('reference', (string) $loanId);
+                                if (\Schema::hasColumn('journals', 'reference_number')) {
+                                    $query->orWhere('reference_number', (string) $loanId);
+                                }
+                            });
+
+                        $journalIds = $journalsQuery->pluck('id')->toArray();
+
+                        if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
+                            \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
+                        }
+
+                        if (!empty($journalIds)) {
+                            \DB::table('journals')->whereIn('id', $journalIds)->delete();
+                        }
+                    }
+
+                    // Finally delete the loan
+                    $loan->delete();
+                });
+            } else {
+                // Non-active loans: just delete the loan and its schedules, leave receipts/journals intact
+                \DB::transaction(function () use ($loan, $loanId) {
+                    \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
+                    $loan->delete();
+                });
+            }
+
+            return redirect()->route('loans.application.index')->with('success', 'Loan and related records deleted successfully.');
         } catch (\Throwable $e) {
             return redirect()->route('loans.list')->withErrors(['error' => 'Failed to delete loan: ' . $e->getMessage()]);
         }
