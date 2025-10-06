@@ -28,8 +28,9 @@ class ScheduleServiceProvider extends ServiceProvider
 
             // Schedule mature interest collection to run daily at midnight
             $schedule->job(new CollectMatureInterestJob())
-                ->dailyAt('08:00')
+                // ->dailyAt('08:00')
                 // ->everyMinute()
+                ->everySecond()
                 ->withoutOverlapping()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/mature-interest-collection.log'));
