@@ -118,22 +118,57 @@
                   </tr>
                 </thead>
                   <tbody>
-                  <tr>
-                    <td>Assets</td>
-                    @foreach($cols as $c)
-                      <td class="text-end">{{ number_format($c['assets'], 2) }}</td>
-                    @endforeach
-                  </tr>
-                  <tr>
-                    <td>Liabilities</td>
-                    @foreach($cols as $c)
-                      <td class="text-end">{{ number_format($c['liab'], 2) }}</td>
-                    @endforeach
+                  {{-- Render classes dynamically from DB-backed data --}}
+                  @php
+                    $classOrder = ['Assets','Liabilities','Equity'];
+                    $classTotals = [
+                      'Assets' => $assetsTotal,
+                      'Liabilities' => $liabilitiesTotal,
+                      'Equity' => $equityTotal,
+                    ];
+                  @endphp
+                  @foreach($classOrder as $className)
+                    <tr>
+                      <td><b>{{ $className }}</b></td>
+                      @foreach($cols as $c)
+                        @php
+                          if ($c['label'] === \Carbon\Carbon::parse($asOf)->format('Y-m-d')) {
+                            $val = $classTotals[$className] ?? 0;
+                          } else {
+                            $cmp = collect($comparativesData)->firstWhere('date', $c['label']);
+                            if ($cmp) {
+                              if ($className==='Assets') $val = $cmp['assetsTotal'];
+                              elseif ($className==='Liabilities') $val = $cmp['liabilitiesTotal'];
+                              else $val = $cmp['equityTotal'];
+                            } else { $val = 0; }
+                          }
+                        @endphp
+                        <td class="text-end"><b>{{ number_format($val, 2) }}</b></td>
+                      @endforeach
                     </tr>
+                    {{-- Groups under each class --}}
+                    @if(!empty($groupTotals[$className] ?? []))
+                      @foreach(($groupTotals[$className] ?? []) as $groupName => $curTotal)
+                        <tr>
+                          <td class="ps-4">{{ $groupName }}</td>
+                          @foreach($cols as $c)
+                            @php
+                              if ($c['label'] === \Carbon\Carbon::parse($asOf)->format('Y-m-d')) {
+                                $gval = $curTotal;
+                              } else {
+                                $gval = $comparativeGroupTotals[$c['label']][$className][$groupName] ?? 0;
+                              }
+                            @endphp
+                            <td class="text-end">{{ number_format($gval, 2) }}</td>
+                          @endforeach
+                        </tr>
+                      @endforeach
+                    @endif
+                  @endforeach
                   <tr>
-                    <td>Equity</td>
+                    <td>Profit / Loss</td>
                     @foreach($cols as $c)
-                      <td class="text-end">{{ number_format($c['equity'], 2) }}</td>
+                      <td class="text-end">{{ number_format($c['pnl'], 2) }}</td>
                     @endforeach
                   </tr>
                   <tr class="fw-bold">
@@ -142,17 +177,11 @@
                       <td class="text-end">{{ number_format($c['liabEq'], 2) }}</td>
                     @endforeach
                       </tr>
-                  <tr>
-                    <td>Profit / Loss</td>
-                    @foreach($cols as $c)
-                      <td class="text-end">{{ number_format($c['pnl'], 2) }}</td>
-                    @endforeach
-                  </tr>
                   <tr class="table-secondary fw-bold">
-                    <td>Check</td>
+                    <td></td>
                     @foreach($cols as $c)
-                      <td class="text-end">{{ number_format($c['assets'] - $c['liabEq'], 2) }}</td>
-                  @endforeach
+                      <td class="text-end"></td>
+                    @endforeach
                   </tr>
                   </tbody>
                 </table>
@@ -386,7 +415,6 @@
                 <th class="text-end">Total Assets</th>
                 <th class="text-end">Total Liabilities + Equity</th>
                 <th class="text-end">Profit / Loss</th>
-                <th class="text-end">Check</th>
               </tr>
             </thead>
             <tbody>
@@ -396,7 +424,6 @@
                   <td class="text-end">{{ number_format($row['assetsTotal'], 2) }}</td>
                   <td class="text-end">{{ number_format($row['liabilitiesTotal'] + $row['equityTotal'], 2) }}</td>
                   <td class="text-end">{{ number_format($row['profitLoss'], 2) }}</td>
-                  <td class="text-end">{{ number_format($row['assetsTotal'] - ($row['liabilitiesTotal'] + $row['equityTotal']), 2) }}</td>
                 </tr>
               @endforeach
             </tbody>
@@ -437,6 +464,11 @@
     const form = document.querySelector('form');
     const formData = new FormData(form);
     formData.append('export_type', type);
+    // Ensure current view_type is captured
+    const viewTypeSelect = form.querySelector('select[name="view_type"]');
+    if (viewTypeSelect) {
+      formData.set('view_type', viewTypeSelect.value);
+    }
     
     // Create a temporary form for export
     const tempForm = document.createElement('form');

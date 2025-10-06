@@ -2299,11 +2299,12 @@ class LoanController extends Controller
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
+                'amount_total' => $validated['amount'] + $loanApplication->calculateInterestAmount($validated['interest']),
                 'interest_cycle' => $validated['interest_cycle'], // Use from form
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
             ];
-
+info($updateData);
             // If loan was rejected, change status back to applied and reset approvals
             if ($loanApplication->status === 'rejected') {
                 $updateData['status'] = 'applied';
