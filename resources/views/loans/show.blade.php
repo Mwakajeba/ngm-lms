@@ -2582,6 +2582,11 @@
                 html: `
                 <div class="text-start">
                     <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
+                    <div class="mb-3">
+                        <label for="penalty_amount_input" class="form-label">Penalty Amount to Remove</label>
+                        <input type="number" class="form-control" id="penalty_amount_input" step="0.01" min="0" />
+                        <small class="text-muted">Enter an amount up to the current penalty to remove all or part.</small>
+                    </div>
                     <p class="text-muted">This will remove the penalty from this schedule item.</p>
                     <div class="mb-3">
                         <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
@@ -2595,21 +2600,49 @@
                 cancelButtonText: 'Cancel',
                 confirmButtonColor: '#ffc107',
                 cancelButtonColor: '#6c757d',
+                didOpen: (popup) => {
+                    // Prefill the input with the current penalty amount and set constraints
+                    const maxPenalty = parseFloat(String(penaltyAmount).replace(/[^\d.]/g, '')) || 0;
+                    const amountInput = popup.querySelector('#penalty_amount_input');
+                    if (amountInput) {
+                        amountInput.value = maxPenalty.toFixed(2);
+                        amountInput.setAttribute('max', maxPenalty.toFixed(2));
+                        amountInput.setAttribute('min', '0');
+                        amountInput.setAttribute('step', '0.01');
+                    }
+                },
                 preConfirm: () => {
+                    // Ensure penaltyAmount is a plain number
+                    const maxPenalty = parseFloat(String(penaltyAmount).replace(/[^\d.]/g, '')) || 0;
+                    const amountInput = document.getElementById('penalty_amount_input');
+                    // Initialize default value on first render if empty
+                    if (amountInput && !amountInput.value) {
+                        amountInput.value = maxPenalty.toFixed(2);
+                    }
+                    const enteredAmount = parseFloat(String(amountInput.value).replace(/[^\d.]/g, '')) || 0;
+
+                    if (enteredAmount < 0) {
+                        Swal.showValidationMessage('Amount cannot be negative');
+                        return false;
+                    }
+                    if (enteredAmount > maxPenalty) {
+                        Swal.showValidationMessage(`Amount cannot exceed current penalty (TZS ${maxPenalty.toFixed(2)})`);
+                        return false;
+                    }
+
                     return {
-                        reason: document.getElementById('penalty_reason').value
+                        reason: document.getElementById('penalty_reason').value,
+                        amount: enteredAmount
                     };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
                     // Send AJAX request to remove penalty
-                    // Ensure penaltyAmount is a plain number
-                    const numericPenaltyAmount = parseFloat(String(penaltyAmount).replace(/[^\d.]/g, '')) || 0;
                     $.ajax({
                         url: `/repayments/remove-penalty/${scheduleId}`,
                         method: 'POST',
                         data: {
-                            amount: numericPenaltyAmount,
+                            amount: result.value.amount,
                             loan_id: $('#loan_id').val() || window.loanId || '',
                             schedule_id: scheduleId,
                             reason: result.value.reason,
