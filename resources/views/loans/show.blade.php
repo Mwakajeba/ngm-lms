@@ -31,6 +31,12 @@
                         <a href="{{ route('loans.fees_receipt', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
                             class="btn btn-success"><i class="bx bx-plus-circle me-2"></i> Loan Fees Receipt</a>
 
+                        @if($loan->status === 'active' || $loan->status === 'disbursed')
+                            <button type="button" class="btn btn-warning" onclick="showSettleLoanModal()">
+                                <i class="bx bx-check-circle me-2"></i>Settle Loan
+                            </button>
+                        @endif
+
                     </div>
                 </div>
                 <div class="d-flex gap-2">
@@ -657,12 +663,12 @@
                                                                 <i class="bx bx-credit-card me-1"></i>Repay
                                                             </button>
                                                         @endif
-                                                        {{-- @if($item->PenaltyPaid() < $item->penalty_amount)
+                                                        @if($item->isPenaltyRemovalAllowed())
                                                             <button type="button" class="btn btn-sm btn-warning ms-1"
                                                                 onclick="removePenalty('{{ $item->id }}', '{{ number_format($item->penalty_amount, 2) }}')">
                                                                 <i class="bx bx-x-circle me-1"></i>Remove Penalty
                                                             </button>
-                                                        @endif --}}
+                                                        @endif
                                                     </td>
                                                 </tr>
                                             @endforeach
@@ -1728,6 +1734,130 @@
         </div>
     </div>
 
+    <!-- Settle Loan Modal -->
+    <div class="modal fade" id="settleLoanModal" tabindex="-1" aria-labelledby="settleLoanModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <form action="{{ route('repayments.settle') }}" method="POST" class="modal-content">
+                @csrf
+                <input type="hidden" name="loan_id" value="{{ $loan->id }}">
+                <div class="modal-header bg-warning text-white">
+                    <h5 class="modal-title" id="settleLoanModalLabel">
+                        <i class="bx bx-check-circle me-2"></i>Settle Loan
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <!-- Settlement Information -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-warning mb-3"><i class="bx bx-info-circle me-2"></i>Settlement Information</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Settle Amount</label>
+                                <p class="fw-bold text-warning mb-0" id="settle_amount_display">
+                                    TZS {{ number_format($loan->total_amount_to_settle, 2) }}
+                                </p>
+                                <small class="text-muted">Pays current interest + all remaining principal</small>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label class="form-label text-muted small">Customer</label>
+                                <p class="fw-bold text-dark mb-0">{{ $loan->customer->name }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <hr class="my-4">
+
+                    <!-- Payment Details Section -->
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h6 class="text-primary mb-3"><i class="bx bx-credit-card me-2"></i>Payment Details</h6>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="settle_payment_date" class="form-label">Payment Date</label>
+                                <input type="date" class="form-control" name="payment_date" id="settle_payment_date"
+                                    value="{{ date('Y-m-d') }}" required>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="settle_amount" class="form-label">Amount</label>
+                                <input type="number" step="0.01" class="form-control" name="amount" id="settle_amount"
+                                    value="{{ $loan->total_amount_to_settle }}" readonly>
+                                <small class="text-muted">This amount is automatically calculated for settlement</small>
+                            </div>
+                        </div>
+
+                        <!-- Payment Source Selection -->
+                        <div class="col-md-12">
+                            <div class="mb-3">
+                                <label for="settle_payment_source" class="form-label">Payment Source</label>
+                                <select class="form-select" name="payment_source" id="settle_payment_source" required>
+                                    <option value="">-- Select Payment Source --</option>
+                                    <option value="bank">Receive from Bank</option>
+                                    <option value="cash_deposit">Receive from Cash Deposit</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Bank Account Field -->
+                        <div class="col-md-12" id="settle_bank_account_section" style="display: none;">
+                            <div class="mb-3">
+                                <label for="settle_bank_account_id" class="form-label">Bank Account</label>
+                                <select class="form-select" name="bank_account_id" id="settle_bank_account_id">
+                                    <option value="">-- Select Bank Account --</option>
+                                    @foreach($bankAccounts ?? [] as $bankAccount)
+                                        <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} -
+                                            {{ $bankAccount->account_number }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                        </div>
+
+                        <!-- Cash Deposit Account Field -->
+                        <div class="col-md-12" id="settle_cash_deposit_section" style="display: none;">
+                            <div class="mb-3">
+                                <label for="settle_cash_deposit_id" class="form-label">Cash Deposit Account</label>
+                                <select class="form-select" name="cash_deposit_id" id="settle_cash_deposit_id">
+                                    <option value="">-- Select Cash Deposit Account --</option>
+                                    @php
+                                        $cashDeposits = \App\Models\CashCollateral::with(['customer', 'type'])
+                                            ->where('amount', '>', 0)
+                                            ->get();
+                                    @endphp
+                                    @foreach($cashDeposits as $deposit)
+                                        <option value="{{ $deposit->id }}" data-balance="{{ $deposit->amount }}">
+                                            {{ $deposit->customer->name }} - {{ $deposit->type->name }} (Balance: TSHS
+                                            {{ number_format($deposit->amount, 2) }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <small class="text-muted" id="settle_deposit_balance_info" style="display: none;">
+                                    Available Balance: <span id="settle_selected_balance" class="text-success fw-bold"></span>
+                                </small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bx bx-check-circle me-1"></i>Settle Loan
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
 
 
@@ -2450,15 +2580,15 @@
             Swal.fire({
                 title: 'Remove Penalty',
                 html: `
-                                                                                                                            <div class="text-start">
-                                                                                                                                <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
-                                                                                                                                <p class="text-muted">This will remove the penalty from this schedule item.</p>
-                                                                                                                                <div class="mb-3">
-                                                                                                                                    <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
-                                                                                                                                    <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
-                                                                                                                                </div>
-                                                                                                                            </div>
-                                                                                                                        `,
+                <div class="text-start">
+                    <p><strong>Penalty Amount:</strong> TZS ${penaltyAmount}</p>
+                    <p class="text-muted">This will remove the penalty from this schedule item.</p>
+                    <div class="mb-3">
+                        <label for="penalty_reason" class="form-label">Reason for Removal (Optional)</label>
+                        <textarea class="form-control" id="penalty_reason" rows="3" placeholder="Enter reason for penalty removal..."></textarea>
+                    </div>
+                </div>
+            `,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonText: 'Remove Penalty',
@@ -3885,5 +4015,65 @@
 
 
         })();
+
+        // Settle Loan Modal Functions
+        function showSettleLoanModal() {
+            const modal = new bootstrap.Modal(document.getElementById('settleLoanModal'));
+            modal.show();
+        }
+
+        // Handle payment source selection for settle loan modal
+        document.addEventListener('DOMContentLoaded', function() {
+            const settlePaymentSource = document.getElementById('settle_payment_source');
+            const settleBankSection = document.getElementById('settle_bank_account_section');
+            const settleCashDepositSection = document.getElementById('settle_cash_deposit_section');
+            const settleCashDepositSelect = document.getElementById('settle_cash_deposit_id');
+            const settleDepositBalanceInfo = document.getElementById('settle_deposit_balance_info');
+            const settleSelectedBalance = document.getElementById('settle_selected_balance');
+
+            if (settlePaymentSource) {
+                settlePaymentSource.addEventListener('change', function() {
+                    if (this.value === 'bank') {
+                        settleBankSection.style.display = 'block';
+                        settleCashDepositSection.style.display = 'none';
+                        settleDepositBalanceInfo.style.display = 'none';
+                    } else if (this.value === 'cash_deposit') {
+                        settleBankSection.style.display = 'none';
+                        settleCashDepositSection.style.display = 'block';
+                    } else {
+                        settleBankSection.style.display = 'none';
+                        settleCashDepositSection.style.display = 'none';
+                        settleDepositBalanceInfo.style.display = 'none';
+                    }
+                });
+            }
+
+            // Handle cash deposit selection for settle loan
+            if (settleCashDepositSelect) {
+                settleCashDepositSelect.addEventListener('change', function() {
+                    const selectedOption = this.options[this.selectedIndex];
+                    if (selectedOption && selectedOption.dataset.balance) {
+                        const balance = parseFloat(selectedOption.dataset.balance);
+                        const settleAmount = parseFloat(document.getElementById('settle_amount').value);
+
+                        settleSelectedBalance.textContent = 'TSHS ' + balance.toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2
+                        });
+                        settleDepositBalanceInfo.style.display = 'block';
+
+                        if (balance < settleAmount) {
+                            settleSelectedBalance.classList.remove('text-success');
+                            settleSelectedBalance.classList.add('text-danger');
+                        } else {
+                            settleSelectedBalance.classList.remove('text-danger');
+                            settleSelectedBalance.classList.add('text-success');
+                        }
+                    } else {
+                        settleDepositBalanceInfo.style.display = 'none';
+                    }
+                });
+            }
+        });
     </script>
 @endpush

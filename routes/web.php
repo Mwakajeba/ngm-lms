@@ -927,6 +927,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Loan Repayment Routes
     Route::post('/repayments', [LoanRepaymentController::class, 'store'])->name('repayments.store');
+    Route::post('/repayments/settle', [LoanRepaymentController::class, 'storeSettlementRepayment'])->name('repayments.settle');
     Route::get('/repayments/history/{loanId}', [LoanRepaymentController::class, 'getRepaymentHistory'])->name('repayments.history');
     Route::get('/repayments/schedule/{scheduleId}', [LoanRepaymentController::class, 'getScheduleDetails'])->name('repayments.schedule-details');
     Route::post('/repayments/remove-penalty/{scheduleId}', [LoanRepaymentController::class, 'removePenalty'])->name('repayments.remove-penalty');
