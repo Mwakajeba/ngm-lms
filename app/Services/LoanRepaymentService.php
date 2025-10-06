@@ -292,9 +292,9 @@ class LoanRepaymentService
 
         // Create receipt for bank payment
         $receipt = Receipt::create([
-            'reference' => 'LOAN-REPAY-' . $loan->id . '-' . time(),
+            'reference' => $repayment->id,
             'reference_type' => 'loan_repayment',
-            'reference_number' => $repayment->id,
+            'reference_number' => null,
             'amount' => $schedulePayment['amount'],
             'date' => $paymentData['payment_date'] ?? now(),
             'description' => "Loan repayment for {$loan->customer->name} - Loan #{$loan->id}",
@@ -1156,7 +1156,7 @@ class LoanRepaymentService
 
     /**
      * Process settle repayment - pays current interest and all remaining principal
-     * 
+     *
      * @param int $loanId The loan ID
      * @param float $amount The settle amount to be paid
      * @param array $paymentData Payment data including bank account, payment date, etc.

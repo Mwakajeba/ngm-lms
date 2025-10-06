@@ -385,7 +385,7 @@ class LoanController extends Controller
                     if ($loan->status === 'active') {
                         return '<span class="text-muted">-</span>';
                     }
-                    
+
                     $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
                     if ($latestApproval && $latestApproval->comments) {
                         return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
@@ -1807,6 +1807,7 @@ class LoanController extends Controller
 
             \DB::transaction(function () use ($loan, $loanId) {
                 // ...existing code...
+
                 // Delete GL Transactions for this loan
                 \DB::table('gl_transactions')
                     ->where('transaction_id', $loanId)
@@ -1818,6 +1819,7 @@ class LoanController extends Controller
                     ->where('reference_type', 'Loan Payment')
                     ->where('reference', $loanId)
                     ->get();
+
                 $paymentIds = $payments->pluck('id')->toArray();
                 if (!empty($paymentIds)) {
                     \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
@@ -1839,6 +1841,7 @@ class LoanController extends Controller
                             $query->where('reference', $loanId);
                         })
                         ->get();
+                        
                     $journalIds = $journals->pluck('id')->toArray();
                     if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
                         \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
