@@ -701,9 +701,10 @@ class LoanRepaymentService
 
             Log::info("Subtracted penalty amount ({$amount}) from {$updatedCount} GL transactions for loan ID: {$loanId}");
 
-            // Update schedule to remove penalty (ensure it's 0)
+            // Reduce the schedule penalty by the entered amount (not below zero)
+            $newPenaltyAmount = max($currentPenaltyAmount - floatval($amount), 0);
             $schedule->update([
-                'penalty_amount' => 0,
+                'penalty_amount' => $newPenaltyAmount,
             ]);
 
             DB::commit();

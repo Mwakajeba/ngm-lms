@@ -359,6 +359,16 @@ class LoanRepaymentController extends Controller
                 'schedule_id' => 'required|exists:loan_schedules,id',
                 'reason' => 'nullable|string|max:500',
             ]);
+            // Validate that the requested removal amount does not exceed current penalty
+            $schedule = LoanSchedule::findOrFail($request->schedule_id);
+            $currentPenaltyAmount = (float) $schedule->penalty_amount;
+            $requestedAmount = (float) $request->amount;
+            if ($requestedAmount > $currentPenaltyAmount) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Amount cannot exceed current penalty amount.'
+                ], 422);
+            }
 
             $result = $this->repaymentService->removePenalty(
                 $request->schedule_id,

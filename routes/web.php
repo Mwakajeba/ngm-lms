@@ -41,6 +41,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoanCalculatorController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\Accounting\Reports\BalanceSheetReportController as NewBalanceSheetReportController;
 use App\Http\Controllers\Reports\BotBalanceSheetController;
 use App\Http\Controllers\Reports\BotIncomeStatementController;
 use App\Http\Controllers\Reports\BotSectoralLoansController;
@@ -832,6 +833,29 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/loan-size-type', [LoanReportController::class, 'loanSizeTypeReport'])->name('reports.loan-size-type');
     Route::get('reports/loan-size-type/export', [LoanReportController::class, 'loanSizeTypeExport'])->name('reports.loan-size-type.export');
     Route::get('reports/loan-size-type/export-pdf', [LoanReportController::class, 'loanSizeTypeExportPdf'])->name('reports.loan-size-type.export-pdf');
+
+    // Monthly performance report
+    Route::get('reports/monthly-performance', [LoanReportController::class, 'monthlyPerformanceReport'])->name('reports.monthly-performance');
+    Route::get('reports/monthly-performance/export', [LoanReportController::class, 'monthlyPerformanceExport'])->name('reports.monthly-performance.export');
+    Route::get('reports/monthly-performance/export-pdf', [LoanReportController::class, 'monthlyPerformanceExportPdf'])->name('reports.monthly-performance.export-pdf');
+
+  // New Balance Sheet report
+  Route::get('reports/balance-sheet', [NewBalanceSheetReportController::class, 'index'])->name('reports.balance-sheet');
+
+  // Simple SMS send endpoint for navbar modal
+  Route::post('sms/send', function(\Illuminate\Http\Request $request) {
+      $validated = $request->validate([
+          'phone' => 'required|string',
+          'message' => 'required|string|max:500'
+      ]);
+      try {
+          \App\Helpers\SmsHelper::send($validated['phone'], $validated['message']);
+          return response()->json(['success' => true]);
+      } catch (\Throwable $e) {
+          \Log::error('SMS send failed: '.$e->getMessage());
+          return response()->json(['success' => false, 'message' => 'SMS send failed'], 500);
+      }
+  })->name('sms.send');
 });
 
 ////////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////

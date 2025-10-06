@@ -1322,7 +1322,41 @@ $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()-
                             <i class="bx bx-download me-2"></i>Export Messages
                         </button>
                     </div>
+                    {{-- <div class="col-md-4 mt-3">
+                        <button type="button" class="btn btn-primary w-100" id="openSendSms">
+                            <i class="bx bx-message-square-dots me-2"></i>Send SMS
+                        </button>
+                    </div> --}}
                 </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Send SMS Modal -->
+<div class="modal fade" id="sendSmsModal" tabindex="-1" aria-labelledby="sendSmsModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="sendSmsModalLabel"><i class="bx bx-message-square-dots me-2"></i>Send SMS</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <form id="sendSmsForm">
+                    @csrf
+                    <div class="mb-3">
+                        <label class="form-label">Recipient Phone</label>
+                        <input type="text" class="form-control" name="phone" id="smsPhone" placeholder="e.g. 2557XXXXXXXX">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Message</label>
+                        <textarea class="form-control" rows="4" name="message" id="smsMessage" placeholder="Type your message..."></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" id="sendSmsBtn"><i class="bx bx-send me-1"></i>Send</button>
             </div>
         </div>
     </div>
@@ -2099,6 +2133,41 @@ $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()-
         document.getElementById('exportMessages').addEventListener('click', function () {
             exportMessagesToCSV();
         });
+
+        // open send SMS modal
+        const openSendSms = document.getElementById('openSendSms');
+        if (openSendSms) {
+            openSendSms.addEventListener('click', function(){
+                const modal = new bootstrap.Modal(document.getElementById('sendSmsModal'));
+                modal.show();
+            });
+        }
+
+        // send sms
+        const sendSmsBtn = document.getElementById('sendSmsBtn');
+        if (sendSmsBtn) {
+            sendSmsBtn.addEventListener('click', function(){
+                const phone = document.getElementById('smsPhone').value.trim();
+                const message = document.getElementById('smsMessage').value.trim();
+                if (!phone || !message) {
+                    Swal.fire({icon:'warning', title:'Missing data', text:'Phone and message are required.'});
+                    return;
+                }
+                fetch('{{ route('sms.send') }}', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-CSRF-TOKEN': '{{ csrf_token() }}' },
+                    body: JSON.stringify({ phone, message })
+                }).then(r=>r.json()).then(res=>{
+                    if(res.success){
+                        Swal.fire({icon:'success', title:'Sent', timer:1500, showConfirmButton:false});
+                        document.getElementById('sendSmsForm').reset();
+                        bootstrap.Modal.getInstance(document.getElementById('sendSmsModal')).hide();
+                    } else {
+                        Swal.fire({icon:'error', title:'Failed', text: res.message || 'Could not send SMS.'});
+                    }
+                }).catch(()=> Swal.fire({icon:'error', title:'Failed', text:'Could not send SMS.'}));
+            });
+        }
 
         function loadMessages() {
             // Show loading state
