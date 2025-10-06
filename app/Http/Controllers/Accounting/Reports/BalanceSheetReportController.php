@@ -114,9 +114,44 @@ class BalanceSheetReportController extends Controller
             ]);
         }
 
-        // Detailed per account (only if requested)
+        // Detailed per account (always build for reliable exports)
         $detailed = [];
+        $groupTotals = [];
         $comparativeGroupTotals = [];
+
+        // Build per-class, per-group totals for current period (used by Summary and Detailed)
+        $groupRows = (clone $base)
+            ->select(
+                'account_class.name as class_name',
+                'account_class_groups.name as group_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
+            )
+            ->groupBy('account_class.name', 'account_class_groups.name')
+            ->get();
+
+        foreach ($groupRows as $gr) {
+            $class = strtolower($gr->class_name);
+            switch ($class) {
+                case 'assets':
+                    $bal = $gr->total_debit - $gr->total_credit;
+                    break;
+                case 'liabilities':
+                case 'equity':
+                case 'income':
+                case 'revenue':
+                    $bal = $gr->total_credit - $gr->total_debit;
+                    break;
+                case 'expenses':
+                case 'expense':
+                    $bal = $gr->total_debit - $gr->total_credit;
+                    break;
+                default:
+                    $bal = $gr->total_debit - $gr->total_credit;
+                    break;
+            }
+            $groupTotals[$gr->class_name][$gr->group_name] = ($groupTotals[$gr->class_name][$gr->group_name] ?? 0) + $bal;
+        }
         if ($viewType === 'detailed') {
             $rows = (clone $base)
                 ->select(
@@ -169,58 +204,60 @@ class BalanceSheetReportController extends Controller
                 $detailed[$r->class_name]['total'] += $balance;
             }
 
-            // Build comparative group totals per date (class -> group -> total)
-            $allComparativeDates = [];
-            if (!empty($comparativeAsOf)) { $allComparativeDates[] = $comparativeAsOf; }
-            foreach ($comparatives as $c) { if (!empty($c)) { $allComparativeDates[] = $c; } }
-            $allComparativeDates = array_values(array_unique($allComparativeDates));
+            // no-op: comparative group totals are built below for all views
+        }
 
-            foreach ($allComparativeDates as $compDate) {
-                $cmpQuery = DB::table('gl_transactions')
-                    ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
-                    ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
-                    ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
-                    ->where('account_class_groups.company_id', $company->id)
-                    ->whereDate('gl_transactions.date', '<=', $compDate);
+        // Build comparative group totals per date (class -> group -> total) for all views
+        $allComparativeDatesForGroups = [];
+        if (!empty($comparativeAsOf)) { $allComparativeDatesForGroups[] = $comparativeAsOf; }
+        foreach ($comparatives as $c) { if (!empty($c)) { $allComparativeDatesForGroups[] = $c; } }
+        $allComparativeDatesForGroups = array_values(array_unique($allComparativeDatesForGroups));
 
-                if ($branchId && $branchId !== 'all') {
-                    $cmpQuery->where('gl_transactions.branch_id', $branchId);
-                } else {
-                    $cmpQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+        foreach ($allComparativeDatesForGroups as $compDate) {
+            $cmpQuery = DB::table('gl_transactions')
+                ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
+                ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
+                ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
+                ->where('account_class_groups.company_id', $company->id)
+                ->whereDate('gl_transactions.date', '<=', $compDate);
+
+            if ($branchId && $branchId !== 'all') {
+                $cmpQuery->where('gl_transactions.branch_id', $branchId);
+            } else {
+                $cmpQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+
+            $cmpRows = $cmpQuery
+                ->select(
+                    'account_class.name as class_name',
+                    'account_class_groups.name as group_name',
+                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
+                )
+                ->groupBy('account_class.name', 'account_class_groups.name')
+                ->get();
+
+            foreach ($cmpRows as $cr) {
+                $class = strtolower($cr->class_name);
+                switch ($class) {
+                    case 'assets':
+                        $bal = $cr->total_debit - $cr->total_credit;
+                        break;
+                    case 'liabilities':
+                    case 'equity':
+                    case 'income':
+                    case 'revenue':
+                        $bal = $cr->total_credit - $cr->total_debit;
+                        break;
+                    case 'expenses':
+                    case 'expense':
+                        $bal = $cr->total_debit - $cr->total_credit;
+                        break;
+                    default:
+                        $bal = $cr->total_debit - $cr->total_credit;
+                        break;
                 }
-
-                $cmpRows = $cmpQuery
-                    ->select(
-                        'account_class.name as class_name',
-                        'account_class_groups.name as group_name',
-                        DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
-                        DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
-                    )
-                    ->groupBy('account_class.name', 'account_class_groups.name')
-                    ->get();
-
-                foreach ($cmpRows as $cr) {
-                    $class = strtolower($cr->class_name);
-                    switch ($class) {
-                        case 'assets':
-                            $bal = $cr->total_debit - $cr->total_credit;
-                            break;
-                        case 'liabilities':
-                        case 'equity':
-                        case 'income':
-                        case 'revenue':
-                            $bal = $cr->total_credit - $cr->total_debit;
-                            break;
-                        case 'expenses':
-                        case 'expense':
-                            $bal = $cr->total_debit - $cr->total_credit;
-                            break;
-                        default:
-                            $bal = $cr->total_debit - $cr->total_credit;
-                            break;
-                    }
-                    $comparativeGroupTotals[$compDate][$cr->class_name][$cr->group_name] = ($comparativeGroupTotals[$compDate][$cr->class_name][$cr->group_name] ?? 0) + $bal;
-                }
+                $comparativeGroupTotals[$compDate][$cr->class_name][$cr->group_name] = ($comparativeGroupTotals[$compDate][$cr->class_name][$cr->group_name] ?? 0) + $bal;
             }
         }
 
@@ -320,6 +357,7 @@ class BalanceSheetReportController extends Controller
             'comparativesData' => $comparativesData,
             'comparativeAsOf' => $comparativeAsOf,
             'comparativeGroupTotals' => $comparativeGroupTotals,
+            'groupTotals' => $groupTotals,
         ]);
     }
 
@@ -349,16 +387,17 @@ class BalanceSheetReportController extends Controller
 
     private function exportPdf($data, $company, $asOf, $comparativeAsOf, $comparatives, $viewType)
     {
+        $resolvedViewType = $data['viewType'] ?? $viewType;
         $pdf = Pdf::loadView('accounting.reports.balance-sheet.pdf', [
             'data' => $data,
             'company' => $company,
             'asOf' => $asOf,
             'comparativeAsOf' => $comparativeAsOf,
             'comparatives' => $comparatives,
-            'viewType' => $viewType
+            'viewType' => $resolvedViewType
         ]);
 
-        $filename = 'balance_sheet_' . $asOf . '_' . $viewType . '.pdf';
+        $filename = 'balance_sheet_' . $asOf . '_' . $resolvedViewType . '.pdf';
         return $pdf->download($filename);
     }
 
@@ -377,20 +416,46 @@ class BalanceSheetReportController extends Controller
 
         $row = 6;
 
-        if ($viewType === 'summary') {
-            // Summary format
+        $resolvedViewType = $data['viewType'] ?? $viewType;
+        if ($resolvedViewType === 'summary') {
+            // Summary format with dynamic groups
+            // ASSETS and groups
             $sheet->setCellValue('A' . $row, 'ASSETS');
             $sheet->setCellValue('B' . $row, number_format($data['assetsTotal'], 2));
+            $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
+            $row++;
+            foreach (($data['groupTotals']['Assets'] ?? []) as $groupName => $gTotal) {
+                $sheet->setCellValue('A' . $row, '  ' . $groupName);
+                $sheet->setCellValue('B' . $row, number_format($gTotal, 2));
+                $row++;
+            }
             $row++;
 
+            // LIABILITIES and groups
             $sheet->setCellValue('A' . $row, 'LIABILITIES');
             $sheet->setCellValue('B' . $row, number_format($data['liabilitiesTotal'], 2));
+            $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
+            $row++;
+            foreach (($data['groupTotals']['Liabilities'] ?? []) as $groupName => $gTotal) {
+                $sheet->setCellValue('A' . $row, '  ' . $groupName);
+                $sheet->setCellValue('B' . $row, number_format($gTotal, 2));
+                $row++;
+            }
             $row++;
 
+            // EQUITY and groups
             $sheet->setCellValue('A' . $row, 'EQUITY');
             $sheet->setCellValue('B' . $row, number_format($data['equityTotal'], 2));
+            $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
+            $row++;
+            foreach (($data['groupTotals']['Equity'] ?? []) as $groupName => $gTotal) {
+                $sheet->setCellValue('A' . $row, '  ' . $groupName);
+                $sheet->setCellValue('B' . $row, number_format($gTotal, 2));
+                $row++;
+            }
             $row++;
 
+            // Total Liabilities + Equity
             $sheet->setCellValue('A' . $row, 'TOTAL LIABILITIES + EQUITY');
             $sheet->setCellValue('B' . $row, number_format($data['liabilitiesTotal'] + $data['equityTotal'], 2));
             $sheet->getStyle('A' . $row . ':B' . $row)->getFont()->setBold(true);
@@ -492,7 +557,9 @@ class BalanceSheetReportController extends Controller
         $sheet->getColumnDimension('A')->setAutoSize(true);
         $sheet->getColumnDimension('B')->setAutoSize(true);
 
-        $filename = 'balance_sheet_' . $asOf . '_' . $viewType . '.xlsx';
+        // Use resolved view type from data to avoid defaults
+        $resolvedViewType = $data['viewType'] ?? $viewType;
+        $filename = 'balance_sheet_' . $asOf . '_' . $resolvedViewType . '.xlsx';
         
         $writer = new Xlsx($spreadsheet);
         $tempFile = tempnam(sys_get_temp_dir(), 'balance_sheet');
@@ -581,61 +648,94 @@ class BalanceSheetReportController extends Controller
 
         // Detailed per account (only if requested)
         $detailed = [];
+        $groupTotals = [];
         $comparativeGroupTotals = [];
-        if ($viewType === 'detailed') {
-            $rows = (clone $base)
-                ->select(
-                    'chart_accounts.id as account_id',
-                    'chart_accounts.account_name',
-                    'account_class_groups.name as group_name',
-                    'account_class.name as class_name',
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
-                )
-                ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class_groups.name', 'account_class.name')
-                ->get();
 
-            foreach ($rows as $r) {
-                $class = strtolower($r->class_name);
-                switch ($class) {
-                    case 'assets':
-                        $balance = $r->total_debit - $r->total_credit;
-                        break;
-                    case 'liabilities':
-                    case 'equity':
-                    case 'income':
-                    case 'revenue':
-                        $balance = $r->total_credit - $r->total_debit;
-                        break;
-                    case 'expenses':
-                    case 'expense':
-                        $balance = $r->total_debit - $r->total_credit;
-                        break;
-                    default:
-                        $balance = $r->total_debit - $r->total_credit;
-                        break;
-                }
+        // Build per-class, per-group totals for current period (used by Summary and Detailed)
+        $groupRows = (clone $base)
+            ->select(
+                'account_class.name as class_name',
+                'account_class_groups.name as group_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
+            )
+            ->groupBy('account_class.name', 'account_class_groups.name')
+            ->get();
 
-                $detailed[$r->class_name]['groups'][$r->group_name]['accounts'][] = [
-                    'account_id' => $r->account_id,
-                    'account_name' => $r->account_name,
-                    'balance' => $balance,
-                ];
-
-                // Subtotals
-                if (!isset($detailed[$r->class_name]['groups'][$r->group_name]['total'])) {
-                    $detailed[$r->class_name]['groups'][$r->group_name]['total'] = 0;
-                }
-                $detailed[$r->class_name]['groups'][$r->group_name]['total'] += $balance;
-
-                if (!isset($detailed[$r->class_name]['total'])) {
-                    $detailed[$r->class_name]['total'] = 0;
-                }
-                $detailed[$r->class_name]['total'] += $balance;
+        foreach ($groupRows as $gr) {
+            $class = strtolower($gr->class_name);
+            switch ($class) {
+                case 'assets':
+                    $bal = $gr->total_debit - $gr->total_credit;
+                    break;
+                case 'liabilities':
+                case 'equity':
+                case 'income':
+                case 'revenue':
+                    $bal = $gr->total_credit - $gr->total_debit;
+                    break;
+                case 'expenses':
+                case 'expense':
+                    $bal = $gr->total_debit - $gr->total_credit;
+                    break;
+                default:
+                    $bal = $gr->total_debit - $gr->total_credit;
+                    break;
             }
+            $groupTotals[$gr->class_name][$gr->group_name] = ($groupTotals[$gr->class_name][$gr->group_name] ?? 0) + $bal;
+        }
+        $rows = (clone $base)
+            ->select(
+                'chart_accounts.id as account_id',
+                'chart_accounts.account_name',
+                'account_class_groups.name as group_name',
+                'account_class.name as class_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
+            )
+            ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class_groups.name', 'account_class.name')
+            ->get();
+
+        foreach ($rows as $r) {
+            $class = strtolower($r->class_name);
+            switch ($class) {
+                case 'assets':
+                    $balance = $r->total_debit - $r->total_credit;
+                    break;
+                case 'liabilities':
+                case 'equity':
+                case 'income':
+                case 'revenue':
+                    $balance = $r->total_credit - $r->total_debit;
+                    break;
+                case 'expenses':
+                case 'expense':
+                    $balance = $r->total_debit - $r->total_credit;
+                    break;
+                default:
+                    $balance = $r->total_debit - $r->total_credit;
+                    break;
+            }
+
+            $detailed[$r->class_name]['groups'][$r->group_name]['accounts'][] = [
+                'account_id' => $r->account_id,
+                'account_name' => $r->account_name,
+                'balance' => $balance,
+            ];
+
+            // Subtotals
+            if (!isset($detailed[$r->class_name]['groups'][$r->group_name]['total'])) {
+                $detailed[$r->class_name]['groups'][$r->group_name]['total'] = 0;
+            }
+            $detailed[$r->class_name]['groups'][$r->group_name]['total'] += $balance;
+
+            if (!isset($detailed[$r->class_name]['total'])) {
+                $detailed[$r->class_name]['total'] = 0;
+            }
+            $detailed[$r->class_name]['total'] += $balance;
         }
 
-        // Compute additional comparatives if provided
+        // Compute additional comparatives if provided (class totals)
         $comparativesData = [];
         $allComparativeDates = [];
         if (!empty($comparativeAsOf)) {
@@ -717,6 +817,55 @@ class BalanceSheetReportController extends Controller
             }
         }
 
+        // Build comparative group totals per date (class -> group -> total)
+        foreach ($allComparativeDates as $compDate) {
+            $cmpQuery = DB::table('gl_transactions')
+                ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
+                ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
+                ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
+                ->where('account_class_groups.company_id', $company->id)
+                ->whereDate('gl_transactions.date', '<=', $compDate);
+
+            if ($branchId && $branchId !== 'all') {
+                $cmpQuery->where('gl_transactions.branch_id', $branchId);
+            } else {
+                $cmpQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+
+            $cmpRows = $cmpQuery
+                ->select(
+                    'account_class.name as class_name',
+                    'account_class_groups.name as group_name',
+                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
+                )
+                ->groupBy('account_class.name', 'account_class_groups.name')
+                ->get();
+
+            foreach ($cmpRows as $cr) {
+                $class = strtolower($cr->class_name);
+                switch ($class) {
+                    case 'assets':
+                        $bal = $cr->total_debit - $cr->total_credit;
+                        break;
+                    case 'liabilities':
+                    case 'equity':
+                    case 'income':
+                    case 'revenue':
+                        $bal = $cr->total_credit - $cr->total_debit;
+                        break;
+                    case 'expenses':
+                    case 'expense':
+                        $bal = $cr->total_debit - $cr->total_credit;
+                        break;
+                    default:
+                        $bal = $cr->total_debit - $cr->total_credit;
+                        break;
+                }
+                $comparativeGroupTotals[$compDate][$cr->class_name][$cr->group_name] = ($comparativeGroupTotals[$compDate][$cr->class_name][$cr->group_name] ?? 0) + $bal;
+            }
+        }
+
         return [
             'summary' => $summary,
             'detailed' => $detailed,
@@ -728,6 +877,7 @@ class BalanceSheetReportController extends Controller
             'comparativesData' => $comparativesData,
             'comparativeAsOf' => $comparativeAsOf,
             'comparativeGroupTotals' => $comparativeGroupTotals,
+            'groupTotals' => $groupTotals,
         ];
     }
 }
