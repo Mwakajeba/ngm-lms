@@ -440,6 +440,18 @@
   document.addEventListener('DOMContentLoaded', function() {
     const addBtn = document.getElementById('addComparativeBtn');
     const container = document.getElementById('comparativesContainer');
+    const form = document.querySelector('form');
+    const viewTypeSelect = form ? form.querySelector('select[name="view_type"]') : null;
+    // If URL has view_type=summary, reflect it in the dropdown (and vice versa)
+    const urlParams = new URLSearchParams(window.location.search);
+    const vtParam = (urlParams.get('view_type') || '').toLowerCase();
+    if (viewTypeSelect && vtParam) {
+      if (vtParam === 'summary' && viewTypeSelect.value !== 'summary') {
+        viewTypeSelect.value = 'summary';
+      } else if (vtParam === 'detailed' && viewTypeSelect.value !== 'detailed') {
+        viewTypeSelect.value = 'detailed';
+      }
+    }
     if (addBtn && container) {
       addBtn.addEventListener('click', function() {
         const wrapper = document.createElement('div');
@@ -456,6 +468,18 @@
           const item = btn.closest('.comparative-item');
           if (item) item.remove();
         }
+      });
+    }
+    // Keep URL and view selection in sync; submit the form (GET) with updated view_type
+    if (form && viewTypeSelect) {
+      viewTypeSelect.addEventListener('change', function() {
+        // Ensure the form has the current view_type value
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'view_type';
+        hidden.value = viewTypeSelect.value;
+        form.appendChild(hidden);
+        form.requestSubmit ? form.requestSubmit() : form.submit();
       });
     }
   });
