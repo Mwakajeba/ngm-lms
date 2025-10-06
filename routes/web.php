@@ -41,6 +41,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\LoanCalculatorController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\Accounting\Reports\BalanceSheetReportController as NewBalanceSheetReportController;
 use App\Http\Controllers\Reports\BotBalanceSheetController;
 use App\Http\Controllers\Reports\BotIncomeStatementController;
 use App\Http\Controllers\Reports\BotSectoralLoansController;
@@ -837,6 +838,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('reports/monthly-performance', [LoanReportController::class, 'monthlyPerformanceReport'])->name('reports.monthly-performance');
     Route::get('reports/monthly-performance/export', [LoanReportController::class, 'monthlyPerformanceExport'])->name('reports.monthly-performance.export');
     Route::get('reports/monthly-performance/export-pdf', [LoanReportController::class, 'monthlyPerformanceExportPdf'])->name('reports.monthly-performance.export-pdf');
+
+  // New Balance Sheet report
+  Route::get('reports/balance-sheet', [NewBalanceSheetReportController::class, 'index'])->name('reports.balance-sheet');
 
   // Simple SMS send endpoint for navbar modal
   Route::post('sms/send', function(\Illuminate\Http\Request $request) {
