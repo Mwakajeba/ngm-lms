@@ -153,7 +153,7 @@ class PermissionGroupsSeeder extends Seeder
                 'view loan documents', 'calculate loan interest', 'generate loan schedule', 'process loan payments', 
                 'manage loan fees', 'view loan history', 'view checked loans', 'view applied loans', 'view approved loans', 
                 'view authorized loans', 'view defaulted loans', 'view rejected loans', 'remove guarantor', 'add guarantor', 
-                'default loan', 'approve loan', 'reject loan', 'disburse loan'
+                'default loan', 'approve loan', 'reject loan', 'disburse loan', 'view completed loans'
             ],
             
             'cash_collaterals' => [

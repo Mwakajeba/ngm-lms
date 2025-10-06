@@ -39,6 +39,7 @@ use App\Http\Controllers\LoanCollateralController;
 use App\Http\Controllers\CashCollateralController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LoanCalculatorController;
 use App\Http\Controllers\TransactionController;
 use App\Http\Controllers\Reports\BotBalanceSheetController;
 use App\Http\Controllers\Reports\BotIncomeStatementController;
@@ -813,6 +814,27 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
+
+////////////////////////////////////////////// LOAN CALCULATOR ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('loan-calculator', [LoanCalculatorController::class, 'index'])->name('loan-calculator.index');
+    Route::post('loan-calculator/calculate', [LoanCalculatorController::class, 'calculate'])->name('loan-calculator.calculate');
+    Route::post('loan-calculator/compare', [LoanCalculatorController::class, 'compare'])->name('loan-calculator.compare');
+    Route::get('loan-calculator/products', [LoanCalculatorController::class, 'products'])->name('loan-calculator.products');
+    Route::get('loan-calculator/product-details', [LoanCalculatorController::class, 'productDetails'])->name('loan-calculator.product-details');
+    Route::get('loan-calculator/export-pdf', [LoanCalculatorController::class, 'exportPdf'])->name('loan-calculator.export-pdf');
+    Route::get('loan-calculator/export-excel', [LoanCalculatorController::class, 'exportExcel'])->name('loan-calculator.export-excel');
+    Route::get('loan-calculator/history', [LoanCalculatorController::class, 'history'])->name('loan-calculator.history');
+    Route::post('loan-calculator/save', [LoanCalculatorController::class, 'save'])->name('loan-calculator.save');
+
+    // Loan size type report
+    Route::get('reports/loan-size-type', [LoanReportController::class, 'loanSizeTypeReport'])->name('reports.loan-size-type');
+    Route::get('reports/loan-size-type/export', [LoanReportController::class, 'loanSizeTypeExport'])->name('reports.loan-size-type.export');
+    Route::get('reports/loan-size-type/export-pdf', [LoanReportController::class, 'loanSizeTypeExportPdf'])->name('reports.loan-size-type.export-pdf');
+});
+
+////////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////
 
 ////////////////////////////////////////////// GROUP MANAGEMENT ///////////////////////////////////////////
 

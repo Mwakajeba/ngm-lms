@@ -68,6 +68,22 @@
                                 </div>
                             </div>
                             @endcan
+
+                            <!-- Loan Size Type Report -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-secondary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-grid-alt fs-1 text-secondary"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Size Type Report</h5>
+                                        <p class="card-text">Bucket loans by size and show counts, amounts, arrears and outstanding.</p>
+                                        <a href="{{ route('reports.loan-size-type') }}" class="btn btn-secondary">
+                                            <i class="bx bx-file me-1"></i> View Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                             @can('view loan delinquency report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">

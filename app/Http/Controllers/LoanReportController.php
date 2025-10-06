@@ -19,12 +19,16 @@ use App\Exports\PortfolioExport;
 use App\Exports\PerformanceExport;
 use App\Exports\DelinquencyExport;
 use App\Exports\InternalPortfolioAnalysisExport;
+use App\Exports\LoanSizeTypeExport;
 use PDF;
 
 class LoanReportController extends Controller
 {
     public function loanDisbursementReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         // Pata data ya kuchuja kutoka kwenye request, ukiweka default values
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
@@ -34,19 +38,34 @@ class LoanReportController extends Controller
         // Get the authenticated user if they are a loan officer
         $loanOfficerId = $request->input('loan_officer_id');
 
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
 
         info('start date: ' . $startDate);
         info('end date: ' . $endDate);
         info('branch: ' . $branchId);
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         // Unda query ya loans na uweke filters
-        //$loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer'])
-            //->where('status', 'active')
         $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer', 'group'])
-            ->whereBetween('disbursed_on', [$startDate, $endDate]);
+            ->whereBetween('disbursed_on', [$startDate, $endDate])
+            ->whereIn('branch_id', $assignedBranchIds);
 
         // Weka filter ya branch
-        if ($branchId) {
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -73,8 +92,7 @@ class LoanReportController extends Controller
             'total_interest_expected' => $disbursements->sum('interest_amount'),
         ];
 
-        // Pata list ya branches na companies kwa ajili ya dropdown
-        $branches = Branch::all();
+        // Pata list ya companies na groups
         $companies = Company::all();
         $groups = Group::all();
         // Only show loan officers assigned to the selected branch (if any)
@@ -96,6 +114,9 @@ class LoanReportController extends Controller
 
     public function exportLoanDisbursement(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         // 1. Pata filters kutoka kwenye request
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -107,11 +128,18 @@ class LoanReportController extends Controller
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download'); // 'download' ni default
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         // 2. Unda query ya loans na uweke filters kama ilivyo kwenye method ya report
         $loansQuery = Loan::with(['customer', 'product', 'branch', 'loanOfficer','group'])
-            ->whereBetween('disbursed_on', [$startDate, $endDate]);
+            ->whereBetween('disbursed_on', [$startDate, $endDate])
+            ->whereIn('branch_id', $assignedBranchIds);
 
-        if ($branchId) {
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -150,11 +178,153 @@ class LoanReportController extends Controller
         return response()->json(['message' => 'Invalid export type.'], 400);
     }
 
+    /**
+     * Loan Size Type report (bucket loans by principal into ranges)
+     */
+    public function loanSizeTypeReport(Request $request)
+    {
+        $user = auth()->user();
+        $company = $user->company;
+
+        $startDate = $request->input('start_date');
+        $endDate = $request->input('end_date');
+        $branchId = $request->input('branch_id');
+
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        $buckets = [
+            ['label' => '0 - 500,000', 'min' => 0, 'max' => 500000],
+            ['label' => '500,000 - 1,000,000', 'min' => 500000, 'max' => 1000000],
+            ['label' => '1,000,000 - 2,000,000', 'min' => 1000000, 'max' => 2000000],
+            ['label' => '2,000,000 - 5,000,000', 'min' => 2000000, 'max' => 5000000],
+            ['label' => '5,000,000 - 10,000,000', 'min' => 5000000, 'max' => 10000000],
+            ['label' => 'ABOVE 10,000,000', 'min' => 10000000, 'max' => null],
+        ];
+
+        $today = Carbon::today();
+
+        $results = [];
+        $grand = [
+            'count' => 0,
+            'loan_amount' => 0,
+            'interest' => 0,
+            'total_loan' => 0,
+            'total_outstanding' => 0,
+            'arrears_count' => 0,
+            'arrears_amount' => 0,
+            'delayed_count' => 0,
+            'delayed_amount' => 0,
+            'outstanding_in_delayed' => 0,
+        ];
+
+        foreach ($buckets as $bucket) {
+            $loans = Loan::query()
+                ->when($startDate && $endDate, function($q) use ($startDate, $endDate){
+                    $q->whereBetween('disbursed_on', [$startDate, $endDate]);
+                })
+                ->whereIn('branch_id', $assignedBranchIds)
+                ->when($branchId && $branchId !== 'all', function($q) use ($branchId){
+                    $q->where('branch_id', $branchId);
+                })
+                ->when(!is_null($bucket['max']), function($q) use ($bucket){
+                    $q->whereBetween('amount', [$bucket['min'], $bucket['max']]);
+                }, function($q) use ($bucket){
+                    $q->where('amount', '>', $bucket['min']);
+                })
+                ->with(['repayments', 'schedule'])
+                ->get();
+
+            $count = $loans->count();
+            $loanAmount = (float) $loans->sum('amount');
+            $interest = (float) $loans->sum('interest_amount');
+            $totalLoan = $loanAmount + $interest;
+
+            // Outstanding principal = principal - principal repaid
+            $totalOutstanding = (float) $loans->sum(function($loan){
+                $principalPaid = $loan->repayments->sum('principal');
+                return max(0, ($loan->amount ?? 0) - $principalPaid);
+            });
+
+            // Arrears = schedules past due with remaining > 0
+            $arrearsCount = 0; $arrearsAmount = 0; $delayedCount = 0; $delayedAmount = 0; $outstandingInDelayed = 0;
+            foreach ($loans as $loan) {
+                foreach ($loan->schedule as $sch) {
+                    $remaining = max(0, ($sch->principal + $sch->interest + $sch->fee_amount + $sch->penalty_amount) - ($sch->repayments->sum('principal') + $sch->repayments->sum('interest') + $sch->repayments->sum('fee_amount') + $sch->repayments->sum('penalt_amount')));
+                    if ($remaining <= 0) continue;
+
+                    if (Carbon::parse($sch->due_date)->lt($today)) {
+                        // in arrears
+                        $arrearsCount++;
+                        $arrearsAmount += $remaining;
+                    }
+                    // delayed: after due_date but within grace window
+                    if ($sch->end_grace_date && Carbon::parse($sch->due_date)->lt($today) && Carbon::parse($sch->end_grace_date)->gte($today)) {
+                        $delayedCount++;
+                        $delayedAmount += $remaining;
+                        $outstandingInDelayed += max(0, $sch->principal - $sch->repayments->sum('principal'));
+                    }
+                }
+            }
+
+            $row = [
+                'label' => $bucket['label'],
+                'count' => $count,
+                'loan_amount' => $loanAmount,
+                'interest' => $interest,
+                'total_loan' => $totalLoan,
+                'total_outstanding' => $totalOutstanding,
+                'arrears_count' => $arrearsCount,
+                'arrears_amount' => $arrearsAmount,
+                'delayed_count' => $delayedCount,
+                'delayed_amount' => $delayedAmount,
+                'outstanding_in_delayed' => $outstandingInDelayed,
+            ];
+
+            // grand totals
+            foreach ($grand as $k => $v) {
+                $grand[$k] += $row[$k] ?? 0;
+            }
+
+            $results[] = $row;
+        }
+
+        return view('loans.reports.loan_size_type', [
+            'rows' => $results,
+            'grand' => $grand,
+            'startDate' => $startDate,
+            'endDate' => $endDate,
+            'branchId' => $branchId,
+            'company' => $company,
+        ]);
+    }
+
+    public function loanSizeTypeExport(Request $request)
+    {
+        $view = $this->loanSizeTypeReport($request);
+        $data = $view->getData();
+        return \Maatwebsite\Excel\Facades\Excel::download(new LoanSizeTypeExport($data['rows'], $data['grand'], $data['startDate'], $data['endDate']), 'loan_size_type_report.xlsx');
+    }
+
+    public function loanSizeTypeExportPdf(Request $request)
+    {
+        $view = $this->loanSizeTypeReport($request);
+        $data = $view->getData();
+        $data['company'] = auth()->user()->company;
+        $pdf = \PDF::loadView('loans.reports.loan_size_type_pdf', $data)->setPaper('a3', 'landscape');
+        return $pdf->download('loan_size_type_report.pdf');
+    }
+
 
     //////////REPAYMENT FUNCTION REPORT////
 
     public function getRepaymentReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         // 1. Pata filters kutoka kwenye request
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -164,11 +334,31 @@ class LoanReportController extends Controller
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download');
 
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         // 2. Unda query ya malipo
         $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
-            ->whereBetween('payment_date', [$startDate, $endDate]);
+            ->whereBetween('payment_date', [$startDate, $endDate])
+            ->whereHas('loan', function ($query) use ($assignedBranchIds) {
+                $query->whereIn('branch_id', $assignedBranchIds);
+            });
 
-        if ($branchId) {
+        if ($branchId && $branchId !== 'all') {
             $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
             });
@@ -197,8 +387,7 @@ class LoanReportController extends Controller
         $summary['repayment_count'] = $repayments->count();
         $summary['average_paid'] = $repayments->count() > 0 ? $summary['total_paid'] / $repayments->count() : 0;
 
-        // 4. Pata data ya branch
-        $branches = Branch::all();
+        // 4. Pata data ya groups na loan officers
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
@@ -216,6 +405,9 @@ class LoanReportController extends Controller
 
     public function exportLoanRepayment(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         // 1. Pata filters kutoka kwenye request
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -225,11 +417,20 @@ class LoanReportController extends Controller
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download');
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         // 2. Unda query ya malipo
         $repaymentsQuery = Repayment::with(['loan.customer','loan.group', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
-            ->whereBetween('payment_date', [$startDate, $endDate]);
+            ->whereBetween('payment_date', [$startDate, $endDate])
+            ->whereHas('loan', function ($query) use ($assignedBranchIds) {
+                $query->whereIn('branch_id', $assignedBranchIds);
+            });
 
-        if ($branchId) {
+        if ($branchId && $branchId !== 'all') {
             $repaymentsQuery->whereHas('loan', function ($query) use ($branchId) {
                 $query->where('branch_id', $branchId);
             });
@@ -273,13 +474,25 @@ class LoanReportController extends Controller
      */
     public function loanAgingReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $asOfDate = $request->input('as_of_date', date('Y-m-d'));
         $branchId = $request->input('branch_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
 
-        // Get all branches and loan officers for filter dropdown
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
         })
@@ -290,11 +503,18 @@ class LoanReportController extends Controller
             })
             ->get();
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         $agingData = [];
         $loansQuery = Loan::with(['customer', 'branch', 'loanOfficer'])
-            ->where('status', 'active');
+            ->where('status', 'active')
+            ->whereIn('branch_id', $assignedBranchIds);
 
-        if ($branchId) {
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -407,13 +627,25 @@ class LoanReportController extends Controller
      */
     public function loanOutstandingReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $asOfDate = $request->input('as_of_date', date('Y-m-d'));
         $branchId = $request->input('branch_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
 
-        // Get all branches and loan officers for filter dropdowns
-        $branches = \App\Models\Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
         })
@@ -424,12 +656,17 @@ class LoanReportController extends Controller
             })
             ->get();
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         $loansQuery = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
             ->whereIn('status', ['active', 'written_off', 'defaulted'])
-            ->whereHas('branch', function($query) {
-                $query->where('company_id', auth()->user()->company_id);
-            });
-        if ($branchId) {
+            ->whereIn('branch_id', $assignedBranchIds);
+            
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
         if ($loanOfficerId) {
@@ -677,9 +914,23 @@ class LoanReportController extends Controller
 
     public function loanAgingInstallmentReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
+
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
 
         $branch = $branchId ? Branch::find($branchId) : null;
         $loanOfficer = $loanOfficerId ? User::find($loanOfficerId) : null;
@@ -687,7 +938,6 @@ class LoanReportController extends Controller
         // Get aging data for installments
         $agingData = $this->getInstallmentAgingData($asOfDate, $branchId, $loanOfficerId);
 
-        $branches = Branch::orderBy('name')->get();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
         })
@@ -790,11 +1040,21 @@ class LoanReportController extends Controller
 
     private function getInstallmentAgingData($asOfDate, $branchId = null, $loanOfficerId = null)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         $query = Loan::with(['customer', 'branch', 'loanOfficer', 'schedule' => function($q) use ($asOfDate) {
             $q->where('due_date', '<=', $asOfDate);
-        }, 'schedule.repayments']);
+        }, 'schedule.repayments'])
+            ->whereIn('branch_id', $assignedBranchIds);
 
-        if ($branchId) {
+        if ($branchId && $branchId !== 'all') {
             $query->where('branch_id', $branchId);
         }
 
@@ -878,7 +1138,24 @@ class LoanReportController extends Controller
      */
     public function loanArrearsReport(Request $request)
     {
-        $branches = Branch::all();
+        $user = auth()->user();
+        $company = $user->company;
+        
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
@@ -889,10 +1166,6 @@ class LoanReportController extends Controller
                 });
             })
             ->get();
-
-        $branchId = $request->input('branch_id');
-        $groupId = $request->input('group_id');
-        $loanOfficerId = $request->input('loan_officer_id');
 
         // If this is an AJAX request for DataTables
         if ($request->ajax()) {
@@ -985,12 +1258,21 @@ class LoanReportController extends Controller
      */
     private function getArrearsData($branchId = null, $groupId = null, $loanOfficerId = null)
     {
+        $user = auth()->user();
+        $company = $user->company;
         $today = Carbon::now();
 
-        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
-                          ->where('status', 'active');
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
 
-        if ($branchId) {
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active')
+                          ->whereIn('branch_id', $assignedBranchIds);
+
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -1076,13 +1358,26 @@ class LoanReportController extends Controller
      */
     public function expectedVsCollectedReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
@@ -1173,10 +1468,20 @@ class LoanReportController extends Controller
      */
     private function getExpectedVsCollectedData($startDate, $endDate, $branchId = null, $groupId = null, $loanOfficerId = null)
     {
-        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
-                          ->where('status', 'active');
+        $user = auth()->user();
+        $company = $user->company;
 
-        if ($branchId) {
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active')
+                          ->whereIn('branch_id', $assignedBranchIds);
+
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -1297,21 +1602,36 @@ class LoanReportController extends Controller
      */
     public function portfolioAtRiskReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
         $asOfDate = $request->input('as_of_date', Carbon::now()->toDateString());
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $parDays = $request->input('par_days', 30); // Default to PAR 30
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
         })
             ->when($branchId, function ($query) use ($branchId) {
-                $query->whereHas('branches', function ($q) use ($branchId) {
-                    $q->where('branches.id', $branchId);
-                });
+                if ($branchId !== 'all') {
+                    $query->whereHas('branches', function ($q) use ($branchId) {
+                        $q->where('branches.id', $branchId);
+                    });
+                }
             })
             ->get();
 
@@ -1704,12 +2024,21 @@ class LoanReportController extends Controller
      */
     private function getPortfolioAtRiskData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)
     {
+        $user = auth()->user();
+        $company = $user->company;
         $asOfDateCarbon = Carbon::parse($asOfDate);
 
-        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
-                          ->where('status', 'active');
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
 
-        if ($branchId) {
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active')
+                          ->whereIn('branch_id', $assignedBranchIds);
+
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -1827,21 +2156,36 @@ class LoanReportController extends Controller
      */
     public function internalPortfolioAnalysisReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $parDays = $request->get('par_days', 30);
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
         })
             ->when($branchId, function ($query) use ($branchId) {
-                $query->whereHas('branches', function ($q) use ($branchId) {
-                    $q->where('branches.id', $branchId);
-                });
+                if ($branchId !== 'all') {
+                    $query->whereHas('branches', function ($q) use ($branchId) {
+                        $q->where('branches.id', $branchId);
+                    });
+                }
             })
             ->get();
         $company = Company::first();
@@ -1925,12 +2269,21 @@ class LoanReportController extends Controller
      */
     private function getInternalPortfolioAnalysisData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $parDays = 30)
     {
+        $user = auth()->user();
+        $company = $user->company;
         $asOfDateCarbon = Carbon::parse($asOfDate);
 
-        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
-                          ->where('status', 'active');
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
 
-        if ($branchId) {
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+                          ->where('status', 'active')
+                          ->whereIn('branch_id', $assignedBranchIds);
+
+        if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
 
@@ -2086,6 +2439,9 @@ class LoanReportController extends Controller
      */
     public function portfolioReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
@@ -2093,7 +2449,17 @@ class LoanReportController extends Controller
         $status = $request->get('status') ?: 'active_completed';
         $exportType = $request->get('export_type');
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
@@ -2192,8 +2558,33 @@ class LoanReportController extends Controller
      */
     private function getPortfolioData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $status = 'all')
     {
+        $user = auth()->user();
+        $company = $user->company;
+
+        // Get user's assigned branches
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        if (empty($assignedBranchIds)) {
+            return [
+                'loans' => collect([]),
+                'summary' => [
+                    'total_loans' => 0,
+                    'total_disbursed' => 0,
+                    'total_outstanding' => 0,
+                    'total_paid' => 0,
+                    'active_loans' => 0,
+                    'completed_loans' => 0,
+                    'defaulted_loans' => 0
+                ]
+            ];
+        }
+
         $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments', 'repayments'])
-            ->when($branchId, function($q) use ($branchId) {
+            ->whereIn('branch_id', $assignedBranchIds)
+            ->when($branchId && $branchId !== 'all', function($q) use ($branchId) {
                 return $q->where('branch_id', $branchId);
             })
             ->when($groupId, function($q) use ($groupId) {
@@ -2326,6 +2717,9 @@ class LoanReportController extends Controller
      */
     public function performanceReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
         $toDate = $request->get('to_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
@@ -2333,7 +2727,17 @@ class LoanReportController extends Controller
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
         $exportType = $request->get('export_type');
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
@@ -2432,9 +2836,43 @@ class LoanReportController extends Controller
      */
     private function getPerformanceData($fromDate, $toDate, $branchId = null, $groupId = null, $loanOfficerId = null)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
+        // Get user's assigned branches
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        if (empty($assignedBranchIds)) {
+            return [
+                'loans' => collect([]),
+                'summary' => [
+                    'total_loans' => 0,
+                    'excellent_loans' => 0,
+                    'good_loans' => 0,
+                    'fair_loans' => 0,
+                    'poor_loans' => 0,
+                    'critical_loans' => 0,
+                    'total_disbursed' => 0,
+                    'total_outstanding' => 0,
+                    'total_repaid' => 0,
+                    'loans_in_arrears' => 0,
+                    'on_time_payments' => 0,
+                    'late_payments' => 0,
+                    'average_days_in_arrears' => 0,
+                    'periodic_repayments' => 0,
+                    'repayment_rate' => 0,
+                    'collection_rate' => 0
+                ]
+            ];
+        }
+
         $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments'])
             ->where('status', 'active')
-            ->when($branchId, function($q) use ($branchId) {
+            ->whereIn('branch_id', $assignedBranchIds)
+            ->when($branchId && $branchId !== 'all', function($q) use ($branchId) {
                 return $q->where('branch_id', $branchId);
             })
             ->when($groupId, function($q) use ($groupId) {
@@ -2449,7 +2887,10 @@ class LoanReportController extends Controller
 
         // Period metrics
         $periodicRepayments = Repayment::whereBetween('payment_date', [$fromDate, $toDate])
-            ->when($branchId, function($q) use ($branchId) {
+            ->whereHas('schedule.loan', function($lq) use ($assignedBranchIds) {
+                $lq->whereIn('branch_id', $assignedBranchIds);
+            })
+            ->when($branchId && $branchId !== 'all', function($q) use ($branchId) {
                 return $q->whereHas('schedule.loan', function($lq) use ($branchId) {
                     $lq->where('branch_id', $branchId);
                 });
@@ -2628,6 +3069,9 @@ class LoanReportController extends Controller
      */
     public function delinquencyReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+        
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
@@ -2636,7 +3080,17 @@ class LoanReportController extends Controller
         $delinquencyDays = $request->get('delinquency_days', 1); // Minimum days to be considered delinquent
         $exportType = $request->get('export_type');
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $groups = Group::all();
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
@@ -2737,9 +3191,37 @@ class LoanReportController extends Controller
      */
     private function getDelinquencyData($asOfDate, $branchId = null, $groupId = null, $loanOfficerId = null, $delinquencyDays = 1, $bucket = null)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
+        // Get user's assigned branches
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        if (empty($assignedBranchIds)) {
+            return [
+                'loans' => collect([]),
+                'summary' => [
+                    'total_loans' => 0,
+                    'total_delinquent_loans' => 0,
+                    'total_delinquent_amount' => 0,
+                    'total_outstanding' => 0,
+                    'delinquency_rate' => 0,
+                    'bucket_1_30' => 0,
+                    'bucket_31_60' => 0,
+                    'bucket_61_90' => 0,
+                    'bucket_91_180' => 0,
+                    'bucket_180_plus' => 0
+                ]
+            ];
+        }
+
         $query = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule', 'schedule.repayments'])
             ->where('status', 'active')
-            ->when($branchId, function($q) use ($branchId) {
+            ->whereIn('branch_id', $assignedBranchIds)
+            ->when($branchId && $branchId !== 'all', function($q) use ($branchId) {
                 return $q->where('branch_id', $branchId);
             })
             ->when($groupId, function($q) use ($groupId) {
@@ -2942,20 +3424,35 @@ class LoanReportController extends Controller
      */
     public function nonPerformingLoanReport(Request $request)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
         $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $exportType = $request->get('export_type');
 
-        $branches = Branch::all();
+        // Get user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
         $loanOfficers = User::whereHas('roles', function ($q) {
             $q->where('name', 'like', '%officer%');
         })
             ->when($branchId, function ($query) use ($branchId) {
-                $query->whereHas('branches', function ($q) use ($branchId) {
-                    $q->where('branches.id', $branchId);
-                });
+                if ($branchId !== 'all') {
+                    $query->whereHas('branches', function ($q) use ($branchId) {
+                        $q->where('branches.id', $branchId);
+                    });
+                }
             })
             ->get();
         $company = Company::first();
@@ -2991,10 +3488,20 @@ class LoanReportController extends Controller
      */
     private function getNPLData($asOfDate, $branchId = null, $loanOfficerId = null, $groupId = null)
     {
+        $user = auth()->user();
+        $company = $user->company;
+
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         $query = Loan::with(['customer', 'branch','group','loanOfficer', 'collaterals', 'schedule.repayments'])
             ->where('status', 'active')
-            ->whereDate('disbursed_on', '<=', $asOfDate);
-        if ($branchId) {
+            ->whereDate('disbursed_on', '<=', $asOfDate)
+            ->whereIn('branch_id', $assignedBranchIds);
+        if ($branchId && $branchId !== 'all') {
             $query->where('branch_id', $branchId);
         }
         if ($loanOfficerId) {

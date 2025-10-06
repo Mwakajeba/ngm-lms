@@ -65,7 +65,7 @@
                             @error('chart_account_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
 
-                        <div class="col-md-6 mb-3">
+                        <!-- <div class="col-md-6 mb-3">
                             <label class="form-label">Branch</label>
                             <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
                                 <option value="">-- Select Branch --</option>
@@ -76,7 +76,7 @@
                                 @endforeach
                             </select>
                             @error('branch_id') <div class="invalid-feedback">{{ $message }}</div> @enderror
-                        </div>
+                        </div> -->
                     </div>
                 </div>
             </div>

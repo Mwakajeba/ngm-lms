@@ -30,7 +30,15 @@ class CustomerListReportController extends Controller
         $registrationDateTo = $request->get('registration_date_to', '');
 
         // Get user's assigned branches
-        $branches = $user->branches()->where('company_id', $company->id)->get();
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
         
         // Get regions and districts
         $regions = \App\Models\Region::orderBy('name')->get();
@@ -62,9 +70,16 @@ class CustomerListReportController extends Controller
         $user = Auth::user();
         $company = $user->company;
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         // Build query for customers
         $query = \App\Models\Customer::with(['region', 'district', 'branch', 'loans', 'collaterals'])
-            ->where('company_id', $company->id);
+            ->where('company_id', $company->id)
+            ->whereIn('branch_id', $assignedBranchIds);
 
         // Apply filters
         if ($branchId !== 'all') {

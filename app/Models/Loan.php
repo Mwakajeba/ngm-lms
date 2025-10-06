@@ -562,7 +562,7 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        $fees = $product->fees;
+        $fees = $product->getFeesAttribute();
         \Log::info('[LoanSchedule] Fees: ' . json_encode($fees));
         $penalty = $product->penalty;
 
