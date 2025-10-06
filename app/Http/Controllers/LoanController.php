@@ -1908,7 +1908,7 @@ class LoanController extends Controller
                 });
             }
 
-            return redirect()->route('loans.application.index')->with('success', 'Loan and related records deleted successfully.');
+            return redirect()->route('loans.by-status', 'applied')->with('success', 'Loan and related records deleted successfully.');
         } catch (\Throwable $e) {
             return redirect()->route('loans.list')->withErrors(['error' => 'Failed to delete loan: ' . $e->getMessage()]);
         }
@@ -2321,7 +2321,6 @@ class LoanController extends Controller
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
             ];
-info($updateData);
             // If loan was rejected, change status back to applied and reset approvals
             if ($loanApplication->status === 'rejected') {
                 $updateData['status'] = 'applied';
@@ -2547,7 +2546,7 @@ info($updateData);
                 case 'active':
                     return redirect()->route('loans.by-status', 'active')->with('success', "Loan application {$message} successfully.");
                 default:
-                    return redirect()->route('loans.application.index')->with('success', "Loan application {$message} successfully.");
+                    return redirect()->route('loans.by-status', 'applied')->with('success', "Loan application {$message} successfully.");
             }
         } catch (\Throwable $th) {
             \Log::error('Approval failed', [
@@ -2659,15 +2658,15 @@ info($updateData);
             // Check if loan application can be deleted - prevent deletion of active or authorized loans
             if (in_array($loanApplication->status, ['active', 'authorized'])) {
                 DB::rollBack();
-                return redirect()->route('loans.application.index')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
+                return redirect()->route('loans.by-status', 'applied')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
             }
 
             $loanApplication->delete();
             DB::commit();
-            return redirect()->route('loans.application.index')->with('success', 'Loan application deleted successfully.');
+            return redirect()->route('loans.by-status', 'applied')->with('success', 'Loan application deleted successfully.');
         } catch (\Throwable $th) {
             DB::rollBack();
-            return redirect()->route('loans.application.index')->withErrors(['Failed to delete loan application: ' . $th->getMessage()]);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Failed to delete loan application: ' . $th->getMessage()]);
         }
     }
 

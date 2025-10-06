@@ -114,7 +114,7 @@ class BalanceSheetReportController extends Controller
             ]);
         }
 
-        // Detailed per account (only if requested)
+        // Detailed per account (always build for reliable exports)
         $detailed = [];
         $groupTotals = [];
         $comparativeGroupTotals = [];
@@ -684,57 +684,55 @@ class BalanceSheetReportController extends Controller
             }
             $groupTotals[$gr->class_name][$gr->group_name] = ($groupTotals[$gr->class_name][$gr->group_name] ?? 0) + $bal;
         }
-        if ($viewType === 'detailed') {
-            $rows = (clone $base)
-                ->select(
-                    'chart_accounts.id as account_id',
-                    'chart_accounts.account_name',
-                    'account_class_groups.name as group_name',
-                    'account_class.name as class_name',
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
-                    DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
-                )
-                ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class_groups.name', 'account_class.name')
-                ->get();
+        $rows = (clone $base)
+            ->select(
+                'chart_accounts.id as account_id',
+                'chart_accounts.account_name',
+                'account_class_groups.name as group_name',
+                'account_class.name as class_name',
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
+                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit')
+            )
+            ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class_groups.name', 'account_class.name')
+            ->get();
 
-            foreach ($rows as $r) {
-                $class = strtolower($r->class_name);
-                switch ($class) {
-                    case 'assets':
-                        $balance = $r->total_debit - $r->total_credit;
-                        break;
-                    case 'liabilities':
-                    case 'equity':
-                    case 'income':
-                    case 'revenue':
-                        $balance = $r->total_credit - $r->total_debit;
-                        break;
-                    case 'expenses':
-                    case 'expense':
-                        $balance = $r->total_debit - $r->total_credit;
-                        break;
-                    default:
-                        $balance = $r->total_debit - $r->total_credit;
-                        break;
-                }
-
-                $detailed[$r->class_name]['groups'][$r->group_name]['accounts'][] = [
-                    'account_id' => $r->account_id,
-                    'account_name' => $r->account_name,
-                    'balance' => $balance,
-                ];
-
-                // Subtotals
-                if (!isset($detailed[$r->class_name]['groups'][$r->group_name]['total'])) {
-                    $detailed[$r->class_name]['groups'][$r->group_name]['total'] = 0;
-                }
-                $detailed[$r->class_name]['groups'][$r->group_name]['total'] += $balance;
-
-                if (!isset($detailed[$r->class_name]['total'])) {
-                    $detailed[$r->class_name]['total'] = 0;
-                }
-                $detailed[$r->class_name]['total'] += $balance;
+        foreach ($rows as $r) {
+            $class = strtolower($r->class_name);
+            switch ($class) {
+                case 'assets':
+                    $balance = $r->total_debit - $r->total_credit;
+                    break;
+                case 'liabilities':
+                case 'equity':
+                case 'income':
+                case 'revenue':
+                    $balance = $r->total_credit - $r->total_debit;
+                    break;
+                case 'expenses':
+                case 'expense':
+                    $balance = $r->total_debit - $r->total_credit;
+                    break;
+                default:
+                    $balance = $r->total_debit - $r->total_credit;
+                    break;
             }
+
+            $detailed[$r->class_name]['groups'][$r->group_name]['accounts'][] = [
+                'account_id' => $r->account_id,
+                'account_name' => $r->account_name,
+                'balance' => $balance,
+            ];
+
+            // Subtotals
+            if (!isset($detailed[$r->class_name]['groups'][$r->group_name]['total'])) {
+                $detailed[$r->class_name]['groups'][$r->group_name]['total'] = 0;
+            }
+            $detailed[$r->class_name]['groups'][$r->group_name]['total'] += $balance;
+
+            if (!isset($detailed[$r->class_name]['total'])) {
+                $detailed[$r->class_name]['total'] = 0;
+            }
+            $detailed[$r->class_name]['total'] += $balance;
         }
 
         // Compute additional comparatives if provided (class totals)
