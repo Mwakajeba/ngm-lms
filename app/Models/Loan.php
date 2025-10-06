@@ -813,7 +813,7 @@ class Loan extends Model
 
     /**
      * Check if the loan is eligible for top-up based on product settings
-     * 
+     *
      * @return bool
      */
     public function isEligibleForTopUp(): bool
@@ -962,7 +962,7 @@ class Loan extends Model
     /**
      * Get the calculated top-up amount for this loan
      * The top-up amount is the remaining balance of the loan
-     * 
+     *
      * @return float
      */
     public function getCalculatedTopUpAmount(): float
@@ -983,7 +983,7 @@ class Loan extends Model
 
     /**
      * Get the total amount paid for this loan
-     * 
+     *
      * @return float
      */
     public function getTotalPaidAmount(): float
@@ -995,7 +995,7 @@ class Loan extends Model
 
     /**
      * Get the total amount to pay for this loan (from schedule)
-     * 
+     *
      * @return float
      */
     public function getTotalAmountToPay(): float
@@ -1007,7 +1007,7 @@ class Loan extends Model
 
     /**
      * Get the installment amount (average amount per installment)
-     * 
+     *
      * @return float
      */
     public function getInstallmentAmount(): float
@@ -1173,7 +1173,7 @@ class Loan extends Model
     /**
      * Close the loan by checking if all schedules are fully paid
      * Changes status to 'completed' if all payments are made
-     * 
+     *
      * @return bool True if loan was closed, false if not eligible for closing
      */
     public function closeLoan(): bool
@@ -1202,7 +1202,7 @@ class Loan extends Model
 
     /**
      * Check if the loan is eligible for closing
-     * 
+     *
      * @return bool
      */
     public function isEligibleForClosing(): bool
@@ -1218,7 +1218,7 @@ class Loan extends Model
 
     /**
      * Get the total outstanding amount across all schedules
-     * 
+     *
      * @return float
      */
     public function getTotalOutstandingAmount(): float
@@ -1228,7 +1228,7 @@ class Loan extends Model
 
     /**
      * Get the total paid amount across all schedules
-     * 
+     *
      * @return float
      */
     public function getTotalPaidAmountFromSchedules(): float
@@ -1239,17 +1239,24 @@ class Loan extends Model
     //get the total amount to settle the loan, this include the interest of the current unpaid schedule + all the remaining principal
     public function getTotalAmountToSettle(): float
     {
+        // Check if schedule exists and is not empty
+        if (!$this->schedule || $this->schedule->isEmpty()) {
+            return 0;
+        }
+
         // Get all outstanding principal from all schedules
-        $outstandingPrincipal = $this->schedule->sum('principal') - $this->schedule->sum(function ($schedule) {
-            return $schedule->repayments->sum('principal');
+        $totalPrincipal = $this->schedule->sum('principal');
+        $totalPaidPrincipal = $this->schedule->sum(function ($schedule) {
+            return $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
         });
+        $outstandingPrincipal = $totalPrincipal - $totalPaidPrincipal;
 
         // Get remaining interest from current unpaid/partially paid schedule only
         $currentScheduleInterest = 0;
         $currentSchedule = $this->schedule->where('is_fully_paid', false)->first();
         if ($currentSchedule) {
             // Calculate remaining interest (original interest - interest already paid)
-            $interestPaid = $currentSchedule->repayments->sum('interest');
+            $interestPaid = $currentSchedule->repayments ? $currentSchedule->repayments->sum('interest') : 0;
             $currentScheduleInterest = max(0, $currentSchedule->interest - $interestPaid);
         }
 
@@ -1267,7 +1274,7 @@ class Loan extends Model
 
     /**
      * Get the total principal paid for this loan
-     * 
+     *
      * @return float
      */
     public function getTotalPrincipalPaid(): float
@@ -1286,7 +1293,7 @@ class Loan extends Model
 
     /**
      * Get the total interest paid for this loan
-     * 
+     *
      * @return float
      */
     public function getTotalInterestPaid(): float
@@ -1305,7 +1312,7 @@ class Loan extends Model
 
     /**
      * Process settle repayment - pays current interest and all remaining principal
-     * 
+     *
      * @param float $amount The settle amount to be paid
      * @param array $paymentData Payment data including bank account, payment date, etc.
      * @return array Result of the settlement
