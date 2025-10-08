@@ -596,6 +596,7 @@ class Loan extends Model
                     ->pluck('id')
                     ->toArray();
             }
+            Log::info('fee ids >>>>>>>>>>>>>: ' . json_encode($releaseFeeIds));
         }
 
         if (!empty($releaseFeeIds)) {
@@ -603,6 +604,7 @@ class Loan extends Model
             foreach ($releaseFees as $releaseFee) {
                 $feeAmount = (float) $releaseFee->amount;
                 $feeType = $releaseFee->fee_type;
+                $feeName = $releaseFee->name;
                 $chartAccountId = $releaseFee->chart_account_id;
 
                 if ($chartAccountId && $bankChartAccountId) {
@@ -616,7 +618,7 @@ class Loan extends Model
                         'reference' => $this->id,
                         'reference_type' => 'Loan Disbursement',
                         'customer_id' => $this->customer_id,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName}  Fee for loan #{$this->id}",
                         'branch_id' => $this->branch_id,
                         'user_id' => auth()->id() ?? 1,
                         'date' => $this->disbursed_on,
@@ -627,7 +629,7 @@ class Loan extends Model
                         'journal_id' => $journal->id,
                         'chart_account_id' => $chartAccountId,
                         'amount' => $totalFeeFloat,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName}  for loan #{$this->id}",
                         'nature' => 'credit',
                     ]);
                     // Debit bank account chart account
@@ -635,7 +637,7 @@ class Loan extends Model
                         'journal_id' => $journal->id,
                         'chart_account_id' => $bankChartAccountId,
                         'amount' => $totalFeeFloat,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName} for loan #{$this->id}",
                         'nature' => 'debit',
                     ]);
 
@@ -647,7 +649,7 @@ class Loan extends Model
                         'transaction_id' => $this->id,
                         'transaction_type' => 'Loan Disbursement',
                         'date' => $this->disbursed_on,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName}  for loan #{$this->id}",
                         'branch_id' => $this->branch_id,
                         'user_id' => auth()->id() ?? 1,
                     ]);
