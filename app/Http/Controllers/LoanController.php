@@ -1841,7 +1841,7 @@ class LoanController extends Controller
                             $query->where('reference', $loanId);
                         })
                         ->get();
-                        
+
                     $journalIds = $journals->pluck('id')->toArray();
                     if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
                         \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
