@@ -17,6 +17,7 @@ class Penalty extends Model
         'penalty_income_account_id',
         'penalty_receivables_account_id',
         'penalty_type',
+        'charge_frequency',
         'amount',
         'deduction_type',
         'description',
@@ -195,6 +196,14 @@ class Penalty extends Model
         return [
             'fixed' => 'Fixed Amount',
             'percentage' => 'Percentage',
+        ];
+    }
+
+    public static function getChargeFrequencyOptions()
+    {
+        return [
+            'daily' => 'Daily',
+            'one_time' => 'One-time',
         ];
     }
 

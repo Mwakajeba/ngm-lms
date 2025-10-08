@@ -27,6 +27,7 @@ class LoanSchedule extends Model
         return $this->hasMany(Repayment::class, 'loan_schedule_id');
     }
 
+
     /**
      * Get the total amount paid for this schedule
      */
@@ -87,5 +88,31 @@ class LoanSchedule extends Model
     public function isLoanActive()
     {
         return $this->loan && $this->loan->status === Loan::STATUS_ACTIVE;
+    }
+    public function fullPrincipalPaid()
+    {
+        $totalPrincipalPaid = $this->repayments->sum('principal');
+        return $totalPrincipalPaid >= $this->principal;
+    }
+    //checkif penalty is paid
+    public function fullPenaltyPaid()
+    {
+        $totalPenaltyPaid = $this->repayments->sum('penalt_amount');
+        return $totalPenaltyPaid >= $this->penalty_amount;
+    }
+
+    //penalty is paid
+    public function PenaltyPaid(){
+        return $this->repayments->sum('penalt_amount');
+    }
+
+    /**
+     * Check if penalty removal is allowed
+     * Penalty removal is only allowed when the paid amount is less than the penalty amount
+     */
+    public function isPenaltyRemovalAllowed()
+    {
+        $penaltyPaidAmount = $this->repayments ? $this->repayments->sum('penalt_amount') : 0;
+        return $penaltyPaidAmount < $this->penalty_amount;
     }
 }

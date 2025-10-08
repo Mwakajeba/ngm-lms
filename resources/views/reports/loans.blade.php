@@ -36,6 +36,22 @@
                                 </div>
                             </div>
                             @endcan
+                            <!-- Loan Portfolio Tracking Report -->
+                            <div class="col-lg-4 col-md-6 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <div class="icon-box mb-3">
+                                            <i class="bx bx-line-chart fs-1 text-primary"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Portfolio Tracking</h5>
+                                        <p class="card-text text-muted">Track portfolio by period, officer, branch and group by day/week/month.</p>
+                                        <a href="{{ route('loans.reports.portfolio_tracking') }}" class="btn btn-primary">
+                                            <i class="fas fa-file-alt me-1"></i> View Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
                             @can('view loan performance report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-success">
@@ -52,6 +68,38 @@
                                 </div>
                             </div>
                             @endcan
+
+                            <!-- Loan Size Type Report -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-secondary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-grid-alt fs-1 text-secondary"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Size Type Report</h5>
+                                        <p class="card-text">Bucket loans by size and show counts, amounts, arrears and outstanding.</p>
+                                        <a href="{{ route('reports.loan-size-type') }}" class="btn btn-secondary">
+                                            <i class="bx bx-file me-1"></i> View Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Monthly Loan Performance Report -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-secondary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-pie-chart fs-1 text-secondary"></i>
+                                        </div>
+                                        <h5 class="card-title">Monthly Loan Performance</h5>
+                                        <p class="card-text">Monthly view of loan given, interest, collections, outstanding and performance.</p>
+                                        <a href="{{ route('reports.monthly-performance') }}" class="btn btn-secondary">
+                                            <i class="bx bx-file me-1"></i> View Report
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
                             @can('view loan delinquency report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
@@ -66,7 +114,7 @@
                                         </a>
                                     </div>
                                 </div>
-                            </div>    
+                            </div>
                             @endcan
                             @can('view loan disbursement report')
                             <div class="col-md-6 col-lg-4 mb-4">
@@ -100,9 +148,9 @@
                                 </div>
                             </div>
                             @endcan
-                            
 
-                             <!-- Additional Loan Reports -->
+
+                            <!-- Additional Loan Reports -->
                             @can('view loan aging report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
@@ -151,9 +199,9 @@
                                 </div>
                             </div>
                             @endcan
-                            
 
-                             <!-- More Loan Reports -->
+
+                            <!-- More Loan Reports -->
                             @can('view loan arrears report')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
@@ -173,9 +221,9 @@
 
 
                             @can('view loan expected vs collected report')
-                            
 
-                             <!-- Expected vs Collected Report -->
+
+                            <!-- Expected vs Collected Report -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-primary">
                                     <div class="card-body text-center">
@@ -190,11 +238,11 @@
                                     </div>
                                 </div>
                             </div>
-                            @endcan    
+                            @endcan
                             @can('view loan portfolio at risk report')
-                            
 
-                             <!-- Portfolio at Risk Report -->
+
+                            <!-- Portfolio at Risk Report -->
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-danger">
                                     <div class="card-body text-center">
@@ -204,17 +252,17 @@
                                         <h5 class="card-title">Portfolio at Risk (PAR) Report</h5>
                                         <p class="card-text">Assess portfolio risk with PAR analysis showing loans past due and risk indicators.</p>
                                         <a href="{{ route('accounting.loans.reports.portfolio_at_risk') }}" class="btn btn-danger">
-                                        <i class="bx bx-file me-1"></i> Generate Report
+                                            <i class="bx bx-file me-1"></i> Generate Report
                                         </a>
                                     </div>
                                 </div>
                             </div>
                             @endcan
-                            
 
-                             <!-- Internal Portfolio Analysis Report -->    
-                            @can('view loan internal portfolio analysis report')  
-                            
+
+                            <!-- Internal Portfolio Analysis Report -->
+                            @can('view loan internal portfolio analysis report')
+
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-info">
                                     <div class="card-body text-center">
@@ -230,8 +278,8 @@
                                 </div>
                             </div>
                             @endcan
-                             <!-- Non Performing Loan Report -->
-                            @can('view loan non performing loan report')  
+                            <!-- Non Performing Loan Report -->
+                            @can('view loan non performing loan report')
                             <div class="col-lg-4 col-md-6 mb-4">
                                 <div class="card h-100">
                                     <div class="card-body text-center">

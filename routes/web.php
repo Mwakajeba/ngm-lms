@@ -39,7 +39,9 @@ use App\Http\Controllers\LoanCollateralController;
 use App\Http\Controllers\CashCollateralController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\LoanCalculatorController;
 use App\Http\Controllers\TransactionController;
+use App\Http\Controllers\Accounting\Reports\BalanceSheetReportController as NewBalanceSheetReportController;
 use App\Http\Controllers\Reports\BotBalanceSheetController;
 use App\Http\Controllers\Reports\BotIncomeStatementController;
 use App\Http\Controllers\Reports\BotSectoralLoansController;
@@ -48,6 +50,7 @@ use App\Http\Controllers\Reports\BotLiquidAssetsController;
 use App\Http\Controllers\Reports\BotComplaintsReportController;
 use App\Http\Controllers\Reports\BotDepositsBorrowingsController;
 use App\Http\Controllers\Reports\BotAgentBankingController;
+use App\Http\Controllers\EmailController;
 use App\Http\Controllers\Reports\BotLoansDisbursedController;
 use App\Http\Controllers\Reports\BotGeographicalDistributionController;
 use App\Http\Controllers\SubscriptionController;
@@ -291,10 +294,12 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     Route::get('/payment-voucher-approval', [SettingsController::class, 'paymentVoucherApprovalSettings'])->name('payment-voucher-approval');
     Route::put('/payment-voucher-approval', [SettingsController::class, 'updatePaymentVoucherApprovalSettings'])->name('payment-voucher-approval.update');
 
-    // Bulk Email Settings
-    Route::get('/bulk-email', [\App\Http\Controllers\BulkEmailController::class, 'index'])->name('bulk-email');
-    Route::post('/bulk-email/send', [\App\Http\Controllers\BulkEmailController::class, 'send'])->name('bulk-email.send');
-    Route::get('/bulk-email/recipients', [\App\Http\Controllers\BulkEmailController::class, 'getRecipients'])->name('bulk-email.recipients');
+    // Bulk Email Settings (Super Admin only)
+    Route::middleware(['role:super-admin'])->group(function () {
+        Route::get('/bulk-email', [\App\Http\Controllers\BulkEmailController::class, 'index'])->name('bulk-email');
+        Route::post('/bulk-email/send', [\App\Http\Controllers\BulkEmailController::class, 'send'])->name('bulk-email.send');
+        Route::get('/bulk-email/recipients', [\App\Http\Controllers\BulkEmailController::class, 'getRecipients'])->name('bulk-email.recipients');
+    });
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -643,6 +648,11 @@ Route::name('loans.reports.')->group(function () {
         Route::get('/loan-aging/export-excel', [LoanReportController::class, 'exportLoanAgingToExcel'])->name('loan_aging.export_excel');
         Route::get('/loan-aging/export-pdf', [LoanReportController::class, 'exportLoanAgingToPdf'])->name('loan_aging.export_pdf');
 
+        // Loan Portfolio Tracking Report
+        Route::get('/portfolio-tracking', [LoanReportController::class, 'portfolioTrackingReport'])->name('portfolio_tracking');
+        Route::get('/portfolio-tracking/export-excel', [LoanReportController::class, 'exportPortfolioTrackingToExcel'])->name('portfolio_tracking.export_excel');
+        Route::get('/portfolio-tracking/export-pdf', [LoanReportController::class, 'exportPortfolioTrackingToPdf'])->name('portfolio_tracking.export_pdf');
+
         // Loan Aging Installment Report
         Route::get('/loan-aging-installment', [LoanReportController::class, 'loanAgingInstallmentReport'])->name('loan_aging_installment');
         Route::get('/loan-aging-installment/export-excel', [LoanReportController::class, 'exportLoanAgingInstallmentToExcel'])->name('loan_aging_installment.export_excel');
@@ -806,6 +816,50 @@ Route::middleware(['auth'])->group(function () {
 
 ////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
 
+////////////////////////////////////////////// LOAN CALCULATOR ///////////////////////////////////////////
+
+Route::middleware(['auth'])->group(function () {
+    Route::get('loan-calculator', [LoanCalculatorController::class, 'index'])->name('loan-calculator.index');
+    Route::post('loan-calculator/calculate', [LoanCalculatorController::class, 'calculate'])->name('loan-calculator.calculate');
+    Route::post('loan-calculator/compare', [LoanCalculatorController::class, 'compare'])->name('loan-calculator.compare');
+    Route::get('loan-calculator/products', [LoanCalculatorController::class, 'products'])->name('loan-calculator.products');
+    Route::get('loan-calculator/product-details', [LoanCalculatorController::class, 'productDetails'])->name('loan-calculator.product-details');
+    Route::get('loan-calculator/export-pdf', [LoanCalculatorController::class, 'exportPdf'])->name('loan-calculator.export-pdf');
+    Route::get('loan-calculator/export-excel', [LoanCalculatorController::class, 'exportExcel'])->name('loan-calculator.export-excel');
+    Route::get('loan-calculator/history', [LoanCalculatorController::class, 'history'])->name('loan-calculator.history');
+    Route::post('loan-calculator/save', [LoanCalculatorController::class, 'save'])->name('loan-calculator.save');
+
+    // Loan size type report
+    Route::get('reports/loan-size-type', [LoanReportController::class, 'loanSizeTypeReport'])->name('reports.loan-size-type');
+    Route::get('reports/loan-size-type/export', [LoanReportController::class, 'loanSizeTypeExport'])->name('reports.loan-size-type.export');
+    Route::get('reports/loan-size-type/export-pdf', [LoanReportController::class, 'loanSizeTypeExportPdf'])->name('reports.loan-size-type.export-pdf');
+
+    // Monthly performance report
+    Route::get('reports/monthly-performance', [LoanReportController::class, 'monthlyPerformanceReport'])->name('reports.monthly-performance');
+    Route::get('reports/monthly-performance/export', [LoanReportController::class, 'monthlyPerformanceExport'])->name('reports.monthly-performance.export');
+    Route::get('reports/monthly-performance/export-pdf', [LoanReportController::class, 'monthlyPerformanceExportPdf'])->name('reports.monthly-performance.export-pdf');
+
+  // New Balance Sheet report
+  Route::get('reports/balance-sheet', [NewBalanceSheetReportController::class, 'index'])->name('reports.balance-sheet');
+
+  // Simple SMS send endpoint for navbar modal
+  Route::post('sms/send', function(\Illuminate\Http\Request $request) {
+      $validated = $request->validate([
+          'phone' => 'required|string',
+          'message' => 'required|string|max:500'
+      ]);
+      try {
+          \App\Helpers\SmsHelper::send($validated['phone'], $validated['message']);
+          return response()->json(['success' => true]);
+      } catch (\Throwable $e) {
+          \Log::error('SMS send failed: '.$e->getMessage());
+          return response()->json(['success' => false, 'message' => 'SMS send failed'], 500);
+      }
+  })->name('sms.send');
+});
+
+////////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////
+
 ////////////////////////////////////////////// GROUP MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
@@ -818,6 +872,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('repayments/{encodedId}', [GroupController::class, 'groupStore'])->name('groups.groupStore');
     Route::delete('groups/{encodedId}', [GroupController::class, 'destroy'])->name('groups.destroy');
     Route::get('groups/{encodedId}/payment', [GroupController::class, 'payment'])->name('groups.payment');
+
+    // Group member management routes
+    Route::delete('groups/{encodedId}/members/{memberId}', [GroupController::class, 'removeMember'])->name('groups.members.remove');
+    Route::post('groups/{encodedId}/transfer-member', [GroupController::class, 'transferMember'])->name('groups.members.transfer');
+    Route::get('groups/{encodedId}/members-for-transfer', [GroupController::class, 'getMembersForTransfer'])->name('groups.members.for-transfer');
 });
 ////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
@@ -879,6 +938,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('loans/{loan}/appdestroy', [LoanController::class, 'appDestroy'])->name('loans.appdestroy');
     Route::get('loans/{loan}/appshow', [LoanController::class, 'appShow'])->name('loans.appshow');
     Route::post('/loan-files', [LoanController::class, 'loanDocument'])->name('loan-documents.store');
+    Route::delete('/loan-documents/{loanFile}', [LoanController::class, 'destroyLoanDocument'])->name('loan-documents.destroy');
     Route::post('/loans/{loan}/guarantors', [LoanController::class, 'addGuarantor'])->name('loans.addGuarantor');
     Route::delete('/loans/{loan}/guarantors/{guarantor}', [LoanController::class, 'removeGuarantor'])->name('loans.removeGuarantor');
 
@@ -892,6 +952,7 @@ Route::middleware(['auth'])->group(function () {
 
     // Loan Repayment Routes
     Route::post('/repayments', [LoanRepaymentController::class, 'store'])->name('repayments.store');
+    Route::post('/repayments/settle', [LoanRepaymentController::class, 'storeSettlementRepayment'])->name('repayments.settle');
     Route::get('/repayments/history/{loanId}', [LoanRepaymentController::class, 'getRepaymentHistory'])->name('repayments.history');
     Route::get('/repayments/schedule/{scheduleId}', [LoanRepaymentController::class, 'getScheduleDetails'])->name('repayments.schedule-details');
     Route::post('/repayments/remove-penalty/{scheduleId}', [LoanRepaymentController::class, 'removePenalty'])->name('repayments.remove-penalty');
@@ -974,6 +1035,14 @@ Route::middleware(['auth'])->group(function () {
 });
 
 Route::post('sms/bulk', [App\Http\Controllers\DashboardController::class, 'sendBulkSms'])->name('sms.bulk');
+
+// Email Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/emails/compose', [EmailController::class, 'index'])->name('emails.compose');
+    Route::get('/emails/microfinances', [EmailController::class, 'getMicrofinances'])->name('emails.microfinances');
+    Route::post('/emails/send', [EmailController::class, 'sendBulkEmails'])->name('emails.send');
+    Route::post('/emails/test', [EmailController::class, 'testEmail'])->name('emails.test');
+});
 
 Route::post('/logout', function () {
     Auth::logout();

@@ -51,23 +51,49 @@
                         <form id="loanDisbursementForm" method="GET" action="{{ route('accounting.loans.reports.disbursed') }}">
                             <div class="row">
                                 <!-- Start Date -->
-                                <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="col-md-3 col-lg-3 mb-3">
                                     <label for="start_date" class="form-label">Start Date</label>
                                     <input type="date" class="form-control" id="start_date" name="start_date" value="{{ request('start_date', date('Y-m-d')) }}">
                                 </div>
                                 <!-- End Date -->
-                                <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="col-md-3 col-lg-3 mb-3">
                                     <label for="end_date" class="form-label">End Date</label>
                                     <input type="date" class="form-control" id="end_date" name="end_date" value="{{ request('end_date', date('Y-m-d')) }}">
                                 </div>
                                 <!-- Branch -->
-                                <div class="col-md-6 col-lg-3 mb-3">
+                                <div class="col-md-3 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
-                                    <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="">All Branches</option>
+                                    <select class="form-select select2-single" id="branch_id" name="branch_id">
+                                        @if(($branches->count() ?? 0) > 1)
+                                            <option value="all" {{ request('branch_id') === 'all' ? 'selected' : '' }}>All My Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                         <option value="{{ $branch->id }}" {{ request('branch_id') == $branch->id ? 'selected' : '' }}>
                                             {{ $branch->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                {{-- grop --}}
+                                <div class="col-md-3 col-lg-3 mb-3">
+                                    <label for="group_id" class="form-label">Group</label>
+                                    <select class="form-select select2-single" id="group_id" name="group_id">
+                                        <option value="">All Groups</option>
+                                        @foreach($groups as $group)
+                                        <option value="{{ $group->id }}" {{ request('group_id') == $group->id ? 'selected' : '' }}>
+                                            {{ $group->name }}
+                                        </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                {{-- loan officer --}}
+                                <div class="col-md-3 col-lg-3 mb-3">
+                                    <label for="loan_officer_id" class="form-label">Loan Officer</label>
+                                    <select class="form-select select2-single" id="loan_officer_id" name="loan_officer_id">
+                                        <option value="">All Loan Officers</option>
+                                        @foreach($loanOfficers as $user)
+                                        <option value="{{ $user->id }}" {{ request('loan_officer_id') == $user->id ? 'selected' : '' }}>
+                                            {{ $user->name }}
                                         </option>
                                         @endforeach
                                     </select>
@@ -150,9 +176,10 @@
                                         <th scope="col">A/C NO.</th>
                                         <th scope="col">Disbursement Date</th>
                                         <th scope="col">Period</th>
-                                        <th scope="col">Registra Name</th>
+                                        <th scope="col">Loan Officer</th>
                                         <th scope="col">Customer Name</th>
                                         <th scope="col">Customer No</th>
+                                        <th scope="col">Group Name</th>
                                         <th scope="col">Loan No</th>
                                         <th scope="col">REF No</th>
                                         <th scope="col">Application Date</th>
@@ -175,6 +202,7 @@
                                         <td>{{ $disbursement->loanOfficer->name ?? 'N/A' }}</td>
                                         <td>{{ $disbursement->customer->name ?? 'N/A' }}</td>
                                         <td>{{ $disbursement->customer->customerNo ?? 'N/A' }}</td>
+                                        <td>{{ $disbursement->group->name ?? 'N/A' }}</td>
                                         <td>{{ $disbursement->loanNo ?? 'N/A'}}</td>
                                         <td>{{ $disbursement->loanNo ?? 'N/A'}}</td>
                                         <td>{{ $disbursement->date_applied }}</td>

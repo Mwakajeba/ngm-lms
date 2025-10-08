@@ -3,11 +3,11 @@
 namespace App\Models;
 
 use App\Traits\LogsActivity;
+use App\Helpers\HashIdHelper;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Vinkla\Hashids\Facades\Hashids;
 
 class Budget extends Model
 {
@@ -109,7 +109,7 @@ class Budget extends Model
      */
     public function getHashIdAttribute()
     {
-        return Hashids::encode($this->id);
+        return HashIdHelper::encode($this->id);
     }
 
     /**
@@ -130,15 +130,15 @@ class Budget extends Model
      */
     public function resolveRouteBinding($value, $field = null)
     {
-        // Try to decode the hash ID first
-        $decoded = Hashids::decode($value);
-        
-        if (!empty($decoded)) {
-            return static::where('id', $decoded[0])->first();
+        if ($field === 'hash_id' || $field === null) {
+            $id = HashIdHelper::decode($value);
+            if ($id !== null) {
+                return $this->findOrFail($id);
+            }
         }
         
-        // Fallback to regular ID lookup
-        return static::where('id', $value)->first();
+        // If not a hash ID, try as regular ID
+        return $this->findOrFail($value);
     }
 
     /**
@@ -148,6 +148,6 @@ class Budget extends Model
      */
     public function getRouteKey()
     {
-        return $this->hash_id;
+        return HashIdHelper::encode($this->id);
     }
 }

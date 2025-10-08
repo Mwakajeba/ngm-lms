@@ -137,7 +137,7 @@
                     { data: 'reference_type_badge', name: 'reference_type', title: 'Type', orderable: true, searchable: true },
                     { data: 'bank_account_name', name: 'bankAccount.name', title: 'Bank Account', orderable: true, searchable: true },
                     { data: 'payee_info', name: 'payee_info', title: 'Payee', orderable: false, searchable: false },
-                    { data: 'description_limited', name: 'description', title: 'Description', orderable: false, searchable: true },
+                    { data: 'description_limited', name: 'description', title: 'Description', orderable: false, searchable: true, className: 'text-start' },
                     { data: 'formatted_amount', name: 'amount', title: 'Amount', orderable: true, searchable: false },
                     { data: 'status_badge', name: 'approved', title: 'Status', orderable: true, searchable: false },
                     { data: 'actions', name: 'actions', title: 'Actions', orderable: false, searchable: false }

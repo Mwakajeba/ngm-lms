@@ -673,10 +673,19 @@ class LoanRepaymentService
             // Get the current penalty amount before removing it
             $currentPenaltyAmount = $schedule->penalty_amount;
 
-            Log::info("Reducing penalty for schedule ID: {$scheduleId}, current penalty amount: {$currentPenaltyAmount}", [
+            // Get the total penalty paid amount
+            $penaltyPaidAmount = $schedule->repayments ? $schedule->repayments->sum('penalt_amount') : 0;
+
+            // Check if penalty removal is allowed (only if paid amount is less than penalty amount)
+            if ($penaltyPaidAmount >= $currentPenaltyAmount) {
+                throw new \Exception("Penalty removal not allowed. Penalty amount ({$currentPenaltyAmount}) has been fully or partially paid ({$penaltyPaidAmount}).");
+            }
+
+            Log::info("Reducing penalty for schedule ID: {$scheduleId}, current penalty amount: {$currentPenaltyAmount}, penalty paid: {$penaltyPaidAmount}", [
                 'schedule_id' => $scheduleId,
                 'customer_id' => $schedule->customer_id,
                 'penalty_amount' => $currentPenaltyAmount,
+                'penalty_paid' => $penaltyPaidAmount,
                 'reason' => $reason,
                 'remove_amount' => $amount,
                 'loan_id' => $loanId
@@ -692,9 +701,10 @@ class LoanRepaymentService
 
             Log::info("Subtracted penalty amount ({$amount}) from {$updatedCount} GL transactions for loan ID: {$loanId}");
 
-            // Update schedule to remove penalty (ensure it's 0)
+            // Reduce the schedule penalty by the entered amount (not below zero)
+            $newPenaltyAmount = max($currentPenaltyAmount - floatval($amount), 0);
             $schedule->update([
-                'penalty_amount' => 0,
+                'penalty_amount' => $newPenaltyAmount,
             ]);
 
             DB::commit();
@@ -1167,9 +1177,31 @@ class LoanRepaymentService
         DB::beginTransaction();
 
         try {
-            $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($loanId);
+            $loan = Loan::with(['product', 'customer', 'schedule.repayments'])->findOrFail($loanId);
+
+            Log::info('Processing settle repayment', [
+                'loan_id' => $loanId,
+                'loan_status' => $loan->status,
+                'schedule_count' => $loan->schedule ? $loan->schedule->count() : 0,
+                'amount' => $amount
+            ]);
+
+            // Handle cash deposit balance reduction if using cash deposit
+            if (isset($paymentData['payment_source']) && $paymentData['payment_source'] === 'cash_deposit') {
+                $cashDeposit = \App\Models\CashCollateral::findOrFail($paymentData['cash_deposit_id']);
+                $cashDeposit->decrement('amount', $amount);
+                Log::info('Cash collateral decremented for settle repayment', [
+                    'cash_deposit_id' => $cashDeposit->id,
+                    'amount_decremented' => $amount,
+                    'remaining_balance' => $cashDeposit->amount,
+                ]);
+            }
 
             // Get current unpaid/partially paid schedule
+            if (!$loan->schedule || $loan->schedule->isEmpty()) {
+                throw new \Exception('No loan schedules found for settlement');
+            }
+
             $currentSchedule = $loan->schedule->where('is_fully_paid', false)->first();
 
             if (!$currentSchedule) {
@@ -1177,13 +1209,15 @@ class LoanRepaymentService
             }
 
             // Calculate current interest (remaining interest from current schedule)
-            $interestPaid = $currentSchedule->repayments->sum('interest');
+            $interestPaid = $currentSchedule->repayments ? $currentSchedule->repayments->sum('interest') : 0;
             $currentInterest = max(0, $currentSchedule->interest - $interestPaid);
 
             // Calculate total outstanding principal from all schedules
-            $outstandingPrincipal = $loan->schedule->sum('principal') - $loan->schedule->sum(function ($schedule) {
-                return $schedule->repayments->sum('principal');
+            $totalPrincipal = $loan->schedule->sum('principal');
+            $totalPaidPrincipal = $loan->schedule->sum(function ($schedule) {
+                return $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
             });
+            $outstandingPrincipal = $totalPrincipal - $totalPaidPrincipal;
 
             // Validate settle amount
             $expectedSettleAmount = $currentInterest + $outstandingPrincipal;
@@ -1207,8 +1241,12 @@ class LoanRepaymentService
                     'cash_deposit' => $currentInterest,
                 ]);
 
-                // Create GL transactions for current interest
-                $this->createSettleInterestGL($loan, $currentRepayment, $currentInterest, $paymentData);
+                // Create GL transactions for current interest based on payment source
+                if (isset($paymentData['payment_source']) && $paymentData['payment_source'] === 'cash_deposit') {
+                    $this->createSettleInterestGLFromCashDeposit($loan, $currentRepayment, $currentInterest, $paymentData);
+                } else {
+                    $this->createSettleInterestGL($loan, $currentRepayment, $currentInterest, $paymentData);
+                }
             }
 
             // Create repayment records for all remaining principal across all schedules
@@ -1219,7 +1257,7 @@ class LoanRepaymentService
                 if ($remainingAmount <= 0)
                     break;
 
-                $principalPaid = $schedule->repayments->sum('principal');
+                $principalPaid = $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
                 $remainingPrincipal = $schedule->principal - $principalPaid;
 
                 if ($remainingPrincipal > 0) {
@@ -1239,8 +1277,12 @@ class LoanRepaymentService
                         'cash_deposit' => $principalToPay,
                     ]);
 
-                    // Create GL transactions for principal
-                    $this->createSettlePrincipalGL($loan, $principalRepayment, $principalToPay, $paymentData);
+                    // Create GL transactions for principal based on payment source
+                    if (isset($paymentData['payment_source']) && $paymentData['payment_source'] === 'cash_deposit') {
+                        $this->createSettlePrincipalGLFromCashDeposit($loan, $principalRepayment, $principalToPay, $paymentData);
+                    } else {
+                        $this->createSettlePrincipalGL($loan, $principalRepayment, $principalToPay, $paymentData);
+                    }
 
                     $remainingAmount -= $principalToPay;
                     $processedSchedules[] = [
@@ -1347,6 +1389,86 @@ class LoanRepaymentService
                 'transaction_type' => 'Settle Principal',
                 'date' => $repayment->payment_date,
                 'description' => "Settle principal payment for loan {$loan->loanNo}",
+                'branch_id' => $loan->branch_id,
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    /**
+     * Create GL transactions for settle interest payment from cash deposit
+     */
+    private function createSettleInterestGLFromCashDeposit(Loan $loan, Repayment $repayment, float $interestAmount, array $paymentData)
+    {
+        // Get cash deposit account
+        $cashDeposit = \App\Models\CashCollateral::findOrFail($paymentData['cash_deposit_id']);
+
+        // Debit: Cash collateral account (reducing the deposit)
+        GlTransaction::create([
+            'chart_account_id' => $cashDeposit->type->chart_account_id ?? 1,
+            'customer_id' => $loan->customer_id,
+            'amount' => $interestAmount,
+            'nature' => 'debit',
+            'transaction_id' => $repayment->id,
+            'transaction_type' => 'Settle Interest from Cash Deposit',
+            'date' => $repayment->payment_date,
+            'description' => "Settle interest payment from cash deposit for loan {$loan->loanNo}",
+            'branch_id' => $loan->branch_id,
+            'user_id' => auth()->id(),
+        ]);
+
+        // Credit: Interest receivable or revenue account
+        $interestAccountId = $loan->product->interest_receivable_account_id ?? $loan->product->interest_revenue_account_id;
+        if ($interestAccountId) {
+            GlTransaction::create([
+                'chart_account_id' => $interestAccountId,
+                'customer_id' => $loan->customer_id,
+                'amount' => $interestAmount,
+                'nature' => 'credit',
+                'transaction_id' => $repayment->id,
+                'transaction_type' => 'Settle Interest from Cash Deposit',
+                'date' => $repayment->payment_date,
+                'description' => "Settle interest payment from cash deposit for loan {$loan->loanNo}",
+                'branch_id' => $loan->branch_id,
+                'user_id' => auth()->id(),
+            ]);
+        }
+    }
+
+    /**
+     * Create GL transactions for settle principal payment from cash deposit
+     */
+    private function createSettlePrincipalGLFromCashDeposit(Loan $loan, Repayment $repayment, float $principalAmount, array $paymentData)
+    {
+        // Get cash deposit account
+        $cashDeposit = \App\Models\CashCollateral::findOrFail($paymentData['cash_deposit_id']);
+
+        // Debit: Cash collateral account (reducing the deposit)
+        GlTransaction::create([
+            'chart_account_id' => $cashDeposit->type->chart_account_id ?? 1,
+            'customer_id' => $loan->customer_id,
+            'amount' => $principalAmount,
+            'nature' => 'debit',
+            'transaction_id' => $repayment->id,
+            'transaction_type' => 'Settle Principal from Cash Deposit',
+            'date' => $repayment->payment_date,
+            'description' => "Settle principal payment from cash deposit for loan {$loan->loanNo}",
+            'branch_id' => $loan->branch_id,
+            'user_id' => auth()->id(),
+        ]);
+
+        // Credit: Principal receivable account
+        $principalAccountId = $loan->product->principal_receivable_account_id;
+        if ($principalAccountId) {
+            GlTransaction::create([
+                'chart_account_id' => $principalAccountId,
+                'customer_id' => $loan->customer_id,
+                'amount' => $principalAmount,
+                'nature' => 'credit',
+                'transaction_id' => $repayment->id,
+                'transaction_type' => 'Settle Principal from Cash Deposit',
+                'date' => $repayment->payment_date,
+                'description' => "Settle principal payment from cash deposit for loan {$loan->loanNo}",
                 'branch_id' => $loan->branch_id,
                 'user_id' => auth()->id(),
             ]);

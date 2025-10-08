@@ -562,7 +562,7 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        $fees = $product->fees;
+        $fees = $product->getFeesAttribute();
         \Log::info('[LoanSchedule] Fees: ' . json_encode($fees));
         $penalty = $product->penalty;
 
@@ -1241,17 +1241,24 @@ class Loan extends Model
     //get the total amount to settle the loan, this include the interest of the current unpaid schedule + all the remaining principal
     public function getTotalAmountToSettle(): float
     {
+        // Check if schedule exists and is not empty
+        if (!$this->schedule || $this->schedule->isEmpty()) {
+            return 0;
+        }
+
         // Get all outstanding principal from all schedules
-        $outstandingPrincipal = $this->schedule->sum('principal') - $this->schedule->sum(function ($schedule) {
-            return $schedule->repayments->sum('principal');
+        $totalPrincipal = $this->schedule->sum('principal');
+        $totalPaidPrincipal = $this->schedule->sum(function ($schedule) {
+            return $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
         });
+        $outstandingPrincipal = $totalPrincipal - $totalPaidPrincipal;
 
         // Get remaining interest from current unpaid/partially paid schedule only
         $currentScheduleInterest = 0;
         $currentSchedule = $this->schedule->where('is_fully_paid', false)->first();
         if ($currentSchedule) {
             // Calculate remaining interest (original interest - interest already paid)
-            $interestPaid = $currentSchedule->repayments->sum('interest');
+            $interestPaid = $currentSchedule->repayments ? $currentSchedule->repayments->sum('interest') : 0;
             $currentScheduleInterest = max(0, $currentSchedule->interest - $interestPaid);
         }
 

@@ -73,41 +73,7 @@ class LoanRepaymentController extends Controller
                 'difference' => abs($paymentAmount - $settleAmount)
             ]);
 
-            // Check if this is a settle repayment (amount matches settle amount within 0.01 tolerance)
-            $isSettleRepayment = abs($paymentAmount - $settleAmount) <= 0.01;
 
-            if ($isSettleRepayment) {
-                Log::info('Processing settle repayment', [
-                    'loan_id' => $request->loan_id,
-                    'amount' => $paymentAmount,
-                    'settle_amount' => $settleAmount
-                ]);
-
-                // Use settle repayment process
-                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
-                $paymentData = [
-                    'bank_chart_account_id' => $bankAccount->chart_account_id,
-                    'bank_account_id' => $request->bank_account_id,
-                    'payment_date' => $request->payment_date,
-                    'notes' => 'Settle repayment - pays current interest and all remaining principal'
-                ];
-
-                $result = $this->repaymentService->processSettleRepayment($request->loan_id, $paymentAmount, $paymentData);
-
-                if ($result['success']) {
-                    $message = "Loan settled successfully. ";
-                    $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
-                    $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
-
-                    if ($result['loan_closed']) {
-                        $message .= " Loan has been closed.";
-                    }
-
-                    return redirect()->back()->with('success', $message);
-                } else {
-                    return redirect()->back()->with('error', 'Failed to process settle repayment.');
-                }
-            } else {
                 Log::info('Processing normal repayment', [
                     'loan_id' => $request->loan_id,
                     'amount' => $paymentAmount,
@@ -161,7 +127,7 @@ class LoanRepaymentController extends Controller
                 Log::info('Repayment processing result', $result);
 
                 return redirect()->back()->with('success', 'Repayment recorded successfully!');
-            }
+
 
         } catch (\Exception $e) {
             Log::error('Loan repayment error: ' . $e->getMessage());
@@ -526,6 +492,16 @@ class LoanRepaymentController extends Controller
                 'schedule_id' => 'required|exists:loan_schedules,id',
                 'reason' => 'nullable|string|max:500',
             ]);
+            // Validate that the requested removal amount does not exceed current penalty
+            $schedule = LoanSchedule::findOrFail($request->schedule_id);
+            $currentPenaltyAmount = (float) $schedule->penalty_amount;
+            $requestedAmount = (float) $request->amount;
+            if ($requestedAmount > $currentPenaltyAmount) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Amount cannot exceed current penalty amount.'
+                ], 422);
+            }
 
             $result = $this->repaymentService->removePenalty(
                 $request->schedule_id,
@@ -693,6 +669,81 @@ class LoanRepaymentController extends Controller
                 'success' => false,
                 'message' => 'Failed to generate receipt: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    public function storeSettlementRepayment(Request $request)
+    {
+        try {
+            $request->validate([
+                'loan_id' => 'required|exists:loans,id',
+                'payment_date' => 'required|date',
+                'amount' => 'required|numeric|min:0.01',
+                'payment_source' => 'required|in:bank,cash_deposit',
+                'bank_account_id' => 'required_if:payment_source,bank|nullable|exists:bank_accounts,id',
+                'cash_deposit_id' => 'required_if:payment_source,cash_deposit|nullable|exists:cash_collaterals,id',
+            ]);
+
+            // Get loan and check if amount matches settle amount
+            $loan = Loan::with(['product', 'customer', 'schedule.repayments'])->findOrFail($request->loan_id);
+            $settleAmount = $loan->total_amount_to_settle;
+            $paymentAmount = $request->amount;
+            $isSettleRepayment = abs($paymentAmount - $settleAmount) <= 0.01;
+
+            if (!$isSettleRepayment) {
+                return redirect()->back()->with('error', 'Amount does not match the settle amount. Expected: TZS ' . number_format($settleAmount, 2));
+            }
+
+            Log::info('Processing settle repayment', [
+                'loan_id' => $request->loan_id,
+                'amount' => $paymentAmount,
+                'settle_amount' => $settleAmount,
+                'payment_source' => $request->payment_source
+            ]);
+
+            // Check cash deposit balance if using cash deposit
+            if ($request->payment_source === 'cash_deposit') {
+                $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
+
+                if ($cashDeposit->amount < $request->amount) {
+                    return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
+                }
+            }
+
+            // Prepare payment data based on source
+            $paymentData = [
+                'payment_date' => $request->payment_date,
+                'payment_source' => $request->payment_source,
+                'notes' => 'Settle repayment - pays current interest and all remaining principal'
+            ];
+
+            if ($request->payment_source === 'bank') {
+                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                $paymentData['bank_chart_account_id'] = $bankAccount->chart_account_id;
+                $paymentData['bank_account_id'] = $request->bank_account_id;
+            } else {
+                $paymentData['cash_deposit_id'] = $request->cash_deposit_id;
+            }
+
+            $result = $this->repaymentService->processSettleRepayment($request->loan_id, $paymentAmount, $paymentData);
+
+            if ($result['success']) {
+                $message = "Loan settled successfully. ";
+                $message .= "Interest paid: TZS " . number_format($result['current_interest_paid'], 2) . ". ";
+                $message .= "Principal paid: TZS " . number_format($result['total_principal_paid'], 2) . ".";
+
+                if ($result['loan_closed']) {
+                    $message .= " Loan has been closed.";
+                }
+
+                return redirect()->back()->with('success', $message);
+            } else {
+                return redirect()->back()->with('error', 'Failed to process settle repayment.');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Settle repayment error: ' . $e->getMessage());
+            return redirect()->back()->with('error', 'Failed to process settle repayment: ' . $e->getMessage());
         }
     }
 }

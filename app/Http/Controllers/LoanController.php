@@ -386,6 +386,7 @@ class LoanController extends Controller
                         return '<span class="text-muted">-</span>';
                     }
 
+
                     $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
                     if ($latestApproval && $latestApproval->comments) {
                         return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
@@ -1233,6 +1234,10 @@ class LoanController extends Controller
 
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
+        // Restrict application if product has no approval levels
+        if (!$product->has_approval_levels) {
+            return back()->withErrors(['error' => 'Loan application must have level of approval.'])->withInput();
+        }
         $this->validateProductLimits($validated, $product);
 
         // 🔐 Check collateral OUTSIDE transaction
@@ -1249,7 +1254,27 @@ class LoanController extends Controller
             }
         }
 
-        // Check kama mteja tayari ana mkopo wa bidhaa hii
+        // Check if customer has reached maximum number of loans for this product
+        if ($product->hasReachedMaxLoans($validated['customer_id'])) {
+            $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
+            $maxLoans = $product->maximum_number_of_loans;
+
+            \Log::info("Maximum loan validation triggered", [
+                'customer_id' => $validated['customer_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'max_loans' => $maxLoans,
+                'remaining_loans' => $remainingLoans
+            ]);
+
+            if ($remainingLoans === 0) {
+                return redirect()->back()->withErrors([
+                    'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans.",
+                ])->withInput();
+            }
+        }
+
+        // Check if customer already has an active loan for this product (for top-up logic)
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
             ->where('status', 'active')
@@ -1535,7 +1560,7 @@ class LoanController extends Controller
 
 
         \Log::info('LoanController@update reached');
-        $decoded =Hashids::decode($encodedId);
+        $decoded = Hashids::decode($encodedId);
         if (empty($decoded)) {
             return redirect()->route('loans.list')->withErrors(['Invalid loan ID.']);
         }
@@ -1790,73 +1815,101 @@ class LoanController extends Controller
             Log::info("=== LOAN EDIT METHOD ===", ["encoded_id" => $encodedId, "loan_id" => $loan->id, "loan_data" => ["amount" => $loan->amount, "interest" => $loan->interest, "period" => $loan->period, "interest_cycle" => $loan->interest_cycle, "customer_id" => $loan->customer_id, "group_id" => $loan->group_id, "product_id" => $loan->product_id, "bank_account_id" => $loan->bank_account_id, "loan_officer_id" => $loan->loan_officer_id, "sector" => $loan->sector]]);
             $loanId = $loan->id;
 
-            // Check for repayments
-            $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
-            if ($repaymentCount > 0) {
-                return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
-            }
-
-            // Check for receipts with reference_number = loanId and reference_type = 'Loan Disbursement'
-            $receiptCount = \DB::table('receipts')
-                ->where('reference_number', $loanId)
-                ->where('reference_type', 'Loan Disbursement')
-                ->count();
-            if ($receiptCount > 0) {
-                return redirect()->route('loans.list')->withErrors(['error' => 'This loan has receipts. Please delete receipts first before deleting the loan.']);
-            }
-
-            \DB::transaction(function () use ($loan, $loanId) {
-                // ...existing code...
-
-                // Delete GL Transactions for this loan
-                \DB::table('gl_transactions')
-                    ->where('transaction_id', $loanId)
-                    ->where('transaction_type', 'Loan Disbursement')
-                    ->delete();
-
-                // Delete Payments and PaymentItems for this loan
-                $payments = \DB::table('payments')
-                    ->where('reference_type', 'Loan Payment')
-                    ->where('reference', $loanId)
-                    ->get();
-
-                $paymentIds = $payments->pluck('id')->toArray();
-                if (!empty($paymentIds)) {
-                    \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
+            // If loan is active, perform full cleanup (receipts/journals/etc). Otherwise, delete loan directly
+            if ($loan->status === Loan::STATUS_ACTIVE) {
+                // Check for repayments
+                $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
+                if ($repaymentCount > 0) {
+                    return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
                 }
-                \DB::table('payments')
-                    ->where('reference_type', 'Loan Payment')
-                    ->where('reference', $loanId)
-                    ->delete();
 
-                // Delete Loan Schedule
-                \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
-
-                // Delete Journals and JournalItems if table exists
-                if (\Schema::hasTable('journals')) {
-                    // Find journals by reference_type and either reference (loanId) or reference_number (JRN-...)
-                    $journals = \DB::table('journals')
+                \DB::transaction(function () use ($loan, $loanId) {
+                    // Delete Receipts and Receipt Items related to this loan disbursement
+                    $receiptIds = \DB::table('receipts')
                         ->where('reference_type', 'Loan Disbursement')
-                        ->where(function ($query) use ($loanId) {
-                            $query->where('reference', $loanId);
-                        })
-                        ->get();
-
-                    $journalIds = $journals->pluck('id')->toArray();
-                    if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
-                        \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
+                        ->where('reference_number', $loanId)
+                        ->pluck('id')
+                        ->toArray();
+                    if (!empty($receiptIds)) {
+                        \DB::table('receipt_items')->whereIn('receipt_id', $receiptIds)->delete();
+                        \DB::table('receipts')->whereIn('id', $receiptIds)->delete();
                     }
-                    \DB::table('journals')
-                        ->where('reference_type', 'Loan Disbursement')
+
+                    // get all the loan schedule ids
+                    $scheduleIds = \DB::table('loan_schedules')->where('loan_id', $loanId)->pluck('id')->toArray();
+
+                    // Delete GL Transactions for this loan
+                    \DB::table('gl_transactions')
+                        ->where('transaction_id', $loanId)
+                        ->where('transaction_type', 'Loan Disbursement')
+                        ->delete();
+
+                    // delete penalty gl transactions
+                    if (!empty($scheduleIds)) {
+                        \DB::table('gl_transactions')
+                            ->whereIn('transaction_id', $scheduleIds)
+                            ->where('transaction_type', 'Penalty')
+                            ->delete();
+
+                        // delete interest gl transactions
+                        \DB::table('gl_transactions')
+                            ->whereIn('transaction_id', $scheduleIds)
+                            ->where('transaction_type', 'Mature Interest')
+                            ->delete();
+                    }
+
+                    // Delete Payments and PaymentItems for this loan
+                    $payments = \DB::table('payments')
+                        ->where('reference_type', 'Loan Payment')
+                        ->where('reference', $loanId)
+                        ->get();
+                    $paymentIds = $payments->pluck('id')->toArray();
+                    if (!empty($paymentIds)) {
+                        \DB::table('payment_items')->whereIn('payment_id', $paymentIds)->delete();
+                    }
+                    \DB::table('payments')
+                        ->where('reference_type', 'Loan Payment')
                         ->where('reference', $loanId)
                         ->delete();
-                }
 
-                // Delete the loan itself
-                $loan->delete();
-            });
+                    // Delete Loan Schedule
+                    \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
 
-            return redirect()->route('loans.list')->with('success', 'Loan and related records deleted successfully.');
+                    // Delete Journals and JournalItems if table exists
+                    if (\Schema::hasTable('journals')) {
+                        $journalsQuery = \DB::table('journals')
+                            ->where('reference_type', 'Loan Disbursement')
+                            ->where(function ($query) use ($loanId) {
+                                // force string comparison to avoid numeric coercion errors
+                                $query->where('reference', (string) $loanId);
+                                if (\Schema::hasColumn('journals', 'reference_number')) {
+                                    $query->orWhere('reference_number', (string) $loanId);
+                                }
+                            });
+
+                        $journalIds = $journalsQuery->pluck('id')->toArray();
+
+                        if (!empty($journalIds) && \Schema::hasTable('journal_items')) {
+                            \DB::table('journal_items')->whereIn('journal_id', $journalIds)->delete();
+                        }
+
+                        if (!empty($journalIds)) {
+                            \DB::table('journals')->whereIn('id', $journalIds)->delete();
+                        }
+                    }
+
+                    // Finally delete the loan
+                    $loan->delete();
+                });
+            } else {
+                // Non-active loans: just delete the loan and its schedules, leave receipts/journals intact
+                \DB::transaction(function () use ($loan, $loanId) {
+                    \DB::table('loan_schedules')->where('loan_id', $loanId)->delete();
+                    $loan->delete();
+                });
+            }
+
+            return redirect()->route('loans.by-status', 'applied')->with('success', 'Loan and related records deleted successfully.');
         } catch (\Throwable $e) {
             return redirect()->route('loans.list')->withErrors(['error' => 'Failed to delete loan: ' . $e->getMessage()]);
         }
@@ -1912,23 +1965,115 @@ class LoanController extends Controller
 
     public function loanDocument(Request $request)
     {
+        $maxFileSize = (int) config('upload.max_file_size', 102400); // in KB
+        $allowedMimes = (array) config('upload.allowed_mimes', ['pdf','jpg','jpeg','png','doc','docx','xls','xlsx','txt']);
+
+        // Early check for file presence and upload validity to produce clearer errors
+        if (!$request->hasFile('files')) {
+            return back()->withErrors(['files' => 'No files were received by the server. Please try again.']);
+        }
+
         $request->validate([
             'loan_id' => 'required|exists:loans,id',
-            'file_type_id' => 'required|exists:filetypes,id',
-            'file' => 'required|file|max:25600',
+            'filetypes' => 'required|array|min:1',
+            'filetypes.*' => 'required|exists:filetypes,id',
+            'files' => 'required|array|min:1',
+            'files.*' => 'required|file|max:' . $maxFileSize . '|mimes:' . implode(',', $allowedMimes),
         ]);
 
-        // Step 2: Store file in public storage
-        $filePath = $request->file('file')->store('loan_documents', 'public');
+        // Validate each uploaded file is valid at PHP level and provide helpful messages
+        foreach ((array) $request->file('files') as $idx => $uploaded) {
+            if (!$uploaded) {
+                return back()->withErrors(["files.$idx" => 'File not received by PHP (empty upload).']);
+            }
+            if (!$uploaded->isValid()) {
+                $errorCode = $uploaded->getError();
+                $errorMessage = match ($errorCode) {
+                    UPLOAD_ERR_INI_SIZE => 'The uploaded file exceeds the server limit (upload_max_filesize).',
+                    UPLOAD_ERR_FORM_SIZE => 'The uploaded file exceeds the form limit (MAX_FILE_SIZE).',
+                    UPLOAD_ERR_PARTIAL => 'The file was only partially uploaded. Please try again.',
+                    UPLOAD_ERR_NO_FILE => 'No file was uploaded.',
+                    UPLOAD_ERR_NO_TMP_DIR => 'Missing a temporary folder on the server.',
+                    UPLOAD_ERR_CANT_WRITE => 'Failed to write file to disk.',
+                    UPLOAD_ERR_EXTENSION => 'A PHP extension stopped the file upload.',
+                    default => 'The file failed to upload due to an unknown error.',
+                };
+                return back()->withErrors(["files.$idx" => $errorMessage]);
+            }
+        }
 
-        // Step 3: Save record in loan_files
-        LoanFile::create([
-            'loan_id' => $request->loan_id,
-            'file_type_id' => $request->file_type_id,
-            'file_path' => $filePath,
-        ]);
+        $loanId = $request->loan_id;
+        $filetypes = $request->filetypes;
+        $files = $request->file('files');
 
-        return back()->with('success', 'Document uploaded successfully.');
+        $uploadedCount = 0;
+        $errors = [];
+
+        try {
+            DB::beginTransaction();
+
+            foreach ($files as $index => $file) {
+                if (isset($filetypes[$index])) {
+                    // Store file in configured storage
+                    $storagePath = config('upload.storage_path', 'loan_documents');
+                    $storageDisk = config('upload.storage_disk', 'public');
+                    $filePath = $file->store($storagePath, $storageDisk);
+
+                    // Get original filename
+                    $originalName = $file->getClientOriginalName();
+
+                    // Save record in loan_files
+                    LoanFile::create([
+                        'loan_id' => $loanId,
+                        'file_type_id' => $filetypes[$index],
+                        'file_path' => $filePath,
+                        'original_name' => $originalName,
+                        'file_size' => $file->getSize(),
+                        'mime_type' => $file->getMimeType(),
+                    ]);
+
+                    $uploadedCount++;
+                }
+            }
+
+            DB::commit();
+
+            if ($uploadedCount > 0) {
+                $message = $uploadedCount === 1
+                    ? 'Document uploaded successfully.'
+                    : "{$uploadedCount} documents uploaded successfully.";
+                return back()->with('success', $message);
+            } else {
+                return back()->withErrors(['error' => 'No files were uploaded.']);
+            }
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            \Log::error('Document upload error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+            ]);
+            return back()->withErrors(['error' => 'Failed to upload documents: ' . $e->getMessage()]);
+        }
+    }
+
+
+    ////////////////////DELETE LOAN DOCUMENT/////////////////////
+    public function destroyLoanDocument(LoanFile $loanFile)
+    {
+        try {
+            // Delete physical file if exists
+            $storageDisk = config('upload.storage_disk', 'public');
+            if ($loanFile->file_path && \Storage::disk($storageDisk)->exists($loanFile->file_path)) {
+                \Storage::disk($storageDisk)->delete($loanFile->file_path);
+            }
+
+            $loanFile->delete();
+
+            return response()->json(['success' => true, 'message' => 'Document deleted successfully.']);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete loan document: ' . $e->getMessage());
+            return response()->json(['success' => false, 'message' => 'Failed to delete document.'], 500);
+        }
     }
     ///////////////////ADD GUARANTOR/////////////////
     public function addGuarantor(Request $request, Loan $loan)
@@ -2041,20 +2186,31 @@ class LoanController extends Controller
             }
         }
 
-        //check if member already has a loan with the same product
-        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
-            ->where('product_id', $validated['product_id'])
-            ->where('status', '=', 'active')
-            ->exists();
-        if ($existingLoan) {
-            return back()->withErrors(['error' => 'Member already has a loan with the same product.']);
+        // Check if customer has reached maximum number of loans for this product
+        if ($product->hasReachedMaxLoans($validated['customer_id'])) {
+            $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
+            $maxLoans = $product->maximum_number_of_loans;
+
+            \Log::info("Maximum loan validation triggered in applicationStore", [
+                'customer_id' => $validated['customer_id'],
+                'product_id' => $product->id,
+                'product_name' => $product->name,
+                'max_loans' => $maxLoans,
+                'remaining_loans' => $remainingLoans
+            ]);
+
+            if ($remainingLoans === 0) {
+                return back()->withErrors(['error' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans."]);
+            }
         }
+
+
 
         try {
             DB::beginTransaction();
 
-            // Determine initial status based on approval levels
-            $initialStatus = $product->has_approval_levels ? Loan::STATUS_APPLIED : Loan::STATUS_ACTIVE;
+            // All loan applications start as 'applied' status
+            $initialStatus = Loan::STATUS_APPLIED;
 
             $loan = Loan::create([
                 'product_id' => $validated['product_id'],
@@ -2085,16 +2241,12 @@ class LoanController extends Controller
                 'amount_total' => $validated['amount'] + $interestAmount,
             ]);
 
-            // If no approval levels required, process disbursement immediately
-            if (!$product->has_approval_levels) {
-                $this->processLoanDisbursement($loan);
-            }
+            // Note: For loan applications, we don't disburse immediately even if no approval levels are required
+            // The disbursement will happen during the approval process when a bank account is selected
 
             DB::commit();
 
-            $message = $product->has_approval_levels
-                ? 'Loan application submitted successfully and awaiting approval.'
-                : 'Loan application created and disbursed successfully.';
+            $message = 'Loan application submitted successfully and awaiting approval.';
 
             return redirect()->route('loans.by-status', 'applied')->with('success', $message);
         } catch (\Throwable $th) {
@@ -2212,11 +2364,11 @@ class LoanController extends Controller
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
+                'amount_total' => $validated['amount'] + $loanApplication->calculateInterestAmount($validated['interest']),
                 'interest_cycle' => $validated['interest_cycle'], // Use from form
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
             ];
-
             // If loan was rejected, change status back to applied and reset approvals
             if ($loanApplication->status === 'rejected') {
                 $updateData['status'] = 'applied';
@@ -2442,7 +2594,7 @@ class LoanController extends Controller
                 case 'active':
                     return redirect()->route('loans.by-status', 'active')->with('success', "Loan application {$message} successfully.");
                 default:
-                    return redirect()->route('loans.application.index')->with('success', "Loan application {$message} successfully.");
+                    return redirect()->route('loans.by-status', 'applied')->with('success', "Loan application {$message} successfully.");
             }
         } catch (\Throwable $th) {
             \Log::error('Approval failed', [
@@ -2554,15 +2706,15 @@ class LoanController extends Controller
             // Check if loan application can be deleted - prevent deletion of active or authorized loans
             if (in_array($loanApplication->status, ['active', 'authorized'])) {
                 DB::rollBack();
-                return redirect()->route('loans.application.index')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
+                return redirect()->route('loans.by-status', 'applied')->withErrors(['You cannot delete an active or authorized loan. Only pending, rejected, or other non-active loans can be deleted.']);
             }
 
             $loanApplication->delete();
             DB::commit();
-            return redirect()->route('loans.application.index')->with('success', 'Loan application deleted successfully.');
+            return redirect()->route('loans.by-status', 'applied')->with('success', 'Loan application deleted successfully.');
         } catch (\Throwable $th) {
             DB::rollBack();
-            return redirect()->route('loans.application.index')->withErrors(['Failed to delete loan application: ' . $th->getMessage()]);
+            return redirect()->route('loans.by-status', 'applied')->withErrors(['Failed to delete loan application: ' . $th->getMessage()]);
         }
     }
 

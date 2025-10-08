@@ -82,7 +82,12 @@
     <div class="header">
         <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
         <div class="report-title">ACCOUNT CLASSES REPORT</div>
-        <div class="report-date">AS AT {{ \Carbon\Carbon::parse($accountingNotesData['as_of_date'])->format('d-m-Y') }}</div>
+        <div class="report-date">
+            AS AT {{ \Carbon\Carbon::parse($accountingNotesData['as_of_date'])->format('d-m-Y') }}
+            @if(isset($branchName))
+                | BRANCH: {{ $branchName }}
+            @endif
+        </div>
     </div>
 
     <!-- Summary Statistics -->

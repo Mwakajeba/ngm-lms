@@ -316,6 +316,12 @@ class BillPurchaseController extends Controller
      */
     public function destroy(Bill $billPurchase)
     {
+        // Check if bill has payments
+        if ($billPurchase->payments()->count() > 0) {
+            return redirect()->back()
+                ->withErrors(['error' => 'Cannot delete bill with existing payments. Please delete all payments first.']);
+        }
+
         try {
             DB::beginTransaction();
 

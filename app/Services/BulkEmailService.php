@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Mail\MicrofinanceMail;
+use App\Models\EmailLog;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
@@ -46,6 +47,15 @@ class BulkEmailService
                 ));
 
                 $results['successful']++;
+
+                // Log success
+                EmailLog::create([
+                    'recipient_email' => $email,
+                    'recipient_name' => $name,
+                    'subject' => $subject,
+                    'status' => 'sent',
+                    'sent_at' => now(),
+                ]);
                 
                 // Add a small delay to avoid overwhelming the mail server
                 usleep(100000); // 0.1 second delay
@@ -54,6 +64,15 @@ class BulkEmailService
                 $results['failed']++;
                 $results['errors'][] = "Failed to send email to {$email}: " . $e->getMessage();
                 Log::error("Bulk email failed for {$email}: " . $e->getMessage());
+
+                // Log failure
+                EmailLog::create([
+                    'recipient_email' => $email ?? 'unknown',
+                    'recipient_name' => $name ?? null,
+                    'subject' => $subject,
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                ]);
             }
         }
 
@@ -98,11 +117,28 @@ class BulkEmailService
                 ));
 
                 $results['queued']++;
+
+                // Log queued
+                EmailLog::create([
+                    'recipient_email' => $email,
+                    'recipient_name' => $name,
+                    'subject' => $subject,
+                    'status' => 'queued',
+                ]);
                 
             } catch (\Exception $e) {
                 $results['failed']++;
                 $results['errors'][] = "Failed to queue email for {$email}: " . $e->getMessage();
                 Log::error("Bulk email queuing failed for {$email}: " . $e->getMessage());
+
+                // Log failure
+                EmailLog::create([
+                    'recipient_email' => $email ?? 'unknown',
+                    'recipient_name' => $name ?? null,
+                    'subject' => $subject,
+                    'status' => 'failed',
+                    'error_message' => $e->getMessage(),
+                ]);
             }
         }
 

@@ -41,10 +41,15 @@ class GroupController extends Controller
     {
         $branchId = auth()->user()->branch_id;
 
-        $loanOfficers = User::where('branch_id', $branchId)->get();
+        $loanOfficers = User::whereHas('roles', function ($q) {
+            $q->where('name', 'like', '%officer%');
+        })->get();
 
         // Get all customer IDs who are already members of any group
-        $allGroupMemberIds = \DB::table('group_members')->pluck('customer_id')->toArray();
+        $allGroupMemberIds = \DB::table('group_members')
+            ->where('group_id', '!=', 1)
+            ->pluck('customer_id')
+            ->toArray();
 
         // Only customers in 'Borrower' category who are not in any group can be group leaders
         $groupLeaders = Customer::where('branch_id', $branchId)
@@ -73,12 +78,6 @@ class GroupController extends Controller
                         $customer = Customer::find($value);
                         if (!$customer || $customer->category !== 'Borrower') {
                             $fail('The selected group leader must be a customer in the Borrower category.');
-                        }
-
-                        // Check if customer is already a member of any group
-                        $isInAnyGroup = \DB::table('group_members')->where('customer_id', $value)->exists();
-                        if ($isInAnyGroup) {
-                            $fail('The selected group leader is already a member of another group.');
                         }
                     }
                 }
@@ -115,10 +114,20 @@ class GroupController extends Controller
 
             // Only create a GroupMember if a group leader was provided and is valid
             if ($request->filled('group_leader')) {
+                // Check if group leader is a member in the individual group (group_id = 1)
+                $individualGroupId = Group::getIndividualGroupId();
+                $existing = GroupMember::where('group_id', $individualGroupId)
+                    ->where('customer_id', $request->group_leader)
+                    ->first();
+
+                if ($existing) {
+                    $existing->delete();
+                }
+
                 GroupMember::create([
                     'group_id' => $group->id,
                     'customer_id' => $request->group_leader,
-                    'joined_date' => now()->format('Y M D')
+                    'joined_date' => now()->format('Y-m-d')
                 ]);
             }
 
@@ -166,7 +175,13 @@ class GroupController extends Controller
             'loans.product'   // Load loans with their products
         ]);
 
-        return view('groups.show', compact('group'));
+        // Get available groups for transfer (excluding current group and individual group)
+        $availableGroups = Group::where('id', '!=', $group->id)
+            ->where('id', '!=', Group::getIndividualGroupId())
+            ->where('branch_id', $group->branch_id)
+            ->get();
+
+        return view('groups.show', compact('group', 'availableGroups'));
     }
 
     /**
@@ -197,6 +212,7 @@ class GroupController extends Controller
         // Only allow group leader to be selected from members of this group
         $groupMemberIds = \DB::table('group_members')
             ->where('group_id', $group->id)
+            ->where('group_id', '!=', 1)
             ->pluck('customer_id')
             ->toArray();
 
@@ -279,12 +295,25 @@ class GroupController extends Controller
                 'meeting_time' => $request->meeting_time,
             ]);
 
-            // Optionally, if you allow updating group members elsewhere, ensure only Borrowers are added
-            // Example: (pseudo-code, adapt as needed)
-            // foreach ($request->members as $memberId) {
-            //     $member = Customer::where('id', $memberId)->where('category', 'Borrower')->first();
-            //     if ($member) { /* add to group */ }
-            // }
+            // Only create a GroupMember if a group leader was provided and is valid
+            if ($request->filled('group_leader')) {
+                // Check if group leader is a member in the individual group (group_id = 1)
+                $individualGroupId = Group::getIndividualGroupId();
+                $existing = GroupMember::where('group_id', $individualGroupId)
+                    ->where('customer_id', $request->group_leader)
+                    ->first();
+
+                if ($existing) {
+                    $existing->delete();
+                }
+                $groupMember = GroupMember::where('group_id', $group->id);
+
+                $groupMember->update([
+                    'group_id' => $group->id,
+                    'customer_id' => $request->group_leader,
+                    'joined_date' => now()->format('Y-m-d')
+                ]);
+            }
 
             return redirect()->route('groups.index')->with('success', 'Group updated successfully!');
         } catch (\Exception $e) {
@@ -683,6 +712,200 @@ class GroupController extends Controller
             ]);
             DB::rollBack();
             return back()->with('error', 'Failed to process repayment. ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove a member from the group and assign to individual group if eligible
+     */
+    public function removeMember(Request $request, $encodedId, $memberId)
+    {
+        // Decode group ID
+        $decoded = Hashids::decode($encodedId);
+        $decodeMemberId = Hashids::decode($memberId)[0] ?? null;
+        info("data that come", ['memberId' => $decodeMemberId, 'encodedId' => $encodedId, 'decoded' => $decoded]);
+        if (empty($decoded)) {
+            \Log::warning('[GroupRemove] Group decode failed', ['encoded' => $encodedId]);
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Group not found.'], 404);
+            }
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+        $member = Customer::findOrFail($memberId);
+
+        try {
+            // Check if member has ongoing loans in this group
+            if ($group->memberHasOngoingLoans($memberId)) {
+                \Log::info('[GroupRemove] Blocked: member has ongoing loans', [
+                    'member_id' => $memberId,
+                    'group_id' => $group->id
+                ]);
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot remove member. You have active loans in this group.'], 422);
+                }
+                return redirect()->back()->with('error', 'Cannot remove member. They have ongoing loans in this group that must be completed first.');
+            }
+
+            // Remove member from group
+            $group->members()->detach($memberId);
+
+            // If member was group leader, clear the group leader
+            if ($group->group_leader == $memberId) {
+                $group->update(['group_leader' => null]);
+            }
+
+            // Assign member to individual group (group ID 1)
+            $individualGroupId = Group::getIndividualGroupId();
+            $individualGroup = Group::find($individualGroupId);
+
+            if ($individualGroup) {
+                $individualGroup->members()->attach($memberId, [
+                    'joined_date' => now()->format('Y M D')
+                ]);
+            }
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Member removed and assigned to individual group successfully.']);
+            }
+            return redirect()->back()->with('success', 'Member removed from group and assigned to individual group successfully!');
+        } catch (\Exception $e) {
+            \Log::error("Member removal failed", [
+                "group_id" => $group->id,
+                "member_id" => $memberId,
+                "error" => $e->getMessage()
+            ]);
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Failed to remove member. ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to remove member. Please try again.');
+        }
+    }
+
+    /**
+     * Get members for transfer modal
+     */
+    public function getMembersForTransfer($encodedId)
+    {
+        // Decode group ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return response()->json(['error' => 'Group not found.'], 404);
+        }
+
+        $group = Group::findOrFail($decoded[0]);
+        $members = $group->members()->get();
+
+        $data = $members->map(function ($member) {
+            return [
+                'id' => $member->id,
+                'name' => $member->name,
+                'phone' => $member->phone1 ?? 'No phone'
+            ];
+        });
+
+        return response()->json(['data' => $data]);
+    }
+
+    /**
+     * Transfer a member from one group to another
+     */
+    public function transferMember(Request $request, $encodedId)
+    {
+        \Log::info('[GroupTransfer] Incoming request', [
+            'encoded_group_id' => $encodedId,
+            'payload' => $request->all(),
+            'is_ajax' => $request->ajax(),
+        ]);
+
+        $request->validate([
+            'member_id' => 'required|exists:customers,id',
+            'target_group_id' => 'required|exists:groups,id',
+        ]);
+
+        // Decode group ID
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            \Log::warning('[GroupTransfer] Group decode failed', ['encoded' => $encodedId]);
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Group not found.'], 404);
+            }
+            return redirect()->route('groups.index')->withErrors(['Group not found.']);
+        }
+
+        $sourceGroup = Group::findOrFail($decoded[0]);
+        $targetGroup = Group::findOrFail($request->target_group_id);
+        $member = Customer::findOrFail($request->member_id);
+
+        try {
+            \Log::info('[GroupTransfer] Preconditions', [
+                'source_group_id' => $sourceGroup->id,
+                'target_group_id' => $targetGroup->id,
+                'member_id' => $member->id,
+            ]);
+            // Check if member has ongoing loans in source group
+            if ($sourceGroup->memberHasOngoingLoans($request->member_id)) {
+                \Log::info('[GroupTransfer] Blocked: member has ongoing loans', [
+                    'member_id' => $member->id,
+                    'source_group_id' => $sourceGroup->id
+                ]);
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Cannot transfer member. They have ongoing loans in the current group that must be completed first.'], 422);
+                }
+                return redirect()->back()->with('error', 'Cannot transfer member. They have ongoing loans in the current group that must be completed first.');
+            }
+
+            // Check if target group can accept more members
+            if (!$targetGroup->canAcceptMoreMembers()) {
+                \Log::info('[GroupTransfer] Blocked: target at capacity', [
+                    'target_group_id' => $targetGroup->id
+                ]);
+                if ($request->ajax()) {
+                    return response()->json(['success' => false, 'message' => 'Target group has reached its maximum member limit.'], 422);
+                }
+                return redirect()->back()->with('error', 'Target group has reached its maximum member limit.');
+            }
+
+            // Remove member from source group
+            $sourceGroup->members()->detach($request->member_id);
+            \Log::info('[GroupTransfer] Detached member from source group', [
+                'member_id' => $member->id,
+                'source_group_id' => $sourceGroup->id
+            ]);
+
+            // If member was group leader in source group, clear the group leader
+            if ($sourceGroup->group_leader == $request->member_id) {
+                $sourceGroup->update(['group_leader' => null]);
+                \Log::info('[GroupTransfer] Cleared group leader from source group', [
+                    'source_group_id' => $sourceGroup->id
+                ]);
+            }
+
+            // Add member to target group
+            $targetGroup->members()->attach($request->member_id, [
+                'joined_date' => now()->format('Y-m-d')
+            ]);
+            \Log::info('[GroupTransfer] Attached member to target group', [
+                'member_id' => $member->id,
+                'target_group_id' => $targetGroup->id
+            ]);
+
+            if ($request->ajax()) {
+                return response()->json(['success' => true, 'message' => 'Member transferred successfully!']);
+            }
+            return redirect()->back()->with('success', 'Member transferred successfully!');
+        } catch (\Exception $e) {
+            \Log::error("Member transfer failed", [
+                "source_group_id" => $sourceGroup->id,
+                "target_group_id" => $request->target_group_id,
+                "member_id" => $request->member_id,
+                "error" => $e->getMessage()
+            ]);
+            if ($request->ajax()) {
+                return response()->json(['success' => false, 'message' => 'Failed to transfer member. ' . $e->getMessage()], 500);
+            }
+            return redirect()->back()->with('error', 'Failed to transfer member. Please try again.');
         }
     }
 }

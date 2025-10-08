@@ -24,6 +24,8 @@ return new class extends Migration {
             $table->string('payee_type')->nullable(); // 'customer' or 'other'
             $table->unsignedBigInteger('payee_id')->nullable(); // if customer, store customer_id
             $table->string('payee_name')->nullable(); // for manual entry if 'other'
+            $table->foreignId('supplier_id')->nullable()->constrained('suppliers')->onDelete('set null');
+            $table->foreignId('customer_id')->nullable()->constrained('customers')->onDelete('set null');
             $table->foreignId('branch_id')->constrained('branches')->onDelete('cascade');
             $table->boolean('approved')->default(false);
             $table->foreignId('approved_by')->nullable()->constrained('users')->onDelete('set null');

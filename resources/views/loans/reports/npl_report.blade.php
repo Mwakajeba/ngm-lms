@@ -29,7 +29,9 @@
                         <div class="col-md-3 mb-3">
                             <label for="branch_id" class="form-label">Branch</label>
                             <select class="form-select" id="branch_id" name="branch_id">
-                                <option value="">All Branches</option>
+                                @if(($branches->count() ?? 0) > 1)
+                                    <option value="all" {{ ($branchId ?? '') === 'all' ? 'selected' : '' }}>All My Branches</option>
+                                @endif
                                 @foreach($branches as $branch)
                                     <option value="{{ $branch->id }}" {{ ($branchId ?? '') == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                                 @endforeach
@@ -37,10 +39,20 @@
                         </div>
                         <div class="col-md-3 mb-3">
                             <label for="loan_officer_id" class="form-label">Loan Officer</label>
-                            <select class="form-select" id="loan_officer_id" name="loan_officer_id">
+                            <select class="form-select select2-single" id="loan_officer_id" name="loan_officer_id">
                                 <option value="">All Loan Officers</option>
                                 @foreach($loanOfficers as $officer)
                                     <option value="{{ $officer->id }}" {{ ($loanOfficerId ?? '') == $officer->id ? 'selected' : '' }}>{{ $officer->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        {{-- groups --}}
+                        <div class="col-md-3 mb-3">
+                            <label for="group_id" class="form-label">Group</label>
+                            <select class="form-select select2-single" id="group_id" name="group_id">
+                                <option value="">All Groups</option>
+                                @foreach($groups as $group)
+                                    <option value="{{ $group->id }}" {{ (request()->get('group_id') == $group->id) ? 'selected' : '' }}>{{ $group->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -168,7 +180,7 @@
                                         <td class="text-end">{{ number_format($row['outstanding']) }}</td>
                                         <td class="text-end text-danger fw-bold">{{ number_format($row['npl_outstanding'] ?? $row['outstanding']) }}</td>
                                         <td class="text-end">
-                                            <span class="badge 
+                                            <span class="badge
                                                 @if($row['dpd'] <= 30) bg-warning
                                                 @elseif($row['dpd'] <= 60) bg-orange
                                                 @elseif($row['dpd'] <= 90) bg-danger
@@ -178,7 +190,7 @@
                                             </span>
                                         </td>
                                         <td>
-                                            <span class="badge 
+                                            <span class="badge
                                                 @if($row['classification'] == 'Loss') bg-danger
                                                 @elseif($row['classification'] == 'Doubtful') bg-warning
                                                 @elseif($row['classification'] == 'Substandard') bg-info

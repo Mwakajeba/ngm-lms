@@ -31,7 +31,9 @@
                         <div class="col-md-2 mb-3">
                             <label for="branch_id" class="form-label">Branch</label>
                             <select class="form-select" id="branch_id" name="branch_id">
-                                <option value="">All Branches</option>
+                                @if(($branches->count() ?? 0) > 1)
+                                    <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All My Branches</option>
+                                @endif
                                 @foreach($branches as $branch)
                                     <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>{{ $branch->name }}</option>
                                 @endforeach
@@ -39,10 +41,19 @@
                         </div>
                         <div class="col-md-2 mb-3">
                             <label for="loan_officer_id" class="form-label">Loan Officer</label>
-                            <select class="form-select" id="loan_officer_id" name="loan_officer_id">
+                            <select class="form-select select2-single" id="loan_officer_id" name="loan_officer_id">
                                 <option value="">All Loan Officers</option>
                                 @foreach($loanOfficers as $officer)
                                     <option value="{{ $officer->id }}" {{ $loanOfficerId == $officer->id ? 'selected' : '' }}>{{ $officer->name }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-2 mb-3">
+                            <label for="group_id" class="form-label">Group</label>
+                            <select class="form-select select2-single" id="group_id" name="group_id">
+                                <option value="">All Groups</option>
+                                @foreach($groups as $group)
+                                    <option value="{{ $group->id }}" {{ $groupId == $group->id ? 'selected' : '' }}>{{ $group->name }}</option>
                                 @endforeach
                             </select>
                         </div>
@@ -241,7 +252,7 @@
                                 <td class="text-end">TZS {{ number_format($loan['outstanding_amount'], 2) }}</td>
                                 <td class="text-end">{{ number_format($loan['repayment_rate'], 2) }}%</td>
                                 <td class="text-end">
-                                    <span class="badge 
+                                    <span class="badge
                                         @if($loan['days_in_arrears'] == 0) bg-success
                                         @elseif($loan['days_in_arrears'] <= 30) bg-warning
                                         @elseif($loan['days_in_arrears'] <= 60) bg-secondary
@@ -252,7 +263,7 @@
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge 
+                                    <span class="badge
                                         @if($loan['performance_grade'] == 'Excellent') bg-success
                                         @elseif($loan['performance_grade'] == 'Good') bg-primary
                                         @elseif($loan['performance_grade'] == 'Fair') bg-warning
@@ -263,7 +274,7 @@
                                     </span>
                                 </td>
                                 <td class="text-center">
-                                    <span class="badge 
+                                    <span class="badge
                                         @if($loan['risk_category'] == 'Low Risk') bg-success
                                         @elseif($loan['risk_category'] == 'Medium Risk') bg-warning
                                         @elseif($loan['risk_category'] == 'High Risk') bg-danger

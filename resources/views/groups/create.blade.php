@@ -6,10 +6,10 @@
 <div class="page-wrapper">
     <div class="page-content">
         <x-breadcrumbs-with-icons :links="[
-            ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
-            ['label' => 'Create Group', 'url' => '#', 'icon' => 'bx bx-plus-circle']
-        ]" />
+        ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
+        ['label' => 'Groups', 'url' => route('groups.index'), 'icon' => 'bx bx-group'],
+        ['label' => 'Create Group', 'url' => '#', 'icon' => 'bx bx-plus-circle']
+    ]" />
         <h6 class="mb-0 text-uppercase">CREATE GROUP</h6>
         <hr />
 
@@ -35,7 +35,7 @@
                         </div>
                         @endif
 
-                        <form action="{{ route('groups.store') }}" method="POST">
+                        <form action="{{ route('groups.store') }}" onsubmit="return handleSubmit(this)" method="POST">
                             @csrf
 
                             <div class="row">
@@ -245,4 +245,45 @@
         }
     });
 </script>
+@endpush
+
+<!-- DISABLED FORM SUBMISSION -->
+@push('scripts')
+    <script>
+        function handleSubmit(form) {
+            // Prevent multiple submissions
+            if (form.dataset.submitted === "true") return false;
+            form.dataset.submitted = "true";
+
+            // Disable ALL submit buttons in this form
+            form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.setAttribute('aria-disabled', 'true');
+
+                const label = btn.querySelector('.label');
+                const spinner = btn.querySelector('.spinner');
+                if (label) label.textContent = 'Processing...';
+                if (spinner) spinner.classList.remove('hidden');
+            });
+
+            // Optional: block whole page clicks while submitting
+            const ov = document.getElementById('pageOverlay');
+            if (ov) ov.classList.remove('hidden');
+
+            // Allow the submit to proceed
+            return true;
+        }
+
+        // Optional safety: prevent Enter-key spamming multiple submits in some browsers
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                // Only submit on Enter when focused on a button or inside a textarea (adjust to your UX)
+                if (active && active.tagName !== 'TEXTAREA' && active.type !== 'submit') {
+                    // e.preventDefault(); // uncomment if Enter should NOT submit forms
+                }
+            }
+        });
+    </script>
 @endpush

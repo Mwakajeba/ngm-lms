@@ -58,7 +58,7 @@
                                             <i class="bx bx-calendar me-1"></i>
                                                                                          {{ __('app.budget_year') }} <span class="text-danger">*</span>
                                         </label>
-                                        <select class="form-select @error('year') is-invalid @enderror" name="year" required>
+                                        <select class="form-select select2-single @error('year') is-invalid @enderror" name="year" required>
                                             <option value="">Select Year</option>
                                             @for($year = date('Y') - 2; $year <= date('Y') + 3; $year++)
                                                 <option value="{{ $year }}" {{ old('year', $budget->year) == $year ? 'selected' : '' }}>
@@ -131,7 +131,7 @@
                                                                     <i class="bx bx-account me-1"></i>
                                                                     Account <span class="text-danger">*</span>
                                                                 </label>
-                                                                <select class="form-select account-select" name="budget_lines[{{ $index }}][account_id]" required>
+                                                                <select class="form-select select2-single account-select" name="budget_lines[{{ $index }}][account_id]" required>
                                                                     <option value="">Select Account</option>
                                                                     @foreach($accounts as $account)
                                                                         <option value="{{ $account->id }}" {{ $line->account_id == $account->id ? 'selected' : '' }}>
@@ -164,7 +164,7 @@
                                                                     <i class="bx bx-category me-1"></i>
                                                                     Category <span class="text-danger">*</span>
                                                                 </label>
-                                                                <select class="form-select category-select" name="budget_lines[{{ $index }}][category]" required>
+                                                                <select class="form-select select2-single category-select" name="budget_lines[{{ $index }}][category]" required>
                                                                     <option value="">Select Category</option>
                                                                     <option value="Revenue" {{ $line->category == 'Revenue' ? 'selected' : '' }}>Revenue</option>
                                                                     <option value="Expense" {{ $line->category == 'Expense' ? 'selected' : '' }}>Expense</option>
@@ -207,7 +207,7 @@
                                                                         <a href="{{ route('accounting.budgets.show', $budget) }}" class="btn btn-secondary">
                                     <i class="bx bx-x"></i> {{ __('app.cancel') }}
                                         </a>
-                                        <button type="submit" class="btn btn-primary">
+                                        <button type="submit" id="submitBtn" class="btn btn-primary">
                                             <i class="bx bx-save"></i> {{ __('app.update') }} {{ __('app.budget') }}
                                         </button>
                                     </div>
@@ -218,8 +218,9 @@
                 </div>
             </div>
         </div>
-    </div>
 </div>
+</div>
+@endcan
 @endsection
 
 <!-- Budget Line Template -->
@@ -231,10 +232,6 @@
                     <i class="bx bx-list-ul me-2"></i>
                     Budget Line <span class="line-number"></span>
                 </h6>
-                <button type="button" class="btn btn-outline-danger btn-sm remove-line" title="Remove this line">
-                    <i class="bx bx-trash me-1"></i>
-                    Remove
-                </button>
             </div>
         </div>
         <div class="card-body">
@@ -245,7 +242,7 @@
                             <i class="bx bx-account me-1"></i>
                             Account <span class="text-danger">*</span>
                         </label>
-                        <select class="form-select account-select" name="budget_lines[{index}][account_id]" required>
+                        <select class="form-select select2-single account-select" name="budget_lines[{index}][account_id]" required>
                             <option value="">Select Account</option>
                             @foreach($accounts as $account)
                                 <option value="{{ $account->id }}">
@@ -278,7 +275,7 @@
                             <i class="bx bx-category me-1"></i>
                             Category <span class="text-danger">*</span>
                         </label>
-                        <select class="form-select category-select" name="budget_lines[{index}][category]" required>
+                        <select class="form-select select2-single category-select" name="budget_lines[{index}][category]" required>
                             <option value="">Select Category</option>
                             <option value="Revenue">Revenue</option>
                             <option value="Expense">Expense</option>
@@ -311,19 +308,31 @@ $(document).ready(function() {
     let lineIndex = {{ count($budget->budgetLines) }};
     const accounts = @json($accounts);
     
+    // Initialize Select2 for existing selects
+    function initSelect2(context) {
+        const scope = context ? $(context) : $(document);
+        scope.find('select.select2-single').select2({ width: '100%' });
+    }
+    initSelect2();
+
     // Add budget line
     $('#addBudgetLine').click(function() {
         const template = document.getElementById('budgetLineTemplate').innerHTML;
         const newLine = template.replace(/{index}/g, lineIndex);
         
-        $('#budgetLinesContainer').append(newLine);
+        const $node = $(newLine);
+        $('#budgetLinesContainer').append($node);
         lineIndex++;
         
         // Update line numbers
         updateLineNumbers();
         
         // Add animation
-        $('.budget-line-item').last().hide().fadeIn(300);
+        const $last = $('.budget-line-item').last();
+        $last.hide().fadeIn(300);
+
+        // Initialize select2 on newly added selects
+        initSelect2($last);
     });
     
     // Remove budget line
@@ -350,9 +359,18 @@ $(document).ready(function() {
     
     // Form validation
     $('#budgetForm').submit(function(e) {
+        // Disable submit button to prevent double submission
+        const submitBtn = $('#submitBtn');
+        submitBtn.prop('disabled', true);
+        submitBtn.addClass('opacity-50');
+        submitBtn.html('<i class="bx bx-loader-alt bx-spin me-1"></i> {{ __('app.processing') ?? 'Processing...' }}');
         const lines = $('.budget-line-item');
         if (lines.length === 0) {
             e.preventDefault();
+            // Re-enable on validation error
+            submitBtn.prop('disabled', false);
+            submitBtn.removeClass('opacity-50');
+            submitBtn.html('<i class=\"bx bx-save\"></i> {{ __('app.update') }} {{ __('app.budget') }}');
             Swal.fire({
                 icon: 'warning',
                 title: '{{ __('app.no_budget_lines') }}',
@@ -379,6 +397,10 @@ $(document).ready(function() {
         
         if (hasDuplicates) {
             e.preventDefault();
+            // Re-enable on validation error
+            submitBtn.prop('disabled', false);
+            submitBtn.removeClass('opacity-50');
+            submitBtn.html('<i class="bx bx-save"></i> {{ __('app.update') }} {{ __('app.budget') }}');
             Swal.fire({
                 icon: 'error',
                 title: '{{ __('app.duplicate_accounts') }}',
@@ -389,8 +411,8 @@ $(document).ready(function() {
         }
     });
     
-    // Format amount inputs
-    $(document).on('input', '.amount-input', function() {
+    // Format amount inputs on blur to avoid moving cursor while typing
+    $(document).on('blur', '.amount-input', function() {
         const value = parseFloat($(this).val());
         if (!isNaN(value)) {
             $(this).val(value.toFixed(2));
