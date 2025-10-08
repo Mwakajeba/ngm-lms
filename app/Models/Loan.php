@@ -596,6 +596,7 @@ class Loan extends Model
                     ->pluck('id')
                     ->toArray();
             }
+            Log::info('fee ids >>>>>>>>>>>>>: ' . json_encode($releaseFeeIds));
         }
 
         if (!empty($releaseFeeIds)) {
@@ -603,6 +604,7 @@ class Loan extends Model
             foreach ($releaseFees as $releaseFee) {
                 $feeAmount = (float) $releaseFee->amount;
                 $feeType = $releaseFee->fee_type;
+                $feeName = $releaseFee->name;
                 $chartAccountId = $releaseFee->chart_account_id;
 
                 if ($chartAccountId && $bankChartAccountId) {
@@ -616,7 +618,7 @@ class Loan extends Model
                         'reference' => $this->id,
                         'reference_type' => 'Loan Disbursement',
                         'customer_id' => $this->customer_id,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName}  Fee for loan #{$this->id}",
                         'branch_id' => $this->branch_id,
                         'user_id' => auth()->id() ?? 1,
                         'date' => $this->disbursed_on,
@@ -627,7 +629,7 @@ class Loan extends Model
                         'journal_id' => $journal->id,
                         'chart_account_id' => $chartAccountId,
                         'amount' => $totalFeeFloat,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName}  for loan #{$this->id}",
                         'nature' => 'credit',
                     ]);
                     // Debit bank account chart account
@@ -635,7 +637,7 @@ class Loan extends Model
                         'journal_id' => $journal->id,
                         'chart_account_id' => $bankChartAccountId,
                         'amount' => $totalFeeFloat,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName} for loan #{$this->id}",
                         'nature' => 'debit',
                     ]);
 
@@ -647,7 +649,7 @@ class Loan extends Model
                         'transaction_id' => $this->id,
                         'transaction_type' => 'Loan Disbursement',
                         'date' => $this->disbursed_on,
-                        'description' => "Release fee for loan #{$this->id}",
+                        'description' => "{$feeName}  for loan #{$this->id}",
                         'branch_id' => $this->branch_id,
                         'user_id' => auth()->id() ?? 1,
                     ]);
@@ -813,7 +815,7 @@ class Loan extends Model
 
     /**
      * Check if the loan is eligible for top-up based on product settings
-     * 
+     *
      * @return bool
      */
     public function isEligibleForTopUp(): bool
@@ -962,7 +964,7 @@ class Loan extends Model
     /**
      * Get the calculated top-up amount for this loan
      * The top-up amount is the remaining balance of the loan
-     * 
+     *
      * @return float
      */
     public function getCalculatedTopUpAmount(): float
@@ -983,7 +985,7 @@ class Loan extends Model
 
     /**
      * Get the total amount paid for this loan
-     * 
+     *
      * @return float
      */
     public function getTotalPaidAmount(): float
@@ -995,7 +997,7 @@ class Loan extends Model
 
     /**
      * Get the total amount to pay for this loan (from schedule)
-     * 
+     *
      * @return float
      */
     public function getTotalAmountToPay(): float
@@ -1007,7 +1009,7 @@ class Loan extends Model
 
     /**
      * Get the installment amount (average amount per installment)
-     * 
+     *
      * @return float
      */
     public function getInstallmentAmount(): float
@@ -1173,7 +1175,7 @@ class Loan extends Model
     /**
      * Close the loan by checking if all schedules are fully paid
      * Changes status to 'completed' if all payments are made
-     * 
+     *
      * @return bool True if loan was closed, false if not eligible for closing
      */
     public function closeLoan(): bool
@@ -1202,7 +1204,7 @@ class Loan extends Model
 
     /**
      * Check if the loan is eligible for closing
-     * 
+     *
      * @return bool
      */
     public function isEligibleForClosing(): bool
@@ -1218,7 +1220,7 @@ class Loan extends Model
 
     /**
      * Get the total outstanding amount across all schedules
-     * 
+     *
      * @return float
      */
     public function getTotalOutstandingAmount(): float
@@ -1228,7 +1230,7 @@ class Loan extends Model
 
     /**
      * Get the total paid amount across all schedules
-     * 
+     *
      * @return float
      */
     public function getTotalPaidAmountFromSchedules(): float
@@ -1267,7 +1269,7 @@ class Loan extends Model
 
     /**
      * Get the total principal paid for this loan
-     * 
+     *
      * @return float
      */
     public function getTotalPrincipalPaid(): float
@@ -1286,7 +1288,7 @@ class Loan extends Model
 
     /**
      * Get the total interest paid for this loan
-     * 
+     *
      * @return float
      */
     public function getTotalInterestPaid(): float
@@ -1305,7 +1307,7 @@ class Loan extends Model
 
     /**
      * Process settle repayment - pays current interest and all remaining principal
-     * 
+     *
      * @param float $amount The settle amount to be paid
      * @param array $paymentData Payment data including bank account, payment date, etc.
      * @return array Result of the settlement
