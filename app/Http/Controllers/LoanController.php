@@ -386,6 +386,7 @@ class LoanController extends Controller
                         return '<span class="text-muted">-</span>';
                     }
 
+
                     $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
                     if ($latestApproval && $latestApproval->comments) {
                         return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
