@@ -15,6 +15,10 @@ class ExpensesSummaryReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view expenses summary report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
 

@@ -15,6 +15,10 @@ class BalanceSheetReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view balance sheet report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = auth()->user();
         $company = $user->company;
 
