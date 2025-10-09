@@ -585,6 +585,9 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
         // Accounting Reports Index
         Route::get("/accounting-reports", function () {
+            if (!auth()->user()->can('view accounting reports')) {
+                abort(403, 'Unauthorized access to accounting reports.');
+            }
             return view("reports.index");
         })->name("accounting");
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');

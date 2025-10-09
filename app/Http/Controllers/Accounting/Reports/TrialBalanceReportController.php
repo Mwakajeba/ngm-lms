@@ -16,6 +16,10 @@ class TrialBalanceReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view trial balance report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
         
