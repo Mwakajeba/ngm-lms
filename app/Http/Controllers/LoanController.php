@@ -6,6 +6,7 @@ use App\Models\BankAccount;
 use App\Models\Branch;
 use App\Models\CashCollateral;
 use App\Models\Customer;
+use App\Models\Fee;
 use App\Models\Filetype;
 use App\Models\GlTransaction;
 use App\Models\Group;
@@ -17,6 +18,7 @@ use App\Models\LoanSchedule;
 use App\Models\ChartAccount;
 use App\Models\Payment;
 use App\Models\PaymentItem;
+use App\Models\Penalty;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -80,25 +82,29 @@ class LoanController extends Controller
             ->where('status', 'active')
             ->get();
 
-        // Prepare chart accounts with calculated fee amount/percent
+        // Get unique chart account IDs from excluded fees
+        $uniqueChartAccountIds = $excludedFees->pluck('chart_account_id')->unique()->filter();
+        
+        // Also get common income accounts for loan-related transactions
+        $incomeAccountIds = \DB::table('chart_accounts')
+            ->whereIn('account_name', ['Interest income', 'FEE INCOME', 'Penalty Income', 'Service income', 'Other income'])
+            ->pluck('id');
+        
+        // Combine and get unique chart accounts
+        $allChartAccountIds = $uniqueChartAccountIds->merge($incomeAccountIds)->unique();
+        
+        // Prepare chart accounts
         $chartAccounts = collect();
-        foreach ($excludedFees as $fee) {
-            if (!$fee->chart_account_id)
-                continue;
-            $account = ChartAccount::find($fee->chart_account_id);
-            if (!$account)
-                continue;
-            $amount = (float) $fee->amount;
-            $calculated = $fee->fee_type === 'percentage'
-                ? ($loan->amount * $amount / 100)
-                : $amount;
+        $chartAccountData = ChartAccount::whereIn('id', $allChartAccountIds)->get();
+        
+        foreach ($chartAccountData as $account) {
             $chartAccounts->push((object) [
                 'id' => $account->id,
                 'account_name' => $account->account_name,
                 'account_code' => $account->account_code,
-                'fee_name' => $fee->name,
-                'fee_type' => $fee->fee_type,
-                'fee_amount' => $calculated
+                'fee_name' => null, // Not specific to one fee
+                'fee_type' => null,
+                'fee_amount' => 0
             ]);
         }
 
@@ -145,7 +151,7 @@ class LoanController extends Controller
             // Create receipt
             $receipt = new \App\Models\Receipt();
             $receipt->reference = 'LOAN-' . $loan->id;
-            $receipt->reference_type = 'Loan Disbursement';
+            $receipt->reference_type = 'loan';
             $receipt->reference_number = $loan->loanNo ?? $loan->id;
             $receipt->date = $validated['date'];
             $receipt->bank_account_id = $validated['bank_account_id'];
@@ -3159,6 +3165,130 @@ class LoanController extends Controller
         } catch (\Exception $e) {
             Log::error('Settle repayment failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Export comprehensive loan details as PDF
+     */
+    public function exportLoanDetails($encodedId)
+    {
+        try {
+            $decoded = Hashids::decode($encodedId);
+            if (empty($decoded)) {
+                return redirect()->route('loans.index')->withErrors(['Loan not found.']);
+            }
+
+            $loan = Loan::with([
+                'customer.region',
+                'customer.district',
+                'customer.branch',
+                'customer.company',
+                'customer.user',
+                'product',
+                'bankAccount',
+                'group',
+                'loanFiles',
+                'schedule' => function($query) {
+                    $query->orderBy('due_date', 'asc');
+                },
+                'repayments' => function($query) {
+                    $query->orderBy('created_at', 'asc');
+                },
+                'approvals.user',
+                'approvals' => function ($query) {
+                    $query->orderBy('approval_level', 'asc');
+                },
+                'guarantors',
+                'collaterals',
+                'branch',
+                'loanOfficer'
+            ])->findOrFail($decoded[0]);
+
+            // Check if loan is active
+            if ($loan->status !== Loan::STATUS_ACTIVE) {
+                return redirect()->back()->withErrors(['error' => 'Only active loans can be exported.']);
+            }
+
+            // Get loan fees if they exist
+            $loanFees = [];
+            if ($loan->product && $loan->product->fees_ids) {
+                $feeIds = is_array($loan->product->fees_ids) ? $loan->product->fees_ids : json_decode($loan->product->fees_ids, true);
+                if ($feeIds) {
+                    $loanFees = Fee::whereIn('id', $feeIds)->get();
+                }
+            }
+
+            // Get loan penalties if they exist
+            $loanPenalties = [];
+            if ($loan->product && $loan->product->penalty_ids) {
+                $penaltyIds = is_array($loan->product->penalty_ids) ? $loan->product->penalty_ids : json_decode($loan->product->penalty_ids, true);
+                if ($penaltyIds) {
+                    $loanPenalties = Penalty::whereIn('id', $penaltyIds)->get();
+                }
+            }
+
+            // Calculate loan statistics from repayments
+            $totalPaid = $loan->repayments->sum(function($repayment) {
+                return $repayment->principal + $repayment->interest + $repayment->fee_amount + $repayment->penalt_amount;
+            });
+
+            $totalPrincipalPaid = $loan->repayments->sum('principal');
+            $totalInterestPaid = $loan->repayments->sum('interest');
+            $totalFeesPaid = $loan->repayments->sum('fee_amount');
+            $totalPenaltiesPaid = $loan->repayments->sum('penalt_amount');
+
+            // Calculate fees received through receipts
+            $feesReceivedThroughReceipts = 0;
+            $receipts = $loan->receipts()->with('receiptItems')->get();
+            foreach ($receipts as $receipt) {
+                foreach ($receipt->receiptItems as $item) {
+                    // Check if this is a fee-related account
+                    $chartAccount = \App\Models\ChartAccount::find($item->chart_account_id);
+                    if ($chartAccount && (
+                        stripos($chartAccount->account_name, 'fee') !== false ||
+                        stripos($chartAccount->account_name, 'income') !== false ||
+                        stripos($chartAccount->account_name, 'service') !== false
+                    )) {
+                        $feesReceivedThroughReceipts += $item->amount;
+                    }
+                }
+            }
+
+            // Add fees received through receipts to total fees paid
+            $totalFeesPaid += $feesReceivedThroughReceipts;
+            $totalPaid += $feesReceivedThroughReceipts;
+
+            $remainingBalance = $loan->amount_total - $totalPaid;
+            $remainingPrincipal = $loan->amount - $totalPrincipalPaid;
+
+            $data = [
+                'loan' => $loan,
+                'loanFees' => $loanFees,
+                'loanPenalties' => $loanPenalties,
+                'receipts' => $receipts,
+                'feesReceivedThroughReceipts' => $feesReceivedThroughReceipts,
+                'totalPaid' => $totalPaid,
+                'totalPrincipalPaid' => $totalPrincipalPaid,
+                'totalInterestPaid' => $totalInterestPaid,
+                'totalFeesPaid' => $totalFeesPaid,
+                'totalPenaltiesPaid' => $totalPenaltiesPaid,
+                'remainingBalance' => $remainingBalance,
+                'remainingPrincipal' => $remainingPrincipal,
+                'exportDate' => now()->format('Y-m-d H:i:s'),
+                'company' => auth()->user()->company
+            ];
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('loans.export-details', $data);
+            $pdf->setPaper('A4', 'portrait');
+
+            $filename = 'Loan_Details_' . $loan->loanNo . '_' . now()->format('Y-m-d') . '.pdf';
+
+            return $pdf->download($filename);
+
+        } catch (\Exception $e) {
+            Log::error('Export loan details failed: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Failed to export loan details: ' . $e->getMessage()]);
         }
     }
 }

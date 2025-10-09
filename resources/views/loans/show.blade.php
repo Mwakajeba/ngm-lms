@@ -37,6 +37,13 @@
                             </button>
                         @endif
 
+                        @if($loan->status === 'active')
+                            <a href="{{ route('loans.export-details', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}" 
+                               class="btn btn-info">
+                                <i class="bx bx-download me-2"></i>Export Loan Details
+                            </a>
+                        @endif
+
                     </div>
                 </div>
                 <div class="d-flex gap-2">
@@ -481,6 +488,7 @@
                     </div>
 
                     <!-- Loan Approval Actions -->
+                    @if($loan->status !== 'active')
                     <div class="card border-0 shadow-sm mb-4">
                         <div class="card-header bg-primary text-white">
                             <h6 class="mb-0"><i class="bx bx-cog me-2"></i>LOAN APPROVAL ACTIONS</h6>
@@ -589,6 +597,7 @@
                             @endif
                         </div>
                     </div>
+                    @endif
                 </div>
 
                 <div class="tab-pane fade" id="schedule" role="tabpanel">
