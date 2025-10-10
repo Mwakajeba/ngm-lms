@@ -2928,156 +2928,181 @@
             const fileName = `Receipt_${customerName}_${receiptData.date}`;
 
             const receiptHtml = `
-                                                                                                                        <!DOCTYPE html>
-                                                                                                                        <html>
-                                                                                                                        <head>
-                                                                                                                            <title>${fileName}</title>
-                                                                                                                            <style>
-                                                                                                                                @page {
-                                                                                                                                    size: 80mm 200mm;
-                                                                                                                                    margin: 0;
-                                                                                                                                    padding: 0;
-                                                                                                                                }
+                <!DOCTYPE html>
+                <html>
+                <head>
+                    <title>${fileName}</title>
+                    <style>
+                        @page {
+                            size: 80mm 200mm;
+                            margin: 0;
+                            padding: 0;
+                        }
 
-                                                                                                                                @media print {
-                                                                                                                                    body {
-                                                                                                                                        font-family: 'Courier New', monospace;
-                                                                                                                                        font-size: 10px;
-                                                                                                                                        margin: 0;
-                                                                                                                                        padding: 5px;
-                                                                                                                                        width: 280px;
-                                                                                                                                        max-width: 280px;
-                                                                                                                                        min-width: 280px;
-                                                                                                                                        page-break-after: avoid;
-                                                                                                                                        page-break-before: avoid;
-                                                                                                                                    }
-                                                                                                                                    .header { text-align: center; margin-bottom: 8px; }
-                                                                                                                                    .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                                                                                                                                    .subtitle { font-size: 10px; margin-bottom: 8px; }
-                                                                                                                                    .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                                                                                                                                    .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                                                                                                                                    .label { font-weight: bold; }
-                                                                                                                                    .value { text-align: right; }
-                                                                                                                                    .total { font-weight: bold; font-size: 12px; }
-                                                                                                                                    .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                                                                                                                                    .center { text-align: center; }
-                                                                                                                                    .bold { font-weight: bold; }
+                        @media print {
+                            body {
+                                font-family: 'Courier New', monospace;
+                                font-size: 10px;
+                                margin: 0;
+                                padding: 5px;
+                                width: 280px;
+                                max-width: 280px;
+                                min-width: 280px;
+                                page-break-after: avoid;
+                                page-break-before: avoid;
+                            }
+                            .header { text-align: center; margin-bottom: 8px; }
+                            .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                            .subtitle { font-size: 10px; margin-bottom: 8px; }
+                            .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                            .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                            .label { font-weight: bold; }
+                            .value { text-align: right; }
+                            .total { font-weight: bold; font-size: 12px; }
+                            .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                            .center { text-align: center; }
+                            .bold { font-weight: bold; }
 
-                                                                                                                                    /* Force thermal printer format */
-                                                                                                                                    html, body {
-                                                                                                                                        width: 280px !important;
-                                                                                                                                        max-width: 280px !important;
-                                                                                                                                        min-width: 280px !important;
-                                                                                                                                    }
-                                                                                                                                }
+                            /* Force thermal printer format */
+                            html, body {
+                                width: 280px !important;
+                                max-width: 280px !important;
+                                min-width: 280px !important;
+                            }
+                        }
 
-                                                                                                                                body {
-                                                                                                                                    font-family: 'Courier New', monospace;
-                                                                                                                                    font-size: 10px;
-                                                                                                                                    margin: 0;
-                                                                                                                                    padding: 5px;
-                                                                                                                                    width: 280px;
-                                                                                                                                    max-width: 280px;
-                                                                                                                                    min-width: 280px;
-                                                                                                                                }
-                                                                                                                                .header { text-align: center; margin-bottom: 8px; }
-                                                                                                                                .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                                                                                                                                .subtitle { font-size: 10px; margin-bottom: 8px; }
-                                                                                                                                .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                                                                                                                                .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                                                                                                                                .label { font-weight: bold; }
-                                                                                                                                .value { text-align: right; }
-                                                                                                                                .total { font-weight: bold; font-size: 12px; }
-                                                                                                                                .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                                                                                                                                .center { text-align: center; }
-                                                                                                                                .bold { font-weight: bold; }
-                                                                                                                            </style>
-                                                                                                                        </head>
-                                                                                                                        <body>
-                                                                                                                            <div class="header">
-                                                                                                                                <div class="title">SMARTFINANCE</div>
-                                                                                                                                <div class="subtitle">Loan Repayment Receipt</div>
-                                                                                                                            </div>
+                        body {
+                            font-family: 'Courier New', monospace;
+                            font-size: 10px;
+                            margin: 0;
+                            padding: 5px;
+                            width: 280px;
+                            max-width: 280px;
+                            min-width: 280px;
+                        }
+                        .header { text-align: center; margin-bottom: 8px; }
+                        .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                        .subtitle { font-size: 10px; margin-bottom: 8px; }
+                        .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                        .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                        .label { font-weight: bold; }
+                        .value { text-align: right; }
+                        .total { font-weight: bold; font-size: 12px; }
+                        .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                        .center { text-align: center; }
+                        .bold { font-weight: bold; }
+                    </style>
+                </head>
+                <body>
+                    <div class="header">
+                        <div class="title">SMARTFINANCE</div>
+                        <div class="subtitle">Loan Repayment Receipt</div>
+                    </div>
 
-                                                                                                                            <div class="divider"></div>
+                    <div class="divider"></div>
 
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Customer:</span>
-                                                                                                                                <span class="value">${receiptData.customer_name}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Loan No:</span>
-                                                                                                                                <span class="value">${receiptData.loan_number}</span>
-                                                                                                                            </div>
+                    <div class="row">
+                        <span class="label">Customer:</span>
+                        <span class="value">${receiptData.customer_name}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Loan No:</span>
+                        <span class="value">${receiptData.loan_number}</span>
+                    </div>
 
-                                                                                                                            <div class="divider"></div>
+                    <div class="divider"></div>
 
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Receipt No:</span>
-                                                                                                                                <span class="value">${receiptData.receipt_number}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Date:</span>
-                                                                                                                                <span class="value">${receiptData.date}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Time:</span>
-                                                                                                                                <span class="value">${new Date().toLocaleTimeString()}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Bank Account:</span>
-                                                                                                                                <span class="value">${receiptData.bank_account}</span>
-                                                                                                                            </div>
+                    <div class="row">
+                        <span class="label">Receipt No:</span>
+                        <span class="value">${receiptData.receipt_number}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Date:</span>
+                        <span class="value">${receiptData.date}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Time:</span>
+                        <span class="value">${new Date().toLocaleTimeString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Bank Account:</span>
+                        <span class="value">${receiptData.bank_account}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Schedule No:</span>
+                        <span class="value">${receiptData.schedule_number}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Due Date:</span>
+                        <span class="value">${receiptData.due_date}</span>
+                    </div>
 
-                                                                                                                            <div class="divider"></div>
+                    <div class="divider"></div>
 
-                                                                                                                            <div class="center bold">PAYMENT BREAKDOWN</div>
+                    <div class="center bold">PAYMENT BREAKDOWN</div>
 
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Principal:</span>
-                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Interest:</span>
-                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Penalty:</span>
-                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Fee:</span>
-                                                                                                                                <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
-                                                                                                                            </div>
+                    <div class="row">
+                        <span class="label">Principal:</span>
+                        <span class="value">TZS ${receiptData.payment_breakdown.principal.toLocaleString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Interest:</span>
+                        <span class="value">TZS ${receiptData.payment_breakdown.interest.toLocaleString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Penalty:</span>
+                        <span class="value">TZS ${receiptData.payment_breakdown.penalty.toLocaleString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Fee:</span>
+                        <span class="value">TZS ${receiptData.payment_breakdown.fee.toLocaleString()}</span>
+                    </div>
 
-                                                                                                                            <div class="divider"></div>
+                    <div class="divider"></div>
 
-                                                                                                                            <div class="row total">
-                                                                                                                                <span class="label">TOTAL PAID:</span>
-                                                                                                                                <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
-                                                                                                                            </div>
+                    <div class="row total">
+                        <span class="label">TOTAL PAID:</span>
+                        <span class="value">TZS ${receiptData.amount_paid.toLocaleString()}</span>
+                    </div>
 
-                                                                                                                            <div class="divider"></div>
+                    <div class="divider"></div>
 
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Received By:</span>
-                                                                                                                                <span class="value">${receiptData.received_by}</span>
-                                                                                                                            </div>
-                                                                                                                            <div class="row">
-                                                                                                                                <span class="label">Branch:</span>
-                                                                                                                                <span class="value">${receiptData.branch}</span>
-                                                                                                                            </div>
+                    <div class="center bold">REMAINING SCHEDULE INFO</div>
 
-                                                                                                                            <div class="divider"></div>
+                    <div class="row">
+                        <span class="label">Remaining on Schedule:</span>
+                        <span class="value">TZS ${receiptData.remain_schedule.toLocaleString()}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Remaining Schedules:</span>
+                        <span class="value">${receiptData.remaining_schedules_count}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Total Remaining:</span>
+                        <span class="value">TZS ${receiptData.remaining_schedules_amount.toLocaleString()}</span>
+                    </div>
 
-                                                                                                                            <div class="footer">
-                                                                                                                                <div class="bold">Thank you for your payment!</div>
-                                                                                                                                <div>Keep this receipt for your records</div>
-                                                                                                                                <div style="margin-top: 5px;">--- End of Receipt ---</div>
-                                                                                                                            </div>
-                                                                                                                        </body>
-                                                                                                                        </html>
-                                                                                                                    `;
+                    <div class="divider"></div>
+
+                    <div class="row">
+                        <span class="label">Received By:</span>
+                        <span class="value">${receiptData.received_by}</span>
+                    </div>
+                    <div class="row">
+                        <span class="label">Branch:</span>
+                        <span class="value">${receiptData.branch}</span>
+                    </div>
+
+                    <div class="divider"></div>
+
+                    <div class="footer">
+                        <div class="bold">Thank you for your payment!</div>
+                        <div>Keep this receipt for your records</div>
+                        <div style="margin-top: 5px;">--- End of Receipt ---</div>
+                    </div>
+                </body>
+                </html>
+            `;
 
             printWindow.document.write(receiptHtml);
             printWindow.document.close();

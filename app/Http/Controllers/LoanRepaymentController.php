@@ -670,6 +670,11 @@ class LoanRepaymentController extends Controller
                 'customer_name' => $repayment->customer->name,
                 'loan_number' => $repayment->loan->loanNo,
                 'amount_paid' => $repayment->amount_paid,
+                'schedule_number' => $repayment->schedule_number,
+                'due_date' => $repayment->due_date,
+                'remain_schedule' => $repayment->remain_schedule,
+                'remaining_schedules_count' => $repayment->remaining_schedules_count,
+                'remaining_schedules_amount' => $repayment->remaining_schedules_amount,
                 'payment_breakdown' => [
                     'principal' => $repayment->principal,
                     'interest' => $repayment->interest,

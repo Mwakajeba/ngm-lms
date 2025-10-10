@@ -48,6 +48,72 @@ class LoanSchedule extends Model
     }
 
     /**
+     * Expose schedule id as an accessor
+     */
+    public function getScheduleIdAttribute()
+    {
+        return $this->id;
+    }
+
+    /**
+     * Alias accessor for remaining amount on the schedule
+     */
+    public function getRemainScheduleAttribute()
+    {
+        return $this->remaining_amount;
+    }
+
+    /**
+     * Expose schedule date (due date) as an accessor
+     */
+    public function getScheduleDateAttribute()
+    {
+        return $this->due_date;
+    }
+
+    /**
+     * Get the schedule number (position in the loan's schedule sequence)
+     */
+    public function getScheduleNumberAttribute()
+    {
+        return self::where('loan_id', $this->loan_id)
+            ->where('due_date', '<=', $this->due_date)
+            ->orderBy('due_date')
+            ->count();
+    }
+
+    /**
+     * Count of remaining schedules (including this one) from this schedule's due date onwards
+     */
+    public function getRemainingSchedulesCountAttribute()
+    {
+        // Fetch sibling schedules for the same loan from this due date onwards
+        $siblingSchedules = self::with('repayments')
+            ->where('loan_id', $this->loan_id)
+            ->whereDate('due_date', '>=', $this->due_date)
+            ->get();
+
+        return $siblingSchedules->filter(function ($schedule) {
+            return ($schedule->remaining_amount ?? 0) > 0;
+        })->count();
+    }
+
+    /**
+     * Total remaining amount across remaining schedules (including this one) from this schedule's due date onwards
+     */
+    public function getRemainingSchedulesAmountAttribute()
+    {
+        $siblingSchedules = self::with('repayments')
+            ->where('loan_id', $this->loan_id)
+            ->whereDate('due_date', '>=', $this->due_date)
+            ->get();
+
+        return $siblingSchedules->sum(function ($schedule) {
+            return $schedule->remaining_amount ?? 0;
+        });
+    }
+
+    /**
      * Check if this schedule is fully paid
      */
     public function getIsFullyPaidAttribute()
