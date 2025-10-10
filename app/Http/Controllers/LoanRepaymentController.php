@@ -271,6 +271,7 @@ class LoanRepaymentController extends Controller
             ->whereIn('transaction_type', ['receipt', 'journal repayment', 'Settle Interest', 'Settle Principal'])
             ->delete();
 
+
         // Delete GL transactions by receipt ID if receipt exists
         if ($repayment->receipt) {
             $receiptGLCount = GlTransaction::where('transaction_id', $repayment->receipt->id)
@@ -282,7 +283,30 @@ class LoanRepaymentController extends Controller
                 'deleted_count' => $receiptGLCount
             ]);
         }
+        //get loan schedule ids
 
+
+        // These lines perform deletion of GL transactions relating to specific transaction types for the loan schedule
+        $matureInterestGLCount = GlTransaction::where('transaction_id', $repayment->loan_schedule_id)
+            ->where('transaction_type', 'Mature Interest')
+            ->delete();
+
+        Log::info('Deleted GL transactions for loan schedule', [
+            'loan_schedule_id' => $repayment->loan_schedule_id,
+            'transaction_type' => 'Mature Interest',
+            'deleted_count' => $matureInterestGLCount
+        ]);
+
+        $penaltyGLCount = GlTransaction::where('transaction_id', $repayment->loan_schedule_id)
+            ->where('transaction_type', 'Penalty')
+            ->delete();
+        Log::info('Deleted GL transactions for loan schedule', [
+            'loan_schedule_id' => $repayment->loan_schedule_id,
+            'transaction_type' => 'Penalty',
+            'deleted_count' => $penaltyGLCount
+        ]);
+
+        // Summary log for repayment GL deletion
         Log::info('Deleted GL transactions for repayment', [
             'repayment_id' => $repayment->id,
             'deleted_count' => $repaymentGLCount
