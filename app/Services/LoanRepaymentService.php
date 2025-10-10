@@ -426,7 +426,7 @@ class LoanRepaymentService
             ->where('customer_id', $loan->customer_id)
             ->where('date', $repayment->due_date)
             ->where('amount', $schedulePayment['interest'])
-            ->where('transaction_type', 'Interest')
+            ->where('transaction_type', 'Mature Interest')
             ->exists();
 
         if ($exists && $incomeExists) {
@@ -526,7 +526,7 @@ class LoanRepaymentService
             'penalty_amount' => $loan->product->penalty_receivables_account_id ?? null
         ];
 
-        info('chart accounts', $chartAccounts);
+       Log::info('chart accounts', $chartAccounts);
 
         $components = [
             'principal' => $schedulePayment['principal'],
@@ -540,7 +540,7 @@ class LoanRepaymentService
         $receivableId = $loan->product->interest_receivable_account_id;
         $incomeId = $loan->product->interest_revenue_account_id;
 
-        info("Interest accounts for product {$loan->product->id}", [
+        Log::info("Interest accounts for product {$loan->product->id}", [
             'receivable_id' => $receivableId,
             'income_id' => $incomeId,
         ]);
@@ -557,7 +557,7 @@ class LoanRepaymentService
             ->where('transaction_type', 'Mature Interest')
             ->exists();
 
-        info("Interest accounts for product {$loan->product->id}", [
+        Log::info("Interest accounts for product {$loan->product->id}", [
             'exists' => $exists,
         ]);
 
@@ -565,16 +565,16 @@ class LoanRepaymentService
             Log::warning("Missing interest income account for product {$loan->product->id}");
             return 0;
         }
-        info('income account', [$incomeId]);
+        Log::info('income account', [$incomeId]);
 
         $incomeExists = GlTransaction::where('chart_account_id', $incomeId)
             ->where('customer_id', $loan->customer_id)
             ->where('date', $repayment->due_date)
             ->where('amount', $schedulePayment['interest'])
-            ->where('transaction_type', 'Interest')
+            ->where('transaction_type', 'Mature Interest')
             ->exists();
 
-        info("Interest accounts for product {$loan->product->id}", [
+        Log::info("Interest accounts for product {$loan->product->id}", [
             'exists' => $incomeExists,
         ]);
 
@@ -1410,7 +1410,7 @@ class LoanRepaymentService
             'amount' => $interestAmount,
             'nature' => 'debit',
             'transaction_id' => $repayment->id,
-            'transaction_type' => 'Settle Interest from Cash Deposit',
+            'transaction_type' => 'Settle Interest',
             'date' => $repayment->payment_date,
             'description' => "Settle interest payment from cash deposit for loan {$loan->loanNo}",
             'branch_id' => $loan->branch_id,
@@ -1426,7 +1426,7 @@ class LoanRepaymentService
                 'amount' => $interestAmount,
                 'nature' => 'credit',
                 'transaction_id' => $repayment->id,
-                'transaction_type' => 'Settle Interest from Cash Deposit',
+                'transaction_type' => 'Settle Interest',
                 'date' => $repayment->payment_date,
                 'description' => "Settle interest payment from cash deposit for loan {$loan->loanNo}",
                 'branch_id' => $loan->branch_id,
@@ -1450,7 +1450,7 @@ class LoanRepaymentService
             'amount' => $principalAmount,
             'nature' => 'debit',
             'transaction_id' => $repayment->id,
-            'transaction_type' => 'Settle Principal from Cash Deposit',
+            'transaction_type' => 'Settle Principal',
             'date' => $repayment->payment_date,
             'description' => "Settle principal payment from cash deposit for loan {$loan->loanNo}",
             'branch_id' => $loan->branch_id,
@@ -1466,7 +1466,7 @@ class LoanRepaymentService
                 'amount' => $principalAmount,
                 'nature' => 'credit',
                 'transaction_id' => $repayment->id,
-                'transaction_type' => 'Settle Principal from Cash Deposit',
+                'transaction_type' => 'Settle Principal',
                 'date' => $repayment->payment_date,
                 'description' => "Settle principal payment from cash deposit for loan {$loan->loanNo}",
                 'branch_id' => $loan->branch_id,
