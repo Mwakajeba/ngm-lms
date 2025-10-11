@@ -225,25 +225,29 @@ class CustomerController extends Controller
         try {
             $customer = \App\Models\Customer::create($data);
 
-            // Save group membership
-            if ($request->filled('group_id')) {
-                DB::table('group_members')->insert([
-                    'group_id' => $request->group_id,
-                    'customer_id' => $customer->id,
-                    'status' => 'active',
-                    'joined_date' => now()->toDateString(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            } else {
-                DB::table('group_members')->insert([
-                    'group_id' => 1,
-                    'customer_id' => $customer->id,
-                    'status' => 'active',
-                    'joined_date' => now()->toDateString(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            // Save group membership - check if customer is already in a group first
+            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+            
+            if (!$existingMembership) {
+                if ($request->filled('group_id')) {
+                    DB::table('group_members')->insert([
+                        'group_id' => $request->group_id,
+                        'customer_id' => $customer->id,
+                        'status' => 'active',
+                        'joined_date' => now()->toDateString(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('group_members')->insert([
+                        'group_id' => 1,
+                        'customer_id' => $customer->id,
+                        'status' => 'active',
+                        'joined_date' => now()->toDateString(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
 
             // Attach loan officers
@@ -634,15 +638,18 @@ class CustomerController extends Controller
                             'company_id' => auth()->user()->company_id,
                         ]);
                     }
-                    //assign all member to the individual group
-                    DB::table('group_members')->insert([
-                        'group_id' => 1,
-                        'customer_id' => $customer->id,
-                        'status' => 'active',
-                        'joined_date' => now()->toDateString(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    //assign all member to the individual group - check if customer is already in a group first
+                    $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+                    if (!$existingMembership) {
+                        DB::table('group_members')->insert([
+                            'group_id' => 1,
+                            'customer_id' => $customer->id,
+                            'status' => 'active',
+                            'joined_date' => now()->toDateString(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
 
                     $successCount++;
                 } catch (\Exception $e) {
