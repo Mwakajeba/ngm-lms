@@ -54,29 +54,29 @@
                     <div class="brand-badge">{{ strtoupper(substr($companyName, 0, 2)) }}</div>
                     <div>
                         <div class="brand-name">{{ $companyName }}</div>
-                        <div class="subtitle">Mfumo wa Usimamizi wa Fedha</div>
+                        <div class="subtitle">INVITATION FOR 5-DAYS TRAINING ON FINANCIAL STATEMENTS</div>
                     </div>
                 </div>
             </div>
 
             <!-- Body -->
             <div class="body">
-                <div class="greeting">Habari {{ $recipientName }},</div>
+                <div class="greeting">Dear {{ $recipientName }},</div>
                 <div class="content">
                     {!! nl2br(strip_tags($content, '<b><strong><i><em><u><br><ul><ol><li><p><a>')) !!}
                 </div>
                 <div class="divider"></div>
                 <div class="note">
-                    Barua pepe hii imetumwa kutoka mfumo wa <strong>{{ $companyName }}</strong>. 
-                    Tunathamini uaminifu wako na tunajitahidi kukupa huduma bora kila siku.
+                    This email was sent from the <strong>{{ $companyName }}</strong> system.
+                    We value your trust and strive to provide you with the best service every day.
                 </div>
             </div>
 
             <!-- Footer -->
             <div class="footer">
                 <div class="company">{{ $companyName }}</div>
-                <p>&copy; {{ date('Y') }}. Haki zote zimehifadhiwa.</p>
-                <p class="text-muted">Timu ya SmartFinance</p>
+                <p>&copy; {{ date('Y') }}. All rights reserved.</p>
+                <p class="text-muted">SAFCO FINTECH Team</p>
             </div>
         </div>
     </div>
