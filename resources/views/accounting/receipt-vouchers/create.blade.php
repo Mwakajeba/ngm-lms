@@ -25,6 +25,16 @@
                             </div>
                         </div>
                         <div class="card-body">
+                            @if ($errors->any())
+                                <div class="alert alert-danger">
+                                    <strong>Please fix the following errors:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                             <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.store') }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
