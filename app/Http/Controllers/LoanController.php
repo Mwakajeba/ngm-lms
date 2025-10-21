@@ -2193,11 +2193,18 @@ class LoanController extends Controller
         }
 
         // Check if customer has reached maximum number of loans for this product
+
+         // Check if customer already has an active loan for this product (for top-up logic)
+        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
+            ->where('product_id', $validated['product_id'])
+            ->where('status', 'active')
+            ->first();
+            
         if ($product->hasReachedMaxLoans($validated['customer_id'])) {
             $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
             $maxLoans = $product->maximum_number_of_loans;
 
-            \Log::info("Maximum loan validation triggered in applicationStore", [
+            \Log::info("Maximum loan validation triggered", [
                 'customer_id' => $validated['customer_id'],
                 'product_id' => $product->id,
                 'product_name' => $product->name,
@@ -2206,7 +2213,18 @@ class LoanController extends Controller
             ]);
 
             if ($remainingLoans === 0) {
-                return back()->withErrors(['error' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans."]);
+                // If customer has an existing active loan, suggest top-up
+                if ($existingLoan) {
+                    $topupAmount = $product->topupAmount($validated['amount']);
+                    return redirect()->back()->withErrors([
+                        'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. However, you can apply for a top-up instead. Top-up Amount: TZS " . number_format($topupAmount, 2),
+                    ])->withInput();
+                } else {
+                    // No existing loan but max reached - this shouldn't happen in normal flow
+                    return redirect()->back()->withErrors([
+                        'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans.",
+                    ])->withInput();
+                }
             }
         }
 
