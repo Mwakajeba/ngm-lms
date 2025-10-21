@@ -84,19 +84,19 @@ class LoanController extends Controller
 
         // Get unique chart account IDs from excluded fees
         $uniqueChartAccountIds = $excludedFees->pluck('chart_account_id')->unique()->filter();
-        
+
         // Also get common income accounts for loan-related transactions
         $incomeAccountIds = \DB::table('chart_accounts')
             ->whereIn('account_name', ['Interest income', 'FEE INCOME', 'Penalty Income', 'Service income', 'Other income'])
             ->pluck('id');
-        
+
         // Combine and get unique chart accounts
         $allChartAccountIds = $uniqueChartAccountIds->merge($incomeAccountIds)->unique();
-        
+
         // Prepare chart accounts
         $chartAccounts = collect();
         $chartAccountData = ChartAccount::whereIn('id', $allChartAccountIds)->get();
-        
+
         foreach ($chartAccountData as $account) {
             $chartAccounts->push((object) [
                 'id' => $account->id,
@@ -1241,8 +1241,8 @@ class LoanController extends Controller
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
         // Restrict application if product has no approval levels
-        if (!$product->has_approval_levels) {
-            return back()->withErrors(['error' => 'Loan application must have level of approval.'])->withInput();
+        if ($product->has_approval_levels && (empty($product->approval_levels) || count($product->approval_levels) === 0)) {
+            return back()->withErrors(['error' => 'Loan application must have levels of approval configured.'])->withInput();
         }
         $this->validateProductLimits($validated, $product);
 
@@ -1260,6 +1260,12 @@ class LoanController extends Controller
             }
         }
 
+        // Check if customer already has an active loan for this product (for top-up logic)
+        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
+            ->where('product_id', $validated['product_id'])
+            ->where('status', 'active')
+            ->first();
+
         // Check if customer has reached maximum number of loans for this product
         if ($product->hasReachedMaxLoans($validated['customer_id'])) {
             $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
@@ -1274,26 +1280,20 @@ class LoanController extends Controller
             ]);
 
             if ($remainingLoans === 0) {
-                return redirect()->back()->withErrors([
-                    'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans.",
-                ])->withInput();
+                // If customer has an existing active loan, suggest top-up
+                if ($existingLoan) {
+                    $topupAmount = $product->topupAmount($validated['amount']);
+                    return redirect()->back()->withErrors([
+                        'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. However, you can apply for a top-up instead. Top-up Amount: TZS " . number_format($topupAmount, 2),
+                    ])->withInput();
+                } else {
+                    // No existing loan but max reached - this shouldn't happen in normal flow
+                    return redirect()->back()->withErrors([
+                        'loan_product' => "Customer has reached the maximum number of loans ({$maxLoans}) for this product. Cannot create additional loans.",
+                    ])->withInput();
+                }
             }
         }
-
-        // Check if customer already has an active loan for this product (for top-up logic)
-        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
-            ->where('product_id', $validated['product_id'])
-            ->where('status', 'active')
-            ->first();
-
-        if ($existingLoan) {
-            $topupAmount = $product->topupAmount($validated['amount']);
-
-            return redirect()->back()->withErrors([
-                'loan_product' => 'The customer already has an active loan for this product. You can apply for a top-up instead. Top-up Amount: TZS ' . number_format($topupAmount, 2),
-            ])->withInput();
-        }
-
 
 
         $userId = auth()->id();
