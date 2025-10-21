@@ -158,7 +158,7 @@
                                                 </div>
                                             </div>
                                             <div class="d-grid gap-2 mt-3">
-                                                <button type="submit" class="btn btn-success">
+                                                <button type="submit" id="submitBtn" class="btn btn-success">
                                                     <i class="bx bx-money me-1"></i> Process Payment
                                                 </button>
                                                 <a href="{{ route('accounting.bill-purchases.show', $billPurchase) }}" class="btn btn-outline-secondary">
@@ -186,7 +186,7 @@ $(document).ready(function() {
         $('#displayPaymentAmount').text(parseFloat($(this).val() || 0).toFixed(2));
     });
 
-    // Form validation
+    // Form validation and prevent double submission
     $('#paymentForm').submit(function(e) {
         const paymentAmount = parseFloat($('#paymentAmount').val()) || 0;
         
@@ -195,6 +195,19 @@ $(document).ready(function() {
             alert('Please enter a valid payment amount.');
             return false;
         }
+        
+        // Disable submit button and make it feint to prevent double submission
+        const submitBtn = $('#submitBtn');
+        submitBtn.prop('disabled', true);
+        submitBtn.addClass('opacity-50');
+        submitBtn.html('<i class="bx bx-loader-alt bx-spin me-1"></i> Processing...');
+        
+        // Re-enable after 5 seconds as fallback (in case of network issues)
+        setTimeout(function() {
+            submitBtn.prop('disabled', false);
+            submitBtn.removeClass('opacity-50');
+            submitBtn.html('<i class="bx bx-money me-1"></i> Process Payment');
+        }, 5000);
     });
 
     // Initialize

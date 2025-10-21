@@ -15,6 +15,10 @@ class IncomeStatementReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view income statement report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
 
@@ -28,10 +32,14 @@ class IncomeStatementReportController extends Controller
         // Comparative columns
         $comparativeColumns = $request->get('comparative_columns', []);
 
-        // Get branches for filter
-        $branches = $company->branches;
+        // Get branches for filter: only user's assigned branches
+        $branches = $user->branches()->where('branches.company_id', $company->id)->get();
 
         // Get income statement data
+        // Normalize branchId: allow 'all' only if user has more than one assigned branch
+        if ($branchId === 'all' && $branches->count() <= 1) {
+            $branchId = optional($branches->first())->id;
+        }
         $incomeStatementData = $this->getIncomeStatementData($startDate, $endDate, $reportingType, $branchId, $layout, $comparativeColumns);
 
         return view('accounting.reports.income-statement.index', compact(
@@ -105,10 +113,21 @@ class IncomeStatementReportController extends Controller
             ->whereBetween('gl_transactions.date', [$startDate, $endDate])
             ->whereIn('account_class.name', ['expenses', 'expense']);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter: 'all' means all assigned branches
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $incomeQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+                $expenseQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $incomeQuery->where('gl_transactions.branch_id', $branchId);
             $expenseQuery->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $incomeQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+                $expenseQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add reporting type filter (cash vs accrual)

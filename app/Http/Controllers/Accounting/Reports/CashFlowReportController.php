@@ -14,22 +14,24 @@ class CashFlowReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view cash flow report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
         
-        // Get branches for admin users
-        $branches = [];
-        if ($user->hasRole('admin')) {
-            $branches = DB::table('branches')
-                ->where('company_id', $company->id)
-                ->select('id', 'name')
-                ->get();
-        }
+        // Get branches visible to the user: only assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
 
         // Set default values
         $fromDate = $request->get('from_date', now()->startOfYear()->format('Y-m-d'));
         $toDate = $request->get('to_date', now()->format('Y-m-d'));
-        $branchId = $request->get('branch_id', $user->branch_id);
+        $branchParam = $request->get('branch_id');
+        $branchId = ($branches->count() > 1 && $branchParam === 'all') ? 'all' : ($branchParam ?: ($branches->first()->id ?? null));
         $cashFlowCategoryId = $request->get('cash_flow_category_id', '');
 
         // Get cash flow categories
@@ -65,9 +67,18 @@ class CashFlowReportController extends Controller
             ->where('chart_accounts.has_cash_flow', true)
             ->whereBetween('gl_transactions.date', [$fromDate, $toDate]);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter for assigned branches / all assigned
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add cash flow category filter if specified
@@ -166,9 +177,18 @@ class CashFlowReportController extends Controller
             ->where('chart_accounts.has_cash_flow', true)
             ->where('gl_transactions.date', '<', $fromDate);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
+        // Add branch filter for opening balance
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         // Add cash flow category filter if specified
@@ -210,13 +230,21 @@ class CashFlowReportController extends Controller
     {
         $user = Auth::user();
         
-        // Get branches for header
-        $branches = [];
-        if ($user->hasRole('admin')) {
-            $branches = DB::table('branches')
-                ->where('company_id', $company->id)
-                ->select('id', 'name')
-                ->get();
+        // Get branches for header: use user's assigned branches
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+        
+        // Resolve branch name for display
+        $branchId = $cashFlowData['filters']['branch_id'] ?? null;
+        $branchName = 'All Branches';
+        if ($branchId && $branchId !== 'all') {
+            $branch = $branches->firstWhere('id', $branchId);
+            $branchName = $branch->name ?? 'Unknown Branch';
+        } elseif (($branches->count() ?? 0) <= 1 && $branchId === 'all') {
+            // If only one assigned branch, show its name instead of All
+            $branchName = optional($branches->first())->name ?? 'All Branches';
         }
         
         // Generate PDF
@@ -224,6 +252,7 @@ class CashFlowReportController extends Controller
             'cashFlowData', 
             'company', 
             'branches',
+            'branchName',
             'fromDate',
             'toDate'
         ));

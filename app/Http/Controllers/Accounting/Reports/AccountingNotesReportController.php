@@ -15,6 +15,10 @@ class AccountingNotesReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view accounting notes report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
 
@@ -24,8 +28,8 @@ class AccountingNotesReportController extends Controller
         $branchId = $request->get('branch_id', 'all');
         $levelOfDetail = $request->get('level_of_detail', 'detailed');
 
-        // Get branches for filter
-        $branches = $company->branches;
+        // Get branches for filter: only user's assigned branches
+        $branches = $user->branches()->where('branches.company_id', $company->id)->get();
 
         // Get accounting notes data
         $accountingNotesData = $this->getAccountingNotesData($asOfDate, $reportingType, $branchId, $levelOfDetail);
@@ -148,8 +152,18 @@ class AccountingNotesReportController extends Controller
             ->where('account_class_groups.company_id', $company->id)
             ->where('gl_transactions.date', '<=', $asOfDate);
 
-        if ($branchId && $branchId != 'all') {
+        // Branch filter: 'all' means all assigned branches
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         if ($reportingType === 'cash') {
@@ -246,8 +260,16 @@ class AccountingNotesReportController extends Controller
             ->where('gl_transactions.date', '<=', $asOfDate)
             ->where('gl_transactions.amount', '>=', 1000000); // Transactions >= 1M
 
-        if ($branchId && $branchId != 'all') {
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         if ($reportingType === 'cash') {
@@ -286,8 +308,16 @@ class AccountingNotesReportController extends Controller
             ->where('gl_transactions.date', '<=', $asOfDate)
             ->where('gl_transactions.amount', '>=', 1000000); // Significant amounts >= 1M
 
-        if ($branchId && $branchId != 'all') {
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         $significantTransactions = $query->select(
@@ -366,8 +396,16 @@ class AccountingNotesReportController extends Controller
             ->where('gl_transactions.date', '<=', $asOfDate)
             ->where('gl_transactions.amount', '>=', 500000); // Related party transactions >= 500K
 
-        if ($branchId && $branchId != 'all') {
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $query->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         $relatedPartyTransactions = $query->select(
@@ -466,11 +504,27 @@ class AccountingNotesReportController extends Controller
 
     private function exportPdf($accountingNotesData, $company, $asOfDate, $reportingType)
     {
+        // Determine branch name for header
+        $user = Auth::user();
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+        $branchId = $accountingNotesData['branch_id'] ?? null;
+        $branchName = 'All Branches';
+        if ($branchId && $branchId !== 'all') {
+            $branch = $branches->firstWhere('id', $branchId);
+            $branchName = $branch->name ?? 'Unknown Branch';
+        } elseif (($branches->count() ?? 0) <= 1 && $branchId === 'all') {
+            $branchName = optional($branches->first())->name ?? 'All Branches';
+        }
+
         $pdf = Pdf::loadView('accounting.reports.accounting-notes.pdf', [
             'accountingNotesData' => $accountingNotesData,
             'company' => $company,
             'asOfDate' => $asOfDate,
-            'reportingType' => $reportingType
+            'reportingType' => $reportingType,
+            'branchName' => $branchName
         ]);
 
         $filename = 'accounting_notes_' . $asOfDate . '_' . $reportingType . '.pdf';

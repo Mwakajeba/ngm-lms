@@ -27,7 +27,15 @@ class CustomerPerformanceReportController extends Controller
         $riskLevel = $request->get('risk_level', 'all');
 
         // Get user's assigned branches
-        $branches = $user->branches()->where('company_id', $company->id)->get();
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
         
         // Get customers for filter
         $customers = \App\Models\Customer::where('company_id', $company->id)
@@ -56,9 +64,16 @@ class CustomerPerformanceReportController extends Controller
         $user = Auth::user();
         $company = $user->company;
 
+        // Get user's assigned branch IDs for filtering
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
         // Build base query for customers
         $customerQuery = \App\Models\Customer::with(['region', 'district', 'branch', 'loans', 'repayments', 'collaterals'])
-            ->where('company_id', $company->id);
+            ->where('company_id', $company->id)
+            ->whereIn('branch_id', $assignedBranchIds);
 
         // Apply filters
         if ($branchId !== 'all') {

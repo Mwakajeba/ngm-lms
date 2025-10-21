@@ -225,25 +225,29 @@ class CustomerController extends Controller
         try {
             $customer = \App\Models\Customer::create($data);
 
-            // Save group membership
-            if ($request->filled('group_id')) {
-                DB::table('group_members')->insert([
-                    'group_id' => $request->group_id,
-                    'customer_id' => $customer->id,
-                    'status' => 'active',
-                    'joined_date' => now()->toDateString(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
-            } else {
-                DB::table('group_members')->insert([
-                    'group_id' => 1,
-                    'customer_id' => $customer->id,
-                    'status' => 'active',
-                    'joined_date' => now()->toDateString(),
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ]);
+            // Save group membership - check if customer is already in a group first
+            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+
+            if (!$existingMembership) {
+                if ($request->filled('group_id')) {
+                    DB::table('group_members')->insert([
+                        'group_id' => $request->group_id,
+                        'customer_id' => $customer->id,
+                        'status' => 'active',
+                        'joined_date' => now()->toDateString(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                } else {
+                    DB::table('group_members')->insert([
+                        'group_id' => 1,
+                        'customer_id' => $customer->id,
+                        'status' => 'active',
+                        'joined_date' => now()->toDateString(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
             }
 
             // Attach loan officers
@@ -402,9 +406,19 @@ class CustomerController extends Controller
 
             // Sync group membership
             DB::table('group_members')->where('customer_id', $customer->id)->delete();
+            // Save group membership
             if ($request->filled('group_id')) {
                 DB::table('group_members')->insert([
                     'group_id' => $request->group_id,
+                    'customer_id' => $customer->id,
+                    'status' => 'active',
+                    'joined_date' => now()->toDateString(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('group_members')->insert([
+                    'group_id' => 1,
                     'customer_id' => $customer->id,
                     'status' => 'active',
                     'joined_date' => now()->toDateString(),
@@ -497,6 +511,12 @@ class CustomerController extends Controller
             $customer = Customer::findOrFail($decoded);
 
             // Check for existing loans, cash collaterals, or GL transactions
+
+            //check if member is in any group then he need to delete that mmeber from that group
+            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+            if ($existingMembership) {
+                return redirect()->route('customers.index')->with('error', 'Customer is a member of a group. Please remove them from the group first.');
+            }
             $hasLoans = $customer->loans()->exists();
             $hasCollaterals = $customer->collaterals()->exists();
             $hasGLTransactions = \DB::table('gl_transactions')->where('customer_id', $customer->id)->exists();
@@ -516,6 +536,7 @@ class CustomerController extends Controller
             }
 
             $customer->delete();
+
             return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete customer: ' . $e->getMessage());
@@ -624,15 +645,18 @@ class CustomerController extends Controller
                             'company_id' => auth()->user()->company_id,
                         ]);
                     }
-                    //assign all member to the individual group
-                    DB::table('group_members')->insert([
-                        'group_id' => 1,
-                        'customer_id' => $customer->id,
-                        'status' => 'active',
-                        'joined_date' => now()->toDateString(),
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ]);
+                    //assign all member to the individual group - check if customer is already in a group first
+                    $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+                    if (!$existingMembership) {
+                        DB::table('group_members')->insert([
+                            'group_id' => 1,
+                            'customer_id' => $customer->id,
+                            'status' => 'active',
+                            'joined_date' => now()->toDateString(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
 
                     $successCount++;
                 } catch (\Exception $e) {

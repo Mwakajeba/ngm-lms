@@ -170,7 +170,7 @@
                                 </div>
                             </div>
                             @endcan
-
+<!-- 
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-info">
                                     <div class="card-body text-center">
@@ -184,7 +184,7 @@
                                         </a>
                                     </div>
                                 </div>
-                            </div>
+                            </div> -->
 
                             <!-- Fees Settings -->
                             @can('manage fee setting')
@@ -323,26 +323,25 @@
                             </div>
                             @endcan
 
-                            <!-- Bulk Email Management
-                                                                                                    @can('manage system configurations')
-                                                                                                    <div class="col-md-6 col-lg-4 mb-4">
-                                                                                                        <div class="card border-purple">
-                                                                                                            <div class="card-body text-center">
-                                                                                                                <div class="mb-3">
-                                                                                                                    <i class="bx bx-envelope fs-1 text-purple"></i>
-                                                                                                                </div>
-                                                                                                                <h5 class="card-title">Bulk Email Management</h5>
-                                                                                                                <p class="card-text">
-                                                                                                                    Send bulk emails to multiple recipients with customizable templates.
-                                                                                                                    Manage email campaigns and track delivery status.
-                                                                                                                </p>
-                                                                                                                <a href="{{ route('settings.bulk-email') }}" class="btn btn-purple">
-                                                                                                                    <i class="bx bx-envelope me-1"></i> Send Bulk Emails
-                                                                                                                </a>
-                                                                                                            </div>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                    @endcan -->
+                            @role('super-admin')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-purple">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-envelope fs-1 text-purple"></i>
+                                        </div>
+                                        <h5 class="card-title">Bulk Email Management</h5>
+                                        <p class="card-text">
+                                            Send bulk emails to multiple recipients with customizable templates.
+                                            Manage email campaigns and track delivery status.
+                                        </p>
+                                        <a href="{{ route('settings.bulk-email') }}" class="btn btn-purple">
+                                            <i class="bx bx-envelope me-1"></i> Send Bulk Emails
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endrole
 
                             @endcan
                         </div>

@@ -55,8 +55,10 @@
                                     </div>
                                     <div class="col-md-3">
                                         <label for="branch_id" class="form-label">Branch</label>
-                                        <select class="form-select" id="branch_id" name="branch_id">
-                                            <option value="all">All Branches</option>
+                                    <select class="form-select" id="branch_id" name="branch_id">
+                                            @if(($branches->count() ?? 0) > 1)
+                                                <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                            @endif
                                             @foreach($branches as $branch)
                                                 <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                     {{ $branch->name }}
@@ -158,15 +160,9 @@
                                         <tr>
                                             <th>#</th>
                                             <th>Date</th>
-                                            <th>Penalty Name</th>
-                                            <th>Penalty Type</th>
-                                            <th>Chart Account</th>
-                                            <th>Account Code</th>
                                             <th>Customer</th>
-                                            <th>Branch</th>
-                                            <th class="text-center">Nature</th>
-                                            <th class="text-end">Amount</th>
                                             <th>Description</th>
+                                            <th class="text-end">Amount</th>
                                             <th>Reference ID</th>
                                             <th>Transaction Type</th>
                                         </tr>
@@ -176,23 +172,9 @@
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
                                                 <td>{{ \Carbon\Carbon::parse($item->date)->format('d/m/Y') }}</td>
-                                                <td>{{ $item->penalty_name }}</td>
-                                                <td>
-                                                    <span class="badge bg-{{ $item->penalty_type === 'income' ? 'success' : 'warning' }}">
-                                                        {{ ucfirst($item->penalty_type) }}
-                                                    </span>
-                                                </td>
-                                                <td>{{ $item->chart_account_name }}</td>
-                                                <td>{{ $item->account_code }}</td>
                                                 <td>{{ $item->customer_name ?? 'N/A' }}</td>
-                                                <td>{{ $item->branch_name ?? 'N/A' }}</td>
-                                                <td class="text-center">
-                                                    <span class="badge bg-{{ $item->nature === 'debit' ? 'danger' : 'success' }}">
-                                                        {{ ucfirst($item->nature) }}
-                                                    </span>
-                                                </td>
-                                                <td class="text-end">{{ number_format($item->amount, 2) }}</td>
                                                 <td>{{ $item->description }}</td>
+                                                <td class="text-end">{{ number_format($item->amount, 2) }}</td>
                                                 <td>{{ $item->reference_id }}</td>
                                                 <td>{{ $item->transaction_type }}</td>
                                             </tr>
@@ -207,11 +189,11 @@
                                     </tbody>
                                     <tfoot class="table-light">
                                         <tr>
-                                            <td colspan="9" class="text-end fw-bold">TOTAL BALANCE:</td>
+                                            <td colspan="4" class="text-end fw-bold">TOTAL BALANCE:</td>
                                             <td class="text-end fw-bold text-{{ $penaltiesData['summary']['balance'] >= 0 ? 'success' : 'danger' }}">
                                                 {{ number_format($penaltiesData['summary']['balance'], 2) }}
                                             </td>
-                                            <td colspan="3"></td>
+                                            <td colspan="2"></td>
                                         </tr>
                                     </tfoot>
                                 </table>

@@ -16,6 +16,10 @@ class BankReconciliationReportController extends Controller
      */
     public function index()
     {
+        if (!auth()->user()->can('view bank reconciliation report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
 
         // Get bank accounts for the current company

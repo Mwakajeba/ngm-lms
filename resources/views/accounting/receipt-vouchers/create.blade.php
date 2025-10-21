@@ -25,6 +25,16 @@
                             </div>
                         </div>
                         <div class="card-body">
+                            @if ($errors->any())
+                                <div class="alert alert-danger">
+                                    <strong>Please fix the following errors:</strong>
+                                    <ul class="mb-0 mt-2">
+                                        @foreach ($errors->all() as $error)
+                                            <li>{{ $error }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                             <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.store') }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
@@ -59,17 +69,17 @@
                                     </div>
                                 </div>
 
+
                                 <!-- Bank Account Section -->
                                 <div class="row mb-4">
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">
-                                                <i class="bx bx-wallet me-1"></i>Bank Account <span
-                                                    class="text-danger">*</span>
+                                                <i class="bx bx-wallet me-1"></i>Bank Account <span class="text-danger">*</span>
                                             </label>
-                                            <select class="form-select @error('bank_account_id') is-invalid @enderror"
-                                                id="bank_account_id" name="bank_account_id" data-live-search="true"
-                                                required>
+                                            <select
+                                                class="form-select form-select-lg select2-single mt-2 @error('bank_account_id') is-invalid @enderror"
+                                                id="bank_account_id" name="bank_account_id" required>
                                                 <option value="">-- Select Bank Account --</option>
                                                 @foreach($bankAccounts as $bankAccount)
                                                     <option value="{{ $bankAccount->id }}" {{ old('bank_account_id') == $bankAccount->id ? 'selected' : '' }}>
@@ -101,7 +111,7 @@
                                                                 Payee Type <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('payee_type') is-invalid @enderror"
+                                                                class="form-select select2-single @error('payee_type') is-invalid @enderror"
                                                                 id="payee_type" name="payee_type" required>
                                                                 <option value="">-- Select Payee Type --</option>
                                                                 <option value="customer" {{ old('payee_type') == 'customer' ? 'selected' : '' }}>Customer</option>
@@ -120,7 +130,7 @@
                                                                 Select Customer <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('customer_id') is-invalid @enderror"
+                                                                class="form-select select2-single @error('customer_id') is-invalid @enderror"
                                                                 id="customer_id" name="customer_id">
                                                                 <option value="">-- Select Customer --</option>
                                                                 @foreach($customers as $customer)
@@ -249,53 +259,56 @@
 
 @push('styles')
     <style>
-        .form-control,
-        .form-select {
-            font-size: 0.9rem;
-            padding: 0.5rem 0.75rem;
+        .form-control-lg,
+        .form-select-lg {
+            font-size: 1.1rem;
+            padding: 0.75rem 1rem;
         }
 
-        .form-label {
-            font-size: 0.875rem;
-            font-weight: 600;
-            margin-bottom: 0.5rem;
-        }
-
-        .btn {
-            font-size: 0.875rem;
-            padding: 0.5rem 1rem;
+        .btn-lg {
+            padding: 0.75rem 1.5rem;
+            font-size: 1.1rem;
         }
 
         .line-item-row {
             background: #f8f9fa;
             border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 1rem;
+            padding: 20px;
+            margin-bottom: 15px;
             border: 1px solid #dee2e6;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
         }
 
         .line-item-row:hover {
             background: #e9ecef;
+            border-color: #adb5bd;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
         }
 
-        .remove-line-btn {
-            color: #dc3545;
-            border: none;
-            background: none;
-            font-size: 1.2rem;
-            padding: 0;
-            line-height: 1;
+        .line-item-row .form-label {
+            font-size: 0.875rem;
+            margin-bottom: 0.5rem;
         }
 
-        .remove-line-btn:hover {
-            color: #c82333;
+        .line-item-row .form-select,
+        .line-item-row .form-control {
+            font-size: 0.9rem;
         }
 
-        .total-section {
-            background: #f8f9fa;
-            border-radius: 8px;
-            padding: 1rem;
-            border: 2px solid #28a745;
+        @media (max-width: 768px) {
+            .line-item-row {
+                padding: 15px;
+            }
+
+            .line-item-row .col-md-4,
+            .line-item-row .col-md-3 {
+                margin-bottom: 15px;
+            }
+
+            .line-item-row .col-md-1 {
+                margin-bottom: 15px;
+                text-align: center;
+            }
         }
     </style>
 @endpush
@@ -304,6 +317,14 @@
     <script>
         $(document).ready(function () {
             let lineItemCount = 0;
+
+            // Initialize Select2 for all select fields
+            $('.select2-single').select2({
+                placeholder: 'Select an option',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
 
             // Handle payee type change
             $('#payee_type').change(function () {
@@ -419,7 +440,7 @@
                     const amount = parseFloat($(this).val()) || 0;
                     total += amount;
                 });
-                $('#totalAmount').text(total.toFixed(2));
+                $('#totalAmount').text(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
             }
 
             // Handle amount input changes

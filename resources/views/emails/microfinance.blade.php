@@ -3,163 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{{ $subject }}</title>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>{{ $companyName }} — Taarifa</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background-color: #f4f6f8;
-            margin: 0;
-            padding: 0;
-        }
-        
-        .email-container {
-            max-width: 600px;
-            margin: 0 auto;
-            background-color: #ffffff;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-        }
-        
-        .header {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            padding: 40px 30px;
-            text-align: center;
-            color: white;
-        }
-        
-        .header h1 {
-            font-size: 28px;
-            font-weight: 700;
-            margin-bottom: 10px;
-            text-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-        }
-        
-        .header p {
-            font-size: 16px;
-            opacity: 0.9;
-            margin: 0;
-        }
-        
-        .logo-placeholder {
-            width: 80px;
-            height: 80px;
-            background-color: rgba(255, 255, 255, 0.2);
-            border-radius: 50%;
-            margin: 0 auto 20px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 24px;
-            font-weight: bold;
-            text-align: center;
-            line-height: 1;
-            position: relative;
-        }
-        
-        .logo-placeholder::before {
-            content: '';
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            width: 0;
-            height: 0;
-        }
-        
-        .logo-placeholder span {
-            position: absolute;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            margin: 0;
-            padding: 0;
-        }
-        
-        .content {
-            padding: 40px 30px;
-        }
-        
-        .greeting {
-            font-size: 18px;
-            color: #2c3e50;
-            margin-bottom: 25px;
-            font-weight: 600;
-        }
-        
-        .main-text {
-            font-size: 16px;
-            color: #34495e;
-            margin-bottom: 25px;
-            line-height: 1.7;
-        }
-        
-        .footer {
-            background-color: #2c3e50;
-            color: white;
-            text-align: center;
-            padding: 30px;
-            border-radius: 0 0 12px 12px;
-        }
-        
-        .footer p {
-            margin: 5px 0;
-            opacity: 0.8;
-        }
-        
-        .footer .company-name {
-            font-weight: 700;
-            font-size: 18px;
-            margin-bottom: 10px;
-        }
-        
-        @media only screen and (max-width: 600px) {
-            .email-container {
-                margin: 0;
-                border-radius: 0;
-            }
-            
-            .header, .content, .footer {
-                padding: 20px;
-            }
-            
-            .header h1 {
-                font-size: 24px;
-            }
+        /* Base reset */
+        html, body { margin: 0; padding: 0; height: 100%; }
+        body { background: #f4f6f8; color: #2b2f38; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, 'Helvetica Neue', Arial, 'Noto Sans', sans-serif; line-height: 1.6; }
+
+        /* Container */
+        .wrapper { width: 100%; background: #f4f6f8; padding: 24px 12px; }
+        .container { max-width: 640px; margin: 0 auto; background: #ffffff; border-radius: 12px; overflow: hidden; box-shadow: 0 6px 18px rgba(27, 31, 35, 0.08); }
+
+        /* Header */
+        .header { background: linear-gradient(135deg, #0d6efd 0%, #6610f2 100%); color: #ffffff; text-align: center; padding: 32px 24px; }
+        .brand { display: inline-flex; align-items: center; gap: 12px; }
+        .brand-badge { width: 56px; height: 56px; border-radius: 12px; background: rgba(255,255,255,0.15); display: inline-flex; align-items: center; justify-content: center; font-weight: 700; font-size: 20px; backdrop-filter: blur(2px); }
+        .brand-name { font-size: 22px; font-weight: 700; letter-spacing: 0.2px; }
+        .subtitle { margin-top: 6px; opacity: 0.9; font-size: 13px; }
+
+        /* Body */
+        .body { padding: 28px 24px; }
+        .greeting { font-size: 18px; font-weight: 600; color: #111827; margin-bottom: 16px; }
+        .content { font-size: 15px; color: #334155; line-height: 1.75; }
+        .divider { height: 1px; background: #eef2f7; margin: 20px 0; }
+
+        /* Footer */
+        .footer { background: #0f172a; color: #cbd5e1; text-align: center; padding: 20px; }
+        .footer .company { font-weight: 700; color: #ffffff; margin-bottom: 6px; }
+        .footer p { margin: 4px 0; font-size: 12px; opacity: 0.9; }
+
+        /* Utilities */
+        .text-muted { color: #64748b; }
+        .note { background: #f8fafc; border: 1px solid #eef2f7; border-radius: 8px; padding: 12px 14px; font-size: 12px; color: #475569; }
+
+        /* Responsive */
+        @media (max-width: 640px) {
+            .header { padding: 24px 16px; }
+            .brand-badge { width: 48px; height: 48px; font-size: 18px; }
+            .brand-name { font-size: 20px; }
+            .body { padding: 20px 16px; }
         }
     </style>
 </head>
 <body>
-    <div class="email-container">
-        <!-- Header Section -->
-        <div class="header">
-            <div class="logo-placeholder"><span>SF</span></div>
-            <h1>{{ $companyName }}</h1>
-            <p>Mfumo wa Usimamizi wa Fedha</p>
-        </div>
-        
-        <!-- Main Content -->
-        <div class="content">
-            <div class="greeting">
-                Dear {{ $recipientName }},
+    <div class="wrapper">
+        <div class="container">
+            <!-- Header -->
+            <div class="header">
+                <div class="brand">
+                    <div class="brand-badge">{{ strtoupper(substr($companyName, 0, 2)) }}</div>
+                    <div>
+                        <div class="brand-name">{{ $companyName }}</div>
+                        <div class="subtitle">INVITATION FOR 5-DAYS TRAINING ON FINANCIAL STATEMENTS</div>
+                    </div>
+                </div>
             </div>
-            
-            <div class="main-text">
-                {!! nl2br(e($content)) !!}
+
+            <!-- Body -->
+            <div class="body">
+                <div class="greeting">Dear {{ $recipientName }},</div>
+                <div class="content">
+                    {!! nl2br(strip_tags($content, '<b><strong><i><em><u><br><ul><ol><li><p><a>')) !!}
+                </div>
+                <div class="divider"></div>
+                <div class="note">
+                    This email was sent from the <strong>{{ $companyName }}</strong> system.
+                    We value your trust and strive to provide you with the best service every day.
+                </div>
             </div>
-        </div>
-        
-        <!-- Footer -->
-        <div class="footer">
-            <div class="company-name">{{ $companyName }}</div>
-            <p>Timu ya SmartFinance</p>
+
+            <!-- Footer -->
+            <div class="footer">
+                <div class="company">{{ $companyName }}</div>
+                <p>&copy; {{ date('Y') }}. All rights reserved.</p>
+                <p class="text-muted">SAFCO FINTECH Team</p>
+            </div>
         </div>
     </div>
 </body>
-</html> 
+</html>

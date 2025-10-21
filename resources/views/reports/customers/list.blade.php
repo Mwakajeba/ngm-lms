@@ -46,7 +46,9 @@
                                     <div class="col-md-3">
                                         <label for="branch_id" class="form-label">Branch</label>
                                         <select class="form-select" id="branch_id" name="branch_id">
-                                            <option value="all">All Branches</option>
+                                            @if(($branches->count() ?? 0) > 1)
+                                                <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All My Branches</option>
+                                            @endif
                                             @foreach($branches as $branch)
                                                 <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                     {{ $branch->name }}

@@ -14,6 +14,10 @@ class ChangesEquityReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view changes in equity report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
         

@@ -41,6 +41,7 @@
 
                             <div class="row">
                                 <!-- Balance Sheet Report -->
+                                @can('view balance sheet report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-warning">
                                         <div class="card-body text-center">
@@ -55,8 +56,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Trial Balance Report -->
+                                @can('view trial balance report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-success">
                                         <div class="card-body text-center">
@@ -71,8 +74,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Income Statement Report -->
+                                @can('view income statement report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-info">
                                         <div class="card-body text-center">
@@ -87,8 +92,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Cash Book Report -->
+                                @can('view cash book report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
@@ -103,8 +110,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Cash Flow Report -->
+                                @can('view cash flow report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-purple">
                                         <div class="card-body text-center">
@@ -119,8 +128,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- General Ledger Report -->
+                                @can('view general ledger report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-secondary">
                                         <div class="card-body text-center">
@@ -135,8 +146,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Expenses Summary Report -->
+                                @can('view expenses summary report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-teal">
                                         <div class="card-body text-center">
@@ -151,8 +164,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Accounting Notes Report -->
+                                @can('view accounting notes report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-indigo">
                                         <div class="card-body text-center">
@@ -167,8 +182,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Changes in Equity Report -->
+                                @can('view changes in equity report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-orange">
                                         <div class="card-body text-center">
@@ -183,8 +200,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Fees Report -->
+                                @can('view fees report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-primary">
                                         <div class="card-body text-center">
@@ -199,8 +218,10 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
 
                                 <!-- Penalties Report -->
+                                @can('view penalties report')
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-dark">
                                         <div class="card-body text-center">
@@ -215,6 +236,61 @@
                                         </div>
                                     </div>
                                 </div>
+                                @endcan
+
+                                <!-- Other Income Report -->
+                                @can('view other income report')
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-success">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-trending-up fs-1 text-success"></i>
+                                            </div>
+                                            <h5 class="card-title">Other Income Report</h5>
+                                            <p class="card-text">Track and analyze other income sources and their contribution to revenue.</p>
+                                            <a href="{{ route('accounting.reports.other-income') }}" class="btn btn-success">
+                                                <i class="bx bx-file me-1"></i> Generate Report
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endcan
+
+                                <!-- Budget Report -->
+                                @can('view budget report')
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-info">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-target-lock fs-1 text-info"></i>
+                                            </div>
+                                            <h5 class="card-title">Budget Report</h5>
+                                            <p class="card-text">Compare actual performance against budgeted amounts and analyze variances.</p>
+                                            <a href="{{ route('accounting.reports.budget-report') }}" class="btn btn-info">
+                                                <i class="bx bx-file me-1"></i> Generate Report
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endcan
+
+                                <!-- Bank Reconciliation Report -->
+                                @can('view bank reconciliation report')
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-warning">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-check-circle fs-1 text-warning"></i>
+                                            </div>
+                                            <h5 class="card-title">Bank Reconciliation Report</h5>
+                                            <p class="card-text">Reconcile bank statements with accounting records and identify discrepancies.</p>
+                                            <a href="{{ route('accounting.reports.bank-reconciliation-report') }}" class="btn btn-warning">
+                                                <i class="bx bx-file me-1"></i> Generate Report
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
+                                @endcan
                             </div>
                         </div>
                     </div>

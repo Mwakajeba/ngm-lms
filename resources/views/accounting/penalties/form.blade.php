@@ -81,7 +81,18 @@
                             </select>
                             @error('penalty_type') <div class="invalid-feedback">{{ $message }}</div> @enderror
                         </div>
-
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Charge Frequency <span class="text-danger">*</span></label>
+                            <select name="charge_frequency" class="form-select @error('charge_frequency') is-invalid @enderror" required>
+                                <option value="">-- Select Charge Frequency --</option>
+                                @foreach($chargeFrequencyOptions as $value => $label)
+                                    <option value="{{ $value }}" {{ old('charge_frequency', $penalty->charge_frequency ?? 'one_time') == $value ? 'selected' : '' }}>
+                                        {{ $label }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('charge_frequency') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                        </div>
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Amount <span class="text-danger">*</span></label>
                             <input type="number" name="amount" class="form-control @error('amount') is-invalid @enderror"

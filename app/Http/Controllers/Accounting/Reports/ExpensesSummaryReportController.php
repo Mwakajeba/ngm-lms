@@ -15,6 +15,10 @@ class ExpensesSummaryReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view expenses summary report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
 
@@ -26,11 +30,22 @@ class ExpensesSummaryReportController extends Controller
         $groupBy = $request->get('group_by', 'account'); // account, group, date
         $sortBy = $request->get('sort_by', 'amount'); // amount, date, account
 
-        // Get branches for filter
-        $branches = $company->branches;
+        // Get comparative columns from request
+        $comparativeColumns = $request->get('comparative_columns', []);
+
+        // Get assigned branches for filtering
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        // If user has exactly one branch, force-select it
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
 
         // Get expenses summary data
-        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy);
+        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy, $comparativeColumns);
 
         return view('accounting.reports.expenses-summary.index', compact(
             'expensesData',
@@ -40,12 +55,13 @@ class ExpensesSummaryReportController extends Controller
             'branchId',
             'groupBy',
             'sortBy',
+            'comparativeColumns',
             'branches',
             'user'
         ));
     }
 
-    private function getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy)
+    private function getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy, $comparativeColumns = [])
     {
         $user = Auth::user();
         $company = $user->company;
@@ -59,9 +75,39 @@ class ExpensesSummaryReportController extends Controller
             ->whereBetween('gl_transactions.date', [$startDate, $endDate])
             ->whereIn('account_class.name', ['expenses', 'expense']);
 
-        // Add branch filter if specified
-        if ($branchId && $branchId != 'all') {
-            $query->where('gl_transactions.branch_id', $branchId);
+        // Constrain to user's assigned branches always
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        if (empty($assignedBranchIds)) {
+            return [
+                'expenses' => collect([]),
+                'comparative' => [],
+                'summary' => [
+                    'total_expenses' => 0,
+                    'total_transactions' => 0,
+                    'account_count' => 0,
+                    'average_per_transaction' => 0,
+                    'average_per_account' => 0
+                ],
+                'filters' => [
+                    'start_date' => $startDate,
+                    'end_date' => $endDate,
+                    'reporting_type' => $reportingType,
+                    'branch_id' => $branchId,
+                    'group_by' => $groupBy,
+                    'sort_by' => $sortBy
+                ]
+            ];
+        }
+
+        if ($branchId === 'all') {
+            $query->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+        } else {
+            $query->where('gl_transactions.branch_id', $branchId)
+                  ->whereIn('gl_transactions.branch_id', $assignedBranchIds);
         }
 
         // Add reporting type filter (cash vs accrual)
@@ -72,7 +118,7 @@ class ExpensesSummaryReportController extends Controller
                     ->from('gl_transactions as gl2')
                     ->whereColumn('gl2.transaction_id', 'gl_transactions.transaction_id')
                     ->whereColumn('gl2.transaction_type', 'gl_transactions.transaction_type')
-                    ->whereIn('gl2.chart_account_id', function($bankSubquery) {
+                    ->whereIn('gl2.chart_account_id', function ($bankSubquery) {
                         $bankSubquery->select('chart_account_id')
                             ->from('bank_accounts');
                     });
@@ -92,7 +138,7 @@ class ExpensesSummaryReportController extends Controller
                 DB::raw('MIN(gl_transactions.date) as first_transaction_date'),
                 DB::raw('MAX(gl_transactions.date) as last_transaction_date')
             )
-            ->groupBy('account_class_groups.id', 'account_class_groups.name', 'account_class.name');
+                ->groupBy('account_class_groups.id', 'account_class_groups.name', 'account_class.name');
         } else {
             // Individual transactions
             $query->select(
@@ -109,8 +155,8 @@ class ExpensesSummaryReportController extends Controller
                 'account_class_groups.name as group_name',
                 'account_class.name as class_name'
             )
-            ->orderBy('gl_transactions.date', 'asc')
-            ->orderBy('gl_transactions.id', 'asc');
+                ->orderBy('gl_transactions.date', 'asc')
+                ->orderBy('gl_transactions.id', 'asc');
         }
 
         // Add sorting
@@ -158,8 +204,26 @@ class ExpensesSummaryReportController extends Controller
             }
         }
 
+        // Process comparative data
+        $comparativeData = [];
+        if (!empty($comparativeColumns)) {
+            foreach ($comparativeColumns as $column) {
+                if (!empty($column['start_date']) && !empty($column['end_date'])) {
+                    $comparativeData[$column['name']] = $this->getExpensesData(
+                        $column['start_date'],
+                        $column['end_date'],
+                        $reportingType,
+                        $branchId,
+                        $groupBy,
+                        $sortBy
+                    );
+                }
+            }
+        }
+
         return [
             'expenses' => $expenses,
+            'comparative' => $comparativeData,
             'summary' => [
                 'total_expenses' => $totalExpenses,
                 'total_transactions' => $totalTransactions,
@@ -192,8 +256,11 @@ class ExpensesSummaryReportController extends Controller
         $sortBy = $request->get('sort_by', 'amount');
         $exportType = $request->get('export_type', 'pdf');
 
+        // Get comparative columns from request
+        $comparativeColumns = $request->get('comparative_columns', []);
+
         // Get expenses data
-        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy);
+        $expensesData = $this->getExpensesData($startDate, $endDate, $reportingType, $branchId, $groupBy, $sortBy, $comparativeColumns);
 
         if ($exportType === 'pdf') {
             return $this->exportPdf($expensesData, $company, $startDate, $endDate, $reportingType);
@@ -310,11 +377,11 @@ class ExpensesSummaryReportController extends Controller
         // Create the Excel file
         $writer = new Xlsx($spreadsheet);
         $filename = 'expenses_summary_report_' . date('Y-m-d_H-i-s') . '.xlsx';
-        
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $filename . '"');
         header('Cache-Control: max-age=0');
-        
+
         $writer->save('php://output');
         exit;
     }

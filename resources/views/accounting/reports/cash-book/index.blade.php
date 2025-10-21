@@ -71,12 +71,13 @@
                                     </select>
                                 </div>
 
-                                <!-- Branch (Admin Only) -->
-                                @if($user->hasRole('admin'))
+                                <!-- Branch (Assigned) -->
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @if(($branches->count() ?? 0) > 1)
+                                            <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->name }}
@@ -84,7 +85,6 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                @endif
                             </div>
 
                             <div class="row">
@@ -111,7 +111,13 @@
                                                     @else
                                                         Period: {{ \Carbon\Carbon::parse($startDate)->format('M d, Y') }} to {{ \Carbon\Carbon::parse($endDate)->format('M d, Y') }} | 
                                                     @endif
-                                                    Bank Account: {{ $bankAccountId === 'all' ? 'All Accounts' : $bankAccounts->where('id', $bankAccountId)->first()->name ?? 'N/A' }}
+                                                    Bank Account: {{ $bankAccountId === 'all' ? 'All Accounts' : $bankAccounts->where('id', $bankAccountId)->first()->name ?? 'N/A' }} |
+                                                    Branch: 
+                                                    @if(($branches->count() ?? 0) > 1 && $branchId === 'all')
+                                                        All Branches
+                                                    @else
+                                                        {{ optional($branches->firstWhere('id', $branchId))->name ?? 'N/A' }}
+                                                    @endif
                                                 </small>
                                             </div>
                                         </div>
@@ -122,17 +128,17 @@
                                                 <table class="table table-bordered table-striped">
                                                     <thead class="table-light">
                                                         <tr>
-                                                            <td colspan="8" class="text-center fw-bold fs-5">
+                                                            <td colspan="9" class="text-center fw-bold fs-5">
                                                                 {{ $user->company->name ?? 'SmartFinance' }}
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td colspan="8" class="text-center fw-bold">
+                                                            <td colspan="9" class="text-center fw-bold">
                                                                 CASH BOOK
                                                             </td>
                                                         </tr>
                                                         <tr>
-                                                            <td colspan="8" class="text-center fw-bold">
+                                                            <td colspan="9" class="text-center fw-bold">
                                                                 @if($startDate === $endDate)
                                                                     AS AT {{ \Carbon\Carbon::parse($endDate)->format('d-m-Y') }}
                                                                 @else
@@ -143,17 +149,18 @@
                                                         <tr>
                                                             <th class="text-center">DATE</th>
                                                             <th class="text-center">DESCRIPTION</th>
+                                                            <th class="text-center">CUSTOMER</th>
                                                             <th class="text-center">BANK ACCOUNT</th>
                                                             <th class="text-center">TRANSACTION NO</th>
                                                             <th class="text-center">REFERENCE NO.</th>
-                                                            <th class="text-center">CREDIT</th>
                                                             <th class="text-center">DEBIT</th>
+                                                            <th class="text-center">CREDIT</th>
                                                             <th class="text-center">BALANCE</th>
                                                         </tr>
                                                     </thead>
                                                     <tbody>
                                                         <tr>
-                                                            <td colspan="6" class="text-end fw-bold">Opening Balance</td>
+                                                            <td colspan="7" class="text-end fw-bold">Opening Balance</td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($cashBookData['opening_balance'], 2) }}</td>
                                                         </tr>
@@ -178,35 +185,36 @@
                                                             <tr>
                                                                 <td>{{ \Carbon\Carbon::parse($transaction['date'])->format('d/m/Y') }}</td>
                                                                 <td class="text-start">{{ $transaction['description'] }}</td>
+                                                                <td class="text-start">{{ $transaction['customer_name'] }}</td>
                                                                 <td class="text-start">{{ $transaction['bank_account'] }}</td>
                                                                 <td>{{ $transaction['transaction_no'] }}</td>
                                                                 <td>{{ $transaction['reference_no'] }}</td>
-                                                                <td class="text-end">{{ $credit > 0 ? number_format($credit, 2) : '' }}</td>
                                                                 <td class="text-end">{{ $debit > 0 ? number_format($debit, 2) : '' }}</td>
+                                                                <td class="text-end">{{ $credit > 0 ? number_format($credit, 2) : '' }}</td>
                                                                 <td class="text-end">{{ number_format($running_balance, 2) }}</td>
                                                             </tr>
                                                         @endforeach
 
                                                         <tr>
-                                                            <td colspan="5" class="text-end fw-bold">Total Credit</td>
+                                                            <td colspan="6" class="text-end fw-bold">Total Debit</td>
                                                             <td class="text-end fw-bold">{{ number_format($total_receipts, 2) }}</td>
                                                             <td></td>
                                                             <td></td>
                                                         </tr>
                                                         <tr>
-                                                            <td colspan="5" class="text-end fw-bold">Total Debit</td>
+                                                            <td colspan="6" class="text-end fw-bold">Total Credit</td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($total_payments, 2) }}</td>
                                                             <td></td>
                                                         </tr>
                                                         <tr>
-                                                            <td colspan="5" class="text-end fw-bold">Final Balance</td>
+                                                            <td colspan="6" class="text-end fw-bold">Final Balance</td>
                                                             <td></td>
                                                             <td></td>
                                                             <td class="text-end fw-bold">{{ number_format($running_balance, 2) }}</td>
                                                         </tr>
                                                         <tr>
-                                                            <td colspan="7" class="text-end fw-bold">Closing Balance</td>
+                                                            <td colspan="8" class="text-end fw-bold">Closing Balance</td>
                                                             <td class="text-end fw-bold">{{ number_format($running_balance, 2) }}</td>
                                                         </tr>
                                                     </tbody>

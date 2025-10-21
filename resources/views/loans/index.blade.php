@@ -23,6 +23,21 @@
                     <div class="card">
                         <div class="card-body">
                             <div class="row">
+                                <!-- Loan Calculator -->
+                                <div class="col-md-6 col-lg-4 mb-4">
+                                    <div class="card border-info position-relative">
+                                        <div class="card-body text-center">
+                                            <div class="mb-3">
+                                                <i class="bx bx-calculator fs-1 text-info"></i>
+                                            </div>
+                                            <h5 class="card-title">Loan Calculator</h5>
+                                            <p class="card-text">Simulate loan scenarios, view schedules and export results.</p>
+                                            <a href="{{ route('loan-calculator.index') }}" class="btn btn-info position-relative">
+                                                <i class="bx bx-calculator me-1"></i> Open Calculator
+                                            </a>
+                                        </div>
+                                    </div>
+                                </div>
                                 @can('view loans')
                                     <!-- Active Loans -->
                                     <div class="col-md-6 col-lg-4 mb-4">

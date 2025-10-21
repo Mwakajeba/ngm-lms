@@ -78,6 +78,7 @@
                                         <th>Interest Rate</th>
                                         <th>Date Applied</th>
                                         <th>Status</th>
+                                        <th>Comment</th>
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
@@ -142,6 +143,18 @@
                                             @endswitch
                                         </td>
                                         <td>
+                                            @php
+                                                $latestApproval = $application->approvals->sortByDesc('approved_at')->first();
+                                            @endphp
+                                            @if($latestApproval && $latestApproval->comments)
+                                                <div class="text-truncate" style="max-width: 200px;" title="{{ $latestApproval->comments }}">
+                                                    <small class="text-muted">{{ $latestApproval->comments }}</small>
+                                                </div>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
                                             <div class="btn-group" role="group">
                                                 @can('view loan details')
                                                 <a href="{{ route('loans.application.show', Hashids::encode($application->id)) }}"
@@ -180,7 +193,7 @@
                                     </tr>
                                     @if($application->status === 'rejected')
                                     <tr>
-                                        <td colspan="9">
+                                        <td colspan="10">
                                             @php
                                                 $rejection = optional($application->approvals)->where('action','rejected')->sortByDesc('approved_at')->first();
                                             @endphp
@@ -196,7 +209,7 @@
                                     @endif
                                     @empty
                                     <tr>
-                                        <td colspan="9" class="text-center py-4">
+                                        <td colspan="10" class="text-center py-4">
                                             <div class="text-muted">
                                                 <i class="bx bx-file-plus fs-1 mb-3"></i>
                                                 <h6>No {{ ucfirst($status) }} Applications Found</h6>

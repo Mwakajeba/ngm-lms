@@ -67,15 +67,15 @@ use Vinkla\Hashids\Facades\Hashids;
                                 </div>
 
                                 <!-- Bank Account Section -->
-                                <div class="row mb-4">
+                                       <div class="row mb-4">
                                     <div class="col-lg-6">
                                         <div class="mb-3">
                                             <label class="form-label fw-bold">
                                                 <i class="bx bx-wallet me-1"></i>Bank Account <span class="text-danger">*</span>
                                             </label>
                                             <select
-                                                class="form-select @error('bank_account_id') is-invalid @enderror"
-                                                id="bank_account_id" name="bank_account_id" data-live-search="true" required>
+                                                class="form-select form-select-lg select2-single mt-2 @error('bank_account_id') is-invalid @enderror"
+                                                id="bank_account_id" name="bank_account_id" required>
                                                 <option value="">-- Select Bank Account --</option>
                                                 @foreach($bankAccounts as $bankAccount)
                                                     <option value="{{ $bankAccount->id }}" {{ old('bank_account_id', $receiptVoucher->bank_account_id) == $bankAccount->id ? 'selected' : '' }}>
@@ -93,7 +93,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                 <!-- Payee Section -->
                                 <div class="row mb-4">
                                     <div class="col-lg-12">
-                                        <div class="card border-primary">
+                                        <div class="card border-warning">
                                             <div class="card-header bg-light">
                                                 <h6 class="mb-0 fw-bold">
                                                     <i class="bx bx-user me-2"></i>Payee Information
@@ -101,61 +101,60 @@ use Vinkla\Hashids\Facades\Hashids;
                                             </div>
                                             <div class="card-body">
                                                 <div class="row">
-                                                    <div class="col-lg-6">
+                                                    <div class="col-lg-4">
                                                         <div class="mb-3">
                                                             <label for="payee_type" class="form-label fw-bold">
                                                                 Payee Type <span class="text-danger">*</span>
                                                             </label>
                                                             <select
-                                                                class="form-select @error('payee_type') is-invalid @enderror"
+                                                                class="form-select form-select-lg select2-single @error('payee_type') is-invalid @enderror"
                                                                 id="payee_type" name="payee_type" required>
                                                                 <option value="">-- Select Payee Type --</option>
                                                                 <option value="customer" {{ old('payee_type', $receiptVoucher->payee_type) == 'customer' ? 'selected' : '' }}>Customer</option>
+                                                                <option value="supplier" {{ old('payee_type', $receiptVoucher->payee_type) == 'supplier' ? 'selected' : '' }}>Supplier</option>
                                                                 <option value="other" {{ old('payee_type', $receiptVoucher->payee_type) == 'other' ? 'selected' : '' }}>Other</option>
                                                             </select>
                                                             @error('payee_type')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
-                                                        </div>
-                                                    </div>
-                                                </div>
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
+                                        </div>
+                                    </div>
 
-                                                <!-- Customer Selection (shown when payee_type is customer) -->
-                                                <div class="row" id="customerSection" style="display: none;">
-                                                    <div class="col-lg-6">
-                                                        <div class="mb-3">
-                                                            <label for="customer_id" class="form-label fw-bold">
+                                                    <!-- Customer Selection (shown when payee_type is customer) -->
+                                                    <div class="col-lg-8" id="customerSection" style="display: none;">
+                                        <div class="mb-3">
+                                            <label for="customer_id" class="form-label fw-bold">
                                                                 Select Customer <span class="text-danger">*</span>
-                                                            </label>
-                                                            <select
-                                                                class="form-select @error('customer_id') is-invalid @enderror"
-                                                                id="customer_id" name="customer_id">
+                                            </label>
+                                            <select
+                                                class="form-select form-select-lg select2-single @error('customer_id') is-invalid @enderror"
+                                                id="customer_id" name="customer_id">
                                                                 <option value="">-- Select Customer --</option>
-                                                                @foreach($customers as $customer)
-                                                                    <option value="{{ $customer->id }}" {{ old('customer_id', $receiptVoucher->payee_id) == $customer->id ? 'selected' : '' }}>
-                                                                        {{ $customer->name }} ({{ $customer->customerNo }})
-                                                                    </option>
-                                                                @endforeach
-                                                            </select>
-                                                            @error('customer_id')
-                                                                <div class="invalid-feedback">{{ $message }}</div>
-                                                            @enderror
+                                                    @foreach($customers as $customer)
+                                                        <option value="{{ $customer->id }}" {{ old('customer_id', $receiptVoucher->customer_id) == $customer->id ? 'selected' : '' }}>
+                                                            {{ $customer->name }} ({{ $customer->customerNo }})
+                                                        </option>
+                                                    @endforeach
+                                            </select>
+                                            @error('customer_id')
+                                                <div class="invalid-feedback">{{ $message }}</div>
+                                            @enderror
                                                         </div>
                                                     </div>
-                                                </div>
 
-                                                <!-- Other Payee Name (shown when payee_type is other) -->
-                                                <div class="row" id="otherPayeeSection" style="display: none;">
-                                                    <div class="col-lg-6">
+
+                                                    <!-- Other Payee Name (shown when payee_type is other) -->
+                                                    <div class="col-lg-8" id="otherPayeeSection" style="display: none;">
                                                         <div class="mb-3">
                                                             <label for="payee_name" class="form-label fw-bold">
                                                                 Payee Name <span class="text-danger">*</span>
                                                             </label>
                                                             <input type="text"
-                                                                class="form-control @error('payee_name') is-invalid @enderror"
+                                                                class="form-control form-control-lg @error('payee_name') is-invalid @enderror"
                                                                 id="payee_name" name="payee_name"
                                                                 value="{{ old('payee_name', $receiptVoucher->payee_name) }}"
-                                                                placeholder="Enter payee name">
+                                                                placeholder="Enter payee name"
+                                                                required>
                                                             @error('payee_name')
                                                                 <div class="invalid-feedback">{{ $message }}</div>
                                                             @enderror
@@ -166,6 +165,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                         </div>
                                     </div>
                                 </div>
+
 
                                 <!-- Transaction Description and Attachment -->
                                 <div class="row mb-4">
@@ -389,6 +389,14 @@ use Vinkla\Hashids\Facades\Hashids;
         $(document).ready(function () {
             let lineItemCount = {{ $receiptVoucher->receiptItems->count() }};
 
+            // Initialize Select2 for all select fields
+            $('.select2-single').select2({
+                placeholder: 'Select an option',
+                allowClear: true,
+                width: '100%',
+                theme: 'bootstrap-5'
+            });
+
             // Handle payee type change
             $('#payee_type').change(function() {
                 const payeeType = $(this).val();
@@ -457,6 +465,9 @@ use Vinkla\Hashids\Facades\Hashids;
                     return false;
                 }
 
+                // Disable submit button and show loading state
+                $('#updateBtn').prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-2"></i>Updating...');
+
                 // Submit form
                 this.submit();
             });
@@ -524,7 +535,7 @@ use Vinkla\Hashids\Facades\Hashids;
                     total += amount;
                 });
 
-                $('#totalAmount').text(total.toFixed(2));
+                $('#totalAmount').text(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
 
                 // Update update button state
                 if (total > 0) {

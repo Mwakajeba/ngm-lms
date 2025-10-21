@@ -67,12 +67,13 @@
                                     </select>
                                 </div>
 
-                                <!-- Branch (Admin Only) -->
-                                @if($user->hasRole('admin'))
+                                <!-- Branch (Assigned) -->
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @if(($branches->count() ?? 0) > 1)
+                                            <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->name }}
@@ -80,7 +81,6 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                @endif
                             </div>
                             
                             <div class="row">

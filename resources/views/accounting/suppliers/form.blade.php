@@ -40,7 +40,7 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Status <span class="text-danger">*</span></label>
-                            <select name="status" class="form-select @error('status') is-invalid @enderror" required>
+                            <select name="status" class="form-select select2-single @error('status') is-invalid @enderror" required>
                                 <option value="">-- Select Status --</option>
                                 @foreach($statusOptions as $value => $label)
                                     <option value="{{ $value }}" {{ old('status', $supplier->status ?? '') == $value ? 'selected' : '' }}>
@@ -67,7 +67,7 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Region</label>
-                            <select name="region" class="form-select @error('region') is-invalid @enderror">
+                            <select name="region" class="form-select select2-single @error('region') is-invalid @enderror">
                                 <option value="">-- Select Region --</option>
                                 @foreach($regions as $region)
                                     <option value="{{ $region->name }}" {{ old('region', $supplier->region ?? '') == $region->name ? 'selected' : '' }}>
@@ -80,7 +80,7 @@
 
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Branch</label>
-                            <select name="branch_id" class="form-select @error('branch_id') is-invalid @enderror">
+                            <select name="branch_id" class="form-select select2-single @error('branch_id') is-invalid @enderror">
                                 <option value="">-- Select Branch --</option>
                                 @foreach($branches as $branch)
                                     <option value="{{ $branch->id }}" {{ old('branch_id', $supplier->branch_id ?? '') == $branch->id ? 'selected' : '' }}>
@@ -219,6 +219,11 @@
 
 @push('scripts')
     <script>
+        $(document).ready(function() {
+            // Initialize Select2 for all select fields
+            $('select.select2-single').select2({ width: '100%' });
+        });
+
         // Phone number validation - only allow numbers and limit to 12 digits
         document.querySelector('input[name="phone"]').addEventListener('input', function (e) {
             let value = e.target.value.replace(/\D/g, '');

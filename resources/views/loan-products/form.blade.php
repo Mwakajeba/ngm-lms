@@ -18,7 +18,7 @@
 
 <form
     action="{{ $isEdit ? route('loan-products.update', Hashids::encode($loanProduct->id)) : route('loan-products.store') }}"
-    method="POST">
+    onsubmit="return handleSubmit(this)" method="POST">
     @csrf
     @if($isEdit) @method('PUT') @endif
 
@@ -142,6 +142,18 @@
             @error('grace_period') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
+        <!-- Maximum Number of Loans (Optional) -->
+        <div class="col-md-6 mb-3">
+            <label class="form-label">Maximum Number of Loans</label>
+            <input type="number" name="maximum_number_of_loans" min="1"
+                class="form-control @error('maximum_number_of_loans') is-invalid @enderror"
+                value="{{ old('maximum_number_of_loans', $loanProduct->maximum_number_of_loans ?? '') }}"
+                placeholder="Leave empty for unlimited">
+            <small class="text-muted">Maximum number of loans a customer can have with this product (leave empty for
+                unlimited)</small>
+            @error('maximum_number_of_loans') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
+
 
         <div class="col-md-6 mb-3">
             <label class="form-label">Penalty Criteria Deduction <span class="text-danger">*</span></label>
@@ -191,16 +203,17 @@
                 value="{{ old('top_up_type_value', $loanProduct->top_up_type_value ?? '') }}" placeholder="0.00">
             @error('top_up_type_value') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
-            <!-- Allow Push to ESS -->
-            <div class="col-12">
-                <h5 class="mb-3 text-primary mt-4">ESS Configuration</h5>
+        <!-- Allow Push to ESS -->
+        <div class="col-12">
+            <h5 class="mb-3 text-primary mt-4">ESS Configuration</h5>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="form-check">
+                <input type="checkbox" name="allow_push_to_ess" id="allow_push_to_ess" class="form-check-input"
+                    value="1" {{ old('allow_push_to_ess', $loanProduct->allow_push_to_ess ?? false) ? 'checked' : '' }}>
+                <label class="form-check-label" for="allow_push_to_ess">Allow Push to ESS</label>
             </div>
-            <div class="col-md-6 mb-3">
-                <div class="form-check">
-                    <input type="checkbox" name="allow_push_to_ess" id="allow_push_to_ess" class="form-check-input" value="1" {{ old('allow_push_to_ess', $loanProduct->allow_push_to_ess ?? false) ? 'checked' : '' }}>
-                    <label class="form-check-label" for="allow_push_to_ess">Allow Push to ESS</label>
-                </div>
-            </div>
+        </div>
 
         <!-- Cash Deposit Configuration -->
         <div class="col-12">
@@ -362,7 +375,7 @@
 
                             <!-- Hidden input to ensure approval levels are sent -->
                             <input type="hidden" id="approval_levels_hidden" name="approval_levels_hidden"
-                                   value="{{ isset($loanProduct) && !empty($loanProduct->approval_levels) ? (is_array($loanProduct->approval_levels) ? implode(',', $loanProduct->approval_levels) : $loanProduct->approval_levels) : '' }}">
+                                value="{{ isset($loanProduct) && !empty($loanProduct->approval_levels) ? (is_array($loanProduct->approval_levels) ? implode(',', $loanProduct->approval_levels) : $loanProduct->approval_levels) : '' }}">
                         </div>
                     </div>
 
@@ -388,7 +401,8 @@
         <div class="col-md-4 mb-3">
             <label class="form-label">Principal Receivable Account <span class="text-danger">*</span></label>
             <select name="principal_receivable_account_id"
-                class="form-select select2-single @error('principal_receivable_account_id') is-invalid @enderror" required>
+                class="form-select select2-single @error('principal_receivable_account_id') is-invalid @enderror"
+                required>
                 <option value="">-- Select Account --</option>
                 @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('principal_receivable_account_id', $loanProduct->principal_receivable_account_id ?? '') == $account->id ? 'selected' : '' }}>
@@ -402,7 +416,8 @@
         <div class="col-md-4 mb-3">
             <label class="form-label">Interest Receivable Account <span class="text-danger">*</span></label>
             <select name="interest_receivable_account_id"
-                class="form-select select2-single @error('interest_receivable_account_id') is-invalid @enderror" required>
+                class="form-select select2-single @error('interest_receivable_account_id') is-invalid @enderror"
+                required>
                 <option value="">-- Select Account --</option>
                 @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('interest_receivable_account_id', $loanProduct->interest_receivable_account_id ?? '') == $account->id ? 'selected' : '' }}>
@@ -457,7 +472,7 @@
             <label class="form-label">Income Provision Account (Income)</label>
             <select name="income_provision_account_id" class="form-select select2-single">
                 <option value="">-- Select Account --</option>
-                @foreach($chartAccounts as  $account)
+                @foreach($chartAccounts as $account)
                     <option value="{{ $account->id }}" {{ old('income_provision_account_id', $loanProduct->income_provision_account_id ?? '') == $account->id ? 'selected' : '' }}>
                         {{ $account->account_code }} - {{ $account->account_name }}
                     </option>
@@ -626,8 +641,8 @@
                                             : array_map('trim', explode(',', $loanProduct->repayment_order));
                                     }
                                     $availableComponents = array_diff($allComponents, $selectedComponents);
-                                    @endphp
-                                
+                                @endphp
+
                                 @foreach($availableComponents as $component)
                                     @php
                                         $componentLabels = [
@@ -643,10 +658,10 @@
                                             'penalties' => 'Late payment penalties'
                                         ];
                                     @endphp
-                                    <option value="{{ $component }}" 
-                                            data-description="{{ $componentDescriptions[$component] }}">
+                                    <option value="{{ $component }}"
+                                        data-description="{{ $componentDescriptions[$component] }}">
                                         {{ $componentLabels[$component] }}
-                                        </option>
+                                    </option>
                                 @endforeach
                             </select>
                             <small class="text-muted">Hold Ctrl/Cmd to select multiple components</small>
@@ -699,10 +714,10 @@
                                 @endif
                             </select>
                             <small class="text-muted">Drag to reorder payment sequence</small>
-                            
+
                             <!-- Hidden input to ensure data is always sent -->
-                            <input type="hidden" id="repayment_order_hidden" name="repayment_order_hidden" 
-                                   value="{{ isset($loanProduct) && !empty($loanProduct->repayment_order) ? (is_array($loanProduct->repayment_order) ? implode(',', $loanProduct->repayment_order) : $loanProduct->repayment_order) : 'principal,interest,fees,penalties' }}">
+                            <input type="hidden" id="repayment_order_hidden" name="repayment_order_hidden"
+                                value="{{ isset($loanProduct) && !empty($loanProduct->repayment_order) ? (is_array($loanProduct->repayment_order) ? implode(',', $loanProduct->repayment_order) : $loanProduct->repayment_order) : 'principal,interest,fees,penalties' }}">
                         </div>
                     </div>
 
@@ -780,494 +795,536 @@
 @endpush
 
 @push('scripts')
-<script>
-(function(){
-    function ensureSelect2(cb){
-        if (window.jQuery && jQuery.fn && jQuery.fn.select2) { cb(); return; }
-        var s=document.createElement('script'); s.src='https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js';
-        s.onload=cb; document.head.appendChild(s);
-        var l=document.createElement('link'); l.rel='stylesheet'; l.href='https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css';
-        document.head.appendChild(l);
-    }
-    ensureSelect2(function(){
-        jQuery('.select2-single').select2({ width: '100%' });
-    });
-})();
-</script>
+    <script>
+        function handleSubmit(form) {
+            // Prevent multiple submissions
+            if (form.dataset.submitted === "true") return false;
+            form.dataset.submitted = "true";
+
+            // Disable ALL submit buttons in this form
+            form.querySelectorAll('button[type="submit"]').forEach(btn => {
+                btn.disabled = true;
+                btn.classList.add('opacity-50', 'cursor-not-allowed');
+                btn.setAttribute('aria-disabled', 'true');
+
+                const label = btn.querySelector('.label');
+                const spinner = btn.querySelector('.spinner');
+                if (label) label.textContent = 'Processing...';
+                if (spinner) spinner.classList.remove('hidden');
+            });
+
+            // Optional: block whole page clicks while submitting
+            const ov = document.getElementById('pageOverlay');
+            if (ov) ov.classList.remove('hidden');
+
+            // Allow the submit to proceed
+            return true;
+        }
+
+        // Optional safety: prevent Enter-key spamming multiple submits in some browsers
+        document.addEventListener('keydown', function (e) {
+            if (e.key === 'Enter') {
+                const active = document.activeElement;
+                // Only submit on Enter when focused on a button or inside a textarea (adjust to your UX)
+                if (active && active.tagName !== 'TEXTAREA' && active.type !== 'submit') {
+                    // e.preventDefault(); // uncomment if Enter should NOT submit forms
+                }
+            }
+        });
+    </script>
+@endpush
+
+
+
+@push('scripts')
+    <script>
+        (function () {
+            function ensureSelect2(cb) {
+                if (window.jQuery && jQuery.fn && jQuery.fn.select2) { cb(); return; }
+                    var s = document.createElement('script'); s.src = 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js';
+                    s.onload = cb; document.head.appendChild(s);
+                    var l = document.createElement('link'); l.rel = 'stylesheet'; l.href = 'https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css';
+            document.head.appendChild(l);
+        }
+                ensureSelect2(function () {
+            jQuery('.select2-single').select2({ width: '100%' });
+        });
+    })();
+    </script>
 @endpush
 
 @push('scripts')
-<script>
-(function(){
-    function setDisplay(id, show){
-        var el = document.getElementById(id);
-        if (!el) return;
-        el.style.display = show ? '' : 'none';
-    }
+    <script>
+            (function () {
+                function setDisplay(id, show) {
+            var el = document.getElementById(id);
+            if (!el) return;
+            el.style.display = show ? '' : 'none';
+        }
 
-    function toggleTopUp(){
-        var hasTopUp = document.getElementById('has_top_up');
-        var isChecked = hasTopUp && hasTopUp.checked;
-        setDisplay('top_up_type_div', isChecked);
-        var type = document.getElementById('top_up_type');
-        var showValue = isChecked && type && type.value !== '' && type.value !== 'none';
-        setDisplay('top_up_value_div', showValue);
-    }
+                function toggleTopUp() {
+            var hasTopUp = document.getElementById('has_top_up');
+            var isChecked = hasTopUp && hasTopUp.checked;
+            setDisplay('top_up_type_div', isChecked);
+            var type = document.getElementById('top_up_type');
+            var showValue = isChecked && type && type.value !== '' && type.value !== 'none';
+            setDisplay('top_up_value_div', showValue);
+        }
 
-    function toggleCashCollateral(){
-        var hasCash = document.getElementById('has_cash_collateral');
-        var isChecked = hasCash && hasCash.checked;
-        setDisplay('cash_collateral_type_div', isChecked);
-        setDisplay('cash_collateral_value_type_div', isChecked);
-        setDisplay('cash_collateral_value_div', isChecked);
-    }
+                function toggleCashCollateral() {
+            var hasCash = document.getElementById('has_cash_collateral');
+            var isChecked = hasCash && hasCash.checked;
+            setDisplay('cash_collateral_type_div', isChecked);
+            setDisplay('cash_collateral_value_type_div', isChecked);
+            setDisplay('cash_collateral_value_div', isChecked);
+        }
 
-    function toggleApprovalLevels(){
-        var hasApproval = document.getElementById('has_approval_levels');
-        var isChecked = hasApproval && hasApproval.checked;
-        setDisplay('approval_levels_div', isChecked);
-    }
+                function toggleApprovalLevels() {
+            var hasApproval = document.getElementById('has_approval_levels');
+            var isChecked = hasApproval && hasApproval.checked;
+            setDisplay('approval_levels_div', isChecked);
+        }
 
-    document.addEventListener('DOMContentLoaded', function(){
-        // Initial state
-        toggleTopUp();
-        toggleCashCollateral();
-        toggleApprovalLevels();
+                document.addEventListener('DOMContentLoaded', function () {
+            // Initial state
+            toggleTopUp();
+            toggleCashCollateral();
+            toggleApprovalLevels();
 
-        // Listeners
-        var hasTopUp = document.getElementById('has_top_up');
-        if (hasTopUp) hasTopUp.addEventListener('change', toggleTopUp);
-        var topUpType = document.getElementById('top_up_type');
-        if (topUpType) topUpType.addEventListener('change', toggleTopUp);
+            // Listeners
+            var hasTopUp = document.getElementById('has_top_up');
+            if (hasTopUp) hasTopUp.addEventListener('change', toggleTopUp);
+            var topUpType = document.getElementById('top_up_type');
+            if (topUpType) topUpType.addEventListener('change', toggleTopUp);
 
-        var hasCash = document.getElementById('has_cash_collateral');
-        if (hasCash) hasCash.addEventListener('change', toggleCashCollateral);
+            var hasCash = document.getElementById('has_cash_collateral');
+            if (hasCash) hasCash.addEventListener('change', toggleCashCollateral);
 
-        var hasApproval = document.getElementById('has_approval_levels');
-        if (hasApproval) hasApproval.addEventListener('change', toggleApprovalLevels);
-    });
-})();
-</script>
+            var hasApproval = document.getElementById('has_approval_levels');
+            if (hasApproval) hasApproval.addEventListener('change', toggleApprovalLevels);
+        });
+    })();
+    </script>
 @endpush
 
 @push('scripts')
-<script>
-(function(){
-    function byId(id){ return document.getElementById(id); }
+    <script>
+            (function () {
+                function byId(id) { return document.getElementById(id); }
 
-  // Function to move selected options from one select to another
-    function moveSelected(fromSel, toSel){
-        const selected = Array.from(fromSel.selectedOptions);
-    if (selected.length === 0) return;
-    
+      // Function to move selected options from one select to another
+                function moveSelected(fromSel, toSel) {
+            const selected = Array.from(fromSel.selectedOptions);
+        if (selected.length === 0) return;
+
+            selected.forEach(opt => {
+                const exists = Array.from(toSel.options).some(o => o.value === opt.value);
+                if (!exists) {
+                    const clone = opt.cloneNode(true);
+                    toSel.add(clone);
+          }
+        });
+
+        // Remove from source
         selected.forEach(opt => {
-            const exists = Array.from(toSel.options).some(o => o.value === opt.value);
-            if (!exists) {
-                const clone = opt.cloneNode(true);
-                toSel.add(clone);
-      }
-    });
-    
-    // Remove from source
-    selected.forEach(opt => {
-                fromSel.remove(opt.index);
-    });
-    
-    updateDescription();
-    updateHiddenField();
-  }
+                    fromSel.remove(opt.index);
+        });
 
-  // Function to ensure at least one component is always selected
-  function ensureMinimumSelection(){
-    const selected = byId('selected_repayment_components');
-    const avail = byId('available_repayment_components');
-    
-    if (selected && selected.options.length === 0 && avail && avail.options.length > 0) {
-      // If no components are selected, add the first available one
-      const firstOption = avail.options[0];
-      if (firstOption) {
-        const clone = firstOption.cloneNode(true);
-        selected.add(clone);
-        avail.remove(firstOption.index);
         updateDescription();
         updateHiddenField();
       }
-    }
-  }
-  
-  // Function to remove selected options from one select and add to another
-    function removeSelected(fromSel, toSel){
-    const selected = Array.from(fromSel.selectedOptions);
-    if (selected.length === 0) return;
-    
-        selected.forEach(opt => {
-      const exists = Array.from(toSel.options).some(o => o.value === opt.value);
-            if (!exists) {
-                const clone = opt.cloneNode(true);
-        toSel.add(clone);
-            }
-    });
-    
-    // Remove from source
-    selected.forEach(opt => {
-      fromSel.remove(opt.index);
-    });
-    
-    updateDescription();
-    // Always update hidden field after removal
-    setTimeout(updateHiddenField, 10);
-  }
 
-  // Function to update the description display
-  function updateDescription(){
-    const sel = byId('selected_repayment_components');
-    const box = byId('repayment_component_description');
-    const text = byId('repayment_description_text');
-        const opt = sel && sel.options[sel.selectedIndex];
-        if (opt && opt.dataset && opt.dataset.description){
-            text.textContent = opt.dataset.description;
-            box.style.display = '';
-        } else {
-            text.textContent = '';
-            box.style.display = 'none';
+      // Function to ensure at least one component is always selected
+                function ensureMinimumSelection() {
+        const selected = byId('selected_repayment_components');
+        const avail = byId('available_repayment_components');
+
+        if (selected && selected.options.length === 0 && avail && avail.options.length > 0) {
+          // If no components are selected, add the first available one
+          const firstOption = avail.options[0];
+          if (firstOption) {
+            const clone = firstOption.cloneNode(true);
+            selected.add(clone);
+            avail.remove(firstOption.index);
+            updateDescription();
+            updateHiddenField();
+          }
         }
-    
-    // Update hidden field with current selection
-    updateHiddenField();
-  }
-  
-  // Function to update the hidden field with current repayment order
-  function updateHiddenField(){
-    const selected = byId('selected_repayment_components');
-    const hidden = byId('repayment_order_hidden');
-    
-    if (selected && hidden) {
-      const values = Array.from(selected.options).map(opt => opt.value);
-      // Allow empty selection - don't force default
-      hidden.value = values.join(',');
-      
-      // Debug logging
-      console.log('Updated hidden field:', hidden.value, 'Selected count:', values.length);
-    }
-  }
+      }
 
-  // Function to update the role description display
-  function updateRoleDescription(){
-    const sel = byId('selected_roles');
-                const box = byId('role_description');
-                const text = byId('description_text');
-    const opt = sel && sel.options[sel.selectedIndex];
-    if (opt && opt.dataset && opt.dataset.description){
-                    text.textContent = opt.dataset.description;
-                    box.style.display = '';
-                } else {
-                    text.textContent = '';
-                    box.style.display = 'none';
+      // Function to remove selected options from one select and add to another
+                function removeSelected(fromSel, toSel) {
+        const selected = Array.from(fromSel.selectedOptions);
+        if (selected.length === 0) return;
+
+            selected.forEach(opt => {
+          const exists = Array.from(toSel.options).some(o => o.value === opt.value);
+                if (!exists) {
+                    const clone = opt.cloneNode(true);
+            toSel.add(clone);
                 }
-  }
+        });
 
-  // Function to enable drag and drop reordering
-  function enableDragReorder(selectEl){
-    let dragStartIndex = null;
+        // Remove from source
+        selected.forEach(opt => {
+          fromSel.remove(opt.index);
+        });
 
-    selectEl.addEventListener('dragstart', function(e){
-      const target = e.target;
-      if (target.tagName === 'OPTION'){
-        dragStartIndex = Array.from(selectEl.options).indexOf(target);
-        e.dataTransfer.effectAllowed = 'move';
+        updateDescription();
+        // Always update hidden field after removal
+        setTimeout(updateHiddenField, 10);
       }
-    });
 
-    selectEl.addEventListener('dragover', function(e){ e.preventDefault(); });
-
-    selectEl.addEventListener('drop', function(e){
-      e.preventDefault();
-      const at = document.elementFromPoint(e.clientX, e.clientY);
-      let dropIndex = -1;
-      if (at && at.tagName === 'OPTION'){
-        dropIndex = Array.from(selectEl.options).indexOf(at);
-      } else {
-        dropIndex = selectEl.options.length - 1;
-      }
-      if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex){
-        const moving = selectEl.options[dragStartIndex];
-        const clone = moving.cloneNode(true);
-        selectEl.remove(dragStartIndex);
-        selectEl.add(clone, dropIndex);
-        selectEl.selectedIndex = dropIndex;
-    updateDescription();
-  }
-      dragStartIndex = null;
-    });
-
-    Array.from(selectEl.options).forEach(opt => opt.draggable = true);
-  }
-
-  // Function to enable drag and drop reordering for roles
-  function enableDragReorderRoles(selectEl){
-    let dragStartIndex = null;
-
-    selectEl.addEventListener('dragstart', function(e){
-      const target = e.target;
-      if (target.tagName === 'OPTION'){
-        dragStartIndex = Array.from(selectEl.options).indexOf(target);
-        e.dataTransfer.effectAllowed = 'move';
-      }
-    });
-
-    selectEl.addEventListener('dragover', function(e){ e.preventDefault(); });
-
-    selectEl.addEventListener('drop', function(e){
-      e.preventDefault();
-      const at = document.elementFromPoint(e.clientX, e.clientY);
-      let dropIndex = -1;
-      if (at && at.tagName === 'OPTION'){
-        dropIndex = Array.from(selectEl.options).indexOf(at);
-      } else {
-        dropIndex = selectEl.options.length - 1;
-      }
-      if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex){
-        const moving = selectEl.options[dragStartIndex];
-        const clone = moving.cloneNode(true);
-        selectEl.remove(dragStartIndex);
-        selectEl.add(clone, dropIndex);
-        selectEl.selectedIndex = dropIndex;
-        updateRoleDescription();
-      }
-      dragStartIndex = null;
-    });
-
-    Array.from(selectEl.options).forEach(opt => opt.draggable = true);
-  }
-
-  // Initialize form when DOM is loaded
-  document.addEventListener('DOMContentLoaded', function(){
-    // Initialize repayment components
-    const avail = byId('available_repayment_components');
-    const selected = byId('selected_repayment_components');
-    const addBtn = byId('move_repayment_right');
-    const removeBtn = byId('move_repayment_left');
-    const form = document.querySelector('form');
-
-    if (addBtn && removeBtn && avail && selected){
-      addBtn.addEventListener('click', function(){ moveSelected(avail, selected); updateApprovalLevelsHiddenField(); });
-      removeBtn.addEventListener('click', function(){ removeSelected(selected, avail); updateApprovalLevelsHiddenField(); });
-
-      selected.addEventListener('change', updateDescription);
-
-      avail.addEventListener('change', function(){
-        const opt = avail.options[avail.selectedIndex];
+      // Function to update the description display
+                function updateDescription() {
+        const sel = byId('selected_repayment_components');
         const box = byId('repayment_component_description');
         const text = byId('repayment_description_text');
-        if (opt && opt.dataset.description){
-          text.textContent = opt.dataset.description;
-          box.style.display = '';
-        } else {
-          text.textContent = '';
-          box.style.display = 'none';
-        }
-      });
+            const opt = sel && sel.options[sel.selectedIndex];
+                    if (opt && opt.dataset && opt.dataset.description) {
+                text.textContent = opt.dataset.description;
+                box.style.display = '';
+            } else {
+                text.textContent = '';
+                box.style.display = 'none';
+            }
 
-      enableDragReorder(selected);
-      updateDescription();
-      
-      // Initialize form state for editing
-      initializeFormState();
-    }
-
-    // Initialize approval levels (roles)
-    const availRoles = byId('available_roles');
-    const selectedRoles = byId('selected_roles');
-    const addRoleBtn = byId('move_right');
-    const removeRoleBtn = byId('move_left');
-
-    if (addRoleBtn && removeRoleBtn && availRoles && selectedRoles){
-      addRoleBtn.addEventListener('click', function(){ moveSelected(availRoles, selectedRoles); updateApprovalLevelsHiddenField(); });
-      removeRoleBtn.addEventListener('click', function(){ removeSelected(selectedRoles, availRoles); updateApprovalLevelsHiddenField(); });
-
-      selectedRoles.addEventListener('change', function(){ updateRoleDescription(); updateApprovalLevelsHiddenField(); });
-
-      availRoles.addEventListener('change', function(){
-        const opt = availRoles.options[availRoles.selectedIndex];
-        const box = byId('role_description');
-        const text = byId('description_text');
-        if (opt && opt.dataset.description){
-          text.textContent = opt.dataset.description;
-          box.style.display = '';
-        } else {
-          text.textContent = '';
-          box.style.display = 'none';
-        }
-      });
-
-      enableDragReorderRoles(selectedRoles);
-      updateRoleDescription();
-      updateApprovalLevelsHiddenField();
-    }
-    
-    // Ensure hidden field is updated before form submission
-    if (form) {
-      form.addEventListener('submit', function(e) {
+        // Update hidden field with current selection
         updateHiddenField();
-        updateApprovalLevelsHiddenField();
-      });
-    }
-  });
-  
-  function initializeFormState() {
-    const avail = byId('available_repayment_components');
-    const selected = byId('selected_repayment_components');
-    
-    // If we're editing and have selected components, ensure they're properly displayed
-    if (selected && selected.options.length > 0) {
-      // Update description for the first selected component
-      if (selected.options[0]) {
-        selected.selectedIndex = 0;
+      }
+
+      // Function to update the hidden field with current repayment order
+                function updateHiddenField() {
+        const selected = byId('selected_repayment_components');
+        const hidden = byId('repayment_order_hidden');
+
+        if (selected && hidden) {
+          const values = Array.from(selected.options).map(opt => opt.value);
+          // Allow empty selection - don't force default
+          hidden.value = values.join(',');
+
+          // Debug logging
+          console.log('Updated hidden field:', hidden.value, 'Selected count:', values.length);
+        }
+      }
+
+      // Function to update the role description display
+                function updateRoleDescription() {
+        const sel = byId('selected_roles');
+                    const box = byId('role_description');
+                    const text = byId('description_text');
+        const opt = sel && sel.options[sel.selectedIndex];
+                    if (opt && opt.dataset && opt.dataset.description) {
+                        text.textContent = opt.dataset.description;
+                        box.style.display = '';
+                    } else {
+                        text.textContent = '';
+                        box.style.display = 'none';
+                    }
+      }
+
+      // Function to enable drag and drop reordering
+                function enableDragReorder(selectEl) {
+        let dragStartIndex = null;
+
+                    selectEl.addEventListener('dragstart', function (e) {
+          const target = e.target;
+                        if (target.tagName === 'OPTION') {
+            dragStartIndex = Array.from(selectEl.options).indexOf(target);
+            e.dataTransfer.effectAllowed = 'move';
+          }
+        });
+
+                    selectEl.addEventListener('dragover', function (e) { e.preventDefault(); });
+
+                    selectEl.addEventListener('drop', function (e) {
+          e.preventDefault();
+          const at = document.elementFromPoint(e.clientX, e.clientY);
+          let dropIndex = -1;
+                        if (at && at.tagName === 'OPTION') {
+            dropIndex = Array.from(selectEl.options).indexOf(at);
+          } else {
+            dropIndex = selectEl.options.length - 1;
+          }
+                        if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex) {
+            const moving = selectEl.options[dragStartIndex];
+            const clone = moving.cloneNode(true);
+            selectEl.remove(dragStartIndex);
+            selectEl.add(clone, dropIndex);
+            selectEl.selectedIndex = dropIndex;
         updateDescription();
       }
-    }
-  }
+          dragStartIndex = null;
+        });
 
-  // Function to update the hidden field with current approval levels order
-  function updateApprovalLevelsHiddenField(){
-    const selected = byId('selected_roles');
-    const hidden = byId('approval_levels_hidden');
-    if (selected && hidden){
-      const values = Array.from(selected.options).map(function(opt){ return opt.value; });
-      hidden.value = values.join(',');
-      console.log('Updated approval_levels_hidden:', hidden.value);
-    }
-  }
-})();
-</script>
+        Array.from(selectEl.options).forEach(opt => opt.draggable = true);
+      }
+
+      // Function to enable drag and drop reordering for roles
+                function enableDragReorderRoles(selectEl) {
+        let dragStartIndex = null;
+
+                    selectEl.addEventListener('dragstart', function (e) {
+          const target = e.target;
+                        if (target.tagName === 'OPTION') {
+            dragStartIndex = Array.from(selectEl.options).indexOf(target);
+            e.dataTransfer.effectAllowed = 'move';
+          }
+        });
+
+                    selectEl.addEventListener('dragover', function (e) { e.preventDefault(); });
+
+                    selectEl.addEventListener('drop', function (e) {
+          e.preventDefault();
+          const at = document.elementFromPoint(e.clientX, e.clientY);
+          let dropIndex = -1;
+                        if (at && at.tagName === 'OPTION') {
+            dropIndex = Array.from(selectEl.options).indexOf(at);
+          } else {
+            dropIndex = selectEl.options.length - 1;
+          }
+                        if (dragStartIndex !== null && dropIndex >= 0 && dropIndex !== dragStartIndex) {
+            const moving = selectEl.options[dragStartIndex];
+            const clone = moving.cloneNode(true);
+            selectEl.remove(dragStartIndex);
+            selectEl.add(clone, dropIndex);
+            selectEl.selectedIndex = dropIndex;
+            updateRoleDescription();
+          }
+          dragStartIndex = null;
+        });
+
+        Array.from(selectEl.options).forEach(opt => opt.draggable = true);
+      }
+
+      // Initialize form when DOM is loaded
+                document.addEventListener('DOMContentLoaded', function () {
+        // Initialize repayment components
+        const avail = byId('available_repayment_components');
+        const selected = byId('selected_repayment_components');
+        const addBtn = byId('move_repayment_right');
+        const removeBtn = byId('move_repayment_left');
+        const form = document.querySelector('form');
+
+                    if (addBtn && removeBtn && avail && selected) {
+                        addBtn.addEventListener('click', function () { moveSelected(avail, selected); updateApprovalLevelsHiddenField(); });
+                        removeBtn.addEventListener('click', function () { removeSelected(selected, avail); updateApprovalLevelsHiddenField(); });
+
+          selected.addEventListener('change', updateDescription);
+
+                        avail.addEventListener('change', function () {
+            const opt = avail.options[avail.selectedIndex];
+            const box = byId('repayment_component_description');
+            const text = byId('repayment_description_text');
+                            if (opt && opt.dataset.description) {
+              text.textContent = opt.dataset.description;
+              box.style.display = '';
+            } else {
+              text.textContent = '';
+              box.style.display = 'none';
+            }
+          });
+
+          enableDragReorder(selected);
+          updateDescription();
+
+          // Initialize form state for editing
+          initializeFormState();
+        }
+
+        // Initialize approval levels (roles)
+        const availRoles = byId('available_roles');
+        const selectedRoles = byId('selected_roles');
+        const addRoleBtn = byId('move_right');
+        const removeRoleBtn = byId('move_left');
+
+                    if (addRoleBtn && removeRoleBtn && availRoles && selectedRoles) {
+                        addRoleBtn.addEventListener('click', function () { moveSelected(availRoles, selectedRoles); updateApprovalLevelsHiddenField(); });
+                        removeRoleBtn.addEventListener('click', function () { removeSelected(selectedRoles, availRoles); updateApprovalLevelsHiddenField(); });
+
+                        selectedRoles.addEventListener('change', function () { updateRoleDescription(); updateApprovalLevelsHiddenField(); });
+
+                        availRoles.addEventListener('change', function () {
+            const opt = availRoles.options[availRoles.selectedIndex];
+            const box = byId('role_description');
+            const text = byId('description_text');
+                            if (opt && opt.dataset.description) {
+              text.textContent = opt.dataset.description;
+              box.style.display = '';
+            } else {
+              text.textContent = '';
+              box.style.display = 'none';
+            }
+          });
+
+          enableDragReorderRoles(selectedRoles);
+          updateRoleDescription();
+          updateApprovalLevelsHiddenField();
+        }
+
+        // Ensure hidden field is updated before form submission
+        if (form) {
+                        form.addEventListener('submit', function (e) {
+            updateHiddenField();
+            updateApprovalLevelsHiddenField();
+          });
+        }
+      });
+
+      function initializeFormState() {
+        const avail = byId('available_repayment_components');
+        const selected = byId('selected_repayment_components');
+
+        // If we're editing and have selected components, ensure they're properly displayed
+        if (selected && selected.options.length > 0) {
+          // Update description for the first selected component
+          if (selected.options[0]) {
+            selected.selectedIndex = 0;
+            updateDescription();
+          }
+        }
+      }
+
+      // Function to update the hidden field with current approval levels order
+                function updateApprovalLevelsHiddenField() {
+        const selected = byId('selected_roles');
+        const hidden = byId('approval_levels_hidden');
+                    if (selected && hidden) {
+                        const values = Array.from(selected.options).map(function (opt) { return opt.value; });
+          hidden.value = values.join(',');
+          console.log('Updated approval_levels_hidden:', hidden.value);
+        }
+      }
+    })();
+    </script>
 @endpush
 
 @push('scripts')
-<script>
-(function(){
-  function byId(id){ return document.getElementById(id); }
+    <script>
+            (function () {
+                function byId(id) { return document.getElementById(id); }
 
-  function createFeeRow(){
-    const container = byId('fees_container');
-    const feeRow = document.createElement('div');
-    feeRow.className = 'row fee-row mb-2';
-    
-    const feeOptions = @json($fees->map(function($fee) {
-      return ['id' => $fee->id, 'name' => $fee->name, 'type' => $fee->fee_type];
-    }));
-    
-    let optionsHtml = '<option value="">-- Select Fee --</option>';
-    feeOptions.forEach(fee => {
-      optionsHtml += `<option value="${fee.id}">${fee.name} (${fee.type})</option>`;
-    });
+                function createFeeRow() {
+        const container = byId('fees_container');
+        const feeRow = document.createElement('div');
+        feeRow.className = 'row fee-row mb-2';
 
-    feeRow.innerHTML = `
-      <div class="col-md-10">
-        <select name="fees_id[]" class="form-select fee-select">
-          ${optionsHtml}
-        </select>
-      </div>
-      <div class="col-md-2">
-        <button type="button" class="btn btn-sm btn-danger remove-fee">
-          <i class="bx bx-trash"></i> Remove
-        </button>
-      </div>
-    `;
+                    const feeOptions = @json($fees->map(function ($fee) {
+                        return ['id' => $fee->id, 'name' => $fee->name, 'type' => $fee->fee_type];
+                    }));
 
-    container.appendChild(feeRow);
-    updateRemoveButtons();
-  }
+        let optionsHtml = '<option value="">-- Select Fee --</option>';
+        feeOptions.forEach(fee => {
+          optionsHtml += `<option value="${fee.id}">${fee.name} (${fee.type})</option>`;
+        });
 
-  function createPenaltyRow(){
-    const container = byId('penalties_container');
-    const penaltyRow = document.createElement('div');
-    penaltyRow.className = 'row penalty-row mb-2';
-    
-    const penaltyOptions = @json($penalties->map(function($penalty) {
-      return ['id' => $penalty->id, 'name' => $penalty->name, 'type' => $penalty->penalty_type];
-    }));
-    
-    let optionsHtml = '<option value="">-- Select Penalty --</option>';
-    penaltyOptions.forEach(penalty => {
-      optionsHtml += `<option value="${penalty.id}">${penalty.name} (${penalty.type})</option>`;
-    });
+        feeRow.innerHTML = `
+          <div class="col-md-10">
+            <select name="fees_id[]" class="form-select fee-select">
+              ${optionsHtml}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-danger remove-fee">
+              <i class="bx bx-trash"></i> Remove
+            </button>
+          </div>
+        `;
 
-    penaltyRow.innerHTML = `
-      <div class="col-md-10">
-        <select name="penalty_id[]" class="form-select penalty-select">
-          ${optionsHtml}
-        </select>
-      </div>
-      <div class="col-md-2">
-        <button type="button" class="btn btn-sm btn-danger remove-penalty">
-          <i class="bx bx-trash"></i> Remove
-        </button>
-      </div>
-    `;
-
-    container.appendChild(penaltyRow);
-    updateRemoveButtons();
-  }
-
-  function updateRemoveButtons(){
-    const feeRows = document.querySelectorAll('.fee-row');
-    const penaltyRows = document.querySelectorAll('.penalty-row');
-    
-    feeRows.forEach((row, index) => {
-      const removeBtn = row.querySelector('.remove-fee');
-      if (removeBtn) {
-        removeBtn.style.display = feeRows.length > 1 ? '' : 'none';
+        container.appendChild(feeRow);
+        updateRemoveButtons();
       }
-    });
-    
-    penaltyRows.forEach((row, index) => {
-      const removeBtn = row.querySelector('.remove-penalty');
-      if (removeBtn) {
-        removeBtn.style.display = penaltyRows.length > 1 ? '' : 'none';
+
+                function createPenaltyRow() {
+        const container = byId('penalties_container');
+        const penaltyRow = document.createElement('div');
+        penaltyRow.className = 'row penalty-row mb-2';
+
+                    const penaltyOptions = @json($penalties->map(function ($penalty) {
+                        return ['id' => $penalty->id, 'name' => $penalty->name, 'type' => $penalty->penalty_type];
+                    }));
+
+        let optionsHtml = '<option value="">-- Select Penalty --</option>';
+        penaltyOptions.forEach(penalty => {
+          optionsHtml += `<option value="${penalty.id}">${penalty.name} (${penalty.type})</option>`;
+        });
+
+        penaltyRow.innerHTML = `
+          <div class="col-md-10">
+            <select name="penalty_id[]" class="form-select penalty-select">
+              ${optionsHtml}
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button type="button" class="btn btn-sm btn-danger remove-penalty">
+              <i class="bx bx-trash"></i> Remove
+            </button>
+          </div>
+        `;
+
+        container.appendChild(penaltyRow);
+        updateRemoveButtons();
       }
-    });
-  }
 
-  function removeFeeRow(event){
-    const row = event.target.closest('.fee-row');
-    if (row) {
-      row.remove();
-      updateRemoveButtons();
-    }
-  }
+                function updateRemoveButtons() {
+        const feeRows = document.querySelectorAll('.fee-row');
+        const penaltyRows = document.querySelectorAll('.penalty-row');
 
-  function removePenaltyRow(event){
-    const row = event.target.closest('.penalty-row');
-    if (row) {
-      row.remove();
-      updateRemoveButtons();
-    }
-  }
+        feeRows.forEach((row, index) => {
+          const removeBtn = row.querySelector('.remove-fee');
+          if (removeBtn) {
+            removeBtn.style.display = feeRows.length > 1 ? '' : 'none';
+          }
+        });
 
-  document.addEventListener('DOMContentLoaded', function(){
-    const addFeeBtn = byId('add_fee');
-    const addPenaltyBtn = byId('add_penalty');
-    
-    if (addFeeBtn) {
-      addFeeBtn.addEventListener('click', createFeeRow);
-    }
-    
-    if (addPenaltyBtn) {
-      addPenaltyBtn.addEventListener('click', createPenaltyRow);
-    }
-
-    // Event delegation for remove buttons
-    document.addEventListener('click', function(e){
-      if (e.target.closest('.remove-fee')) {
-        removeFeeRow(e);
-      } else if (e.target.closest('.remove-penalty')) {
-        removePenaltyRow(e);
+        penaltyRows.forEach((row, index) => {
+          const removeBtn = row.querySelector('.remove-penalty');
+          if (removeBtn) {
+            removeBtn.style.display = penaltyRows.length > 1 ? '' : 'none';
+          }
+        });
       }
-    });
 
-    // Initial state
-    updateRemoveButtons();
-  });
-})();
-</script>
+                function removeFeeRow(event) {
+        const row = event.target.closest('.fee-row');
+        if (row) {
+          row.remove();
+          updateRemoveButtons();
+        }
+      }
+
+                function removePenaltyRow(event) {
+        const row = event.target.closest('.penalty-row');
+        if (row) {
+          row.remove();
+          updateRemoveButtons();
+        }
+      }
+
+                document.addEventListener('DOMContentLoaded', function () {
+        const addFeeBtn = byId('add_fee');
+        const addPenaltyBtn = byId('add_penalty');
+
+        if (addFeeBtn) {
+          addFeeBtn.addEventListener('click', createFeeRow);
+        }
+
+        if (addPenaltyBtn) {
+          addPenaltyBtn.addEventListener('click', createPenaltyRow);
+        }
+
+        // Event delegation for remove buttons
+                    document.addEventListener('click', function (e) {
+          if (e.target.closest('.remove-fee')) {
+            removeFeeRow(e);
+          } else if (e.target.closest('.remove-penalty')) {
+            removePenaltyRow(e);
+          }
+        });
+
+        // Initial state
+        updateRemoveButtons();
+      });
+    })();
+    </script>
 @endpush

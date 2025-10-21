@@ -16,10 +16,10 @@
             ['label' => 'Group Details', 'url' => '#', 'icon' => 'bx bx-info-circle']
         ]" />
                 <!-- <div>
-                    <a href="{{ route('groups.payment', Hashids::encode($group->id)) }}" class="btn btn-primary">
-                        <i class="bx bx-edit"></i> Add Group Payment
-                    </a>
-                </div> -->
+                                                                                    <a href="{{ route('groups.payment', Hashids::encode($group->id)) }}" class="btn btn-primary">
+                                                                                        <i class="bx bx-edit"></i> Add Group Payment
+                                                                                    </a>
+                                                                                </div> -->
             </div>
 
             <!-- Group Header -->
@@ -188,11 +188,17 @@
                             <div>
                                 @if($group->canAcceptMoreMembers())
                                     <a href="{{ route('group-members.create', Hashids::encode($group->id)) }}"
-                                        class="btn btn-light btn-sm">
+                                        class="btn btn-light btn-sm me-2">
                                         <i class="bx bx-plus"></i> Add Member
                                     </a>
                                 @else
-                                    <span class="badge bg-warning text-dark">Group Full</span>
+                                    <span class="badge bg-warning text-dark me-2">Group Full</span>
+                                @endif
+                                @if($group->members->count() > 0 && $availableGroups->count() > 0)
+                                    <button type="button" class="btn btn-info btn-sm" data-bs-toggle="modal"
+                                        data-bs-target="#transferMemberModal">
+                                        <i class="bx bx-transfer"></i> Transfer Member
+                                    </button>
                                 @endif
                             </div>
                         </div>
@@ -259,6 +265,50 @@
                     </div>
                 </div>
             </div>
+
+            <!-- Transfer Member Modal (moved inside content to keep layout intact) -->
+            <div class="modal fade" id="transferMemberModal" tabindex="-1" aria-labelledby="transferMemberModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <div class="modal-content">
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="transferMemberModalLabel">Transfer Member</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <form id="transferMemberForm" method="POST">
+                            @csrf
+                            <div class="modal-body">
+                                <div class="mb-3">
+                                    <label for="memberSelect" class="form-label">Select Member to Transfer</label>
+                                    <select class="form-select" id="memberSelect" name="member_id" required>
+                                        <option value="">Choose a member...</option>
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label for="targetGroupSelect" class="form-label">Transfer to Group</label>
+                                    <select class="form-select" id="targetGroupSelect" name="target_group_id" required>
+                                        <option value="">Choose target group...</option>
+                                        @foreach($availableGroups as $availableGroup)
+                                            <option value="{{ $availableGroup->id }}">{{ $availableGroup->name }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="alert alert-warning">
+                                    <i class="bx bx-info-circle me-2"></i>
+                                    <strong>Note:</strong> Members can only be transferred if they have completed all their
+                                    loans in
+                                    the current group.
+                                </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                                <button type="submit" class="btn btn-primary">Transfer Member</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 @endsection
@@ -323,27 +373,59 @@
 @push('scripts')
     <script>
         $(document).ready(function () {
-            $('#groupMembersTable').DataTable({
+            const membersTable = $('#groupMembersTable').DataTable({
                 processing: true,
                 serverSide: false,
                 ajax: {
                     url: '{{ url('group-members-ajax/' . $group->id) }}',
-                    dataSrc: 'data'
+                    dataSrc: 'data',
+                    error: function (xhr) {
+                        console.error('Group members AJAX error:', xhr.status, xhr.statusText);
+                        console.error('Response:', xhr.responseText);
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Failed to load members',
+                            text: 'Please refresh the page. If it persists, check server logs.'
+                        });
+                    }
                 },
                 columns: [
                     { data: 'member', orderable: false, searchable: true },
                     { data: 'joined_date' },
                     { data: 'notes', orderable: false, searchable: true },
                     { data: 'actions', orderable: false, searchable: false }
-                ]
+                ],
+                drawCallback: function () {
+                    // Ensure click handlers after each draw
+                    $('#groupMembersTable .js-remove-member').off('click').on('click', function () {
+                        const encodedGroup = $(this).data('encoded-group');
+                        const memberId = $(this).data('member-id');
+                        const memberName = $(this).data('member-name');
+                        removeMember(encodedGroup, memberId, memberName);
+                    });
+                }
+            });
+
+            // Delegate click handler for dynamically loaded remove buttons
+            $('#groupMembersTable').on('click', '.js-remove-member', function () {
+                const encodedGroup = $(this).data('encoded-group');
+                const memberId = $(this).data('member-id');
+                const memberName = $(this).data('member-name');
+                removeMember(encodedGroup, memberId, memberName);
             });
         });
     </script>
     <script>
-        function removeMember(groupId, memberId, memberName) {
+        // Delegated click handler to avoid inline JS and escaping issues
+            $(document).on('click', '.remove-member-btn', function () {
+            const groupId = $(this).data('group-id');
+            const memberId = $(this).data('member-id');
+            const memberName = $(this).data('member-name');
+            const actionUrl = $(this).data('action-url');
+
             Swal.fire({
                 title: 'Remove Member?',
-                text: `Are you sure you want to remove "${memberName}" from this group?`,
+                text: `Are you sure you want to remove "${memberName}" from this group? They will be assigned to the individual group.`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',
@@ -354,7 +436,7 @@
                 if (result.isConfirmed) {
                     const form = document.createElement('form');
                     form.method = 'POST';
-                    form.action = `/groups/${groupId}/members/${memberId}`;
+                    form.action = actionUrl || `/groups/${groupId}/members/${memberId}`;
 
                     const csrfToken = document.createElement('input');
                     csrfToken.type = 'hidden';
@@ -373,7 +455,7 @@
                     form.submit();
                 }
             });
-        }
+        });
     </script>
 @endpush
 
@@ -405,6 +487,86 @@
                         }
                     }
                 ]
+            });
+        });
+
+        // Transfer Member Modal functionality
+        $('#transferMemberModal').on('show.bs.modal', function () {
+            // Populate member select with current group members
+            const memberSelect = $('#memberSelect');
+            memberSelect.empty().append('<option value="">Choose a member...</option>');
+
+            // Get members from the server via AJAX
+            $.ajax({
+                url: '{{ url("groups/" . Hashids::encode($group->id) . "/members-for-transfer") }}',
+                method: 'GET',
+                success: function (response) {
+                    if (response.data && response.data.length > 0) {
+                        response.data.forEach(function (member) {
+                            memberSelect.append(`<option value="${member.id}">${member.name}</option>`);
+                        });
+                    }
+                },
+                error: function () {
+                    console.error('Failed to load members for transfer');
+                }
+            });
+        });
+
+        // Handle transfer form submission
+        $('#transferMemberForm').on('submit', function (e) {
+            e.preventDefault();
+
+            const formData = new FormData(this);
+            const memberId = formData.get('member_id');
+            const targetGroupId = formData.get('target_group_id');
+
+            if (!memberId || !targetGroupId) {
+                alert('Please select both member and target group.');
+                return;
+            }
+
+            Swal.fire({
+                title: 'Transfer Member?',
+                text: 'Are you sure you want to transfer this member to the selected group?',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Yes, transfer',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    $.ajax({
+                        url: '{{ url("groups/" . Hashids::encode($group->id) . "/transfer-member") }}',
+                        method: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                        headers: {
+                            'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                        },
+                        success: function (response) {
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Success',
+                                text: response?.message || 'Member transferred successfully',
+                                timer: 1200,
+                                showConfirmButton: false
+                            }).then(() => {
+                                location.reload();
+                            });
+                        },
+                        error: function (xhr) {
+                            const response = xhr.responseJSON;
+                            Swal.fire({
+                                icon: 'error',
+                                title: 'Transfer failed',
+                                text: response?.message || 'Unknown error',
+                            });
+                        }
+                    });
+                }
             });
         });
     </script>

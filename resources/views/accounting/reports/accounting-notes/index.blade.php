@@ -60,12 +60,13 @@
                                     </select>
                                 </div>
 
-                                <!-- Branch (Admin Only) -->
-                                @if($user->hasRole('admin'))
+                                <!-- Branch (Assigned) -->
                                 <div class="col-md-6 col-lg-3 mb-3">
                                     <label for="branch_id" class="form-label">Branch</label>
                                     <select class="form-select" id="branch_id" name="branch_id">
-                                        <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @if(($branches->count() ?? 0) > 1)
+                                            <option value="all" {{ $branchId === 'all' ? 'selected' : '' }}>All Branches</option>
+                                        @endif
                                         @foreach($branches as $branch)
                                             <option value="{{ $branch->id }}" {{ $branchId == $branch->id ? 'selected' : '' }}>
                                                 {{ $branch->name }}
@@ -73,7 +74,6 @@
                                         @endforeach
                                     </select>
                                 </div>
-                                @endif
 
                                 <!-- Level of Detail -->
                                 <div class="col-md-6 col-lg-3 mb-3">
@@ -106,7 +106,8 @@
                                                 <small class="text-muted">
                                                     As at: {{ \Carbon\Carbon::parse($asOfDate)->format('M d, Y') }} | 
                                                     Basis: {{ ucfirst($reportingType) }} | 
-                                                    Detail: {{ ucfirst($levelOfDetail) }}
+                                                    Detail: {{ ucfirst($levelOfDetail) }} |
+                                                    Branch: @if(($branches->count() ?? 0) > 1 && $branchId === 'all') All Branches @else {{ optional($branches->firstWhere('id', $branchId))->name ?? 'N/A' }} @endif
                                                 </small>
                                             </div>
                                         </div>

@@ -19,7 +19,7 @@
                         <div class="card-body">
                             <h4 class="card-title mb-4">Customer Reports</h4>
                             <p class="text-muted">Comprehensive customer reports and analytics.</p>
-                            
+
                             <div class="row">
                                 <!-- Customer List Report -->
                                 <div class="col-md-6 col-lg-4 mb-4">
@@ -85,7 +85,7 @@
                                     </div>
                                 </div>
 
-                                <!-- Customer Risk Assessment Report -->
+                                {{-- <!-- Customer Risk Assessment Report -->
                                 <div class="col-md-6 col-lg-4 mb-4">
                                     <div class="card border-danger">
                                         <div class="card-body text-center">
@@ -99,7 +99,7 @@
                                             </a>
                                         </div>
                                     </div>
-                                </div>
+                                </div> --}}
 
                                 <!-- Customer Communication Report -->
                                 <!-- <div class="col-md-6 col-lg-4 mb-4">

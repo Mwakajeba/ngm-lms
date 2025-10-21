@@ -102,6 +102,38 @@ use Vinkla\Hashids\Facades\Hashids;
             </div>
         </div>
 
+        <!-- Branch Filter -->
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="GET" action="{{ route('dashboard') }}" class="d-flex align-items-center">
+                            <div class="me-3">
+                                <label for="branch_id" class="form-label mb-0"><strong>Filter by Branch:</strong></label>
+                            </div>
+                            <div class="me-3">
+                                <select name="branch_id" id="branch_id" class="form-select" onchange="this.form.submit()">
+                                    <option value="">All Branches</option>
+                                    @foreach($branches as $branch)
+                                        <option value="{{ $branch->id }}" {{ $selectedBranchId == $branch->id ? 'selected' : '' }}>
+                                            {{ $branch->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            @if($selectedBranchId)
+                                <div class="me-3">
+                                    <span class="badge bg-primary">
+                                        Showing: {{ collect($branches)->where('id', $selectedBranchId)->first()['name'] ?? 'Selected Branch' }}
+                                    </span>
+                                </div>
+                            @endif
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
         <!-- Quick Stats -->
         <div class="row row-cols-1 row-cols-lg-4">
             @can('view charges')
@@ -231,9 +263,13 @@ use Vinkla\Hashids\Facades\Hashids;
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Outstanding Principal</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($outstandingPrincipal ?? 0, 0) }}</h4>
-                                <p class="mb-0">Outstanding Interest: TZS {{ number_format($outstandingInterest ?? 0, 0) }}</p>
+                                <p class="mb-0">Outstanding Total</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format(($outstandingPrincipal + $outstandingInterest) ?? 0, 0) }}</h4>
+                                <p class="mb-0" style="font-size: 0.75rem;">Outstanding Interest: <b>TZS {{ number_format($outstandingInterestDetailed ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Accrued Interest: <b>TZS {{ number_format($accruedInterest ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Not Due Interest: <b>TZS {{ number_format($notDueInterest ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Paid Interest: <b>TZS {{ number_format($paidInterest ?? 0, 0) }}</b></p>
+                                <p class="mb-0" style="font-size: 0.75rem;">Outstanding Principal: <b>TZS {{ number_format($outstandingPrincipal ?? 0, 0) }}</b></p>
                             </div>
                             <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-hourglass'></i></div>
                         </div>
@@ -268,8 +304,12 @@ use Vinkla\Hashids\Facades\Hashids;
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
         <script>
         document.addEventListener('DOMContentLoaded', function() {
+            // Get current branch filter from URL or form
+            const urlParams = new URLSearchParams(window.location.search);
+            const branchId = urlParams.get('branch_id') || '';
+            
             // Loan Product Disbursement Chart
-            fetch('/dashboard/loan-product-disbursement')
+            fetch('/dashboard/loan-product-disbursement' + (branchId ? '?branch_id=' + branchId : ''))
                 .then(response => response.json())
                 .then(data => {
                     const ctx = document.getElementById('loanProductChart').getContext('2d');
@@ -318,7 +358,7 @@ use Vinkla\Hashids\Facades\Hashids;
                 });
 
             // Delinquency Loan Pie Chart
-            fetch('/dashboard/delinquency-loan-buckets')
+            fetch('/dashboard/delinquency-loan-buckets' + (branchId ? '?branch_id=' + branchId : ''))
                 .then(response => response.json())
                 .then(data => {
                     const ctx = document.getElementById('delinquencyLoanChart').getContext('2d');

@@ -180,6 +180,11 @@
                     <th class="text-right">Total Debit</th>
                     <th class="text-right">Total Credit</th>
                     <th class="text-right">Net Amount</th>
+                    @if(!empty($expensesData['comparative']))
+                        @foreach($expensesData['comparative'] as $columnName => $compData)
+                            <th class="text-right">{{ $columnName }} Amount</th>
+                        @endforeach
+                    @endif
                     <th class="text-center">Account Count</th>
                     <th class="text-center">Transaction Count</th>
                 </tr>
@@ -191,6 +196,15 @@
                     <td class="text-right">{{ number_format($expense->total_debit, 2) }}</td>
                     <td class="text-right">{{ number_format($expense->total_credit, 2) }}</td>
                     <td class="text-right">{{ number_format($expense->net_amount, 2) }}</td>
+                    @if(!empty($expensesData['comparative']))
+                        @foreach($expensesData['comparative'] as $columnName => $compData)
+                            @php
+                                $compGroup = collect($compData['expenses'])->firstWhere('group_name', $expense->group_name);
+                                $compAmount = $compGroup ? $compGroup->net_amount : 0;
+                            @endphp
+                            <td class="text-right">{{ number_format($compAmount, 2) }}</td>
+                        @endforeach
+                    @endif
                     <td class="text-center">{{ $expense->account_count }}</td>
                     <td class="text-center">{{ $expense->transaction_count }}</td>
                 </tr>
@@ -207,6 +221,11 @@
                     <th>Account Group</th>
                     <th>Description</th>
                     <th class="text-right">Amount</th>
+                    @if(!empty($expensesData['comparative']))
+                        @foreach($expensesData['comparative'] as $columnName => $compData)
+                            <th class="text-right">{{ $columnName }} Amount</th>
+                        @endforeach
+                    @endif
                 </tr>
             </thead>
             <tbody>
@@ -218,6 +237,15 @@
                     <td>{{ $expense->group_name }}</td>
                     <td>{{ Str::limit($expense->description, 30) }}</td>
                     <td class="text-right">{{ number_format($expense->amount, 2) }}</td>
+                    @if(!empty($expensesData['comparative']))
+                        @foreach($expensesData['comparative'] as $columnName => $compData)
+                            @php
+                                $compTransaction = collect($compData['expenses'])->firstWhere('transaction_id', $expense->transaction_id);
+                                $compAmount = $compTransaction ? $compTransaction->amount : 0;
+                            @endphp
+                            <td class="text-right">{{ number_format($compAmount, 2) }}</td>
+                        @endforeach
+                    @endif
                 </tr>
                 @endforeach
             </tbody>

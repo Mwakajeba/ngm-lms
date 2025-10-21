@@ -20,6 +20,10 @@ class BudgetReportController extends Controller
      */
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view budget report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         
         // Get filter parameters
@@ -194,11 +198,14 @@ class BudgetReportController extends Controller
     {
         $budgetData = $this->getBudgetReportData($request);
         
+        $user = Auth::user();
+        $company = $user->company ?? \App\Models\Company::find($user->company_id);
+        
         $pdf = \PDF::loadView('accounting.reports.budget-report.pdf', [
             'items' => $budgetData['items'],
             'summary' => $budgetData['summary'],
             'filters' => $budgetData['filters'],
-            'company' => Auth::user()->company,
+            'company' => $company,
             'generated_at' => now()->format('d/m/Y H:i:s'),
         ]);
 

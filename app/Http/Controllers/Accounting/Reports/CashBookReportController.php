@@ -15,6 +15,10 @@ class CashBookReportController extends Controller
 {
     public function index(Request $request)
     {
+        if (!auth()->user()->can('view cash book report')) {
+            abort(403, 'Unauthorized access to this report.');
+        }
+        
         $user = Auth::user();
         $company = $user->company;
 
@@ -32,8 +36,13 @@ class CashBookReportController extends Controller
             ->select('bank_accounts.*', 'chart_accounts.account_name')
             ->get();
 
-        // Get branches for filter
-        $branches = $company->branches;
+        // Get branches for filter: only user's assigned branches
+        $branches = $user->branches()->where('branches.company_id', $company->id)->get();
+
+        // Normalize branch selection: allow 'all' only if multiple assignments
+        if ($branchId === 'all' && $branches->count() <= 1) {
+            $branchId = optional($branches->first())->id;
+        }
 
         // Get cash book data
         $cashBookData = $this->getCashBookData($startDate, $endDate, $bankAccountId, $branchId);
@@ -67,8 +76,17 @@ class CashBookReportController extends Controller
             $openingBalanceQuery->where('bank_accounts.id', $bankAccountId);
         }
 
-        if ($branchId && $branchId != 'all') {
+        $assignedBranchIds = Auth::user()->branches()->pluck('branches.id')->toArray();
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $openingBalanceQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $openingBalanceQuery->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $openingBalanceQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
         $openingBalance = $openingBalanceQuery->selectRaw('
@@ -88,15 +106,25 @@ class CashBookReportController extends Controller
             $transactionsQuery->where('bank_accounts.id', $bankAccountId);
         }
 
-        if ($branchId && $branchId != 'all') {
+        if ($branchId === 'all') {
+            if (!empty($assignedBranchIds)) {
+                $transactionsQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
+        } elseif ($branchId) {
             $transactionsQuery->where('gl_transactions.branch_id', $branchId);
+        } else {
+            if (!empty($assignedBranchIds)) {
+                $transactionsQuery->whereIn('gl_transactions.branch_id', $assignedBranchIds);
+            }
         }
 
-        $transactions = $transactionsQuery->select(
+        $transactions = $transactionsQuery->leftJoin('customers', 'gl_transactions.customer_id', '=', 'customers.id')
+        ->select(
             'gl_transactions.*',
             'chart_accounts.account_name',
             'bank_accounts.name as bank_account_name',
-            'bank_accounts.account_number'
+            'bank_accounts.account_number',
+            'customers.name as customer_name'
         )
         ->orderBy('gl_transactions.date', 'asc')
         ->orderBy('gl_transactions.id', 'asc')
@@ -124,6 +152,7 @@ class CashBookReportController extends Controller
             $processedTransactions[] = [
                 'date' => $transaction->date,
                 'description' => $description,
+                'customer_name' => $transaction->customer_name ?? 'N/A',
                 'bank_account' => $transaction->bank_account_name,
                 'transaction_no' => $transactionNo,
                 'reference_no' => $reference,
@@ -170,11 +199,28 @@ class CashBookReportController extends Controller
 
     private function exportPdf($cashBookData, $company, $startDate, $endDate)
     {
+        // Determine branch name for header
+        $user = Auth::user();
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        $branchId = $cashBookData['branch_id'] ?? null;
+        $branchName = 'All Branches';
+        if ($branchId && $branchId !== 'all') {
+            $branch = $branches->firstWhere('id', $branchId);
+            $branchName = $branch->name ?? 'Unknown Branch';
+        } elseif (($branches->count() ?? 0) <= 1 && $branchId === 'all') {
+            $branchName = optional($branches->first())->name ?? 'All Branches';
+        }
+
         $pdf = Pdf::loadView('accounting.reports.cash-book.pdf', [
             'cashBookData' => $cashBookData,
             'company' => $company,
             'startDate' => $startDate,
-            'endDate' => $endDate
+            'endDate' => $endDate,
+            'branchName' => $branchName
         ]);
 
         $filename = 'cash_book_' . $startDate . '_to_' . $endDate . '.pdf';
@@ -197,8 +243,8 @@ class CashBookReportController extends Controller
         $sheet->setCellValue('C5', 'BANK ACCOUNT');
         $sheet->setCellValue('D5', 'TRANSACTION NO');
         $sheet->setCellValue('E5', 'REFERENCE NO.');
-        $sheet->setCellValue('F5', 'CREDIT');
         $sheet->setCellValue('G5', 'DEBIT');
+        $sheet->setCellValue('F5', 'CREDIT');
         $sheet->setCellValue('H5', 'BALANCE');
 
         $row = 6;
@@ -216,19 +262,19 @@ class CashBookReportController extends Controller
             $sheet->setCellValue('C' . $row, $transaction['bank_account']);
             $sheet->setCellValue('D' . $row, $transaction['transaction_no']);
             $sheet->setCellValue('E' . $row, $transaction['reference_no']);
-            $sheet->setCellValue('F' . $row, $transaction['credit'] > 0 ? number_format($transaction['credit'], 2) : '');
             $sheet->setCellValue('G' . $row, $transaction['debit'] > 0 ? number_format($transaction['debit'], 2) : '');
+            $sheet->setCellValue('F' . $row, $transaction['credit'] > 0 ? number_format($transaction['credit'], 2) : '');
             $sheet->setCellValue('H' . $row, number_format($transaction['balance'], 2));
             $row++;
         }
 
         // Totals
-        $sheet->setCellValue('A' . $row, 'Total Credit');
+        $sheet->setCellValue('A' . $row, 'Total Debit');
         $sheet->setCellValue('F' . $row, number_format($cashBookData['total_receipts'], 2));
         $sheet->getStyle('A' . $row . ':F' . $row)->getFont()->setBold(true);
         $row++;
 
-        $sheet->setCellValue('A' . $row, 'Total Debit');
+        $sheet->setCellValue('A' . $row, 'Total Credit');
         $sheet->setCellValue('G' . $row, number_format($cashBookData['total_payments'], 2));
         $sheet->getStyle('A' . $row . ':G' . $row)->getFont()->setBold(true);
         $row++;

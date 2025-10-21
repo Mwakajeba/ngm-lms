@@ -69,6 +69,58 @@ class Repayment extends Model
         return $this->principal + $this->interest + $this->penalt_amount + $this->fee_amount;
     }
 
+    /**
+     * Accessor: expose schedule_id for parity with controllers/views
+     */
+    public function getScheduleIdAttribute()
+    {
+        // Prefer existing column if present, otherwise derive from relation
+        if (array_key_exists('loan_schedule_id', $this->attributes)) {
+            return $this->attributes['loan_schedule_id'];
+        }
+        return optional($this->schedule)->id;
+    }
+
+    /**
+     * Accessor: remaining amount on the related schedule
+     */
+    public function getRemainScheduleAttribute()
+    {
+        return optional($this->schedule)->remaining_amount ?? 0.0;
+    }
+
+    /**
+     * Accessor: date of the related schedule (due date)
+     */
+    public function getScheduleDateAttribute()
+    {
+        return optional($this->schedule)->due_date;
+    }
+
+    /**
+     * Accessor: schedule number from the related schedule
+     */
+    public function getScheduleNumberAttribute()
+    {
+        return optional($this->schedule)->schedule_number ?? 0;
+    }
+
+    /**
+     * Accessor: number of remaining schedules from the related schedule onwards
+     */
+    public function getRemainingSchedulesCountAttribute()
+    {
+        return optional($this->schedule)->remaining_schedules_count ?? 0;
+    }
+
+    /**
+     * Accessor: total remaining amount across remaining schedules from the related schedule onwards
+     */
+    public function getRemainingSchedulesAmountAttribute()
+    {
+        return optional($this->schedule)->remaining_schedules_amount ?? 0.0;
+    }
+
     /***********
      * accesor arrears_amount
      */
