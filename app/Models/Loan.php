@@ -976,8 +976,16 @@ class Loan extends Model
         // Calculate the outstanding balance from schedule and repayments
         $totalOutstanding = 0;
 
-        foreach ($this->schedule as $scheduleItem) {
-            $totalOutstanding += $scheduleItem->remaining_amount;
+        // Ensure schedule is loaded as a collection
+        $schedules = $this->schedule;
+        if (!$schedules) {
+            $schedules = $this->schedule()->get();
+        }
+        // Only iterate if schedules is a valid collection
+        if ($schedules && ($schedules instanceof \Illuminate\Database\Eloquent\Collection)) {
+            foreach ($schedules as $scheduleItem) {
+                $totalOutstanding += $scheduleItem->remaining_amount;
+            }
         }
 
         return max(0, round($totalOutstanding, 2));
@@ -990,7 +998,8 @@ class Loan extends Model
      */
     public function getTotalPaidAmount(): float
     {
-        return $this->repayments->sum(function ($repayment) {
+        $repayments = $this->repayments ?? collect();
+        return $repayments->sum(function ($repayment) {
             return $repayment->principal + $repayment->interest + $repayment->fee_amount + $repayment->penalt_amount;
         });
     }
@@ -1002,7 +1011,14 @@ class Loan extends Model
      */
     public function getTotalAmountToPay(): float
     {
-        return $this->schedule->sum(function ($scheduleItem) {
+        $schedules = $this->schedule;
+        if (!$schedules) {
+            $schedules = $this->schedule()->get();
+        }
+        if (!$schedules || !($schedules instanceof \Illuminate\Database\Eloquent\Collection)) {
+            return 0;
+        }
+        return $schedules->sum(function ($scheduleItem) {
             return $scheduleItem->principal + $scheduleItem->interest + $scheduleItem->fee_amount + $scheduleItem->penalty_amount;
         });
     }
@@ -1225,7 +1241,14 @@ class Loan extends Model
      */
     public function getTotalOutstandingAmount(): float
     {
-        return $this->schedule->sum('remaining_amount');
+        $schedules = $this->schedule;
+        if (!$schedules) {
+            $schedules = $this->schedule()->get();
+        }
+        if (!$schedules || !($schedules instanceof \Illuminate\Database\Eloquent\Collection)) {
+            return 0;
+        }
+        return $schedules->sum('remaining_amount');
     }
 
     /**
@@ -1235,30 +1258,49 @@ class Loan extends Model
      */
     public function getTotalPaidAmountFromSchedules(): float
     {
-        return $this->schedule->sum('paid_amount');
+        $schedules = $this->schedule;
+        if (!$schedules) {
+            $schedules = $this->schedule()->get();
+        }
+        if (!$schedules || !($schedules instanceof \Illuminate\Database\Eloquent\Collection)) {
+            return 0;
+        }
+        return $schedules->sum('paid_amount');
     }
 
     //get the total amount to settle the loan, this include the interest of the current unpaid schedule + all the remaining principal
     public function getTotalAmountToSettle(): float
     {
+        // Ensure schedule is loaded as a collection
+        $schedules = $this->schedule;
+        // If schedule relationship returns null or is not a collection, try to load it
+        if (!$schedules) {
+            $schedules = $this->schedule()->get();
+        }
         // Check if schedule exists and is not empty
-        if (!$this->schedule || $this->schedule->isEmpty()) {
+        if (!$schedules || !($schedules instanceof \Illuminate\Database\Eloquent\Collection) || $schedules->isEmpty()) {
             return 0;
         }
 
         // Get all outstanding principal from all schedules
-        $totalPrincipal = $this->schedule->sum('principal');
-        $totalPaidPrincipal = $this->schedule->sum(function ($schedule) {
-            return $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
+        $totalPrincipal = $schedules->sum('principal');
+        $totalPaidPrincipal = $schedules->sum(function ($schedule) {
+            $scheduleRepayments = $schedule->repayments ?? collect();
+            return $scheduleRepayments->sum('principal');
         });
         $outstandingPrincipal = $totalPrincipal - $totalPaidPrincipal;
 
         // Get remaining interest from current unpaid/partially paid schedule only
+        // Use filter() instead of where() for accessor-based filtering
+        $currentSchedule = $schedules->filter(function ($schedule) {
+            return !$schedule->is_fully_paid;
+        })->first();
+
         $currentScheduleInterest = 0;
-        $currentSchedule = $this->schedule->where('is_fully_paid', false)->first();
         if ($currentSchedule) {
             // Calculate remaining interest (original interest - interest already paid)
-            $interestPaid = $currentSchedule->repayments ? $currentSchedule->repayments->sum('interest') : 0;
+            $scheduleRepayments = $currentSchedule->repayments ?? collect();
+            $interestPaid = $scheduleRepayments->sum('interest');
             $currentScheduleInterest = max(0, $currentSchedule->interest - $interestPaid);
         }
 
@@ -1281,7 +1323,8 @@ class Loan extends Model
      */
     public function getTotalPrincipalPaid(): float
     {
-        return $this->repayments->sum('principal');
+        $repayments = $this->repayments ?? collect();
+        return $repayments->sum('principal');
     }
 
     /**
@@ -1300,7 +1343,8 @@ class Loan extends Model
      */
     public function getTotalInterestPaid(): float
     {
-        return $this->repayments->sum('interest');
+        $repayments = $this->repayments ?? collect();
+        return $repayments->sum('interest');
     }
 
     /**
@@ -1422,7 +1466,6 @@ class Loan extends Model
                 'processed_schedules' => $processedSchedules,
                 'loan_closed' => $shouldClose
             ];
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Settle repayment failed', [

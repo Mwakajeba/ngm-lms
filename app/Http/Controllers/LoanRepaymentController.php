@@ -713,6 +713,8 @@ class LoanRepaymentController extends Controller
                 'cash_deposit_id' => 'required_if:payment_source,cash_deposit|nullable|exists:cash_collaterals,id',
             ]);
 
+            info("request data >>>>>>>>>>>>>>", ['request' => $request->all()]);
+
             // Get loan and check if amount matches settle amount
             $loan = Loan::with(['product', 'customer', 'schedule.repayments'])->findOrFail($request->loan_id);
             $settleAmount = $loan->total_amount_to_settle;
