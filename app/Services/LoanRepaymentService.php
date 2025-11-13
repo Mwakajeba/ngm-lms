@@ -432,7 +432,6 @@ class LoanRepaymentService
         if ($exists && $incomeExists) {
             Log::info('Interest receivable and interest income have been posted ovewtite the array chartAccont interest to be receivable instead of icome');
             $chartAccounts['interest'] = $receivableId;
-
         }
 
         // Credit: Each component to its respective account
@@ -526,7 +525,7 @@ class LoanRepaymentService
             'penalty_amount' => $loan->product->penalty_receivables_account_id ?? null
         ];
 
-       Log::info('chart accounts', $chartAccounts);
+        Log::info('chart accounts', $chartAccounts);
 
         $components = [
             'principal' => $schedulePayment['principal'],
@@ -582,7 +581,6 @@ class LoanRepaymentService
         if ($exists && $incomeExists) {
             Log::info('Interest receivable and interest income have been posted ovewtite the array chartAccont interest to be receivable instead of icome');
             $chartAccounts['interest'] = $receivableId;
-
         }
 
         foreach ($components as $component => $amount) {
@@ -713,7 +711,6 @@ class LoanRepaymentService
                 'success' => true,
                 'message' => "Penalty removed successfully from schedule and subtracted amount from {$updatedCount} GL transactions"
             ];
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error("Failed to remove penalty for schedule ID: {$scheduleId}", [
@@ -762,7 +759,6 @@ class LoanRepaymentService
 
                 Log::info("Penalty successfully removed for on-time payment on schedule {$schedule->id}");
             }
-
         } catch (\Exception $e) {
             // Log the error but don't stop the payment process
             Log::error("Failed to check/remove penalty for on-time payment on schedule {$schedule->id}", [
@@ -1198,24 +1194,37 @@ class LoanRepaymentService
             }
 
             // Get current unpaid/partially paid schedule
-            if (!$loan->schedule || $loan->schedule->isEmpty()) {
+            // Ensure schedule is loaded as a collection
+            $schedules = $loan->schedule;
+            // If schedule relationship returns null or is not a collection, try to load it
+            if (!$schedules) {
+                $schedules = $loan->schedule()->get();
+            }
+            // Ensure it's a collection and not empty
+            if (!$schedules || !($schedules instanceof \Illuminate\Database\Eloquent\Collection) || $schedules->isEmpty()) {
                 throw new \Exception('No loan schedules found for settlement');
             }
 
-            $currentSchedule = $loan->schedule->where('is_fully_paid', false)->first();
+            // Use filter() instead of where() for accessor-based filtering
+            $currentSchedule = $schedules->filter(function ($schedule) {
+                return !$schedule->is_fully_paid;
+            })->first();
 
             if (!$currentSchedule) {
                 throw new \Exception('No unpaid schedule found for settlement');
             }
 
             // Calculate current interest (remaining interest from current schedule)
-            $interestPaid = $currentSchedule->repayments ? $currentSchedule->repayments->sum('interest') : 0;
+            // Ensure repayments relationship is loaded
+            $repayments = $currentSchedule->repayments ?? collect();
+            $interestPaid = $repayments->sum('interest');
             $currentInterest = max(0, $currentSchedule->interest - $interestPaid);
 
             // Calculate total outstanding principal from all schedules
-            $totalPrincipal = $loan->schedule->sum('principal');
-            $totalPaidPrincipal = $loan->schedule->sum(function ($schedule) {
-                return $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
+            $totalPrincipal = $schedules->sum('principal');
+            $totalPaidPrincipal = $schedules->sum(function ($schedule) {
+                $scheduleRepayments = $schedule->repayments ?? collect();
+                return $scheduleRepayments->sum('principal');
             });
             $outstandingPrincipal = $totalPrincipal - $totalPaidPrincipal;
 
@@ -1253,11 +1262,17 @@ class LoanRepaymentService
             $remainingAmount = $amount - $currentInterest;
             $processedSchedules = [];
 
-            foreach ($loan->schedule as $schedule) {
+            // Ensure we're iterating over a valid collection
+            if (!$schedules || !($schedules instanceof \Illuminate\Database\Eloquent\Collection)) {
+                throw new \Exception('Invalid schedule collection for settlement');
+            }
+
+            foreach ($schedules as $schedule) {
                 if ($remainingAmount <= 0)
                     break;
 
-                $principalPaid = $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
+                $scheduleRepayments = $schedule->repayments ?? collect();
+                $principalPaid = $scheduleRepayments->sum('principal');
                 $remainingPrincipal = $schedule->principal - $principalPaid;
 
                 if ($remainingPrincipal > 0) {
@@ -1309,7 +1324,6 @@ class LoanRepaymentService
                 'processed_schedules' => $processedSchedules,
                 'loan_closed' => $shouldClose
             ];
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Settle repayment failed', [
