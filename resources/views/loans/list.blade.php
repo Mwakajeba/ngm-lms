@@ -124,6 +124,51 @@
                 </div>
             </div>
 
+            <!-- Approval Modal -->
+            <div class="modal fade" id="approvalModal" tabindex="-1" aria-labelledby="approvalModalLabel"
+                aria-hidden="true">
+                <div class="modal-dialog">
+                    <form id="approvalForm" method="POST" class="modal-content">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="approvalModalLabel">Confirm Action</h5>
+                            <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                        </div>
+                        <div class="modal-body">
+                            <p id="approvalMessage"></p>
+                            <div class="mb-3" id="disburse_date_wrapper" style="display:none;">
+                                <label for="approval_disbursement_date" class="form-label">Disbursement Date <span
+                                        class="text-danger">*</span></label>
+                                <input type="date" class="form-control" name="disbursement_date"
+                                    id="approval_disbursement_date" max="{{ date('Y-m-d') }}" value="{{ date('Y-m-d') }}">
+                                <div class="form-text">Select the date when the loan will be disbursed.</div>
+                            </div>
+                            <div class="mb-3" id="disburse_bank_wrapper" style="display:none;">
+                                <label for="approval_bank_account_id" class="form-label">Select Bank Account <span
+                                        class="text-danger">*</span></label>
+                                <select class="form-select" name="bank_account_id" id="approval_bank_account_id">
+                                    <option value="">-- Select Bank Account --</option>
+                                    @foreach($bankAccounts ?? [] as $bankAccount)
+                                        <option value="{{ $bankAccount->id }}">{{ $bankAccount->account_number }} -
+                                            {{ $bankAccount->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">This bank account will be used for the disbursement entry.</div>
+                            </div>
+                            <div class="mb-3">
+                                <label for="approval_comments" class="form-label">Comments (Optional)</label>
+                                <textarea class="form-control" name="comments" id="approval_comments" rows="3"></textarea>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                            <button type="submit" class="btn btn-primary">Confirm</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
             <!-- Import Modal -->
             <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
                 <div class="modal-dialog modal-lg">
@@ -333,7 +378,7 @@
                     showConfirmButton: true
                 });
             @endif
-                    const currentStatus = '{{ $status ?? "active" }}';
+                                        const currentStatus = '{{ $status ?? "active" }}';
 
             // Initialize DataTable with Ajax
             const table = $('#loansTable').DataTable({
@@ -403,6 +448,14 @@
                         const loanId = $(this).data('id');
                         const loanName = $(this).data('name');
                         deleteLoan(loanId, loanName);
+                    });
+
+                    // Reinitialize approval buttons
+                    $('.approve-btn').off('click').on('click', function () {
+                        const loanId = $(this).data('id');
+                        const action = $(this).data('action');
+                        const level = $(this).data('level');
+                        openApprovalModal(loanId, action, level);
                     });
 
                     // Add search enhancement
@@ -684,5 +737,123 @@
                 }
             });
         }
+
+        function openApprovalModal(encodedId, action, level) {
+            const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
+            const message = document.getElementById('approvalMessage');
+            const form = document.getElementById('approvalForm');
+            const dateWrapper = document.getElementById('disburse_date_wrapper');
+            const dateField = document.getElementById('approval_disbursement_date');
+            const bankWrapper = document.getElementById('disburse_bank_wrapper');
+            const bankSelect = document.getElementById('approval_bank_account_id');
+            const commentsField = document.getElementById('approval_comments');
+
+            // Set action messages based on action type
+            const actionMessages = {
+                'check': 'Are you sure you want to check this loan? This will mark the loan as checked for first level approval.',
+                'approve': 'Are you sure you want to approve this loan? This will change the loan status to approved.',
+                'authorize': 'Are you sure you want to authorize this loan? This will mark the loan as authorized for final approval.',
+                'disburse': 'Are you sure you want to disburse this loan? This will mark the loan as disbursed and activate the repayment schedule.'
+            };
+
+            message.textContent = actionMessages[action] || 'Are you sure you want to proceed with this action?';
+
+            // Set form action URL
+            form.action = `/loans/${encodedId}/approve`;
+
+            // Show/hide date and bank selection for disbursement
+            if (action === 'disburse') {
+                // Show date field
+                if (dateWrapper) dateWrapper.style.display = '';
+                if (dateField) {
+                    dateField.setAttribute('required', 'required');
+                    // Set default to today if not already set
+                    if (!dateField.value) {
+                        dateField.value = new Date().toISOString().split('T')[0];
+                    }
+                }
+                // Show bank selection
+                if (bankWrapper) bankWrapper.style.display = '';
+                if (bankSelect) bankSelect.setAttribute('required', 'required');
+            } else {
+                // Hide date field
+                if (dateWrapper) dateWrapper.style.display = 'none';
+                if (dateField) dateField.removeAttribute('required');
+                // Hide bank selection
+                if (bankWrapper) bankWrapper.style.display = 'none';
+                if (bankSelect) bankSelect.removeAttribute('required');
+            }
+
+            // Clear comments field
+            if (commentsField) commentsField.value = '';
+
+            modal.show();
+        }
+
+        // Handle approval form submission via AJAX
+        $('#approvalForm').on('submit', function (e) {
+            e.preventDefault();
+
+            const form = $(this);
+            const submitBtn = form.find('button[type="submit"]');
+            const originalText = submitBtn.html();
+
+            // Disable submit button and show loading
+            submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-1"></i>Processing...');
+
+            $.ajax({
+                url: form.attr('action'),
+                method: 'POST',
+                data: form.serialize(),
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                success: function (response) {
+                    $('#approvalModal').modal('hide');
+
+                    // Show success SweetAlert
+                    Swal.fire({
+                        icon: 'success',
+                        title: 'Success!',
+                        text: 'Loan approval action completed successfully!',
+                        timer: 3000,
+                        showConfirmButton: false
+                    });
+
+                    // Reload DataTable to reflect changes
+                    $('#loansTable').DataTable().ajax.reload(null, false);
+                },
+                error: function (xhr) {
+                    let errorMessage = 'Failed to process approval action.';
+                    if (xhr.responseJSON && xhr.responseJSON.message) {
+                        errorMessage = xhr.responseJSON.message;
+                    } else if (xhr.responseJSON && xhr.responseJSON.errors) {
+                        const errors = Object.values(xhr.responseJSON.errors).flat();
+                        errorMessage = errors.join(', ');
+                    } else if (xhr.responseText) {
+                        // Try to extract error from HTML response
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(xhr.responseText, 'text/html');
+                        const errorElement = doc.querySelector('.error, .alert-danger, .errors');
+                        if (errorElement) {
+                            errorMessage = errorElement.textContent.trim();
+                        }
+                    }
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error!',
+                        text: errorMessage,
+                        confirmButtonText: 'OK'
+                    });
+                },
+                complete: function () {
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
+            });
+        });
     </script>
 @endpush
