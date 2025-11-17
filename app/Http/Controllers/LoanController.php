@@ -293,8 +293,9 @@ class LoanController extends Controller
         // Get data for import modal
         $branches = Branch::all();
         $loanProducts = LoanProduct::all();
+        $bankAccounts = BankAccount::all();
 
-        return view('loans.list', compact('loans', 'branches', 'loanProducts'));
+        return view('loans.list', compact('loans', 'branches', 'loanProducts', 'bankAccounts'));
     }
 
     // Ajax endpoint for DataTables
@@ -429,6 +430,34 @@ class LoanController extends Controller
                     // Receipt action for applied loans
                     if ($loan->status === 'applied' && auth()->user()->can('create receipt voucher')) {
                         $actions .= '<a href="' . route('accounting.loans.create-receipt', $encodedId) . '" class="btn btn-sm btn-outline-success me-1" title="Create Receipt"><i class="bx bx-receipt"></i></a>';
+                    }
+
+                    // Approval action - show for loans that can be approved by current user
+                    if (in_array($loan->status, ['applied', 'checked', 'approved', 'authorized'])) {
+                        $user = auth()->user();
+                        if ($loan->canBeApprovedByUser($user)) {
+                            $nextAction = $loan->getNextApprovalAction();
+                            $nextLevel = $loan->getNextApprovalLevel();
+                            $actionLabel = $loan->getApprovalLevelName($nextLevel);
+
+                            $btnClass = match ($nextAction) {
+                                'check' => 'btn-outline-info',
+                                'approve' => 'btn-outline-primary',
+                                'authorize' => 'btn-outline-success',
+                                'disburse' => 'btn-outline-warning',
+                                default => 'btn-outline-secondary'
+                            };
+
+                            $btnIcon = match ($nextAction) {
+                                'check' => 'bx-check',
+                                'approve' => 'bx-check-circle',
+                                'authorize' => 'bx-check-double',
+                                'disburse' => 'bx-money',
+                                default => 'bx-check'
+                            };
+
+                            $actions .= '<button class="btn btn-sm ' . $btnClass . ' approve-btn me-1" data-id="' . $encodedId . '" data-action="' . $nextAction . '" data-level="' . $nextLevel . '" title="' . ucfirst($actionLabel) . '"><i class="bx ' . $btnIcon . '"></i></button>';
+                        }
                     }
 
                     // Delete action (disallow for authorized and approved)
@@ -1186,8 +1215,9 @@ class LoanController extends Controller
         // Get data for import modal
         $branches = \App\Models\Branch::all();
         $loanProducts = \App\Models\LoanProduct::all();
+        $bankAccounts = BankAccount::all();
 
-        return view('loans.list', compact('loans', 'pageTitle', 'status', 'branches', 'loanProducts'));
+        return view('loans.list', compact('loans', 'pageTitle', 'status', 'branches', 'loanProducts', 'bankAccounts'));
     }
 
     public function create()
@@ -1972,7 +2002,7 @@ class LoanController extends Controller
     public function loanDocument(Request $request)
     {
         $maxFileSize = (int) config('upload.max_file_size', 102400); // in KB
-        $allowedMimes = (array) config('upload.allowed_mimes', ['pdf','jpg','jpeg','png','doc','docx','xls','xlsx','txt']);
+        $allowedMimes = (array) config('upload.allowed_mimes', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx', 'xls', 'xlsx', 'txt']);
 
         // Early check for file presence and upload validity to produce clearer errors
         if (!$request->hasFile('files')) {
@@ -2052,7 +2082,6 @@ class LoanController extends Controller
             } else {
                 return back()->withErrors(['error' => 'No files were uploaded.']);
             }
-
         } catch (\Exception $e) {
             DB::rollback();
             \Log::error('Document upload error: ' . $e->getMessage(), [
@@ -2194,12 +2223,12 @@ class LoanController extends Controller
 
         // Check if customer has reached maximum number of loans for this product
 
-         // Check if customer already has an active loan for this product (for top-up logic)
+        // Check if customer already has an active loan for this product (for top-up logic)
         $existingLoan = Loan::where('customer_id', $validated['customer_id'])
             ->where('product_id', $validated['product_id'])
             ->where('status', 'active')
             ->first();
-            
+
         if ($product->hasReachedMaxLoans($validated['customer_id'])) {
             $remainingLoans = $product->getRemainingLoans($validated['customer_id']);
             $maxLoans = $product->maximum_number_of_loans;
@@ -2493,10 +2522,11 @@ class LoanController extends Controller
                 return redirect()->back()->withErrors(['Unable to determine next approval action.']);
             }
 
-            // If disbursing, require and set bank account before proceeding
+            // If disbursing, require and set bank account and disbursement date before proceeding
             if ($nextAction === 'disburse') {
                 $request->validate([
                     'bank_account_id' => 'required|exists:bank_accounts,id',
+                    'disbursement_date' => 'required|date|before_or_equal:today',
                 ]);
                 if (!$loan->bank_account_id || (int) $loan->bank_account_id !== (int) $request->input('bank_account_id')) {
                     $loan->update(['bank_account_id' => (int) $request->input('bank_account_id')]);
@@ -2513,7 +2543,12 @@ class LoanController extends Controller
                 'roleName' => $roleName
             ]);
 
-            DB::transaction(function () use ($loan, $user, $validated, $nextAction, $nextLevel, $roleName) {
+            // Get disbursement date if provided
+            $disbursementDate = $nextAction === 'disburse' && $request->has('disbursement_date')
+                ? \Carbon\Carbon::parse($request->input('disbursement_date'))
+                : null;
+
+            DB::transaction(function () use ($loan, $user, $validated, $nextAction, $nextLevel, $roleName, $disbursementDate, $request) {
                 \Log::notice('Creating approval record', [
                     'loan_id' => $loan->id,
                     'user_id' => $user->id,
@@ -2543,10 +2578,13 @@ class LoanController extends Controller
                             throw new \Exception('Bank account must be selected before disbursement. Please update the loan with a bank account first.');
                         }
 
+                        // Use provided disbursement date or current date
+                        $disburseDate = $disbursementDate ?? now();
+
                         // Process disbursement
                         $loan->update([
                             'status' => Loan::STATUS_ACTIVE,
-                            'disbursed_on' => now(),
+                            'disbursed_on' => $disburseDate,
                         ]);
 
                         // Calculate interest and repayment dates
@@ -2564,8 +2602,8 @@ class LoanController extends Controller
                         // Generate repayment schedule
                         $loan->generateRepaymentSchedule($loan->interest);
 
-                        // Process disbursement
-                        $this->processLoanDisbursement($loan);
+                        // Process disbursement with the selected date
+                        $this->processLoanDisbursement($loan, $disburseDate);
                         $actionForRecord = 'active';
                         break;
                 }
@@ -2611,6 +2649,15 @@ class LoanController extends Controller
                 'message' => $message
             ]);
 
+            // Return JSON response for AJAX requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => "Loan application {$message} successfully.",
+                    'status' => $newStatus
+                ]);
+            }
+
             switch ($newStatus) {
                 case 'checked':
                     return redirect()->route('loans.by-status', 'checked')->with('success', "Loan application {$message} successfully.");
@@ -2628,6 +2675,15 @@ class LoanController extends Controller
                 'error' => $th->getMessage(),
                 'trace' => $th->getTraceAsString()
             ]);
+
+            // Return JSON response for AJAX requests
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to process loan: ' . $th->getMessage()
+                ], 422);
+            }
+
             return redirect()->back()->withErrors(['Failed to process loan: ' . $th->getMessage()]);
         }
     }
@@ -2745,7 +2801,7 @@ class LoanController extends Controller
         }
     }
 
-    private function processLoanDisbursement($loan)
+    private function processLoanDisbursement($loan, $disbursementDate = null)
     {
         $userId = auth()->id();
         $branchId = auth()->user()->branch_id;
@@ -2755,6 +2811,9 @@ class LoanController extends Controller
         if (!$loan->bank_account_id) {
             throw new \Exception('Bank account must be selected before disbursement.');
         }
+
+        // Use provided disbursement date or loan's date_applied
+        $disburseDate = $disbursementDate ?? $loan->date_applied;
 
         $bankAccount = $loan->bankAccount;
 
@@ -2770,7 +2829,7 @@ class LoanController extends Controller
             'reference' => $loan->id,
             'reference_type' => 'Loan Payment',
             'reference_number' => null,
-            'date' => $loan->date_applied,
+            'date' => $disburseDate,
             'amount' => $loan->amount,
             'description' => $notes,
             'user_id' => $userId,
@@ -2780,7 +2839,7 @@ class LoanController extends Controller
             'branch_id' => $branchId,
             'approved' => true,
             'approved_by' => $userId,
-            'approved_at' => now(),
+            'approved_at' => $disburseDate,
         ]);
 
         PaymentItem::create([
@@ -2820,7 +2879,7 @@ class LoanController extends Controller
                 'nature' => 'credit',
                 'transaction_id' => $loan->id,
                 'transaction_type' => 'Loan Disbursement',
-                'date' => $loan->date_applied,
+                'date' => $disburseDate,
                 'description' => $notes,
                 'branch_id' => $branchId,
                 'user_id' => $userId,
@@ -2832,7 +2891,7 @@ class LoanController extends Controller
                 'nature' => 'debit',
                 'transaction_id' => $loan->id,
                 'transaction_type' => 'Loan Disbursement',
-                'date' => $loan->date_applied,
+                'date' => $disburseDate,
                 'description' => $notes,
                 'branch_id' => $branchId,
                 'user_id' => $userId,
@@ -3125,7 +3184,6 @@ class LoanController extends Controller
             \App\Jobs\BulkLoanCreationJob::dispatch($csvData, $validated, auth()->id());
 
             return redirect()->back()->with('success', 'Opening balance processing started. You will be notified when complete.');
-
         } catch (\Exception $e) {
             Log::error('Opening balance processing failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Failed to process opening balance: ' . $e->getMessage()]);
@@ -3179,7 +3237,6 @@ class LoanController extends Controller
             } else {
                 return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment.']);
             }
-
         } catch (\Exception $e) {
             Log::error('Settle repayment failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Failed to process settle repayment: ' . $e->getMessage()]);
@@ -3207,10 +3264,10 @@ class LoanController extends Controller
                 'bankAccount',
                 'group',
                 'loanFiles',
-                'schedule' => function($query) {
+                'schedule' => function ($query) {
                     $query->orderBy('due_date', 'asc');
                 },
-                'repayments' => function($query) {
+                'repayments' => function ($query) {
                     $query->orderBy('created_at', 'asc');
                 },
                 'approvals.user',
@@ -3247,7 +3304,7 @@ class LoanController extends Controller
             }
 
             // Calculate loan statistics from repayments
-            $totalPaid = $loan->repayments->sum(function($repayment) {
+            $totalPaid = $loan->repayments->sum(function ($repayment) {
                 return $repayment->principal + $repayment->interest + $repayment->fee_amount + $repayment->penalt_amount;
             });
 
@@ -3303,7 +3360,6 @@ class LoanController extends Controller
             $filename = 'Loan_Details_' . $loan->loanNo . '_' . now()->format('Y-m-d') . '.pdf';
 
             return $pdf->download($filename);
-
         } catch (\Exception $e) {
             Log::error('Export loan details failed: ' . $e->getMessage());
             return redirect()->back()->withErrors(['error' => 'Failed to export loan details: ' . $e->getMessage()]);
