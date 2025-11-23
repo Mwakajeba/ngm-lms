@@ -1488,4 +1488,288 @@ class LoanRepaymentService
             ]);
         }
     }
+
+    /**
+     * Delete repayment and all associated records
+     * This method deletes all related data created during repayment processing
+     */
+    public function deleteRepayment($repaymentId)
+    {
+        DB::beginTransaction();
+
+        try {
+            $repayment = Repayment::with(['loan', 'schedule'])->findOrFail($repaymentId);
+            $loan = $repayment->loan;
+            $originalLoanStatus = $loan->status;
+
+            Log::info('Starting comprehensive repayment deletion', [
+                'repayment_id' => $repayment->id,
+                'loan_id' => $loan->id,
+                'customer_id' => $repayment->customer_id
+            ]);
+
+            // 1. Find and delete Receipt and related records
+            $this->deleteRepaymentReceipt($repayment);
+
+            // 2. Find and delete Journal and related records
+            $this->deleteRepaymentJournal($repayment);
+
+            // 3. Delete all GL transactions related to this repayment
+            $this->deleteRepaymentGLTransactions($repayment);
+
+            // 4. Restore cash deposit if applicable
+            $this->restoreCashDepositForRepayment($repayment);
+
+            // 5. Update loan status if it was closed due to this repayment
+            $this->updateLoanStatusAfterDeletion($loan, $originalLoanStatus);
+
+            // 6. Delete the repayment record
+            $repayment->delete();
+
+            DB::commit();
+
+            Log::info('Repayment deletion completed successfully', [
+                'repayment_id' => $repaymentId,
+                'loan_id' => $loan->id
+            ]);
+
+            return [
+                'success' => true,
+                'message' => 'Repayment and all associated records deleted successfully'
+            ];
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Repayment deletion failed', [
+                'repayment_id' => $repaymentId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Delete receipt and all associated records for a repayment
+     */
+    private function deleteRepaymentReceipt($repayment)
+    {
+        // Find receipt by reference (repayment ID) and reference_type
+        $receipt = Receipt::where('reference', $repayment->id)
+            ->where('reference_type', 'loan_repayment')
+            ->first();
+
+        if (!$receipt) {
+            Log::info('No receipt found for repayment', ['repayment_id' => $repayment->id]);
+            return;
+        }
+
+        Log::info('Deleting receipt and associated data', [
+            'receipt_id' => $receipt->id,
+            'repayment_id' => $repayment->id
+        ]);
+
+        // Delete receipt items
+        $receiptItemsCount = ReceiptItem::where('receipt_id', $receipt->id)->delete();
+        Log::info('Deleted receipt items', [
+            'receipt_id' => $receipt->id,
+            'count' => $receiptItemsCount
+        ]);
+
+        // Delete GL transactions for this receipt
+        $receiptGLCount = GlTransaction::where('transaction_id', $receipt->id)
+            ->where('transaction_type', 'receipt')
+            ->delete();
+        Log::info('Deleted GL transactions for receipt', [
+            'receipt_id' => $receipt->id,
+            'count' => $receiptGLCount
+        ]);
+
+        // Delete the receipt
+        $receipt->delete();
+
+        Log::info('Receipt deletion completed', [
+            'receipt_id' => $receipt->id,
+            'receipt_items_deleted' => $receiptItemsCount,
+            'gl_transactions_deleted' => $receiptGLCount
+        ]);
+    }
+
+    /**
+     * Delete journal and all associated records for a repayment
+     */
+    private function deleteRepaymentJournal($repayment)
+    {
+        // Find journal by reference (repayment ID) and reference_type
+        $journal = Journal::where('reference', $repayment->id)
+            ->where('reference_type', 'Withdrawal')
+            ->first();
+
+        if (!$journal) {
+            Log::info('No journal found for repayment', ['repayment_id' => $repayment->id]);
+            return;
+        }
+
+        Log::info('Deleting journal and associated data', [
+            'journal_id' => $journal->id,
+            'repayment_id' => $repayment->id
+        ]);
+
+        // Delete journal items
+        $journalItemsCount = JournalItem::where('journal_id', $journal->id)->delete();
+        Log::info('Deleted journal items', [
+            'journal_id' => $journal->id,
+            'count' => $journalItemsCount
+        ]);
+
+        // Delete GL transactions for this journal
+        $journalGLCount = GlTransaction::where('transaction_id', $journal->id)
+            ->where('transaction_type', 'journal repayment')
+            ->delete();
+        Log::info('Deleted GL transactions for journal', [
+            'journal_id' => $journal->id,
+            'count' => $journalGLCount
+        ]);
+
+        // Delete the journal
+        $journal->delete();
+
+        Log::info('Journal deletion completed', [
+            'journal_id' => $journal->id,
+            'journal_items_deleted' => $journalItemsCount,
+            'gl_transactions_deleted' => $journalGLCount
+        ]);
+    }
+
+    /**
+     * Delete all GL transactions associated with a repayment
+     */
+    private function deleteRepaymentGLTransactions($repayment)
+    {
+        $totalDeleted = 0;
+
+        // Delete GL transactions by repayment ID (for settle repayments and direct references)
+        $repaymentGLCount = GlTransaction::where('transaction_id', $repayment->id)
+            ->whereIn('transaction_type', ['receipt', 'journal repayment', 'Settle Interest', 'Settle Principal'])
+            ->delete();
+        $totalDeleted += $repaymentGLCount;
+        Log::info('Deleted GL transactions by repayment ID', [
+            'repayment_id' => $repayment->id,
+            'count' => $repaymentGLCount
+        ]);
+
+        // Delete GL transactions by receipt ID (if receipt exists)
+        $receipt = Receipt::where('reference', $repayment->id)
+            ->where('reference_type', 'loan_repayment')
+            ->first();
+        if ($receipt) {
+            $receiptGLCount = GlTransaction::where('transaction_id', $receipt->id)
+                ->where('transaction_type', 'receipt')
+                ->delete();
+            $totalDeleted += $receiptGLCount;
+            Log::info('Deleted GL transactions by receipt ID', [
+                'receipt_id' => $receipt->id,
+                'count' => $receiptGLCount
+            ]);
+        }
+
+        // Delete GL transactions by journal ID (if journal exists)
+        $journal = Journal::where('reference', $repayment->id)
+            ->where('reference_type', 'Withdrawal')
+            ->first();
+        if ($journal) {
+            $journalGLCount = GlTransaction::where('transaction_id', $journal->id)
+                ->where('transaction_type', 'journal repayment')
+                ->delete();
+            $totalDeleted += $journalGLCount;
+            Log::info('Deleted GL transactions by journal ID', [
+                'journal_id' => $journal->id,
+                'count' => $journalGLCount
+            ]);
+        }
+
+        // Delete GL transactions for loan schedule (Mature Interest and Penalty)
+        // Note: Only delete if they are specifically related to this repayment
+        // We'll be conservative and not delete all schedule-related GL transactions
+        // as they might be shared across multiple repayments
+
+        Log::info('Total GL transactions deleted', [
+            'repayment_id' => $repayment->id,
+            'total_deleted' => $totalDeleted
+        ]);
+    }
+
+    /**
+     * Restore cash deposit if repayment was made from cash deposit
+     */
+    private function restoreCashDepositForRepayment($repayment)
+    {
+        // Check if journal exists (indicates cash deposit payment)
+        $journal = Journal::where('reference', $repayment->id)
+            ->where('reference_type', 'Withdrawal')
+            ->first();
+
+        if (!$journal) {
+            Log::info('No journal found, not a cash deposit repayment', ['repayment_id' => $repayment->id]);
+            return;
+        }
+
+        // Find cash deposit from journal items (look for debit entries to cash deposit account)
+        $journalItems = JournalItem::where('journal_id', $journal->id)
+            ->where('nature', 'debit')
+            ->get();
+
+        if ($journalItems->isEmpty()) {
+            Log::warning('No debit journal items found for cash deposit restoration', [
+                'journal_id' => $journal->id
+            ]);
+            return;
+        }
+
+        // Get the cash deposit account ID from the first debit item
+        $cashDepositAccountId = $journalItems->first()->chart_account_id;
+
+        // Find the cash deposit record
+        $cashDeposit = \App\Models\CashCollateral::whereHas('type', function ($query) use ($cashDepositAccountId) {
+            $query->where('chart_account_id', $cashDepositAccountId);
+        })->where('customer_id', $repayment->customer_id)->first();
+
+        if ($cashDeposit) {
+            $amountToRestore = $repayment->principal + $repayment->interest + $repayment->fee_amount + $repayment->penalt_amount;
+            $cashDeposit->increment('amount', $amountToRestore);
+
+            Log::info('Restored cash deposit amount', [
+                'cash_deposit_id' => $cashDeposit->id,
+                'amount_restored' => $amountToRestore,
+                'new_balance' => $cashDeposit->amount
+            ]);
+        } else {
+            Log::warning('Cash deposit not found for restoration', [
+                'customer_id' => $repayment->customer_id,
+                'chart_account_id' => $cashDepositAccountId
+            ]);
+        }
+    }
+
+    /**
+     * Update loan status after repayment deletion
+     */
+    private function updateLoanStatusAfterDeletion($loan, $originalStatus)
+    {
+        // If the loan was closed due to this repayment, check if it should still be closed
+        if ($originalStatus === 'complete' || $originalStatus === 'closed') {
+            // Refresh loan to get updated status
+            $loan->refresh();
+
+            // Check if loan is still fully paid after this repayment deletion
+            if (!$loan->isEligibleForClosing()) {
+                $loan->status = 'active';
+                $loan->save();
+
+                Log::info('Loan status reverted to active after repayment deletion', [
+                    'loan_id' => $loan->id,
+                    'original_status' => $originalStatus
+                ]);
+            }
+        }
+    }
 }

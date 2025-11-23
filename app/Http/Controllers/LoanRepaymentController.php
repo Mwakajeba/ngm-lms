@@ -74,61 +74,59 @@ class LoanRepaymentController extends Controller
             ]);
 
 
-                Log::info('Processing normal repayment', [
-                    'loan_id' => $request->loan_id,
-                    'amount' => $paymentAmount,
-                    'settle_amount' => $settleAmount
-                ]);
+            Log::info('Processing normal repayment', [
+                'loan_id' => $request->loan_id,
+                'amount' => $paymentAmount,
+                'settle_amount' => $settleAmount
+            ]);
 
-                // Use normal repayment process
-                $bankAccount = BankAccount::findOrFail($request->bank_account_id);
-                $bankChartAccount = $bankAccount->chart_account_id;
+            // Use normal repayment process
+            $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            $bankChartAccount = $bankAccount->chart_account_id;
 
-                // Check cash deposit balance if using cash deposit
-                if ($request->payment_source === 'cash_deposit') {
-                    $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
+            // Check cash deposit balance if using cash deposit
+            if ($request->payment_source === 'cash_deposit') {
+                $cashDeposit = \App\Models\CashCollateral::findOrFail($request->cash_deposit_id);
 
-                    if ($cashDeposit->amount < $request->amount) {
-                        return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
-                    }
+                if ($cashDeposit->amount < $request->amount) {
+                    return redirect()->back()->with('error', 'Insufficient cash deposit balance. Available: TSHS ' . number_format($cashDeposit->amount, 2));
                 }
+            }
 
-                // Prepare payment data based on source
-                $paymentData = [
-                    'payment_date' => $request->payment_date,
-                    'payment_source' => $request->payment_source,
-                    'bank_chart_account_id' => $bankChartAccount,
-                ];
+            // Prepare payment data based on source
+            $paymentData = [
+                'payment_date' => $request->payment_date,
+                'payment_source' => $request->payment_source,
+                'bank_chart_account_id' => $bankChartAccount,
+            ];
 
-                if ($request->payment_source === 'bank') {
-                    $paymentData['bank_account_id'] = $request->bank_account_id;
-                } else {
-                    $paymentData['cash_deposit_id'] = $request->cash_deposit_id;
-                }
+            if ($request->payment_source === 'bank') {
+                $paymentData['bank_account_id'] = $request->bank_account_id;
+            } else {
+                $paymentData['cash_deposit_id'] = $request->cash_deposit_id;
+            }
 
-                // Get calculation method from loan product
-                $calculationMethod = $loan->product->interest_method ?? 'flat_rate';
+            // Get calculation method from loan product
+            $calculationMethod = $loan->product->interest_method ?? 'flat_rate';
 
-                Log::info('Processing normal repayment', [
-                    'loan_id' => $request->loan_id,
-                    'amount' => $request->amount,
-                    'calculation_method' => $calculationMethod,
-                    'payment_source' => $request->payment_source
-                ]);
+            Log::info('Processing normal repayment', [
+                'loan_id' => $request->loan_id,
+                'amount' => $request->amount,
+                'calculation_method' => $calculationMethod,
+                'payment_source' => $request->payment_source
+            ]);
 
-                // Process repayment using service
-                $result = $this->repaymentService->processRepayment(
-                    $request->loan_id,
-                    $request->amount,
-                    $paymentData,
-                    $calculationMethod
-                );
+            // Process repayment using service
+            $result = $this->repaymentService->processRepayment(
+                $request->loan_id,
+                $request->amount,
+                $paymentData,
+                $calculationMethod
+            );
 
-                Log::info('Repayment processing result', $result);
+            Log::info('Repayment processing result', $result);
 
-                return redirect()->back()->with('success', 'Repayment recorded successfully!');
-
-
+            return redirect()->back()->with('success', 'Repayment recorded successfully!');
         } catch (\Exception $e) {
             Log::error('Loan repayment error: ' . $e->getMessage());
             Log::error('Repayment error stack trace: ' . $e->getTraceAsString());
@@ -172,19 +170,15 @@ class LoanRepaymentController extends Controller
                 'bank_account_id' => 'required|exists:bank_accounts,id',
             ]);
 
-            $repayment = Repayment::with(['loan', 'receipt', 'bankAccount'])->findOrFail($id);
+            $repayment = Repayment::with(['loan', 'bankAccount'])->findOrFail($id);
             $bankAccount = BankAccount::findOrFail($request->bank_account_id);
             $bankChartAccount = $bankAccount->chart_account_id;
 
-
             // Store the loan and schedule info before deletion
             $loanId = $repayment->loan_id;
-            $scheduleId = $repayment->loan_schedule_id;
-            $customerId = $repayment->customer_id;
-            $dueDate = $repayment->due_date;
 
-            // Delete the existing repayment (this will also delete receipt and GL transactions)
-            $this->deleteRepaymentInternal($repayment);
+            // Delete the existing repayment (this will also delete receipt, journal, and GL transactions)
+            $this->repaymentService->deleteRepayment($repayment->id);
 
             // Create new repayment with updated details
             $paymentData = [
@@ -211,7 +205,6 @@ class LoanRepaymentController extends Controller
                 'success' => true,
                 'message' => 'Repayment updated successfully!'
             ]);
-
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Repayment update error: ' . $e->getMessage());
@@ -225,188 +218,12 @@ class LoanRepaymentController extends Controller
 
     /**
      * Internal method to delete repayment and associated records
+     * This method delegates to the service for comprehensive deletion
      */
     private function deleteRepaymentInternal($repayment)
     {
-        Log::info('Starting repayment deletion process', [
-            'repayment_id' => $repayment->id,
-            'loan_id' => $repayment->loan_id,
-            'customer_id' => $repayment->customer_id
-        ]);
-
-        // Get loan before deletion for status updates
-        $loan = $repayment->loan;
-        $originalLoanStatus = $loan->status;
-
-        // 1. Delete GL transactions associated with this repayment
-        $this->deleteRepaymentGLTransactions($repayment);
-
-        // 2. Delete receipt and associated data if exists
-        if ($repayment->receipt) {
-            $this->deleteRepaymentReceipt($repayment);
-        }
-
-        // 3. Handle cash deposit restoration if applicable
-        $this->restoreCashDepositIfApplicable($repayment);
-
-        // 4. Update loan status if it was closed due to this repayment
-        $this->updateLoanStatusAfterDeletion($loan, $originalLoanStatus);
-
-        // 5. Delete the repayment record
-        $repayment->delete();
-
-        Log::info('Repayment deletion completed successfully', [
-            'repayment_id' => $repayment->id,
-            'loan_id' => $loan->id
-        ]);
-    }
-
-    /**
-     * Delete all GL transactions associated with the repayment
-     */
-    private function deleteRepaymentGLTransactions($repayment)
-    {
-        // Delete GL transactions by repayment ID
-        $repaymentGLCount = GlTransaction::where('transaction_id', $repayment->id)
-            ->whereIn('transaction_type', ['receipt', 'journal repayment', 'Settle Interest', 'Settle Principal'])
-            ->delete();
-
-
-        // Delete GL transactions by receipt ID if receipt exists
-        if ($repayment->receipt) {
-            $receiptGLCount = GlTransaction::where('transaction_id', $repayment->receipt->id)
-                ->where('transaction_type', 'receipt')
-                ->delete();
-
-            Log::info('Deleted GL transactions for receipt', [
-                'receipt_id' => $repayment->receipt->id,
-                'deleted_count' => $receiptGLCount
-            ]);
-        }
-        //get loan schedule ids
-
-
-        // These lines perform deletion of GL transactions relating to specific transaction types for the loan schedule
-        $matureInterestGLCount = GlTransaction::where('transaction_id', $repayment->loan_schedule_id)
-            ->where('transaction_type', 'Mature Interest')
-            ->delete();
-
-        Log::info('Deleted GL transactions for loan schedule', [
-            'loan_schedule_id' => $repayment->loan_schedule_id,
-            'transaction_type' => 'Mature Interest',
-            'deleted_count' => $matureInterestGLCount
-        ]);
-
-        $penaltyGLCount = GlTransaction::where('transaction_id', $repayment->loan_schedule_id)
-            ->where('transaction_type', 'Penalty')
-            ->delete();
-        Log::info('Deleted GL transactions for loan schedule', [
-            'loan_schedule_id' => $repayment->loan_schedule_id,
-            'transaction_type' => 'Penalty',
-            'deleted_count' => $penaltyGLCount
-        ]);
-
-        // Summary log for repayment GL deletion
-        Log::info('Deleted GL transactions for repayment', [
-            'repayment_id' => $repayment->id,
-            'deleted_count' => $repaymentGLCount
-        ]);
-    }
-
-    /**
-     * Delete receipt and all associated data
-     */
-    private function deleteRepaymentReceipt($repayment)
-    {
-        $receipt = $repayment->receipt;
-
-        if (!$receipt) {
-            return;
-        }
-
-        Log::info('Deleting receipt and associated data', [
-            'receipt_id' => $receipt->id,
-            'repayment_id' => $repayment->id
-        ]);
-
-        // Delete receipt items first
-        $receiptItemsCount = ReceiptItem::where('receipt_id', $receipt->id)->delete();
-
-        // Delete GL transactions for this receipt
-        $receiptGLCount = GlTransaction::where('transaction_id', $receipt->id)
-            ->where('transaction_type', 'receipt')
-            ->delete();
-
-        // Delete the receipt
-        $receipt->delete();
-
-        Log::info('Receipt deletion completed', [
-            'receipt_id' => $receipt->id,
-            'receipt_items_deleted' => $receiptItemsCount,
-            'gl_transactions_deleted' => $receiptGLCount
-        ]);
-    }
-
-    /**
-     * Restore cash deposit if repayment was made from cash deposit
-     */
-    private function restoreCashDepositIfApplicable($repayment)
-    {
-        // Check if this repayment was made from cash deposit
-        // This would be indicated by the presence of journal entries or specific fields
-        $journalTransactions = GlTransaction::where('transaction_id', $repayment->id)
-            ->where('transaction_type', 'journal repayment')
-            ->get();
-
-        if ($journalTransactions->isNotEmpty()) {
-            // Find the cash deposit account from the journal entries
-            $cashDepositAccountId = null;
-            foreach ($journalTransactions as $transaction) {
-                // Look for debit entries to cash deposit account
-                if ($transaction->nature === 'debit') {
-                    $cashDepositAccountId = $transaction->chart_account_id;
-                    break;
-                }
-            }
-
-            if ($cashDepositAccountId) {
-                // Find the cash deposit record and restore the amount
-                $cashDeposit = \App\Models\CashCollateral::whereHas('type', function($query) use ($cashDepositAccountId) {
-                    $query->where('chart_account_id', $cashDepositAccountId);
-                })->where('customer_id', $repayment->customer_id)->first();
-
-                if ($cashDeposit) {
-                    $amountToRestore = $repayment->principal + $repayment->interest + $repayment->fee_amount + $repayment->penalt_amount;
-                    $cashDeposit->increment('amount', $amountToRestore);
-
-                    Log::info('Restored cash deposit amount', [
-                        'cash_deposit_id' => $cashDeposit->id,
-                        'amount_restored' => $amountToRestore,
-                        'new_balance' => $cashDeposit->amount
-                    ]);
-                }
-            }
-        }
-    }
-
-    /**
-     * Update loan status after repayment deletion
-     */
-    private function updateLoanStatusAfterDeletion($loan, $originalStatus)
-    {
-        // If the loan was closed due to this repayment, we need to check if it should still be closed
-        if ($originalStatus === 'complete' || $originalStatus === 'closed') {
-            // Check if loan is still fully paid after this repayment deletion
-            if (!$loan->isEligibleForClosing()) {
-                $loan->status = 'active';
-                $loan->save();
-
-                Log::info('Loan status reverted to active after repayment deletion', [
-                    'loan_id' => $loan->id,
-                    'original_status' => $originalStatus
-                ]);
-            }
-        }
+        // Use the service method for comprehensive deletion
+        return $this->repaymentService->deleteRepayment($repayment->id);
     }
 
     /**
@@ -414,23 +231,15 @@ class LoanRepaymentController extends Controller
      */
     public function destroy($id)
     {
-        DB::beginTransaction();
-
         try {
-            $repayment = Repayment::with(['loan', 'receipt'])->findOrFail($id);
-
-            // Delete repayment and associated records
-            $this->deleteRepaymentInternal($repayment);
-
-            DB::commit();
+            // Use service method which handles transaction internally
+            $result = $this->repaymentService->deleteRepayment($id);
 
             return response()->json([
                 'success' => true,
-                'message' => 'Repayment deleted successfully!'
+                'message' => $result['message'] ?? 'Repayment deleted successfully!'
             ]);
-
         } catch (\Exception $e) {
-            DB::rollBack();
             Log::error('Repayment deletion error: ' . $e->getMessage());
 
             return response()->json([
@@ -450,25 +259,33 @@ class LoanRepaymentController extends Controller
             'ids.*' => 'integer|exists:repayments,id',
         ]);
 
-        DB::beginTransaction();
         try {
-            $repayments = Repayment::with(['loan', 'receipt'])->whereIn('id', $validated['ids'])->get();
             $deletedCount = 0;
+            $errors = [];
 
-            foreach ($repayments as $repayment) {
-                $this->deleteRepaymentInternal($repayment);
-                $deletedCount++;
+            foreach ($validated['ids'] as $repaymentId) {
+                try {
+                    $this->repaymentService->deleteRepayment($repaymentId);
+                    $deletedCount++;
+                } catch (\Exception $e) {
+                    $errors[] = "Repayment ID {$repaymentId}: " . $e->getMessage();
+                    Log::error("Failed to delete repayment {$repaymentId}: " . $e->getMessage());
+                }
             }
 
-            DB::commit();
+            $message = "Deleted {$deletedCount} repayment(s) successfully.";
+            if (!empty($errors)) {
+                $message .= " " . count($errors) . " failed: " . implode('; ', $errors);
+            }
 
             return response()->json([
-                'success' => true,
-                'message' => 'Repayments deleted successfully.',
+                'success' => $deletedCount > 0,
+                'message' => $message,
                 'deleted' => $deletedCount,
+                'failed' => count($errors),
+                'errors' => $errors,
             ]);
         } catch (\Throwable $e) {
-            DB::rollBack();
             Log::error('Bulk repayment deletion error: ' . $e->getMessage());
 
             return response()->json([
@@ -535,7 +352,6 @@ class LoanRepaymentController extends Controller
             );
 
             return response()->json($result);
-
         } catch (\Exception $e) {
             Log::error('Penalty removal error: ' . $e->getMessage());
 
@@ -563,7 +379,6 @@ class LoanRepaymentController extends Controller
                 'success' => true,
                 'schedules' => $schedules
             ]);
-
         } catch (\Exception $e) {
             Log::error('Schedule calculation error: ' . $e->getMessage());
 
@@ -618,7 +433,6 @@ class LoanRepaymentController extends Controller
                         'result' => $result
                     ];
                     $successCount++;
-
                 } catch (\Exception $e) {
                     $results[] = [
                         'loan_id' => $repaymentData['loan_id'],
@@ -639,7 +453,6 @@ class LoanRepaymentController extends Controller
                     'failed' => $errorCount
                 ]
             ]);
-
         } catch (\Exception $e) {
             Log::error('Bulk repayment error: ' . $e->getMessage());
 
@@ -690,7 +503,6 @@ class LoanRepaymentController extends Controller
                 'success' => true,
                 'receipt_data' => $receiptData
             ]);
-
         } catch (\Exception $e) {
             Log::error('Receipt print error: ' . $e->getMessage());
 
@@ -771,7 +583,6 @@ class LoanRepaymentController extends Controller
             } else {
                 return redirect()->back()->with('error', 'Failed to process settle repayment.');
             }
-
         } catch (\Exception $e) {
             Log::error('Settle repayment error: ' . $e->getMessage());
             return redirect()->back()->with('error', 'Failed to process settle repayment: ' . $e->getMessage());
