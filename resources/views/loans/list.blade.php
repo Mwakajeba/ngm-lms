@@ -378,16 +378,19 @@
                     showConfirmButton: true
                 });
             @endif
-                                        const currentStatus = '{{ $status ?? "active" }}';
+                                            const currentStatus = '{{ $status ?? "active" }}';
 
             // Initialize DataTable with Ajax
             const table = $('#loansTable').DataTable({
                 processing: true,
                 serverSide: true,
                 responsive: true,
+                deferRender: true, // Only render visible rows
+                stateSave: false, // Disable state saving for better performance
                 dom: '<"row"<"col-sm-12 col-md-6"l><"col-sm-12 col-md-6"f>>rtip',
                 ajax: {
                     url: '{{ route("loans.data") }}',
+                    type: 'GET',
                     data: function (d) {
                         d.status = currentStatus;
                     },
@@ -408,9 +411,13 @@
                     { data: 'comment', name: 'comment', orderable: false, searchable: true },
                     { data: 'actions', name: 'actions', orderable: false, searchable: false, className: 'text-center' }
                 ],
-                order: [[9, 'desc']], // Order by date applied descending
+                order: [[8, 'desc']], // Order by date applied descending (column index 8)
                 pageLength: 25,
                 lengthMenu: [[10, 25, 50, 100, -1], [10, 25, 50, 100, "All"]],
+                // Performance optimizations
+                scrollY: false, // Disable virtual scrolling for better performance
+                scrollCollapse: false,
+                pagingType: 'simple_numbers', // Simpler pagination for faster rendering
                 language: {
                     search: "",
                     searchPlaceholder: "Search loans by customer, product, amount, status, etc...",

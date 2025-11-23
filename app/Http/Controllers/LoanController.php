@@ -305,10 +305,38 @@ class LoanController extends Controller
             $branchId = auth()->user()->branch_id;
             $status = $request->get('status', 'active'); // Default to active loans
 
-            $loans = Loan::with(['customer', 'product', 'branch', 'group', 'loanOfficer', 'approvals'])
+            // Optimize: Select only needed columns and limit eager loading
+            $loans = Loan::with([
+                'customer:id,name,customerNo',
+                'product:id,name',
+                'branch:id,name',
+                'group:id,name',
+                'loanOfficer:id,name',
+                // Only load latest approval for comment column
+                'approvals' => function ($query) {
+                    $query->select('id', 'loan_id', 'comments', 'approved_at')
+                        ->orderBy('approved_at', 'desc')
+                        ->limit(1);
+                }
+            ])
                 ->where('branch_id', $branchId)
                 ->where('status', $status)
-                ->select('loans.*');
+                ->select(
+                    'loans.id',
+                    'loans.customer_id',
+                    'loans.product_id',
+                    'loans.branch_id',
+                    'loans.group_id',
+                    'loans.loan_officer_id',
+                    'loans.amount',
+                    'loans.interest',
+                    'loans.amount_total',
+                    'loans.period',
+                    'loans.status',
+                    'loans.date_applied',
+                    'loans.created_at',
+                    'loans.updated_at'
+                );
 
 
             return DataTables::eloquent($loans)
@@ -393,8 +421,8 @@ class LoanController extends Controller
                         return '<span class="text-muted">-</span>';
                     }
 
-
-                    $latestApproval = $loan->approvals->sortByDesc('approved_at')->first();
+                    // Use the already loaded latest approval (optimized query)
+                    $latestApproval = $loan->approvals->first();
                     if ($latestApproval && $latestApproval->comments) {
                         return '<div class="text-truncate" style="max-width: 200px;" title="' . e($latestApproval->comments) . '">
                                     <small class="text-muted">' . e($latestApproval->comments) . '</small>
@@ -543,7 +571,7 @@ class LoanController extends Controller
                 ]);
             } elseif ($type === 'old') {
                 // For old loans, get bank accounts linked to equity chart accounts
-                $accounts = \App\Models\BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
+                $accounts = BankAccount::whereHas('chartAccount.accountClassGroup', function ($query) {
                     $query->where('name', 'LIKE', '%equity%')
                         ->orWhere('name', 'LIKE', '%Equity%')
                         ->orWhere('name', 'LIKE', '%Retained Earnings%')
