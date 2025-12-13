@@ -227,7 +227,7 @@ class CustomerController extends Controller
 
             // Save group membership - check if customer is already in a group first
             $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
-            
+
             if (!$existingMembership) {
                 if ($request->filled('group_id')) {
                     DB::table('group_members')->insert([
@@ -511,6 +511,12 @@ class CustomerController extends Controller
             $customer = Customer::findOrFail($decoded);
 
             // Check for existing loans, cash collaterals, or GL transactions
+
+            //check if member is in any group then he need to delete that mmeber from that group
+            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+            if ($existingMembership) {
+                return redirect()->route('customers.index')->with('error', 'Customer is a member of a group. Please remove them from the group first.');
+            }
             $hasLoans = $customer->loans()->exists();
             $hasCollaterals = $customer->collaterals()->exists();
             $hasGLTransactions = \DB::table('gl_transactions')->where('customer_id', $customer->id)->exists();
@@ -530,6 +536,7 @@ class CustomerController extends Controller
             }
 
             $customer->delete();
+
             return redirect()->route('customers.index')->with('success', 'Customer deleted successfully.');
         } catch (\Exception $e) {
             return back()->with('error', 'Failed to delete customer: ' . $e->getMessage());
