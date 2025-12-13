@@ -1,5 +1,48 @@
 <header>
-    <div class="topbar d-flex align-items-center">
+    @php
+        // Check subscription expiry for current user's company
+        $subscriptionWarning = null;
+        if (auth()->check() && auth()->user()->company_id) {
+            $activeSubscription = \App\Models\Subscription::where('company_id', auth()->user()->company_id)
+                ->where('status', 'active')
+                ->where('payment_status', 'paid')
+                ->first();
+            
+            if ($activeSubscription) {
+                $timeRemaining = $activeSubscription->getFormattedTimeRemaining();
+                $notificationDays = $activeSubscription->features['notification_days'] ?? \App\Services\SystemSettingService::get('subscription_notification_days_30', 30);
+                
+                // Show warning if within notification days or expired
+                if ($timeRemaining['status'] === 'expired' || 
+                    ($timeRemaining['status'] === 'warning' && $activeSubscription->daysUntilExpiry() <= $notificationDays) ||
+                    $timeRemaining['status'] === 'danger') {
+                    $subscriptionWarning = $timeRemaining;
+                }
+            }
+        }
+    @endphp
+    
+    @if($subscriptionWarning)
+    <!-- Subscription Expiry Warning Marquee -->
+    <div class="subscription-warning-bar bg-{{ $subscriptionWarning['status'] === 'expired' ? 'danger' : ($subscriptionWarning['status'] === 'danger' ? 'danger' : 'warning') }} text-white" style="position: fixed; top: 0; left: 0; right: 0; z-index: 1050; height: 40px; line-height: 40px;">
+        <marquee behavior="scroll" direction="left" scrollamount="3" onmouseover="this.stop();" onmouseout="this.start();" style="height: 40px; line-height: 40px;">
+            <div class="d-inline-flex align-items-center" style="padding: 0 20px;">
+                <i class="bx bx-error-circle fs-5 me-2"></i>
+                <strong>SUBSCRIPTION ALERT:</strong>
+                <span class="ms-2">
+                    @if($subscriptionWarning['status'] === 'expired')
+                        Your subscription has EXPIRED! Please contact your administrator immediately to renew your subscription. 
+                        <span class="ms-2">Contact: <a href="tel:+255747762244" class="text-white text-decoration-underline fw-bold">+255 747 762 244</a></span>
+                    @else
+                        Your subscription will expire in <span id="subscription-countdown" data-end-date="{{ $subscriptionWarning['end_date_iso'] ?? $activeSubscription->end_date->toIso8601String() }}">{{ $subscriptionWarning['formatted'] }}</span>. Please renew to avoid service interruption. 
+                        <span class="ms-2">Need help? Contact: <a href="tel:+255747762244" class="text-white text-decoration-underline fw-bold">+255 747 762 244</a></span>
+                    @endif
+                </span>
+            </div>
+        </marquee>
+    </div>
+    @endif
+    <div class="topbar d-flex align-items-center" style="{{ $subscriptionWarning ? 'top: 40px;' : '' }}">
         <nav class="navbar navbar-expand gap-3">
             <div class="mobile-toggle-menu"><i class='bx bx-menu'></i>
             </div>

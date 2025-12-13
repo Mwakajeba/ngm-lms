@@ -119,6 +119,68 @@ class Subscription extends Model
     }
 
     /**
+     * Get formatted time remaining until expiry
+     */
+    public function getFormattedTimeRemaining()
+    {
+        $now = Carbon::now();
+        $endDate = Carbon::parse($this->end_date);
+        
+        if ($endDate->isPast()) {
+            $diff = $now->diffInDays($endDate);
+            return [
+                'value' => $diff,
+                'formatted' => $diff . ' day' . ($diff != 1 ? 's' : '') . ' ago',
+                'status' => 'expired',
+                'end_date_timestamp' => $endDate->timestamp
+            ];
+        }
+        
+        // Calculate detailed time breakdown
+        $diff = $now->diff($endDate);
+        $totalDays = $diff->days;
+        $hours = $diff->h;
+        $minutes = $diff->i;
+        $seconds = $diff->s;
+        
+        // Build formatted string with days, hours, minutes, and seconds
+        $parts = [];
+        if ($totalDays > 0) {
+            $parts[] = $totalDays . ' day' . ($totalDays != 1 ? 's' : '');
+        }
+        if ($hours > 0 || $totalDays > 0) {
+            $parts[] = $hours . ' hour' . ($hours != 1 ? 's' : '');
+        }
+        if ($minutes > 0 || $hours > 0 || $totalDays > 0) {
+            $parts[] = $minutes . ' minute' . ($minutes != 1 ? 's' : '');
+        }
+        $parts[] = $seconds . ' second' . ($seconds != 1 ? 's' : '');
+        
+        $formatted = implode(', ', $parts) . ' remaining';
+        
+        // Determine status
+        $status = 'success';
+        if ($totalDays <= 7) {
+            $status = 'warning';
+        }
+        if ($totalDays <= 1 || ($totalDays == 0 && $hours < 24)) {
+            $status = 'danger';
+        }
+        
+        return [
+            'value' => $totalDays,
+            'formatted' => $formatted,
+            'status' => $status,
+            'days' => $totalDays,
+            'hours' => $hours,
+            'minutes' => $minutes,
+            'seconds' => $seconds,
+            'end_date_timestamp' => $endDate->timestamp,
+            'end_date_iso' => $endDate->toIso8601String()
+        ];
+    }
+
+    /**
      * Mark subscription as paid
      */
     public function markAsPaid($paymentMethod = null, $transactionId = null, $notes = null)

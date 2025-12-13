@@ -12,6 +12,7 @@ use App\Models\ReceiptItem;
 use App\Models\GlTransaction;
 use App\Models\ChartAccount;
 use App\Models\BankAccount;
+use App\Helpers\SmsHelper;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
@@ -93,6 +94,9 @@ class LoanRepaymentService
         Log::info('Repayment transaction committed', ['loanId' => $loanId]);
         DB::commit();
 
+        // Send SMS notification to customer after successful repayment
+        $this->sendRepaymentSms($loan, $totalPaidAmount);
+
         return [
             'success' => true,
             'paid_amount' => $totalPaidAmount,
@@ -100,6 +104,63 @@ class LoanRepaymentService
             'processed_repayments' => $processedRepayments,
             'loan_status' => $loan->status
         ];
+    }
+
+    /**
+     * Send SMS notification to customer after repayment
+     */
+    private function sendRepaymentSms($loan, $amount)
+    {
+        try {
+            // Get customer and company information
+            $customer = $loan->customer;
+            if (!$customer || empty($customer->phone1)) {
+                Log::info('Skipping SMS - customer phone not available', [
+                    'loan_id' => $loan->id,
+                    'customer_id' => $customer->id ?? null
+                ]);
+                return;
+            }
+
+            // Get company name
+            $company = current_company();
+            $companyName = $company ? $company->name : 'SMARTFINANCE';
+
+            // Get customer name
+            $customerName = $customer->name ?? 'Mteja';
+
+            // Format phone number (remove any non-numeric characters except +)
+            $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
+
+            // Format message as specified
+            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amount, 0) . '. ' . $companyName;
+
+            // Send SMS
+            $smsResult = SmsHelper::send($phone, $message);
+
+            if (is_array($smsResult) && ($smsResult['success'] ?? false)) {
+                Log::info('Repayment SMS sent successfully', [
+                    'loan_id' => $loan->id,
+                    'customer_id' => $customer->id,
+                    'phone' => $phone,
+                    'amount' => $amount
+                ]);
+            } else {
+                Log::warning('Repayment SMS failed', [
+                    'loan_id' => $loan->id,
+                    'customer_id' => $customer->id,
+                    'phone' => $phone,
+                    'error' => is_array($smsResult) ? ($smsResult['error'] ?? 'Unknown error') : $smsResult
+                ]);
+            }
+        } catch (\Exception $e) {
+            // Log error but don't throw - SMS failure shouldn't break repayment process
+            Log::error('Failed to send repayment SMS', [
+                'loan_id' => $loan->id ?? null,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
     }
     private function getUnpaidSchedules($loan)
     {
@@ -1315,6 +1376,9 @@ class LoanRepaymentService
             }
 
             DB::commit();
+
+            // Send SMS notification to customer after successful settlement
+            $this->sendRepaymentSms($loan, $amount);
 
             return [
                 'success' => true,

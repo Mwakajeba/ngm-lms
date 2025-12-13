@@ -558,6 +558,27 @@ class GroupController extends Controller
                         'payment_date' => now(),
                     ]);
 
+                    // Send SMS notification to customer after repayment is created
+                    try {
+                        $loan = $schedule->loan;
+                        if ($loan && $customer && !empty($customer->phone1)) {
+                            $company = current_company();
+                            $companyName = $company ? $company->name : 'SMARTFINANCE';
+                            $customerName = $customer->name ?? 'Mteja';
+                            $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
+                            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amountPaid, 0) . '. ' . $companyName;
+                            
+                            \App\Helpers\SmsHelper::send($phone, $message);
+                        }
+                    } catch (\Exception $e) {
+                        // Log error but don't break the repayment process
+                        \Log::error('Failed to send repayment SMS in GroupController', [
+                            'loan_id' => $loanId,
+                            'customer_id' => $customerId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
 
 
                     // *** 3. Kuhifadhi Receipt na ReceiptItem ***
