@@ -94,6 +94,10 @@ class LoanRepaymentService
         Log::info('Repayment transaction committed', ['loanId' => $loanId]);
         DB::commit();
 
+        // Refresh loan to get updated outstanding balance
+        $loan->refresh();
+        $loan->load(['schedule', 'customer', 'company', 'branch.company']);
+
         // Send SMS notification to customer after successful repayment
         $this->sendRepaymentSms($loan, $totalPaidAmount);
 
@@ -112,19 +116,97 @@ class LoanRepaymentService
     private function sendRepaymentSms($loan, $amount)
     {
         try {
+            // Ensure customer relationship is loaded
+            if (!$loan->relationLoaded('customer')) {
+                $loan->load('customer');
+            }
+            
             // Get customer and company information
             $customer = $loan->customer;
+            
+            Log::info('Attempting to send repayment SMS', [
+                'loan_id' => $loan->id,
+                'loan_no' => $loan->loanNo ?? null,
+                'customer_id' => $customer->id ?? null,
+                'customer_name' => $customer->name ?? null,
+                'phone1' => $customer->phone1 ?? null,
+                'phone1_empty' => empty($customer->phone1 ?? null),
+                'amount' => $amount
+            ]);
+            
             if (!$customer || empty($customer->phone1)) {
-                Log::info('Skipping SMS - customer phone not available', [
+                Log::warning('Skipping SMS - customer phone not available', [
                     'loan_id' => $loan->id,
-                    'customer_id' => $customer->id ?? null
+                    'loan_no' => $loan->loanNo ?? null,
+                    'customer_id' => $customer->id ?? null,
+                    'customer_exists' => $customer ? 'yes' : 'no',
+                    'phone1' => $customer->phone1 ?? 'not set',
+                    'phone1_empty' => empty($customer->phone1 ?? null)
                 ]);
                 return;
             }
 
-            // Get company name
-            $company = current_company();
+            // Get company name - try multiple sources for reliability
+            $company = null;
+            $source = 'none';
+            
+            // First try: Get company from loan's company relationship
+            if ($loan->relationLoaded('company') && $loan->company) {
+                $company = $loan->company;
+                $source = 'loan_relationship';
+            } elseif (isset($loan->company_id) && $loan->company_id) {
+                $company = \App\Models\Company::find($loan->company_id);
+                $source = 'loan_id';
+            }
+            
+            // Second try: Get company from customer
+            if (!$company && $customer) {
+                if ($customer->relationLoaded('company') && $customer->company) {
+                    $company = $customer->company;
+                    $source = 'customer_relationship';
+                } elseif (isset($customer->company_id) && $customer->company_id) {
+                    $company = \App\Models\Company::find($customer->company_id);
+                    $source = 'customer_id';
+                }
+            }
+            
+            // Third try: Get company from branch
+            if (!$company && $loan->branch_id) {
+                if ($loan->relationLoaded('branch') && $loan->branch) {
+                    $branch = $loan->branch;
+                    if ($branch->relationLoaded('company') && $branch->company) {
+                        $company = $branch->company;
+                        $source = 'branch_relationship';
+                    } elseif (isset($branch->company_id) && $branch->company_id) {
+                        $company = \App\Models\Company::find($branch->company_id);
+                        $source = 'branch_id';
+                    }
+                } else {
+                    $branch = \App\Models\Branch::find($loan->branch_id);
+                    if ($branch && isset($branch->company_id) && $branch->company_id) {
+                        $company = \App\Models\Company::find($branch->company_id);
+                        $source = 'branch_lookup';
+                    }
+                }
+            }
+            
+            // Fourth try: Use current_company() as fallback
+            if (!$company) {
+                $company = current_company();
+                $source = 'current_company';
+            }
+            
             $companyName = $company ? $company->name : 'SMARTFINANCE';
+            
+            Log::info('Company name resolved for SMS', [
+                'loan_id' => $loan->id,
+                'company_id' => $company->id ?? null,
+                'company_name' => $companyName,
+                'source' => $source,
+                'loan_company_id' => $loan->company_id ?? null,
+                'customer_company_id' => $customer->company_id ?? null,
+                'branch_company_id' => ($loan->branch && isset($loan->branch->company_id)) ? $loan->branch->company_id : null
+            ]);
 
             // Get customer name
             $customerName = $customer->name ?? 'Mteja';
@@ -132,8 +214,11 @@ class LoanRepaymentService
             // Format phone number (remove any non-numeric characters except +)
             $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
 
-            // Format message as specified
-            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amount, 0) . '. ' . $companyName;
+            // Calculate remaining/outstanding amount
+            $remainingAmount = $loan->getTotalOutstandingAmount();
+
+            // Format message as specified - include remaining amount
+            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amount, 0) . '. Salio: Tsh ' . number_format($remainingAmount, 0) . '. ' . $companyName;
 
             // Send SMS
             $smsResult = SmsHelper::send($phone, $message);
@@ -1376,6 +1461,10 @@ class LoanRepaymentService
             }
 
             DB::commit();
+
+            // Refresh loan to get updated outstanding balance
+            $loan->refresh();
+            $loan->load(['schedule', 'customer', 'company', 'branch.company']);
 
             // Send SMS notification to customer after successful settlement
             $this->sendRepaymentSms($loan, $amount);
