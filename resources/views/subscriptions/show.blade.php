@@ -3,210 +3,289 @@
 @section('title', 'Subscription Details')
 
 @section('content')
-    <div class="page-wrapper">
-        <div class="page-content">
-            <x-breadcrumbs-with-icons :links="[
+<div class="page-wrapper">
+    <div class="page-content">
+        <x-breadcrumbs-with-icons :links="[
             ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
-            ['label' => 'Subscriptions', 'url' => route('subscriptions.index'), 'icon' => 'bx bx-credit-card'],
-            ['label' => 'Details', 'url' => '#', 'icon' => 'bx bx-show']
+            ['label' => 'Subscriptions', 'url' => route('subscriptions.index'), 'icon' => 'bx bx-calendar-check'],
+            ['label' => 'Subscription Details', 'url' => '#', 'icon' => 'bx bx-show']
         ]" />
-            <h6 class="mb-0 text-uppercase">SUBSCRIPTION DETAILS</h6>
-            <hr />
 
-            <div class="row">
-                <div class="col-12">
-                    <div class="card">
-                        <div class="card-body">
-                            <div class="d-flex justify-content-between align-items-center mb-4">
-                                <h4 class="card-title mb-0">Subscription Details</h4>
-                                <div class="btn-group" role="group">
-                                    <a href="{{ route('subscriptions.edit', $subscription) }}" class="btn btn-warning">
+        @if(session('success'))
+            <div class="alert alert-success alert-dismissible fade show" role="alert">
+                <i class="bx bx-check-circle me-2"></i>
+                {{ session('success') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        @if(session('error'))
+            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                <i class="bx bx-x-circle me-2"></i>
+                {{ session('error') }}
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
+        <!-- Header Section -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card border-top border-0 border-4 border-primary shadow-sm">
+                    <div class="card-body p-4">
+                        <div class="row align-items-center">
+                            <div class="col-md-8">
+                                <div class="d-flex align-items-center">
+                                    <div class="widgets-icons bg-gradient-cosmic text-white rounded-circle p-3 me-3">
+                                        <i class="bx bx-calendar-check fs-4"></i>
+                                    </div>
+                                    <div>
+                                        <h4 class="mb-1 text-primary fw-bold">Subscription Details</h4>
+                                        <p class="mb-0 text-muted">{{ $subscription->plan_name }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-4 text-end">
+                                <div class="d-flex gap-2 justify-content-end">
+                                    <a href="{{ route('subscriptions.edit', $subscription) }}" class="btn btn-primary">
                                         <i class="bx bx-edit me-1"></i> Edit
                                     </a>
-                                    <a href="{{ route('subscriptions.index') }}" class="btn btn-secondary">
+                                    <a href="{{ route('subscriptions.index') }}" class="btn btn-outline-secondary">
                                         <i class="bx bx-arrow-back me-1"></i> Back
                                     </a>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
 
-                            @if(session('success'))
-                                <div class="alert alert-success alert-dismissible fade show" role="alert">
-                                    <i class="bx bx-check-circle me-2"></i>
-                                    {{ session('success') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            @endif
-
-                            @if(session('error'))
-                                <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                                    <i class="bx bx-error-circle me-2"></i>
-                                    {{ session('error') }}
-                                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                                </div>
-                            @endif
-
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <div class="card border">
-                                        <div class="card-header bg-light">
-                                            <h6 class="mb-0">Basic Information</h6>
+        <div class="row">
+            <!-- Main Details -->
+            <div class="col-lg-8">
+                <!-- Subscription Status Card -->
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <div class="card shadow-sm border-0">
+                            <div class="card-body">
+                                <div class="d-flex align-items-center justify-content-between">
+                                    <div class="d-flex align-items-center">
+                                        <div class="me-3">
+                                            @php
+                                                $statusConfig = [
+                                                    'active' => ['icon' => 'bx-check-circle', 'color' => 'success', 'bg' => 'bg-success bg-opacity-10'],
+                                                    'expired' => ['icon' => 'bx-x-circle', 'color' => 'danger', 'bg' => 'bg-danger bg-opacity-10'],
+                                                    'pending' => ['icon' => 'bx-time-five', 'color' => 'info', 'bg' => 'bg-info bg-opacity-10'],
+                                                    'cancelled' => ['icon' => 'bx-x', 'color' => 'warning', 'bg' => 'bg-warning bg-opacity-10'],
+                                                    'inactive' => ['icon' => 'bx-pause-circle', 'color' => 'secondary', 'bg' => 'bg-secondary bg-opacity-10'],
+                                                ];
+                                                $currentStatus = $statusConfig[$subscription->status] ?? $statusConfig['pending'];
+                                            @endphp
+                                            <div class="avatar-lg {{ $currentStatus['bg'] }} rounded-circle d-flex align-items-center justify-content-center">
+                                                <i class="bx {{ $currentStatus['icon'] }} text-{{ $currentStatus['color'] }} fs-3"></i>
+                                            </div>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Company:</strong></div>
-                                                <div class="col-sm-8">{{ $subscription->company->name }}</div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Plan Name:</strong></div>
-                                                <div class="col-sm-8">{{ $subscription->plan_name }}</div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Description:</strong></div>
-                                                <div class="col-sm-8">
-                                                    {{ $subscription->plan_description ?: 'No description' }}</div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Amount:</strong></div>
-                                                <div class="col-sm-8">{{ number_format($subscription->amount, 2) }}
-                                                    {{ $subscription->currency }}</div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Billing Cycle:</strong></div>
-                                                <div class="col-sm-8">{{ ucfirst($subscription->billing_cycle) }}</div>
-                                            </div>
+                                        <div>
+                                            <h6 class="text-muted mb-1">Subscription Status</h6>
+                                            <h4 class="mb-0 text-{{ $currentStatus['color'] }}">
+                                                {{ ucfirst($subscription->status) }}
+                                            </h4>
                                         </div>
                                     </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="card border">
-                                        <div class="card-header bg-light">
-                                            <h6 class="mb-0">Dates & Status</h6>
-                                        </div>
-                                        <div class="card-body">
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Start Date:</strong></div>
-                                                <div class="col-sm-8">{{ $subscription->start_date->format('M d, Y') }}
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>End Date:</strong></div>
-                                                <div class="col-sm-8">{{ $subscription->end_date->format('M d, Y') }}</div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Status:</strong></div>
-                                                <div class="col-sm-8">
-                                                    <span class="badge badge-{{ $subscription->getStatusBadgeClass() }}">
-                                                        {{ ucfirst($subscription->status) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Payment Status:</strong></div>
-                                                <div class="col-sm-8">
-                                                    <span
-                                                        class="badge badge-{{ $subscription->getPaymentStatusBadgeClass() }}">
-                                                        {{ ucfirst($subscription->payment_status) }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                            <div class="row mb-3">
-                                                <div class="col-sm-4"><strong>Auto Renewal:</strong></div>
-                                                <div class="col-sm-8">
-                                                    <span
-                                                        class="badge badge-{{ $subscription->auto_renew ? 'success' : 'secondary' }}">
-                                                        {{ $subscription->auto_renew ? 'Yes' : 'No' }}
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <div class="text-end">
+                                        <span class="badge bg-{{ $currentStatus['color'] }} fs-6 px-4 py-2">
+                                            <i class="bx {{ $currentStatus['icon'] }} me-1"></i>
+                                            {{ strtoupper($subscription->status) }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
+                        </div>
+                    </div>
+                </div>
 
-                            @if($subscription->payment_status === 'paid' && $subscription->payment_date)
-                                <div class="row mt-4">
-                                    <div class="col-12">
-                                        <div class="card border">
-                                            <div class="card-header bg-light">
-                                                <h6 class="mb-0">Payment Information</h6>
-                                            </div>
-                                            <div class="card-body">
-                                                <div class="row mb-3">
-                                                    <div class="col-sm-3"><strong>Payment Method:</strong></div>
-                                                    <div class="col-sm-3">{{ $subscription->payment_method ?: 'Not specified' }}
-                                                    </div>
-                                                    <div class="col-sm-3"><strong>Transaction ID:</strong></div>
-                                                    <div class="col-sm-3">{{ $subscription->transaction_id ?: 'Not specified' }}
-                                                    </div>
-                                                </div>
-                                                <div class="row mb-3">
-                                                    <div class="col-sm-3"><strong>Payment Date:</strong></div>
-                                                    <div class="col-sm-9">
-                                                        {{ $subscription->payment_date->format('M d, Y H:i') }}</div>
-                                                </div>
-                                                @if($subscription->payment_notes)
-                                                    <div class="row mb-3">
-                                                        <div class="col-sm-3"><strong>Payment Notes:</strong></div>
-                                                        <div class="col-sm-9">{{ $subscription->payment_notes }}</div>
-                                                    </div>
-                                                @endif
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                <!-- Subscription Information -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-light">
+                        <h5 class="card-title mb-0">
+                            <i class="bx bx-info-circle text-primary me-2"></i>
+                            Subscription Information
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label class="text-muted small">Company</label>
+                                <h6 class="mb-0">
+                                    <i class="bx bx-building me-1 text-primary"></i>
+                                    {{ $subscription->company->name ?? 'N/A' }}
+                                </h6>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="text-muted small">Plan Name</label>
+                                <h6 class="mb-0">
+                                    <i class="bx bx-package me-1 text-primary"></i>
+                                    {{ $subscription->plan_name }}
+                                </h6>
+                            </div>
+                        </div>
+
+                        @if($subscription->plan_description)
+                        <div class="row mb-3">
+                            <div class="col-12">
+                                <label class="text-muted small">Description</label>
+                                <p class="mb-0">{{ $subscription->plan_description }}</p>
+                            </div>
+                        </div>
+                        @endif
+
+                        <div class="row mb-3">
+                            <div class="col-md-4">
+                                <label class="text-muted small">Start Date</label>
+                                <h6 class="mb-0">
+                                    <i class="bx bx-calendar me-1 text-primary"></i>
+                                    {{ $subscription->start_date->format('M d, Y') }}
+                                </h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">End Date</label>
+                                <h6 class="mb-0">
+                                    <i class="bx bx-calendar-check me-1 text-primary"></i>
+                                    {{ $subscription->end_date->format('M d, Y') }}
+                                </h6>
+                            </div>
+                            <div class="col-md-4">
+                                <label class="text-muted small">Time Until Expiry</label>
+                                @php
+                                    $timeRemaining = $subscription->getFormattedTimeRemaining();
+                                    $daysUntilExpiry = $subscription->daysUntilExpiry();
+                                @endphp
+                                <h6 class="mb-0">
+                                    <i class="bx bx-time me-1 text-primary"></i>
+                                    @if($timeRemaining['status'] === 'expired')
+                                        <span class="text-danger fw-bold">{{ $timeRemaining['formatted'] }}</span>
+                                    @elseif($timeRemaining['status'] === 'danger')
+                                        <span class="text-danger fw-bold">{{ $timeRemaining['formatted'] }}</span>
+                                    @elseif($timeRemaining['status'] === 'warning')
+                                        <span class="text-warning fw-bold">{{ $timeRemaining['formatted'] }}</span>
+                                    @else
+                                        <span class="text-success fw-bold">{{ $timeRemaining['formatted'] }}</span>
+                                    @endif
+                                </h6>
+                            </div>
+                        </div>
+
+                        @if($subscription->features && isset($subscription->features['notification_days']))
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label class="text-muted small">Notification Days</label>
+                                <h6 class="mb-0">
+                                    <i class="bx bx-bell me-1 text-primary"></i>
+                                    {{ $subscription->features['notification_days'] }} days before expiry
+                                </h6>
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Sidebar Actions -->
+            <div class="col-lg-4">
+                <!-- Quick Actions -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="bx bx-cog me-2"></i>
+                            Quick Actions
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="d-grid gap-2">
+                            <a href="{{ route('subscriptions.edit', $subscription) }}" class="btn btn-warning">
+                                <i class="bx bx-edit me-2"></i> Edit Subscription
+                            </a>
+
+                            @if($subscription->status !== 'cancelled')
+                            <button type="button" class="btn btn-outline-danger" data-bs-toggle="modal" data-bs-target="#cancelModal">
+                                <i class="bx bx-x-circle me-2"></i> Cancel Subscription
+                            </button>
                             @endif
 
-                            <div class="row mt-4">
-                                <div class="col-12">
-                                    <div class="card border">
-                                        <div class="card-header bg-light">
-                                            <h6 class="mb-0">Actions</h6>
+                            @if($subscription->status === 'expired')
+                            <form action="{{ route('subscriptions.renew', $subscription) }}" method="POST" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-success w-100">
+                                    <i class="bx bx-refresh me-2"></i> Renew Subscription
+                                </button>
+                            </form>
+                            @endif
+
+                            @if($subscription->status === 'active')
+                            <button type="button" class="btn btn-info" data-bs-toggle="modal" data-bs-target="#extendModal">
+                                <i class="bx bx-calendar-plus me-2"></i> Extend Subscription
+                            </button>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Subscription Timeline -->
+                <div class="card shadow-sm">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0">
+                            <i class="bx bx-time me-2"></i>
+                            Timeline
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="timeline">
+                            <div class="timeline-item mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <div class="avatar-sm bg-primary bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bx bx-calendar text-primary"></i>
                                         </div>
-                                        <div class="card-body">
-                                            <div class="btn-group" role="group">
-                                                @if($subscription->payment_status !== 'paid')
-                                                    <button type="button" class="btn btn-success" data-bs-toggle="modal"
-                                                        data-bs-target="#markPaidModal">
-                                                        <i class="bx bx-check me-1"></i> Mark as Paid
-                                                    </button>
-                                                @endif
-
-                                                @if($subscription->status !== 'cancelled')
-                                                    <form action="{{ route('subscriptions.cancel', $subscription) }}"
-                                                        method="POST" class="d-inline"
-                                                        onsubmit="return confirm('Are you sure you want to cancel this subscription?')">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-warning">
-                                                            <i class="bx bx-x me-1"></i> Cancel
-                                                        </button>
-                                                    </form>
-                                                @endif
-
-                                                @if($subscription->status === 'expired')
-                                                    <form action="{{ route('subscriptions.renew', $subscription) }}"
-                                                        method="POST" class="d-inline"
-                                                        onsubmit="return confirm('Are you sure you want to renew this subscription?')">
-                                                        @csrf
-                                                        <button type="submit" class="btn btn-info">
-                                                            <i class="bx bx-refresh me-1"></i> Renew
-                                                        </button>
-                                                    </form>
-                                                @endif
-
-                                                @if(in_array($subscription->status, ['pending', 'cancelled']))
-                                                    <form action="{{ route('subscriptions.destroy', $subscription) }}"
-                                                        method="POST" class="d-inline"
-                                                        onsubmit="return confirm('Are you sure you want to delete this subscription?')">
-                                                        @csrf
-                                                        @method('DELETE')
-                                                        <button type="submit" class="btn btn-danger">
-                                                            <i class="bx bx-trash me-1"></i> Delete
-                                                        </button>
-                                                    </form>
-                                                @endif
-                                            </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Created</h6>
+                                        <p class="text-muted small mb-0">{{ $subscription->created_at->format('M d, Y \a\t h:i A') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item mb-3">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        <div class="avatar-sm bg-success bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bx bx-check-circle text-success"></i>
                                         </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">Start Date</h6>
+                                        <p class="text-muted small mb-0">{{ $subscription->start_date->format('M d, Y') }}</p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="timeline-item">
+                                <div class="d-flex">
+                                    <div class="flex-shrink-0">
+                                        @php
+                                            $timelineColor = $daysUntilExpiry < 0 ? 'danger' : ($daysUntilExpiry <= 7 ? 'warning' : 'success');
+                                        @endphp
+                                        <div class="avatar-sm bg-{{ $timelineColor }} bg-opacity-10 rounded-circle d-flex align-items-center justify-content-center">
+                                            <i class="bx bx-calendar-check text-{{ $timelineColor }}"></i>
+                                        </div>
+                                    </div>
+                                    <div class="flex-grow-1 ms-3">
+                                        <h6 class="mb-1">End Date</h6>
+                                        <p class="text-muted small mb-0">{{ $subscription->end_date->format('M d, Y') }}</p>
+                                        @php
+                                            $timeRemaining = $subscription->getFormattedTimeRemaining();
+                                        @endphp
+                                        <span class="badge bg-{{ $timeRemaining['status'] === 'expired' ? 'danger' : ($timeRemaining['status'] === 'warning' ? 'warning' : ($timeRemaining['status'] === 'danger' ? 'danger' : 'success')) }} mt-1">
+                                            {{ $timeRemaining['formatted'] }}
+                                        </span>
                                     </div>
                                 </div>
                             </div>
@@ -216,55 +295,79 @@
             </div>
         </div>
     </div>
+</div>
 
-    <!-- Mark as Paid Modal -->
-    <div class="modal fade" id="markPaidModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Mark as Paid</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <form action="{{ route('subscriptions.mark-paid', $subscription) }}" method="POST">
-                    @csrf
-                    <div class="modal-body">
-                        <div class="mb-3">
-                            <label for="payment_method" class="form-label">Payment Method</label>
-                            <select class="form-select" id="payment_method" name="payment_method" required>
-                                <option value="">Select Payment Method</option>
-                                <option value="Bank Transfer">Bank Transfer</option>
-                                <option value="Credit Card">Credit Card</option>
-                                <option value="Mobile Money">Mobile Money</option>
-                                <option value="Cash">Cash</option>
-                            </select>
-                        </div>
-                        <div class="mb-3">
-                            <label for="transaction_id" class="form-label">Transaction ID</label>
-                            <input type="text" class="form-control" id="transaction_id" name="transaction_id"
-                                placeholder="Optional">
-                        </div>
-                        <div class="mb-3">
-                            <label for="payment_notes" class="form-label">Payment Notes</label>
-                            <textarea class="form-control" id="payment_notes" name="payment_notes" rows="3"
-                                placeholder="Optional notes about the payment"></textarea>
-                        </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-success">Mark as Paid</button>
-                    </div>
-                </form>
+<!-- Cancel Modal -->
+<div class="modal fade" id="cancelModal" tabindex="-1" aria-labelledby="cancelModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="cancelModalLabel">Cancel Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
+            <form action="{{ route('subscriptions.cancel', $subscription) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <p>Are you sure you want to cancel this subscription?</p>
+                    <p class="text-muted small">This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">No, Keep It</button>
+                    <button type="submit" class="btn btn-danger">Yes, Cancel Subscription</button>
+                </div>
+            </form>
         </div>
     </div>
+</div>
 
-    <!--end page wrapper -->
-    <!--start overlay-->
-    <div class="overlay toggle-icon"></div>
-    <!--end overlay-->
-    <!--Start Back To Top Button--> <a href="javaScript:;" class="back-to-top"><i class='bx bxs-up-arrow-alt'></i></a>
-    <!--End Back To Top Button-->
-    <footer class="page-footer">
-        <p class="mb-0">Copyright © {{ date('Y') }}. All right reserved. -- By SAFCO FINTECH</p>
-    </footer>
+<!-- Extend Modal -->
+<div class="modal fade" id="extendModal" tabindex="-1" aria-labelledby="extendModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="extendModalLabel">Extend Subscription</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form action="{{ route('subscriptions.extend', $subscription) }}" method="POST">
+                @csrf
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="extend_days" class="form-label">Number of Days to Extend</label>
+                        <input type="number" class="form-control" id="extend_days" name="days" 
+                               min="1" max="365" value="30" required>
+                        <div class="form-text">Enter the number of days to add to the current end date (1-365 days)</div>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bx bx-info-circle me-2"></i>
+                        Current end date: <strong>{{ $subscription->end_date->format('M d, Y') }}</strong>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Extend Subscription</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<style>
+    .avatar-sm {
+        width: 40px;
+        height: 40px;
+    }
+    .timeline-item {
+        position: relative;
+    }
+    .timeline-item:not(:last-child)::after {
+        content: '';
+        position: absolute;
+        left: 19px;
+        top: 50px;
+        width: 2px;
+        height: calc(100% - 20px);
+        background: #e9ecef;
+    }
+</style>
 @endsection
+

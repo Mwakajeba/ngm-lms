@@ -37,6 +37,8 @@ class DatabaseSeeder extends Seeder
       PermissionGroupSeeder::class,
       BranchUserSeeder::class,
       GroupSeeder::class,
+      // Create default one-year subscriptions for all companies
+      DefaultSubscriptionSeeder::class,
     ]);
   }
 }

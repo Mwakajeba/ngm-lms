@@ -780,23 +780,34 @@ class CustomerController extends Controller
             // Send SMS using SmsHelper
             $smsResponse = \App\Helpers\SmsHelper::send($phoneNumber, $message);
 
+            // Check if SMS was sent successfully
+            $smsSuccess = is_array($smsResponse) ? ($smsResponse['success'] ?? false) : true;
+            $smsMessage = is_array($smsResponse) ? ($smsResponse['message'] ?? 'SMS sent') : 'SMS sent';
+
             // Log the SMS activity (optional)
             \DB::table('sms_logs')->insert([
                 'customer_id' => $customer->id,
                 'phone_number' => $phoneNumber,
                 'message' => $message,
-                'response' => $smsResponse,
+                'response' => is_array($smsResponse) ? json_encode($smsResponse) : $smsResponse,
                 'sent_by' => auth()->id(),
                 'sent_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
 
-            // Return a simple success message for SweetAlert or toast notification
-            return response()->json([
-                'success' => true,
-                'message' => 'Successfully sent SMS to ' . $customer->name
-            ]);
+            // Return response based on SMS result
+            if ($smsSuccess) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Successfully sent SMS to ' . $customer->name
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Failed to send SMS: ' . ($smsResponse['error'] ?? $smsMessage)
+                ], 500);
+            }
 
         } catch (\Illuminate\Validation\ValidationException $e) {
             return response()->json([

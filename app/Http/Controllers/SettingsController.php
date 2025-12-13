@@ -633,34 +633,123 @@ class SettingsController extends Controller
     }
 
     /**
-     * Subscription Settings
+     * SMS Settings
      */
-    public function subscriptionSettings()
+    public function smsSettings()
     {
-        return view('settings.subscription');
+        return view('settings.sms');
     }
 
     /**
-     * Update Subscription Settings
+     * Update SMS Settings
      */
-    public function updateSubscriptionSettings(Request $request)
+    public function updateSmsSettings(Request $request)
     {
         $request->validate([
-            'subscription_plan' => 'required|string|in:basic,premium,enterprise',
-            'billing_cycle' => 'required|string|in:monthly,quarterly,yearly',
-            'auto_renewal' => 'boolean',
-            'payment_method' => 'required|string|in:credit_card,bank_transfer,mobile_money',
-            'billing_email' => 'required|email',
-            'billing_address' => 'required|string',
+            'sms_url' => 'required|url',
+            'sms_senderid' => 'required|string|max:255',
+            'sms_key' => 'required|string|max:255',
+            'sms_token' => 'required|string|max:255',
+            'test_phone' => 'nullable|string|max:20',
         ]);
 
         try {
-            // Update subscription settings logic here
-            // This would typically save to a settings table or config file
+            // Update .env file with SMS settings
+            $envKeys = [
+                'BEEM_SMS_URL' => $request->sms_url,
+                'BEEM_SENDER_ID' => $request->sms_senderid,
+                'BEEM_API_KEY' => $request->sms_key,
+                'BEEM_SECRET_KEY' => $request->sms_token,
+            ];
 
-            return redirect()->route('settings.subscription')->with('success', 'Subscription settings updated successfully!');
+            // Also set fallback SMS_* keys
+            $envKeys['SMS_URL'] = $request->sms_url;
+            $envKeys['SMS_SENDERID'] = $request->sms_senderid;
+            $envKeys['SMS_KEY'] = $request->sms_key;
+            $envKeys['SMS_TOKEN'] = $request->sms_token;
+
+            foreach ($envKeys as $key => $value) {
+                if (!update_env_file($key, $value)) {
+                    throw new \Exception("Failed to update {$key} in .env file");
+                }
+            }
+
+            // Clear config cache to reload .env values
+            \Artisan::call('config:clear');
+
+            // If test phone is provided, send test SMS
+            if ($request->filled('test_phone')) {
+                // Temporarily update config to use new values for testing
+                config([
+                    'services.sms.senderid' => $request->sms_senderid,
+                    'services.sms.token' => $request->sms_token,
+                    'services.sms.key' => $request->sms_key,
+                    'services.sms.url' => $request->sms_url,
+                ]);
+
+                $testResult = \App\Helpers\SmsHelper::test($request->test_phone);
+                
+                if ($testResult['success'] ?? false) {
+                    return redirect()->route('settings.sms')->with('success', 'SMS settings updated and test SMS sent successfully!');
+                } else {
+                    return redirect()->route('settings.sms')
+                        ->with('success', 'SMS settings updated successfully!')
+                        ->with('warning', 'Test SMS failed: ' . ($testResult['error'] ?? 'Unknown error'));
+                }
+            }
+
+            return redirect()->route('settings.sms')->with('success', 'SMS settings updated successfully! Please note that you may need to restart your application server for changes to take full effect.');
         } catch (\Exception $e) {
-            return redirect()->route('settings.subscription')->with('error', 'Failed to update subscription settings: ' . $e->getMessage());
+            \Log::error('SMS Settings Update Error: ' . $e->getMessage());
+            return redirect()->route('settings.sms')->with('error', 'Failed to update SMS settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Test SMS Configuration
+     */
+    public function testSmsSettings(Request $request)
+    {
+        $request->validate([
+            'test_phone' => 'required|string|max:20',
+            'sms_url' => 'nullable|url',
+            'sms_senderid' => 'nullable|string|max:255',
+            'sms_key' => 'nullable|string|max:255',
+            'sms_token' => 'nullable|string|max:255',
+        ]);
+
+        try {
+            // If form values are provided, use them temporarily for testing
+            if ($request->filled('sms_url') && $request->filled('sms_senderid') && 
+                $request->filled('sms_key') && $request->filled('sms_token')) {
+                // Temporarily update config to use form values
+                config([
+                    'services.sms.senderid' => $request->sms_senderid,
+                    'services.sms.token' => $request->sms_token,
+                    'services.sms.key' => $request->sms_key,
+                    'services.sms.url' => $request->sms_url,
+                ]);
+            }
+
+            $result = \App\Helpers\SmsHelper::test($request->test_phone);
+            
+            if ($result['success'] ?? false) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Test SMS sent successfully! Please check the recipient phone.'
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => $result['error'] ?? 'Failed to send test SMS'
+                ], 400);
+            }
+        } catch (\Exception $e) {
+            \Log::error('SMS Test Error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Test failed: ' . $e->getMessage()
+            ], 500);
         }
     }
 

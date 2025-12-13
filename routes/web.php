@@ -88,6 +88,9 @@ Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
 
 Route::get('/login', [AuthController::class, 'showLoginForm']);
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::get('/subscription-expired', function () {
+    return view('auth.subscription-expired');
+})->name('subscription.expired');
 
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/register', [AuthController::class, 'register']);
@@ -286,9 +289,10 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
     Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');
 
-    // Subscription Settings
-    Route::get('/subscription', [SettingsController::class, 'subscriptionSettings'])->name('subscription');
-    Route::put('/subscription', [SettingsController::class, 'updateSubscriptionSettings'])->name('subscription.update');
+    // SMS Settings
+    Route::get('/sms', [SettingsController::class, 'smsSettings'])->name('sms');
+    Route::put('/sms', [SettingsController::class, 'updateSmsSettings'])->name('sms.update');
+    Route::post('/sms/test', [SettingsController::class, 'testSmsSettings'])->name('sms.test');
 
     // Payment Voucher Approval Settings
     Route::get('/payment-voucher-approval', [SettingsController::class, 'paymentVoucherApprovalSettings'])->name('payment-voucher-approval');
@@ -852,11 +856,14 @@ Route::middleware(['auth'])->group(function () {
           'message' => 'required|string|max:500'
       ]);
       try {
-          \App\Helpers\SmsHelper::send($validated['phone'], $validated['message']);
-          return response()->json(['success' => true]);
+          $result = \App\Helpers\SmsHelper::send($validated['phone'], $validated['message']);
+          if (is_array($result) && isset($result['success'])) {
+              return response()->json($result);
+          }
+          return response()->json(['success' => true, 'response' => $result]);
       } catch (\Throwable $e) {
           \Log::error('SMS send failed: '.$e->getMessage());
-          return response()->json(['success' => false, 'message' => 'SMS send failed'], 500);
+          return response()->json(['success' => false, 'message' => 'SMS send failed: ' . $e->getMessage()], 500);
       }
   })->name('sms.send');
 });
