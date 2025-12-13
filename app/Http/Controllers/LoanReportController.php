@@ -418,7 +418,9 @@ class LoanReportController extends Controller
         }
 
         // Calculate grand total for actual_interest_collected: TOTAL AMOUNT COLLECTED - LOAN GIVEN
-        $grand['actual_interest_collected'] = max(0, $grand['collected'] - $grand['loan_given']);
+        // Use the accumulated sum (which matches individual month calculations)
+        // Don't use max(0, ...) to allow negative values if total collected is less than loan given
+        $grand['actual_interest_collected'] = $grand['collected'] - $grand['loan_given'];
 
         return view('loans.reports.monthly_performance', [
             'rows' => $rows,
