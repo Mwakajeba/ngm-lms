@@ -47,6 +47,21 @@
                     </div>
                 </div>
                 <div class="d-flex gap-2">
+                    @can('edit loan')
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-sm btn-outline-secondary dropdown-toggle"
+                                data-bs-toggle="dropdown" aria-expanded="false">
+                                <i class="bx bx-refresh me-1"></i> Change Status
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li><a class="dropdown-item" href="#" onclick="changeLoanStatus('{{ Vinkla\Hashids\Facades\Hashids::encode($loan->id) }}','active')">Active</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLoanStatus('{{ Vinkla\Hashids\Facades\Hashids::encode($loan->id) }}','completed')">Completed</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLoanStatus('{{ Vinkla\Hashids\Facades\Hashids::encode($loan->id) }}','defaulted')">Defaulted</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLoanStatus('{{ Vinkla\Hashids\Facades\Hashids::encode($loan->id) }}','written_off')">Written Off</a></li>
+                                <li><a class="dropdown-item" href="#" onclick="changeLoanStatus('{{ Vinkla\Hashids\Facades\Hashids::encode($loan->id) }}','rejected')">Rejected</a></li>
+                            </ul>
+                        </div>
+                    @endcan
                 </div>
             </div>
 
@@ -4260,5 +4275,43 @@
                 });
             }
         });
+
+        // Loan change status helper
+        function changeLoanStatus(encodedId, newStatus) {
+            Swal.fire({
+                title: 'Change Loan Status',
+                html: `Are you sure you want to change loan status to <strong>${newStatus}</strong>?<br><br><label for="status_reason_input">Reason (optional)</label><textarea id="status_reason_input" class="swal2-textarea" placeholder="Reason"></textarea>`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Yes, change it',
+                preConfirm: () => {
+                    const reason = document.getElementById('status_reason_input') ? document.getElementById('status_reason_input').value : '';
+                    return fetch('/loans/change-status', {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({ id: encodedId, status: newStatus, reason })
+                    }).then(response => {
+                        if (!response.ok) return response.json().then(err => Promise.reject(err));
+                        return response.json();
+                    }).catch(err => {
+                        Swal.showValidationMessage(err.message || 'Request failed');
+                    });
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    const data = result.value;
+                    if (data.success) {
+                        Swal.fire('Updated', data.message || 'Status updated', 'success').then(() => location.reload());
+                    } else {
+                        Swal.fire('Error', data.message || 'Failed to update status', 'error');
+                    }
+                }
+            });
+        }
+
     </script>
 @endpush
