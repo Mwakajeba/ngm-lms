@@ -935,6 +935,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('loans/application/{encodedId}/reject', [LoanController::class, 'applicationReject'])->name('loans.application.reject');
     Route::delete('loans/application/{encodedId}', [LoanController::class, 'applicationDelete'])->name('loans.application.delete');
 
+    // Manual change status endpoint (used by UI change-status button)
+    Route::post('loans/change-status', [LoanController::class, 'changeStatus'])->name('loans.change-status');
+
     // General loan routes (must come AFTER specific routes)
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
     Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
