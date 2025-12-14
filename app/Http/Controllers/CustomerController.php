@@ -513,7 +513,7 @@ class CustomerController extends Controller
             // Check for existing loans, cash collaterals, or GL transactions
 
             //check if member is in any group then he need to delete that mmeber from that group
-            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->where('group_id', '!=', 1)->first();
             if ($existingMembership) {
                 return redirect()->route('customers.index')->with('error', 'Customer is a member of a group. Please remove them from the group first.');
             }
