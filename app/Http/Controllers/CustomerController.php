@@ -200,7 +200,7 @@ class CustomerController extends Controller
             $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
         }
         $data['category'] = $request->category;
-        $password = 12345;
+        $password = '1234567890';
         $date = now()->toDateString();
 
         $data['customerNo'] = 100000 + (\App\Models\Customer::max('id') ?? 0) + 1;
@@ -624,7 +624,7 @@ class CustomerController extends Controller
                         'relation' => trim($rowData['relation'] ?? ''),
                         'description' => trim($rowData['description'] ?? ''),
                         'customerNo' => 100000 + (Customer::max('id') ?? 0) + 1,
-                        'password' => Hash::make('12345'),
+                        'password' => Hash::make('1234567890'),
                         'branch_id' => auth()->user()->branch_id,
                         'company_id' => auth()->user()->company_id,
                         'registrar' => auth()->id(),
