@@ -19,6 +19,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'subscription.check' => \App\Http\Middleware\CheckSubscriptionStatus::class,
         ]);
 
+        // Exclude API routes from CSRF verification
+        $middleware->validateCsrfTokens(except: [
+            'api/*',
+        ]);
+
         // Apply system settings globally
         $middleware->append(\App\Http\Middleware\ApplySystemSettings::class);
 
