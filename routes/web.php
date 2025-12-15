@@ -792,13 +792,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
 
     // Documents upload/delete
-    Route::post('customers/{customer}/documents', [CustomerController::class, 'uploadDocuments'])->name('customers.documents.upload');
-    Route::delete('customers/{customer}/documents/{pivotId}', [CustomerController::class, 'deleteDocument'])->name('customers.documents.delete');
-    Route::get('customers/{customer}/documents/{pivotId}/view', [CustomerController::class, 'viewDocument'])->name('customers.documents.view');
-    Route::get('customers/{customer}/documents/{pivotId}/download', [CustomerController::class, 'downloadDocument'])->name('customers.documents.download');
+    Route::post('customers/{encodedCustomerId}/documents', [CustomerController::class, 'uploadDocuments'])->name('customers.documents.upload');
+    Route::delete('customers/{encodedCustomerId}/documents/{pivotId}', [CustomerController::class, 'deleteDocument'])->name('customers.documents.delete');
+    Route::get('customers/{encodedCustomerId}/documents/{pivotId}/view', [CustomerController::class, 'viewDocument'])->name('customers.documents.view');
+    Route::get('customers/{encodedCustomerId}/documents/{pivotId}/download', [CustomerController::class, 'downloadDocument'])->name('customers.documents.download');
 
     // Parameterized routes (must come after specific routes)
-    Route::post('customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
+    Route::post('customers/{customerId}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');

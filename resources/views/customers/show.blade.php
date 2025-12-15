@@ -478,12 +478,12 @@
 
                                                         @if($file->pivot->document_path)
                                                             <div class="mt-3 d-flex gap-2">
-                                                                <a href="{{ route('customers.documents.view', [Hashids::encode($customer->id), $file->pivot->id]) }}"
+                                                                <a href="{{ route('customers.documents.view', [\Vinkla\Hashids\Facades\Hashids::encode($customer->id), $file->pivot->id]) }}"
                                                                     class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
                                                                     target="_blank" title="View Document">
                                                                     <span class="d-none d-sm-inline">View</span>
                                                                 </a>
-                                                                <a href="{{ route('customers.documents.download', [Hashids::encode($customer->id), $file->pivot->id]) }}"
+                                                                <a href="{{ route('customers.documents.download', [\Vinkla\Hashids\Facades\Hashids::encode($customer->id), $file->pivot->id]) }}"
                                                                     class="btn btn-sm btn-outline-success d-flex align-iteems-center gap-1"
                                                                     title="Download Document">
                                                                     <span class="d-none d-sm-inline">Download</span>
@@ -547,7 +547,7 @@
 
                         <!-- Important: action attribute points to the correct route -->
                         <form id="sendMessageForm"
-                            action="{{ route('customers.send-message', Hashids::encode($customer->id)) }}" method="POST">
+                            action="{{ route('customers.send-message', \Vinkla\Hashids\Facades\Hashids::encode($customer->id)) }}" method="POST">
                             @csrf
                             <div class="modal-body">
                                 <div class="mb-3">
@@ -693,7 +693,7 @@
                             }
                         });
 
-                        const deleteUrl = "{{ route('customers.documents.delete', [Hashids::encode($customer->id), 'PIVOT_ID']) }}".replace('PIVOT_ID', pivotId);
+                        const deleteUrl = "{{ route('customers.documents.delete', [\Vinkla\Hashids\Facades\Hashids::encode($customer->id), 'PIVOT_ID']) }}".replace('PIVOT_ID', pivotId);
 
                         fetch(deleteUrl, {
                             method: 'DELETE',
@@ -1053,7 +1053,7 @@
                                 formData.append('filetypes[]', filetypeSelect.value);
                             });
 
-                            const response = await fetch('{{ route("customers.documents.upload", Hashids::encode($customer->id)) }}', {
+                            const response = await fetch('{{ route("customers.documents.upload", \Vinkla\Hashids\Facades\Hashids::encode($customer->id)) }}', {
                                 method: 'POST',
                                 body: formData,
                                 headers: {
