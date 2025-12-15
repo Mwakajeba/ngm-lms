@@ -394,7 +394,8 @@ class LoanReportController extends Controller
                     return ($r->principal ?? 0) + ($r->interest ?? 0) + ($r->fee_amount ?? 0) + ($r->penalt_amount ?? 0);
                 });
             $outstanding = max(0, $totalLoan - $collected);
-            $actualInterestCollected = min($interest, max(0, $collected - $loanGiven));
+            // ACTUAL INTEREST COLLECTED = TOTAL AMOUNT COLLECTED - LOAN GIVEN
+            $actualInterestCollected = $collected - $loanGiven;
             $performance = $totalLoan > 0 ? round(min(1, $collected / $totalLoan) * 100, 2) : 0;
 
             $rows[] = [
@@ -415,6 +416,11 @@ class LoanReportController extends Controller
             $grand['outstanding'] += $outstanding;
             $grand['actual_interest_collected'] += $actualInterestCollected;
         }
+
+        // Calculate grand total for actual_interest_collected: TOTAL AMOUNT COLLECTED - LOAN GIVEN
+        // Use the accumulated sum (which matches individual month calculations)
+        // Don't use max(0, ...) to allow negative values if total collected is less than loan given
+        $grand['actual_interest_collected'] = $grand['collected'] - $grand['loan_given'];
 
         return view('loans.reports.monthly_performance', [
             'rows' => $rows,

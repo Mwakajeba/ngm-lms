@@ -91,6 +91,153 @@ class AuthController extends Controller
             ])->withInput();
         }
 
+        // Check subscription status FIRST before checking user status
+        // This allows us to reactivate users if their subscription is valid
+        $subscriptionValid = false;
+        if ($user->company_id) {
+            $subscription = \App\Models\Subscription::where('company_id', $user->company_id)
+                ->where('payment_status', 'paid')
+                ->orderBy('end_date', 'desc')
+                ->first();
+
+            if ($subscription) {
+                // Parse end_date to Carbon for proper comparison
+                $endDate = \Carbon\Carbon::parse($subscription->end_date);
+                $now = \Carbon\Carbon::now();
+                
+                // A subscription is expired if:
+                // 1. The end_date has passed (end_date < now), OR
+                // 2. The status is explicitly set to 'expired'
+                $isExpired = $endDate->lt($now) || $subscription->status === 'expired';
+                
+                \Log::info("Login subscription check", [
+                    'user_id' => $user->id,
+                    'company_id' => $user->company_id,
+                    'subscription_id' => $subscription->id,
+                    'end_date' => $subscription->end_date,
+                    'end_date_parsed' => $endDate->toDateTimeString(),
+                    'now' => $now->toDateTimeString(),
+                    'is_expired' => $isExpired,
+                    'status' => $subscription->status,
+                    'payment_status' => $subscription->payment_status,
+                    'user_status' => $user->status,
+                    'user_is_active' => $user->is_active
+                ]);
+                
+                // Check if subscription is expired (by date or status)
+                if ($isExpired) {
+                    // Suspend user if not already suspended
+                    if ($user->status !== 'suspended') {
+                        $user->update([
+                            'status' => 'suspended', // Use 'suspended' (valid enum value)
+                            'is_active' => 'no',
+                        ]);
+                    }
+
+                    LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'model' => 'Auth',
+                        'action' => 'login_failed',
+                        'description' => "Login blocked - subscription expired (end_date: {$subscription->end_date})",
+                        'ip_address' => $request->ip(),
+                        'device' => $deviceString,
+                        'activity_time' => now(),
+                    ]);
+
+                    return redirect()->route('subscription.expired')->with('error', 'Your subscription has expired. Please contact your administrator to renew.');
+                }
+                
+                // Check payment status - must be 'paid'
+                if ($subscription->payment_status !== 'paid') {
+                    \Log::warning("Login blocked - subscription not paid", [
+                        'user_id' => $user->id,
+                        'company_id' => $user->company_id,
+                        'subscription_id' => $subscription->id,
+                        'payment_status' => $subscription->payment_status,
+                    ]);
+                    
+                    LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+                    
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'model' => 'Auth',
+                        'action' => 'login_failed',
+                        'description' => "Login blocked - subscription payment not completed (payment_status: {$subscription->payment_status})",
+                        'ip_address' => $request->ip(),
+                        'device' => $deviceString,
+                        'activity_time' => now(),
+                    ]);
+                    
+                    return redirect()->route('subscription.expired')->with('error', 'Your subscription payment is pending. Please contact your administrator.');
+                }
+                
+                // Subscription is valid (end_date in future and payment_status is 'paid')
+                $subscriptionValid = true;
+                
+                // Auto-correct subscription status to 'active' if it's not already
+                if ($subscription->status !== 'active' && $endDate->gte($now)) {
+                    \Log::info("Auto-correcting subscription status to 'active' during login", [
+                        'subscription_id' => $subscription->id,
+                        'old_status' => $subscription->status,
+                        'end_date' => $subscription->end_date,
+                    ]);
+                    $subscription->update(['status' => 'active']);
+                }
+                
+                // Reactivate user if they were suspended but subscription is now valid
+                if (in_array($user->status, ['suspended', 'inactive']) && $subscriptionValid) {
+                    \Log::info("Reactivating user - subscription is valid", [
+                        'user_id' => $user->id,
+                        'old_status' => $user->status,
+                        'old_is_active' => $user->is_active,
+                        'subscription_id' => $subscription->id,
+                    ]);
+                    $user->update([
+                        'status' => 'active',
+                        'is_active' => 'yes',
+                    ]);
+                    // Refresh user model to get updated values
+                    $user->refresh();
+                }
+            } else {
+                // No subscription found - check if user is suspended
+                if (in_array($user->status, ['suspended', 'inactive'])) {
+                    LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+
+                    ActivityLog::create([
+                        'user_id' => $user->id,
+                        'model' => 'Auth',
+                        'action' => 'login_failed',
+                        'description' => "Login blocked - no subscription found and user account is {$user->status}",
+                        'ip_address' => $request->ip(),
+                        'device' => $deviceString,
+                        'activity_time' => now(),
+                    ]);
+
+                    return redirect()->route('subscription.expired')->with('error', 'No active subscription found for your company. Please contact your administrator.');
+                }
+            }
+        } else {
+            // No company_id - check if user is suspended
+            if (in_array($user->status, ['suspended', 'inactive'])) {
+                LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
+
+                ActivityLog::create([
+                    'user_id' => $user->id,
+                    'model' => 'Auth',
+                    'action' => 'login_failed',
+                    'description' => "Login blocked - user account is {$user->status} and has no company",
+                    'ip_address' => $request->ip(),
+                    'device' => $deviceString,
+                    'activity_time' => now(),
+                ]);
+
+                return redirect()->route('subscription.expired')->with('error', 'Your account has been suspended. Please contact your administrator.');
+            }
+        }
+
         // Check if user is active
         if ($user->is_active !== 'yes' || $user->status === 'inactive' || $user->status === 'suspended') {
             LoginAttempt::record($request->phone, $request->ip(), $request->userAgent(), false);
@@ -121,6 +268,104 @@ class AuthController extends Controller
         ];
 
         if (Auth::attempt($credentials)) {
+            // Re-check subscription status after successful login
+            if ($user->company_id) {
+                $subscription = \App\Models\Subscription::where('company_id', $user->company_id)
+                    ->where('payment_status', 'paid')
+                    ->orderBy('end_date', 'desc')
+                    ->first();
+
+                if ($subscription) {
+                    // Parse end_date to Carbon for proper comparison
+                    $endDate = \Carbon\Carbon::parse($subscription->end_date);
+                    $now = \Carbon\Carbon::now();
+                    
+                    // A subscription is expired if:
+                    // 1. The end_date has passed (end_date < now), OR
+                    // 2. The status is explicitly set to 'expired'
+                    $isExpired = $endDate->lt($now) || $subscription->status === 'expired';
+                    
+                    \Log::info("Post-login subscription check", [
+                        'user_id' => $user->id,
+                        'company_id' => $user->company_id,
+                        'subscription_id' => $subscription->id,
+                        'end_date' => $subscription->end_date,
+                        'end_date_parsed' => $endDate->toDateTimeString(),
+                        'now' => $now->toDateTimeString(),
+                        'is_expired' => $isExpired,
+                        'status' => $subscription->status,
+                        'payment_status' => $subscription->payment_status
+                    ]);
+                    
+                    // Check if subscription is expired (by date or status)
+                    if ($isExpired) {
+                        // Suspend user and logout immediately
+                        $user->update([
+                            'status' => 'suspended', // Use 'suspended' (valid enum value)
+                            'is_active' => 'no',
+                        ]);
+                        
+                        Auth::logout();
+                        
+                        LoginAttempt::record($user->phone, $request->ip(), $request->userAgent(), false);
+
+                        ActivityLog::create([
+                            'user_id' => $user->id,
+                            'model' => 'Auth',
+                            'action' => 'login_blocked',
+                            'description' => "Login blocked after authentication - subscription expired (end_date: {$subscription->end_date})",
+                            'ip_address' => $request->ip(),
+                            'device' => $deviceString,
+                            'activity_time' => now(),
+                        ]);
+
+                        return redirect()->route('subscription.expired')->with('error', 'Your subscription has expired. Please contact your administrator to renew.');
+                    }
+                    
+                    // Check payment status - must be 'paid'
+                    if ($subscription->payment_status !== 'paid') {
+                        \Log::warning("Post-login check - subscription not paid", [
+                            'user_id' => $user->id,
+                            'company_id' => $user->company_id,
+                            'subscription_id' => $subscription->id,
+                            'payment_status' => $subscription->payment_status,
+                        ]);
+                        
+                        $user->update([
+                            'status' => 'suspended',
+                            'is_active' => 'no',
+                        ]);
+                        
+                        Auth::logout();
+                        
+                        LoginAttempt::record($user->phone, $request->ip(), $request->userAgent(), false);
+                        
+                        ActivityLog::create([
+                            'user_id' => $user->id,
+                            'model' => 'Auth',
+                            'action' => 'login_blocked',
+                            'description' => "Login blocked after authentication - subscription payment not completed (payment_status: {$subscription->payment_status})",
+                            'ip_address' => $request->ip(),
+                            'device' => $deviceString,
+                            'activity_time' => now(),
+                        ]);
+                        
+                        return redirect()->route('subscription.expired')->with('error', 'Your subscription payment is pending. Please contact your administrator.');
+                    }
+                    
+                    // If end_date is in the future and payment_status is 'paid', allow login
+                    // Auto-correct status to 'active' if it's not already
+                    if ($subscription->status !== 'active' && $endDate->gte($now)) {
+                        \Log::info("Auto-correcting subscription status to 'active' after login", [
+                            'subscription_id' => $subscription->id,
+                            'old_status' => $subscription->status,
+                            'end_date' => $subscription->end_date,
+                        ]);
+                        $subscription->update(['status' => 'active']);
+                    }
+                }
+            }
+
             LoginAttempt::record($user->phone, $request->ip(), $request->userAgent(), true);
             LoginAttempt::clearOldAttempts();
 

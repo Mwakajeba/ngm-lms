@@ -558,6 +558,71 @@ class GroupController extends Controller
                         'payment_date' => now(),
                     ]);
 
+                    // Send SMS notification to customer after repayment is created
+                    try {
+                        $loan = $schedule->loan;
+                        if ($loan && $customer && !empty($customer->phone1)) {
+                            // Refresh loan to get updated outstanding balance
+                            $loan->refresh();
+                            $loan->load(['schedule', 'company', 'branch.company', 'customer.company']);
+                            
+                            // Get company name - try multiple sources for reliability
+                            $company = null;
+                            
+                            // First try: Get company from loan's company relationship
+                            if ($loan->relationLoaded('company') && $loan->company) {
+                                $company = $loan->company;
+                            } elseif (isset($loan->company_id) && $loan->company_id) {
+                                $company = \App\Models\Company::find($loan->company_id);
+                            }
+                            
+                            // Second try: Get company from customer
+                            if (!$company && $customer) {
+                                if ($customer->relationLoaded('company') && $customer->company) {
+                                    $company = $customer->company;
+                                } elseif (isset($customer->company_id) && $customer->company_id) {
+                                    $company = \App\Models\Company::find($customer->company_id);
+                                }
+                            }
+                            
+                            // Third try: Get company from branch
+                            if (!$company && $loan->branch_id) {
+                                if ($loan->relationLoaded('branch') && $loan->branch) {
+                                    $branch = $loan->branch;
+                                    if ($branch->relationLoaded('company') && $branch->company) {
+                                        $company = $branch->company;
+                                    } elseif (isset($branch->company_id) && $branch->company_id) {
+                                        $company = \App\Models\Company::find($branch->company_id);
+                                    }
+                                }
+                            }
+                            
+                            // Fourth try: Use current_company() as fallback
+                            if (!$company) {
+                                $company = current_company();
+                            }
+                            
+                            $companyName = $company ? $company->name : 'SMARTFINANCE';
+                            $customerName = $customer->name ?? 'Mteja';
+                            $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
+                            
+                            // Calculate remaining/outstanding amount
+                            $remainingAmount = $loan->getTotalOutstandingAmount();
+                            
+                            // Format message with remaining amount
+                            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amountPaid, 0) . '. Salio: Tsh ' . number_format($remainingAmount, 0) . '. ' . $companyName;
+                            
+                            \App\Helpers\SmsHelper::send($phone, $message);
+                        }
+                    } catch (\Exception $e) {
+                        // Log error but don't break the repayment process
+                        \Log::error('Failed to send repayment SMS in GroupController', [
+                            'loan_id' => $loanId,
+                            'customer_id' => $customerId,
+                            'error' => $e->getMessage()
+                        ]);
+                    }
+
 
 
                     // *** 3. Kuhifadhi Receipt na ReceiptItem ***

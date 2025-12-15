@@ -260,26 +260,27 @@
                                 </div>
                             </div>
 
-                            <!-- Subscription Management -->
-                            @can('manage subscription')
+                            <!-- SMS Setting -->
+                           @role('super-admin')
                             <div class="col-md-6 col-lg-4 mb-4">
                                 <div class="card border-warning">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-credit-card fs-1 text-warning"></i>
+                                            <i class="bx bx-message-dots fs-1 text-warning"></i>
                                         </div>
-                                        <h5 class="card-title">Subscription Management</h5>
+                                        <h5 class="card-title">SMS Setting</h5>
                                         <p class="card-text">
-                                            Manage your subscription plans, billing information, and payment history.
-                                            Upgrade, downgrade, or cancel your subscription as needed.
+                                            Configure SMS gateway settings, API credentials, and SMS provider configurations.
+                                            Manage SMS service integration and settings.
                                         </p>
-                                        <a href="{{ route('settings.subscription') }}" class="btn btn-warning">
-                                            <i class="bx bx-credit-card me-1"></i> Manage Subscription
+                                        <a href="{{ route('settings.sms') }}" class="btn btn-warning">
+                                            <i class="bx bx-message-dots me-1"></i> Configure SMS
                                         </a>
                                     </div>
                                 </div>
                             </div>
-                            @endcan
+                            @endrole
+
 
                             <!-- Manual Subscription Management (Super Admin) -->
                             @role('super-admin')

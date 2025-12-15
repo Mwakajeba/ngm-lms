@@ -42,14 +42,8 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'plan_name' => 'required|string|max:255',
-            'plan_description' => 'nullable|string',
-            'amount' => 'required|numeric|min:0',
-            'currency' => 'required|string|max:3',
-            'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'features' => 'nullable|array',
+            'end_date' => 'required|date|after:today',
+            'notification_days' => 'required|integer|min:1|max:365',
         ]);
 
         $companyId = $request->company_id;
@@ -65,19 +59,28 @@ class SubscriptionController extends Controller
                 ->withInput();
         }
 
+        // Get company name for plan name
+        $company = Company::findOrFail($companyId);
+
+        // Set default values for removed fields
         $subscription = Subscription::create([
             'company_id' => $companyId,
-            'plan_name' => $request->plan_name,
-            'plan_description' => $request->plan_description,
-            'amount' => $request->amount,
-            'currency' => $request->currency,
-            'billing_cycle' => $request->billing_cycle,
-            'start_date' => $request->start_date,
+            'plan_name' => 'Manual Subscription - ' . $company->name,
+            'plan_description' => 'Manual subscription created by administrator',
+            'amount' => 0,
+            'currency' => 'TZS',
+            'billing_cycle' => 'monthly',
+            'start_date' => Carbon::now(),
             'end_date' => $request->end_date,
-            'status' => 'pending',
-            'payment_status' => 'pending',
-            'features' => $request->features,
+            'status' => 'active', // Always active for manual subscriptions
+            'payment_status' => 'paid', // Always paid for manual subscriptions
+            'features' => [
+                'notification_days' => (int)$request->notification_days
+            ],
         ]);
+
+        // Unlock users for this company
+        $this->unlockCompanyUsers($subscription->company_id);
 
         // Dispatch subscription expiry check job
         CheckSubscriptionExpiryJob::dispatch();
@@ -112,34 +115,25 @@ class SubscriptionController extends Controller
     {
         $request->validate([
             'company_id' => 'required|exists:companies,id',
-            'plan_name' => 'required|string|max:255',
-            'plan_description' => 'nullable|string',
-            'amount' => 'required|numeric|min:0',
-            'currency' => 'required|string|max:3',
-            'billing_cycle' => 'required|in:monthly,quarterly,half-yearly,yearly',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'features' => 'nullable|array',
+            'end_date' => 'required|date',
+            'notification_days' => 'required|integer|min:1|max:365',
         ]);
 
         // Store the old status to check if we need to unlock users
         $oldStatus = $subscription->status;
-        $oldPaymentStatus = $subscription->payment_status;
+
+        // Get current features or create new array
+        $features = $subscription->features ?? [];
+        $features['notification_days'] = (int)$request->notification_days;
 
         // Prepare update data
         $updateData = [
             'company_id' => $request->company_id,
-            'plan_name' => $request->plan_name,
-            'plan_description' => $request->plan_description,
-            'amount' => $request->amount,
-            'currency' => $request->currency,
-            'billing_cycle' => $request->billing_cycle,
-            'start_date' => $request->start_date,
             'end_date' => $request->end_date,
-            'features' => $request->features,
+            'features' => $features,
         ];
 
-        // Auto-update status based on dates and payment status
+        // Auto-update status based on end date and payment status
         $endDate = Carbon::parse($request->end_date);
         $now = Carbon::now();
 
@@ -152,8 +146,8 @@ class SubscriptionController extends Controller
                 $updateData['status'] = 'expired';
             }
         } else {
-            // Not paid - keep as pending
-            $updateData['status'] = 'pending';
+            // Not paid - keep current status or set to pending
+            $updateData['status'] = $subscription->status ?? 'pending';
         }
 
         $subscription->update($updateData);
@@ -161,9 +155,8 @@ class SubscriptionController extends Controller
         // If subscription becomes active and paid, unlock users
         if (
             $subscription->status === 'active' && $subscription->payment_status === 'paid' &&
-            ($oldStatus !== 'active' || $oldPaymentStatus !== 'paid')
+            $oldStatus !== 'active'
         ) {
-
             $this->unlockCompanyUsers($subscription->company_id);
 
             // Send activation notification
