@@ -63,6 +63,11 @@ class CustomerAuthController extends Controller
             // Get customer's loans with repayments
             $customerLoans = $this->getLoansWithRepayments($customer->id);
 
+            // Calculate total balance for all customer loans
+            $totalLoanBalance = collect($customerLoans)->sum('total_due');
+            $totalLoanAmount = collect($customerLoans)->sum('total_amount');
+            $totalRepaid = collect($customerLoans)->sum('total_repaid');
+
             // Get group members and their loans
             $members = [];
             if ($groupId) {
@@ -101,6 +106,10 @@ class CustomerAuthController extends Controller
                 'gender' => $customer->sex,
                 'role' => 'customer',
                 'loans' => $customerLoans,
+                'total_loan_balance' => $totalLoanBalance,
+                'total_loan_amount' => $totalLoanAmount,
+                'total_repaid' => $totalRepaid,
+                'loans_count' => count($customerLoans),
                 'members' => $members,
             ], 200);
 
@@ -201,9 +210,18 @@ class CustomerAuthController extends Controller
 
             $loans = $this->getLoansWithRepayments($customerId);
 
+            // Calculate totals
+            $totalLoanBalance = collect($loans)->sum('total_due');
+            $totalLoanAmount = collect($loans)->sum('total_amount');
+            $totalRepaid = collect($loans)->sum('total_repaid');
+
             return response()->json([
                 'status' => 200,
                 'loans' => $loans,
+                'total_loan_balance' => $totalLoanBalance,
+                'total_loan_amount' => $totalLoanAmount,
+                'total_repaid' => $totalRepaid,
+                'loans_count' => count($loans),
             ], 200);
 
         } catch (\Exception $e) {
