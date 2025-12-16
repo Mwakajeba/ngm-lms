@@ -305,26 +305,27 @@ class CustomerAuthController extends Controller
     public function loanProducts(Request $request)
     {
         try {
-            $products = LoanProduct::where('status', 'active')
+            $products = LoanProduct::where('is_active', true)
                 ->orderBy('name', 'asc')
                 ->get()
                 ->map(function ($product) {
                     return [
                         'id' => $product->id,
                         'name' => $product->name,
-                        'description' => $product->description,
-                        'min_amount' => $product->min_amount,
-                        'max_amount' => $product->max_amount,
-                        'interest_rate' => $product->interest,
+                        'product_type' => $product->product_type,
+                        'min_amount' => $product->minimum_principal,
+                        'max_amount' => $product->maximum_principal,
+                        'min_interest_rate' => $product->minimum_interest_rate,
+                        'max_interest_rate' => $product->maximum_interest_rate,
+                        'interest_cycle' => $product->interest_cycle,
                         'interest_method' => $product->interest_method,
-                        'min_period' => $product->min_period,
-                        'max_period' => $product->max_period,
-                        'period_unit' => $product->period_unit,
-                        'processing_fee' => $product->processing_fee ?? 0,
-                        'insurance_fee' => $product->insurance_fee ?? 0,
-                        'late_payment_penalty' => $product->late_payment_penalty ?? 0,
-                        'requires_guarantor' => $product->requires_guarantor ?? false,
-                        'requires_collateral' => $product->requires_collateral ?? false,
+                        'min_period' => $product->minimum_period,
+                        'max_period' => $product->maximum_period,
+                        'grace_period' => $product->grace_period ?? 0,
+                        'has_cash_collateral' => $product->has_cash_collateral ?? false,
+                        'cash_collateral_type' => $product->cash_collateral_type,
+                        'cash_collateral_value_type' => $product->cash_collateral_value_type,
+                        'cash_collateral_value' => $product->cash_collateral_value ?? 0,
                     ];
                 });
 
