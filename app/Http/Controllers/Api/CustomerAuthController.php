@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Customer;
 use App\Models\Loan;
+use App\Models\LoanProduct;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -287,6 +288,50 @@ class CustomerAuthController extends Controller
             return response()->json([
                 'status' => 200,
                 'members' => $members,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Server error',
+                'status' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Get all loan products
+     */
+    public function loanProducts(Request $request)
+    {
+        try {
+            $products = LoanProduct::where('status', 'active')
+                ->orderBy('name', 'asc')
+                ->get()
+                ->map(function ($product) {
+                    return [
+                        'id' => $product->id,
+                        'name' => $product->name,
+                        'description' => $product->description,
+                        'min_amount' => $product->min_amount,
+                        'max_amount' => $product->max_amount,
+                        'interest_rate' => $product->interest,
+                        'interest_method' => $product->interest_method,
+                        'min_period' => $product->min_period,
+                        'max_period' => $product->max_period,
+                        'period_unit' => $product->period_unit,
+                        'processing_fee' => $product->processing_fee ?? 0,
+                        'insurance_fee' => $product->insurance_fee ?? 0,
+                        'late_payment_penalty' => $product->late_payment_penalty ?? 0,
+                        'requires_guarantor' => $product->requires_guarantor ?? false,
+                        'requires_collateral' => $product->requires_collateral ?? false,
+                    ];
+                });
+
+            return response()->json([
+                'status' => 200,
+                'products' => $products,
+                'total_products' => $products->count(),
             ], 200);
 
         } catch (\Exception $e) {
