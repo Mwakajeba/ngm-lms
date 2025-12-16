@@ -345,6 +345,52 @@ class CustomerAuthController extends Controller
     }
 
     /**
+     * Update customer photo
+     */
+    public function updatePhoto(Request $request)
+    {
+        try {
+            $request->validate([
+                'customer_id' => 'required|integer',
+                'photo' => 'required|image|mimes:jpeg,png,jpg,gif|max:2048',
+            ]);
+
+            $customer = Customer::find($request->customer_id);
+
+            if (!$customer) {
+                return response()->json([
+                    'message' => 'Customer not found',
+                    'status' => 404
+                ], 404);
+            }
+
+            // Delete old photo if exists
+            if ($customer->photo && \Storage::disk('public')->exists($customer->photo)) {
+                \Storage::disk('public')->delete($customer->photo);
+            }
+
+            // Store new photo
+            $photoPath = $request->file('photo')->store('photos', 'public');
+            $customer->photo = $photoPath;
+            $customer->save();
+
+            return response()->json([
+                'message' => 'Photo updated successfully',
+                'status' => 200,
+                'photo_url' => asset('storage/' . $photoPath),
+                'photo_path' => $photoPath,
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Server error',
+                'status' => 500,
+                'error' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Helper function to get loans with repayments
      */
     private function getLoansWithRepayments($customerId)
