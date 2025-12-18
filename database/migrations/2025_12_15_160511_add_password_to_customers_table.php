@@ -11,9 +11,18 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table('customers', function (Blueprint $table) {
-            $table->string('password')->nullable()->after('email');
-        });
+        // Check if password column already exists
+        if (Schema::hasColumn('customers', 'password')) {
+            // If it exists, just make it nullable
+            Schema::table('customers', function (Blueprint $table) {
+                $table->string('password')->nullable()->change();
+            });
+        } else {
+            // If it doesn't exist, add it after sex column
+            Schema::table('customers', function (Blueprint $table) {
+                $table->string('password')->nullable()->after('sex');
+            });
+        }
     }
 
     /**
