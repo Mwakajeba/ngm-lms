@@ -13,9 +13,9 @@
                 ['label' => 'Dashboard', 'url' => route('dashboard'), 'icon' => 'bx bx-home'],
                 ['label' => 'Loans', 'url' => route('loans.index'), 'icon' => 'bx bx-credit-card'],
                 ['label' => 'Loan Applications', 'url' => route('loans.application.index'), 'icon' => 'bx bx-file-plus'],
-                ['label' => 'Application Details', 'url' => '#', 'icon' => 'bx bx-show'],    
+                ['label' => 'Application Details', 'url' => '#', 'icon' => 'bx bx-show'],
             ]" />
-            
+
             <!-- Header with Status and Actions -->
             <div class="d-flex justify-content-between align-items-center mb-4">
                 <div>
@@ -236,7 +236,7 @@
                                 </div>
                             </div>
 
-                        
+
                             <!-- COLLATERAL BALANCE Table -->
                             <div class="card border-0 shadow-sm mb-4">
                                 <div class="card-header bg-info text-white">
@@ -427,28 +427,28 @@
         font-weight: 500;
         padding: 0.75rem 1.5rem;
     }
-    
+
     .nav-tabs .nav-link.active {
         color: #007bff;
         background: none;
         border-bottom: 3px solid #007bff;
     }
-    
+
     .nav-tabs .nav-link:hover {
         border: none;
         color: #007bff;
     }
-    
+
     .card {
         border-radius: 0.5rem;
         box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
     }
-    
+
     .card-header {
         border-radius: 0.5rem 0.5rem 0 0 !important;
         font-weight: 600;
     }
-    
+
     .avatar {
         width: 3rem;
         height: 3rem;
@@ -458,21 +458,21 @@
         justify-content: center;
         background-color: #f8f9fa;
     }
-    
+
     .avatar-lg {
         width: 4rem;
         height: 4rem;
     }
-    
+
     .badge {
         font-size: 0.75em;
         font-weight: 500;
     }
-    
+
     .form-label {
         font-weight: 500;
     }
-    
+
     .fw-bold {
         font-weight: 600 !important;
     }
@@ -485,10 +485,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to approve this loan application? This will create an active loan.';
         form.action = `/loans/${applicationId}/approve`;
-        
+
         modal.show();
     }
 
@@ -496,10 +496,10 @@
         const modal = new bootstrap.Modal(document.getElementById('approvalModal'));
         const message = document.getElementById('approvalMessage');
         const form = document.getElementById('approvalForm');
-        
+
         message.textContent = 'Are you sure you want to reject this loan application?';
         form.action = `/loans/${applicationId}/reject`;
-        
+
         modal.show();
     }
 
@@ -517,17 +517,17 @@
                 const form = document.createElement('form');
                 form.method = 'POST';
                 form.action = `/loans/application/${applicationId}`;
-                
+
                 const csrfToken = document.createElement('input');
                 csrfToken.type = 'hidden';
                 csrfToken.name = '_token';
                 csrfToken.value = '{{ csrf_token() }}';
-                
+
                 const methodField = document.createElement('input');
                 methodField.type = 'hidden';
                 methodField.name = '_method';
                 methodField.value = 'DELETE';
-                
+
                 form.appendChild(csrfToken);
                 form.appendChild(methodField);
                 document.body.appendChild(form);
@@ -572,4 +572,4 @@
         });
     }
 </script>
-@endpush 
+@endpush

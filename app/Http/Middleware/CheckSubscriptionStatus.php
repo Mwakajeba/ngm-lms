@@ -19,6 +19,11 @@ class CheckSubscriptionStatus
      */
     public function handle(Request $request, Closure $next): Response
     {
+        // Skip check for API routes
+        if ($request->is('api/*')) {
+            return $next($request);
+        }
+
         // Skip check for guest users
         if (!Auth::check()) {
             return $next($request);

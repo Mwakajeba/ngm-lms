@@ -478,25 +478,22 @@
 
                                                         @if($file->pivot->document_path)
                                                             <div class="mt-3 d-flex gap-2">
-                                                                <a href="{{ route('customers.documents.view', [Hashids::encode($customer->id), $file->pivot->id]) }}"
+                                                                <a href="{{ route('customers.documents.view', [\Vinkla\Hashids\Facades\Hashids::encode($customer->id), $file->pivot->id]) }}"
                                                                     class="btn btn-sm btn-outline-primary d-flex align-items-center gap-1"
                                                                     target="_blank" title="View Document">
-                                                                    <i class="bx bx-show-alt fs-6"></i>
                                                                     <span class="d-none d-sm-inline">View</span>
                                                                 </a>
-                                                                <a href="{{ route('customers.documents.download', [Hashids::encode($customer->id), $file->pivot->id]) }}"
+                                                                <a href="{{ route('customers.documents.download', [\Vinkla\Hashids\Facades\Hashids::encode($customer->id), $file->pivot->id]) }}"
                                                                     class="btn btn-sm btn-outline-success d-flex align-iteems-center gap-1"
                                                                     title="Download Document">
-                                                                    <i class="bx bx-download fs-6"></i>
                                                                     <span class="d-none d-sm-inline">Download</span>
                                                                 </a>
-                                                                <button type="button"
+                                                                <a type="button"
                                                                     class="btn btn-sm btn-outline-danger d-flex align-items-center gap-1"
                                                                     onclick="deleteDocument({{ $file->pivot->id }})"
                                                                     title="Delete Document">
-                                                                    <i class="bx bx-trash-alt fs-6"></i>
                                                                     <span class="d-none d-sm-inline">Delete</span>
-                                                                </button>
+                                                                </a>
                                                             </div>
                                                         @else
                                                             <div class="mt-3">
@@ -550,7 +547,7 @@
 
                         <!-- Important: action attribute points to the correct route -->
                         <form id="sendMessageForm"
-                            action="{{ route('customers.send-message', Hashids::encode($customer->id)) }}" method="POST">
+                            action="{{ route('customers.send-message', \Vinkla\Hashids\Facades\Hashids::encode($customer->id)) }}" method="POST">
                             @csrf
                             <div class="modal-body">
                                 <div class="mb-3">
@@ -696,7 +693,7 @@
                             }
                         });
 
-                        const deleteUrl = "{{ route('customers.documents.delete', [Hashids::encode($customer->id), 'PIVOT_ID']) }}".replace('PIVOT_ID', pivotId);
+                        const deleteUrl = "{{ route('customers.documents.delete', [\Vinkla\Hashids\Facades\Hashids::encode($customer->id), 'PIVOT_ID']) }}".replace('PIVOT_ID', pivotId);
 
                         fetch(deleteUrl, {
                             method: 'DELETE',
@@ -968,36 +965,36 @@
                         fileCountSpan.textContent = this.selectedFiles.length;
 
                         filesListDiv.innerHTML = this.selectedFiles.map((file, index) => `
-                                                                                            <div class="col-md-6">
-                                                                                                <div class="card border">
-                                                                                                    <div class="card-body p-3">
-                                                                                                        <div class="d-flex align-items-start">
-                                                                                                            <div class="flex-shrink-0 me-3">
-                                                                                                                <i class="bx bxs-file fs-4 text-primary"></i>
-                                                                                                            </div>
-                                                                                                            <div class="flex-grow-1">
-                                                                                                                <h6 class="mb-1 text-truncate" title="${file.name}">${file.name}</h6>
-                                                                                                                <small class="text-muted mb-2 d-block">${this.formatFileSize(file.size)}</small>
-                                                                                                                <select class="form-select form-select-sm filetype-select" data-file-index="${index}" required>
-                                                                                                                    <option value="">Select document type...</option>
-                                                                                                                    <option value="1">Passport</option>
-                                                                                                                    <option value="2">National ID</option>
-                                                                                                                    <option value="3">Driver License</option>
-                                                                                                                    <option value="4">Proof of Residence</option>
-                                                                                                                    <option value="5">Proof of Income</option>
-                                                                                                                    <option value="6">Birth Certificate</option>
-                                                                                                                    <option value="7">Company Registration</option>
-                                                                                                                    <option value="8">Multiple Documents</option>
-                                                                                                                </select>
-                                                                                                            </div>
-                                                                                                            <button type="button" class="btn btn-sm btn-outline-danger" onclick="documentUploader.removeFile(${index})">
-                                                                                                                <i class="bx bx-x"></i>
-                                                                                                            </button>
-                                                                                                        </div>
-                                                                                                    </div>
-                                                                                                </div>
-                                                                                            </div>
-                                                                                        `).join('');
+                        <div class="col-md-6">
+                            <div class="card border">
+                                <div class="card-body p-3">
+                                    <div class="d-flex align-items-start">
+                                        <div class="flex-shrink-0 me-3">
+                                            <i class="bx bxs-file fs-4 text-primary"></i>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <h6 class="mb-1 text-truncate" title="${file.name}">${file.name}</h6>
+                                            <small class="text-muted mb-2 d-block">${this.formatFileSize(file.size)}</small>
+                                            <select class="form-select form-select-sm filetype-select" data-file-index="${index}" required>
+                                                <option value="">Select document type...</option>
+                                                <option value="1">Passport</option>
+                                                <option value="2">National ID</option>
+                                                <option value="3">Driver License</option>
+                                                <option value="4">Proof of Residence</option>
+                                                <option value="5">Proof of Income</option>
+                                                <option value="6">Birth Certificate</option>
+                                                <option value="7">Company Registration</option>
+                                                <option value="8">Multiple Documents</option>
+                                            </select>
+                                        </div>
+                                        <button type="button" class="btn btn-sm btn-outline-danger" onclick="documentUploader.removeFile(${index})">
+                                            <i class="bx bx-x"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('');
                     }
 
                     removeFile(index) {
@@ -1056,7 +1053,7 @@
                                 formData.append('filetypes[]', filetypeSelect.value);
                             });
 
-                            const response = await fetch('{{ route("customers.documents.upload", Hashids::encode($customer->id)) }}', {
+                            const response = await fetch('{{ route("customers.documents.upload", \Vinkla\Hashids\Facades\Hashids::encode($customer->id)) }}', {
                                 method: 'POST',
                                 body: formData,
                                 headers: {
@@ -1149,114 +1146,114 @@
                     const fileName = `Deposit_Receipt_${customerName}_${receiptData.date}`;
 
                     const receiptHtml = `
-                                                                                        <!DOCTYPE html>
-                                                                                        <html>
-                                                                                        <head>
-                                                                                            <title>${fileName}</title>
-                                                                                            <style>
-                                                                                                @page {
-                                                                                                    size: 80mm 200mm;
-                                                                                                    margin: 0;
-                                                                                                    padding: 0;
-                                                                                                }
+                        <!DOCTYPE html>
+                        <html>
+                        <head>
+                            <title>${fileName}</title>
+                            <style>
+                                @page {
+                                    size: 80mm 200mm;
+                                    margin: 0;
+                                    padding: 0;
+                                }
 
-                                                                                                @media print {
-                                                                                                    body { 
-                                                                                                        font-family: 'Courier New', monospace; 
-                                                                                                        font-size: 10px; 
-                                                                                                        margin: 0; 
-                                                                                                        padding: 5px;
-                                                                                                        width: 280px;
-                                                                                                        max-width: 280px;
-                                                                                                        min-width: 280px;
-                                                                                                        page-break-after: avoid;
-                                                                                                        page-break-before: avoid;
-                                                                                                    }
-                                                                                                }
+                                @media print {
+                                    body {
+                                        font-family: 'Courier New', monospace;
+                                        font-size: 10px;
+                                        margin: 0;
+                                        padding: 5px;
+                                        width: 280px;
+                                        max-width: 280px;
+                                        min-width: 280px;
+                                        page-break-after: avoid;
+                                        page-break-before: avoid;
+                                    }
+                                }
 
-                                                                                                body { 
-                                                                                                    font-family: 'Courier New', monospace; 
-                                                                                                    font-size: 10px; 
-                                                                                                    margin: 0; 
-                                                                                                    padding: 5px;
-                                                                                                    width: 280px;
-                                                                                                    max-width: 280px;
-                                                                                                    min-width: 280px;
-                                                                                                }
-                                                                                                .header { text-align: center; margin-bottom: 8px; }
-                                                                                                .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
-                                                                                                .subtitle { font-size: 10px; margin-bottom: 8px; }
-                                                                                                .divider { border-top: 1px dashed #000; margin: 8px 0; }
-                                                                                                .row { display: flex; justify-content: space-between; margin: 2px 0; }
-                                                                                                .label { font-weight: bold; }
-                                                                                                .value { text-align: right; }
-                                                                                                .total { font-weight: bold; font-size: 12px; }
-                                                                                                .footer { text-align: center; margin-top: 15px; font-size: 8px; }
-                                                                                                .center { text-align: center; }
-                                                                                                .bold { font-weight: bold; }
-                                                                                                .notes { margin: 8px 0; font-size: 9px; }
-                                                                                            </style>
-                                                                                        </head>
-                                                                                        <body>
-                                                                                            <div class="header">
-                                                                                                <div class="title">SMARTFINANCE</div>
-                                                                                                <div class="subtitle">Cash Deposit Receipt</div>
-                                                                                            </div>
+                                body {
+                                    font-family: 'Courier New', monospace;
+                                    font-size: 10px;
+                                    margin: 0;
+                                    padding: 5px;
+                                    width: 280px;
+                                    max-width: 280px;
+                                    min-width: 280px;
+                                }
+                                .header { text-align: center; margin-bottom: 8px; }
+                                .title { font-size: 14px; font-weight: bold; margin-bottom: 3px; }
+                                .subtitle { font-size: 10px; margin-bottom: 8px; }
+                                .divider { border-top: 1px dashed #000; margin: 8px 0; }
+                                .row { display: flex; justify-content: space-between; margin: 2px 0; }
+                                .label { font-weight: bold; }
+                                .value { text-align: right; }
+                                .total { font-weight: bold; font-size: 12px; }
+                                .footer { text-align: center; margin-top: 15px; font-size: 8px; }
+                                .center { text-align: center; }
+                                .bold { font-weight: bold; }
+                                .notes { margin: 8px 0; font-size: 9px; }
+                            </style>
+                        </head>
+                        <body>
+                            <div class="header">
+                                <div class="title">SMARTFINANCE</div>
+                                <div class="subtitle">Cash Deposit Receipt</div>
+                            </div>
 
-                                                                                            <div class="divider"></div>
+                            <div class="divider"></div>
 
-                                                                                            <div class="row">
-                                                                                                <span class="label">Customer:</span>
-                                                                                                <span class="value">${receiptData.customer_name}</span>
-                                                                                            </div>
-                                                                                            <div class="row">
-                                                                                                <span class="label">Deposit Type:</span>
-                                                                                                <span class="value">${receiptData.deposit_type}</span>
-                                                                                            </div>
+                            <div class="row">
+                                <span class="label">Customer:</span>
+                                <span class="value">${receiptData.customer_name}</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Deposit Type:</span>
+                                <span class="value">${receiptData.deposit_type}</span>
+                            </div>
 
-                                                                                            <div class="divider"></div>
+                            <div class="divider"></div>
 
-                                                                                            <div class="row">
-                                                                                                <span class="label">Receipt No:</span>
-                                                                                                <span class="value">${receiptData.receipt_number}</span>
-                                                                                            </div>
-                                                                                            <div class="row">
-                                                                                                <span class="label">Date:</span>
-                                                                                                <span class="value">${receiptData.date}</span>
-                                                                                            </div>
-                                                                                            <div class="row">
-                                                                                                <span class="label">Time:</span>
-                                                                                                <span class="value">${receiptData.time}</span>
-                                                                                            </div>
-                                                                                            <div class="row">
-                                                                                                <span class="label">Bank Account:</span>
-                                                                                                <span class="value">${receiptData.bank_account}</span>
-                                                                                            </div>
+                            <div class="row">
+                                <span class="label">Receipt No:</span>
+                                <span class="value">${receiptData.receipt_number}</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Date:</span>
+                                <span class="value">${receiptData.date}</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Time:</span>
+                                <span class="value">${receiptData.time}</span>
+                            </div>
+                            <div class="row">
+                                <span class="label">Bank Account:</span>
+                                <span class="value">${receiptData.bank_account}</span>
+                            </div>
 
-                                                                                            <div class="divider"></div>
+                            <div class="divider"></div>
 
-                                                                                            <div class="row total">
-                                                                                                <span class="label">Amount Deposited:</span>
-                                                                                                <span class="value">TSHS ${parseFloat(receiptData.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
-                                                                                            </div>
+                            <div class="row total">
+                                <span class="label">Amount Deposited:</span>
+                                <span class="value">TSHS ${parseFloat(receiptData.amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span>
+                            </div>
 
-                                                                                            <div class="divider"></div>
+                            <div class="divider"></div>
 
-                                                                                            <div class="notes">
-                                                                                                <div class="label">Notes:</div>
-                                                                                                <div style="margin-top: 2px;">${receiptData.notes}</div>
-                                                                                            </div>
+                            <div class="notes">
+                                <div class="label">Notes:</div>
+                                <div style="margin-top: 2px;">${receiptData.notes}</div>
+                            </div>
 
-                                                                                            <div class="divider"></div>
+                            <div class="divider"></div>
 
-                                                                                            <div class="footer">
-                                                                                                <div>Received by: ${receiptData.received_by}</div>
-                                                                                                <div>Branch: ${receiptData.branch}</div>
-                                                                                                <div style="margin-top: 5px;">Thank you for your deposit!</div>
-                                                                                            </div>
-                                                                                        </body>
-                                                                                        </html>
-                                                                                    `;
+                            <div class="footer">
+                                <div>Received by: ${receiptData.received_by}</div>
+                                <div>Branch: ${receiptData.branch}</div>
+                                <div style="margin-top: 5px;">Thank you for your deposit!</div>
+                            </div>
+                        </body>
+                        </html>
+                    `;
 
                     printWindow.document.write(receiptHtml);
                     printWindow.document.close();
@@ -1340,10 +1337,10 @@
                                 icon: 'question',
                                 title: 'Confirm SMS Sending',
                                 html: `<p><strong>To:</strong> ${phoneNumber}</p>
-                                                                                                       <p><strong>Message:</strong></p>
-                                                                                                       <div class="border p-2 rounded bg-light" style="max-height:100px; overflow-y:auto;">
-                                                                                                       ${msg}</div>
-                                                                                                       <small class="text-muted">SMS charges may apply</small>`,
+                                <p><strong>Message:</strong></p>
+                                <div class="border p-2 rounded bg-light" style="max-height:100px; overflow-y:auto;">
+                                ${msg}</div>
+                                <small class="text-muted">SMS charges may apply</small>`,
                                 showCancelButton: true,
                                 confirmButtonColor: '#28a745',
                                 cancelButtonColor: '#6c757d',

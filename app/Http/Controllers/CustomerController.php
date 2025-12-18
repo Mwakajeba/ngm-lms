@@ -200,7 +200,7 @@ class CustomerController extends Controller
             $data["phone2"] = $this->formatPhoneNumber($data["phone2"]);
         }
         $data['category'] = $request->category;
-        $password = 12345;
+        $password = '1234567890';
         $date = now()->toDateString();
 
         $data['customerNo'] = 100000 + (\App\Models\Customer::max('id') ?? 0) + 1;
@@ -513,7 +513,7 @@ class CustomerController extends Controller
             // Check for existing loans, cash collaterals, or GL transactions
 
             //check if member is in any group then he need to delete that mmeber from that group
-            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->where('group_id', '!=', 1)->first();
             if ($existingMembership) {
                 return redirect()->route('customers.index')->with('error', 'Customer is a member of a group. Please remove them from the group first.');
             }
@@ -624,7 +624,7 @@ class CustomerController extends Controller
                         'relation' => trim($rowData['relation'] ?? ''),
                         'description' => trim($rowData['description'] ?? ''),
                         'customerNo' => 100000 + (Customer::max('id') ?? 0) + 1,
-                        'password' => Hash::make('12345'),
+                        'password' => Hash::make('1234567890'),
                         'branch_id' => auth()->user()->branch_id,
                         'company_id' => auth()->user()->company_id,
                         'registrar' => auth()->id(),

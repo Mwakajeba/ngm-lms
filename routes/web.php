@@ -62,6 +62,15 @@ Route::get('/dashboard/delinquency-loan-buckets', [DashboardController::class, '
 Route::get('/dashboard/monthly-collections', [DashboardController::class, 'monthlyCollections'])->middleware('auth');
 // API route for bank accounts
 Route::get('/api/bank-accounts', [\App\Http\Controllers\Api\BankAccountController::class, 'index']);
+
+// Customer Mobile API Routes
+Route::post('/api/customer/login', [\App\Http\Controllers\Api\CustomerAuthController::class, 'login']);
+Route::post('/api/customer/profile', [\App\Http\Controllers\Api\CustomerAuthController::class, 'profile']);
+Route::post('/api/customer/loans', [\App\Http\Controllers\Api\CustomerAuthController::class, 'loans']);
+Route::post('/api/customer/group-members', [\App\Http\Controllers\Api\CustomerAuthController::class, 'groupMembers']);
+Route::get('/api/customer/loan-products', [\App\Http\Controllers\Api\CustomerAuthController::class, 'loanProducts']);
+Route::post('/api/customer/update-photo', [\App\Http\Controllers\Api\CustomerAuthController::class, 'updatePhoto']);
+
 Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');
 
 // Route::middleware(['auth'])->group(function () {
@@ -792,13 +801,13 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
 
     // Documents upload/delete
-    Route::post('customers/{customer}/documents', [CustomerController::class, 'uploadDocuments'])->name('customers.documents.upload');
-    Route::delete('customers/{customer}/documents/{pivotId}', [CustomerController::class, 'deleteDocument'])->name('customers.documents.delete');
-    Route::get('customers/{customer}/documents/{pivotId}/view', [CustomerController::class, 'viewDocument'])->name('customers.documents.view');
-    Route::get('customers/{customer}/documents/{pivotId}/download', [CustomerController::class, 'downloadDocument'])->name('customers.documents.download');
+    Route::post('customers/{encodedCustomerId}/documents', [CustomerController::class, 'uploadDocuments'])->name('customers.documents.upload');
+    Route::delete('customers/{encodedCustomerId}/documents/{pivotId}', [CustomerController::class, 'deleteDocument'])->name('customers.documents.delete');
+    Route::get('customers/{encodedCustomerId}/documents/{pivotId}/view', [CustomerController::class, 'viewDocument'])->name('customers.documents.view');
+    Route::get('customers/{encodedCustomerId}/documents/{pivotId}/download', [CustomerController::class, 'downloadDocument'])->name('customers.documents.download');
 
     // Parameterized routes (must come after specific routes)
-    Route::post('customers/{customer}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
+    Route::post('customers/{customerId}/send-message', [CustomerController::class, 'sendMessage'])->name('customers.send-message');
     Route::get('customers/{customer}', [CustomerController::class, 'show'])->name('customers.show');
     Route::get('customers/{customer}/edit', [CustomerController::class, 'edit'])->name('customers.edit');
     Route::put('customers/{customer}', [CustomerController::class, 'update'])->name('customers.update');
@@ -934,6 +943,9 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('loans/application/{encodedId}/approve', [LoanController::class, 'applicationApprove'])->name('loans.application.approve');
     Route::patch('loans/application/{encodedId}/reject', [LoanController::class, 'applicationReject'])->name('loans.application.reject');
     Route::delete('loans/application/{encodedId}', [LoanController::class, 'applicationDelete'])->name('loans.application.delete');
+
+    // Manual change status endpoint (used by UI change-status button)
+    Route::post('loans/change-status', [LoanController::class, 'changeStatus'])->name('loans.change-status');
 
     // General loan routes (must come AFTER specific routes)
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');

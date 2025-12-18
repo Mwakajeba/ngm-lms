@@ -1908,21 +1908,48 @@ class LoanRepaymentService
      */
     private function updateLoanStatusAfterDeletion($loan, $originalStatus)
     {
-        // If the loan was closed due to this repayment, check if it should still be closed
-        if ($originalStatus === 'complete' || $originalStatus === 'closed') {
-            // Refresh loan to get updated status
-            $loan->refresh();
+        // Accept a few possible closed/completed representations
+        $closedValues = [
+            defined('App\\Models\\Loan::STATUS_COMPLETE') ? \App\Models\Loan::STATUS_COMPLETE : 'completed',
+            'complete',
+            'closed',
+            'completed'
+        ];
 
-            // Check if loan is still fully paid after this repayment deletion
+        if (!in_array($originalStatus, $closedValues, true)) {
+            // Loan wasn't closed/completed originally — nothing to do
+            return;
+        }
+
+        try {
+            // Refresh model and ensure schedules & repayments are loaded
+            $loan->refresh();
+            $loan->loadMissing(['schedule.repayments']);
+
+            // If loan is no longer eligible for closing, revert status to active
             if (!$loan->isEligibleForClosing()) {
-                $loan->status = 'active';
+                $previous = $loan->status;
+                $loan->status = \App\Models\Loan::STATUS_ACTIVE;
                 $loan->save();
 
                 Log::info('Loan status reverted to active after repayment deletion', [
                     'loan_id' => $loan->id,
+                    'previous_status' => $previous,
                     'original_status' => $originalStatus
                 ]);
+            } else {
+                // If still eligible for closing, ensure status is completed
+                if ($loan->status !== \App\Models\Loan::STATUS_COMPLETE) {
+                    $loan->status = \App\Models\Loan::STATUS_COMPLETE;
+                    $loan->save();
+                }
+                Log::info('Loan remains eligible for closing after repayment deletion', ['loan_id' => $loan->id]);
             }
+        } catch (\Exception $e) {
+            Log::error('Failed to update loan status after repayment deletion', [
+                'loan_id' => $loan->id ?? null,
+                'error' => $e->getMessage(),
+            ]);
         }
     }
 }

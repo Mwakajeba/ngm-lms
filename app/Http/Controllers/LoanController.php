@@ -495,6 +495,11 @@ class LoanController extends Controller
                         }
                     }
 
+                        // // Change status action (available to users who can edit loans)
+                        // if (auth()->user()->can('edit loan')) {
+                        //     $actions .= '<button class="btn btn-sm btn-outline-secondary change-status-btn me-1" data-id="' . $encodedId . '" title="Change Status"><i class="bx bx-transfer"></i></button>';
+                        // }
+
                     return '<div class="text-center">' . $actions . '</div>';
                 })
                 ->filterColumn('customer_name', function ($query, $keyword) {
@@ -2971,6 +2976,48 @@ class LoanController extends Controller
             return redirect()->route('loans.list')->with('success', 'Loan marked as defaulted successfully.');
         } catch (\Throwable $th) {
             return redirect()->route('loans.list')->withErrors(['Failed to mark loan as defaulted: ' . $th->getMessage()]);
+        }
+    }
+
+    /**
+     * Change loan status (AJAX)
+     */
+    public function changeStatus(Request $request)
+    {
+        $validated = $request->validate([
+            'id' => 'required|string',
+            'status' => 'required|string'
+        ]);
+
+        try {
+            $decoded = Hashids::decode($validated['id']);
+            if (empty($decoded)) {
+                return response()->json(['success' => false, 'message' => 'Invalid loan id.'], 422);
+            }
+
+            $loan = Loan::findOrFail($decoded[0]);
+
+            // Permission: require edit loan permission
+            if (!auth()->user()->can('edit loan')) {
+                return response()->json(['success' => false, 'message' => 'Unauthorized.'], 403);
+            }
+
+            $allowed = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected', 'completed', 'written_off', 'closed'];
+            $newStatus = $validated['status'];
+            if (!in_array($newStatus, $allowed, true)) {
+                return response()->json(['success' => false, 'message' => 'Invalid status provided.'], 422);
+            }
+
+            $old = $loan->status;
+            $loan->status = $newStatus;
+            $loan->save();
+
+            Log::info('Loan status changed via controller', ['loan_id' => $loan->id, 'from' => $old, 'to' => $newStatus, 'user_id' => auth()->id()]);
+
+            return response()->json(['success' => true, 'message' => 'Loan status updated.', 'status' => $loan->status]);
+        } catch (\Exception $e) {
+            Log::error('Failed to change loan status', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => 'Failed to change status: ' . $e->getMessage()], 500);
         }
     }
 
