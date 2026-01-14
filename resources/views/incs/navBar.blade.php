@@ -9,12 +9,18 @@
                 ->first();
             
             if ($activeSubscription) {
-                $timeRemaining = $activeSubscription->getFormattedTimeRemaining();
                 $notificationDays = $activeSubscription->features['notification_days'] ?? \App\Services\SystemSettingService::get('subscription_notification_days_30', 30);
+                $daysUntilExpiry = $activeSubscription->daysUntilExpiry();
                 
-                // Show warning if within notification days or expired
+                // Get formatted time remaining, passing notification days to properly set status
+                $timeRemaining = $activeSubscription->getFormattedTimeRemaining($notificationDays);
+                
+                // Show warning if:
+                // 1. Subscription is expired, OR
+                // 2. Days until expiry is within notification days, OR
+                // 3. Status is danger (very close to expiry)
                 if ($timeRemaining['status'] === 'expired' || 
-                    ($timeRemaining['status'] === 'warning' && $activeSubscription->daysUntilExpiry() <= $notificationDays) ||
+                    ($daysUntilExpiry >= 0 && $daysUntilExpiry <= $notificationDays) ||
                     $timeRemaining['status'] === 'danger') {
                     $subscriptionWarning = $timeRemaining;
                 }
@@ -506,6 +512,13 @@
                                 <div class="text-center msg-footer">View All Messages</div>
                             </a>
                         </div>
+                    </li>
+                     <!-- Mobile Logout Shortcut -->
+                    <li class="nav-item d-inline-flex d-lg-none">
+                        <a class="nav-link" href="#" title="Logout"
+                           onclick="event.preventDefault(); document.getElementById('logout-form').submit();">
+                            <i class='bx bx-log-out-circle'></i>
+                        </a>
                     </li>
                 </ul>
             </div>
