@@ -390,7 +390,7 @@ class UserController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();
+        $user = User::find(auth()->id());
 
         // Custom validation for email to handle existing email
         $emailRules = 'nullable|email';
@@ -402,7 +402,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
             'email' => $emailRules,
-            'password' => 'nullable|string|min:8|confirmed',
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $userData = [
@@ -411,8 +412,16 @@ class UserController extends Controller
             'email' => $request->email,
         ];
 
-        if ($request->filled('password')) {
-            $userData['password'] = Hash::make($request->password);
+        // Handle password change
+        if ($request->filled('new_password')) {
+            // Verify current password
+            if (!Hash::check($request->current_password, $user->password)) {
+                return redirect()->back()
+                    ->withErrors(['current_password' => 'The current password is incorrect.'])
+                    ->withInput($request->except(['current_password', 'new_password', 'new_password_confirmation']));
+            }
+
+            $userData['password'] = Hash::make($request->new_password);
         }
 
         $user->update($userData);

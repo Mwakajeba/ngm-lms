@@ -495,10 +495,10 @@ class LoanController extends Controller
                         }
                     }
 
-                        // // Change status action (available to users who can edit loans)
-                        // if (auth()->user()->can('edit loan')) {
-                        //     $actions .= '<button class="btn btn-sm btn-outline-secondary change-status-btn me-1" data-id="' . $encodedId . '" title="Change Status"><i class="bx bx-transfer"></i></button>';
-                        // }
+                    // // Change status action (available to users who can edit loans)
+                    // if (auth()->user()->can('edit loan')) {
+                    //     $actions .= '<button class="btn btn-sm btn-outline-secondary change-status-btn me-1" data-id="' . $encodedId . '" title="Change Status"><i class="bx bx-transfer"></i></button>';
+                    // }
 
                     return '<div class="text-center">' . $actions . '</div>';
                 })
@@ -2440,7 +2440,7 @@ class LoanController extends Controller
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
-        $this->validateProductLimits($validated, $product);
+        $this->validateProductLimits(                                                           $validated, $product);
 
         try {
             $updateData = [
