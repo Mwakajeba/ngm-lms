@@ -378,7 +378,7 @@
                     showConfirmButton: true
                 });
             @endif
-                                            const currentStatus = '{{ $status ?? "active" }}';
+            const currentStatus = '{{ $status ?? "active" }}';
 
             // Initialize DataTable with Ajax
             const table = $('#loansTable').DataTable({

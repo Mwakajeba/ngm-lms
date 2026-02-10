@@ -15,10 +15,25 @@ class RolePermissionController extends Controller
 {
     public function index()
     {
-        $roles = Role::with(['permissions', 'users'])->get();
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Filter out super-admin role for non-super-admin users
+        $rolesQuery = Role::with(['permissions', 'users']);
+        if (!$isSuperAdmin) {
+            $rolesQuery->where('name', '!=', 'super-admin');
+        }
+        $roles = $rolesQuery->get();
+
         $permissions = Permission::all();
         $activeUsers = User::where('status', 'active')->count();
-        $systemRoles = Role::whereIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer'])->count();
+
+        // Count system roles excluding super-admin for non-super-admin users
+        $systemRolesQuery = Role::whereIn('name', ['super-admin', 'admin', 'manager', 'user', 'viewer']);
+        if (!$isSuperAdmin) {
+            $systemRolesQuery->where('name', '!=', 'super-admin');
+        }
+        $systemRoles = $systemRolesQuery->count();
 
         // Get permission groups from database
         $permissionGroups = $this->getPermissionGroupsFromDatabase();
@@ -85,6 +100,14 @@ class RolePermissionController extends Controller
 
     public function show(Role $role)
     {
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from viewing super-admin role
+        if (!$isSuperAdmin && $role->name === 'super-admin') {
+            abort(403, 'Unauthorized access.');
+        }
+
         $role->load(['permissions', 'users']);
         $permissionGroups = $this->groupPermissions($role->permissions);
 
@@ -93,6 +116,14 @@ class RolePermissionController extends Controller
 
     public function edit(Role $role)
     {
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from editing super-admin role
+        if (!$isSuperAdmin && $role->name === 'super-admin') {
+            abort(403, 'Unauthorized access.');
+        }
+
         $permissions = Permission::all();
         $permissionGroups = $this->getPermissionGroupsFromDatabase();
 
@@ -101,6 +132,20 @@ class RolePermissionController extends Controller
 
     public function update(Request $request, Role $role)
     {
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from updating super-admin role
+        if (!$isSuperAdmin && $role->name === 'super-admin') {
+            if ($request->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
+            abort(403, 'Unauthorized access.');
+        }
+
         $request->validate([
             'name' => 'required|string|max:255|unique:roles,name,' . $role->id,
             'description' => 'nullable|string|max:500',
@@ -166,6 +211,20 @@ class RolePermissionController extends Controller
 
     public function destroy(Role $role)
     {
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from accessing super-admin role
+        if (!$isSuperAdmin && $role->name === 'super-admin') {
+            if (request()->wantsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Unauthorized access.'
+                ], 403);
+            }
+            abort(403, 'Unauthorized access.');
+        }
+
         // Prevent deletion of system roles
         if (in_array($role->name, ['super-admin', 'admin'])) {
             if (request()->wantsJson()) {
@@ -474,6 +533,14 @@ class RolePermissionController extends Controller
     // Menu Management Methods
     public function manageMenus(Role $role)
     {
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from managing super-admin role menus
+        if (!$isSuperAdmin && $role->name === 'super-admin') {
+            abort(403, 'Unauthorized access.');
+        }
+
         $role->load([
             'menus' => function ($query) {
                 $query->with('children');

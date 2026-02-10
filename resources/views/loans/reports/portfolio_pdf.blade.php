@@ -1,315 +1,133 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Loan Portfolio Report</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            margin: 0;
-            padding: 15px;
-            line-height: 1.4;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 20px;
-            border-bottom: 2px solid #333;
-            padding-bottom: 10px;
-        }
-        
-        .company-name {
-            font-size: 20px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .report-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        
-        .report-date {
-            font-size: 12px;
-            color: #666;
-        }
-        
-        .summary-section {
-            margin-bottom: 20px;
-        }
-        
-        .summary-grid {
-            display: table;
-            width: 100%;
-            margin-bottom: 20px;
-        }
-        
-        .summary-row {
-            display: table-row;
-        }
-        
-        .summary-cell {
-            display: table-cell;
-            width: 25%;
-            padding: 8px;
-            text-align: center;
-            border: 2px solid #000;
-            background-color: #f8f9fa;
-        }
-        
-        .summary-value {
-            font-size: 14px;
-            font-weight: bold;
-            color: #333;
-        }
-        
-        .summary-label {
-            font-size: 10px;
-            color: #666;
-            margin-top: 3px;
-        }
-        
-        .table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 15px;
-            border: 2px solid #000;
-        }
-        
-        .table th,
-        .table td {
-            border: 1px solid #000;
-            padding: 6px;
-            text-align: left;
-            font-size: 10px;
-        }
-        
-        .table th {
-            background-color: #333;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .status-active { color: #28a745; font-weight: bold; }
-        .status-completed { color: #007bff; font-weight: bold; }
-        .status-defaulted { color: #dc3545; font-weight: bold; }
-        
-        .arrears-current { color: #28a745; font-weight: bold; }
-        .arrears-low { color: #ffc107; font-weight: bold; }
-        .arrears-medium { color: #fd7e14; font-weight: bold; }
-        .arrears-high { color: #dc3545; font-weight: bold; }
-        .arrears-critical { color: #6c757d; font-weight: bold; }
-        
-        .filters {
-            margin-bottom: 15px;
-            padding: 10px;
-            background-color: #f8f9fa;
-            border-radius: 5px;
-        }
-        
-        .filter-row {
-            margin-bottom: 5px;
-        }
-        
-        .page-break {
-            page-break-before: always;
-        }
-        
-        .footer {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            height: 50px;
-            text-align: center;
-            font-size: 9px;
-            color: #666;
-            border-top: 1px solid #000;
-            padding-top: 5px;
-            background: white;
-        }
-        
-        .footer .page-number:after {
-            content: "Page " counter(page) " of " counter(pages);
-        }
-        
-        @page {
-            margin: 1cm 1cm 1.5cm 1cm;
-            @bottom-center {
-                content: "Page " counter(page) " of " counter(pages);
-                font-size: 9px;
-                color: #666;
-            }
-        }
+        @page { size: A3 landscape; margin: 10mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 9px; color: #000; line-height: 1.3; }
+        .header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #000; }
+        .logo { max-height: 50px; margin-bottom: 5px; }
+        .company-name { font-size: 16px; font-weight: bold; color: #000; margin: 3px 0; }
+        .company-details { font-size: 9px; color: #000; margin: 2px 0; }
+        .report-title { font-size: 12px; font-weight: bold; color: #000; margin: 8px 0 3px 0; text-transform: uppercase; }
+        .report-info { font-size: 9px; color: #000; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 8px; color: #000; }
+        th { background-color: #000; color: #fff; font-weight: bold; text-align: center; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .total-row { background-color: #f0f0f0; font-weight: bold; }
+        .footer { margin-top: 15px; padding-top: 8px; border-top: 1px solid #000; text-align: center; font-size: 8px; color: #000; }
+        .footer p { margin: 2px 0; }
+        .digital-signature { margin-top: 5px; font-size: 7px; color: #000; font-style: italic; }
     </style>
 </head>
 <body>
+    @php
+        $logoBase64 = null;
+        $logoPath = null;
+        if (isset($company) && $company && !empty($company->logo)) {
+            $storagePath = public_path('storage/' . $company->logo);
+            if (file_exists($storagePath)) { $logoPath = $storagePath; }
+        }
+        if (!$logoPath && file_exists(public_path('assets/images/logo-img.png'))) {
+            $logoPath = public_path('assets/images/logo-img.png');
+        }
+        if ($logoPath && file_exists($logoPath)) {
+            $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/' . $logoType . ';base64,' . base64_encode($logoData);
+        }
+    @endphp
+
+    <!-- Header -->
     <div class="header">
-        <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
-        <div class="report-title">LOAN PORTFOLIO REPORT</div>
-        <div class="report-date">Report Date: {{ now()->format('F d, Y') }} | As of: {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}</div>
-    </div>
-
-    <!-- Filters Applied -->
-    <div class="filters">
-        <strong>Applied Filters:</strong>
-        <div class="filter-row">
-            <strong>Date:</strong> {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}
-            @if($branchId)
-                | <strong>Branch:</strong> {{ $branches->find($branchId)->name ?? 'N/A' }}
-            @endif
-            @if($groupId)
-                | <strong>Group:</strong> {{ $groups->find($groupId)->name ?? 'N/A' }}
-            @endif
-            @if($loanOfficerId)
-                | <strong>Loan Officer:</strong> {{ $loanOfficers->find($loanOfficerId)->name ?? 'N/A' }}
-            @endif
-            @if($status !== 'all')
-                | <strong>Status:</strong> 
-                @if($status === 'active_completed')
-                    Active & Completed
-                @else
-                    {{ ucfirst($status) }}
-                @endif
-            @endif
-        </div>
-    </div>
-
-    <!-- Summary Section -->
-    <div class="summary-section">
-        <div class="summary-grid">
-            <div class="summary-row">
-                <div class="summary-cell">
-                    <div class="summary-value">{{ number_format($portfolioData['summary']['total_loans']) }}</div>
-                    <div class="summary-label">Total Loans</div>
-                </div>
-                <div class="summary-cell">
-                    <div class="summary-value">TZS {{ number_format($portfolioData['summary']['total_disbursed'], 0) }}</div>
-                    <div class="summary-label">Total Disbursed</div>
-                </div>
-                <div class="summary-cell">
-                    <div class="summary-value">TZS {{ number_format($portfolioData['summary']['total_outstanding'], 0) }}</div>
-                    <div class="summary-label">Total Outstanding</div>
-                </div>
-                <div class="summary-cell">
-                    <div class="summary-value">{{ number_format($portfolioData['summary']['par_ratio'], 2) }}%</div>
-                    <div class="summary-label">Portfolio at Risk</div>
-                </div>
+        @if($logoBase64)<img src="{{ $logoBase64 }}" alt="Logo" class="logo">@endif
+        <div class="company-name">{{ $company->name ?? config('app.name', 'SmartFinance') }}</div>
+        @if(isset($company) && $company)
+            @if($company->address)<div class="company-details">{{ $company->address }}</div>@endif
+            <div class="company-details">
+                @if($company->phone)Phone: {{ $company->phone }}@endif
+                @if($company->phone && $company->email) | @endif
+                @if($company->email)Email: {{ $company->email }}@endif
             </div>
+        @endif
+        <div class="report-title">Loan Portfolio Report</div>
+        <div class="report-info">
+            <strong>As of Date:</strong> {{ \Carbon\Carbon::parse($asOfDate)->format('d/m/Y') }}
+            @if($branchId) | <strong>Branch:</strong> {{ $branches->find($branchId)->name ?? 'N/A' }} @endif
+            @if($groupId) | <strong>Group:</strong> {{ $groups->find($groupId)->name ?? 'N/A' }} @endif
+            @if($loanOfficerId) | <strong>Loan Officer:</strong> {{ $loanOfficers->find($loanOfficerId)->name ?? 'N/A' }} @endif
         </div>
-
-        <div class="summary-grid">
-            <div class="summary-row">
-                <div class="summary-cell">
-                    <div class="summary-value">{{ number_format($portfolioData['summary']['active_loans']) }}</div>
-                    <div class="summary-label">Active Loans</div>
-                </div>
-                <div class="summary-cell">
-                    <div class="summary-value">{{ number_format($portfolioData['summary']['completed_loans']) }}</div>
-                    <div class="summary-label">Completed Loans</div>
-                </div>
-                <div class="summary-cell">
-                    <div class="summary-value">{{ number_format($portfolioData['summary']['defaulted_loans']) }}</div>
-                    <div class="summary-label">Defaulted Loans</div>
-                </div>
-                <div class="summary-cell">
-                    <div class="summary-value">{{ number_format($portfolioData['summary']['overall_repayment_rate'], 2) }}%</div>
-                    <div class="summary-label">Repayment Rate</div>
-                </div>
-            </div>
-        </div>
+        <div class="report-info"><strong>Report Date:</strong> {{ \Carbon\Carbon::now()->format('d/m/Y H:i:s') }}</div>
     </div>
 
-    <!-- Portfolio Details Table -->
-    <table class="table">
+    <!-- Data Table -->
+    <table>
         <thead>
             <tr>
-                <th style="width: 12%;">Customer</th>
-                <th style="width: 8%;">Customer No</th>
-                <th style="width: 10%;">Branch</th>
-                <th style="width: 10%;">Group</th>
-                <th style="width: 10%;">Loan Officer</th>
-                <th style="width: 8%;">Status</th>
-                <th style="width: 12%;">Disbursed Amount</th>
-                <th style="width: 12%;">Outstanding</th>
-                <th style="width: 8%;">Repayment Rate</th>
+                <th style="width: 3%;">S/N</th>
+                <th style="width: 10%;">Customer</th>
+                <th style="width: 6%;">Customer No</th>
+                <th style="width: 8%;">Branch</th>
+                <th style="width: 8%;">Group</th>
+                <th style="width: 8%;">Loan Officer</th>
+                <th style="width: 6%;">Status</th>
+                <th style="width: 10%;">Disbursed Amount</th>
+                <th style="width: 10%;">Outstanding</th>
+                <th style="width: 7%;">Repayment Rate</th>
                 <th style="width: 5%;">Arrears</th>
-                <th style="width: 8%;">Disbursed Date</th>
+                <th style="width: 7%;">Disbursed Date</th>
             </tr>
         </thead>
         <tbody>
-            @forelse($portfolioData['loans'] as $loan)
-            <tr>
-                <td>{{ $loan['customer'] }}</td>
-                <td class="text-center">{{ $loan['customer_no'] }}</td>
-                <td>{{ $loan['branch'] }}</td>
-                <td>{{ $loan['group'] }}</td>
-                <td>{{ $loan['loan_officer'] }}</td>
-                <td class="text-center">
-                    <span class="status-{{ $loan['status'] }}">
-                        {{ ucfirst($loan['status']) }}
-                    </span>
-                </td>
-                <td class="text-right">{{ number_format($loan['disbursed_amount'], 0) }}</td>
-                <td class="text-right">{{ number_format($loan['outstanding_amount'], 0) }}</td>
-                <td class="text-center">{{ number_format($loan['repayment_rate'], 1) }}%</td>
-                <td class="text-center">
-                    <span class="
-                        @if($loan['days_in_arrears'] == 0) arrears-current
-                        @elseif($loan['days_in_arrears'] <= 30) arrears-low
-                        @elseif($loan['days_in_arrears'] <= 60) arrears-medium
-                        @elseif($loan['days_in_arrears'] <= 90) arrears-high
-                        @else arrears-critical
-                        @endif">
-                        {{ $loan['days_in_arrears'] }}d
-                    </span>
-                </td>
-                <td class="text-center">{{ $loan['disbursed_date'] }}</td>
-            </tr>
+            @php
+                $totalDisbursed = 0;
+                $totalOutstanding = 0;
+                $count = 0;
+            @endphp
+            @forelse($portfolioData['loans'] as $index => $loan)
+                @php
+                    $count++;
+                    $totalDisbursed += $loan['disbursed_amount'] ?? 0;
+                    $totalOutstanding += $loan['outstanding_amount'] ?? 0;
+                @endphp
+                <tr>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ $loan['customer'] }}</td>
+                    <td class="text-center">{{ $loan['customer_no'] }}</td>
+                    <td>{{ $loan['branch'] }}</td>
+                    <td>{{ $loan['group'] }}</td>
+                    <td>{{ $loan['loan_officer'] }}</td>
+                    <td class="text-center">{{ ucfirst($loan['status']) }}</td>
+                    <td class="text-right">{{ number_format($loan['disbursed_amount'], 0) }}</td>
+                    <td class="text-right">{{ number_format($loan['outstanding_amount'], 0) }}</td>
+                    <td class="text-center">{{ number_format($loan['repayment_rate'], 1) }}%</td>
+                    <td class="text-center">{{ $loan['days_in_arrears'] }}d</td>
+                    <td class="text-center">{{ $loan['disbursed_date'] }}</td>
+                </tr>
             @empty
-            <tr>
-                <td colspan="11" class="text-center">No loans found for the selected criteria.</td>
-            </tr>
+                <tr><td colspan="12" class="text-center">No records found</td></tr>
             @endforelse
+            <!-- Total Row -->
+            <tr class="total-row">
+                <td class="text-center" colspan="2"><strong>TOTAL</strong></td>
+                <td colspan="5" class="text-right"><strong>{{ number_format($count) }} Records</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalDisbursed, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalOutstanding, 0) }}</strong></td>
+                <td class="text-center"><strong>{{ $totalDisbursed > 0 ? number_format((($totalDisbursed - $totalOutstanding) / $totalDisbursed) * 100, 1) : 0 }}%</strong></td>
+                <td colspan="2"></td>
+            </tr>
         </tbody>
     </table>
 
     <!-- Footer -->
-    <div style="margin-top: 30px; text-align: center; font-size: 10px; color: #666; border-top: 1px solid #ddd; padding-top: 10px;">
-        Generated on {{ now()->format('F d, Y \a\t H:i:s') }} | {{ $company->name ?? 'SmartFinance' }} - Loan Portfolio Report
-    </div>
-    
     <div class="footer">
-        <div>
-            Generated on {{ now()->format('F d, Y g:i A') }}
-            @if(isset($company->name))
-                | {{ $company->name }}
-            @endif
-        </div>
+        <p><strong>&copy; {{ date('Y') }} {{ $company->name ?? config('app.name', 'SmartFinance') }}. All Rights Reserved.</strong></p>
+        <p class="digital-signature">This is a digitally generated document from {{ $company->name ?? config('app.name', 'SmartFinance') }} System. No signature required.</p>
+        <p class="digital-signature">Generated on: {{ \Carbon\Carbon::now()->format('d/m/Y H:i:s') }} | Document ID: {{ strtoupper(uniqid('DOC-')) }}</p>
     </div>
-     <!-- Add page numbers -->
-    <script type="text/php">
-        if (isset($pdf)) {
-            $pdf->page_text(
-                270,  // X position (center)
-                800,  // Y position (bottom of A4)
-                "Page {PAGE_NUM} of {PAGE_COUNT}", 
-                $fontMetrics->get_font("Helvetica", "normal"), 
-                10, 
-                [0,0,0]
-            );
-        }
-    </script>
 </body>
 </html>

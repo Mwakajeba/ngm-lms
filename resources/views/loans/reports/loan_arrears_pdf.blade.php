@@ -1,266 +1,93 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Loan Arrears Report</title>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-        
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            line-height: 1.4;
-            color: #333;
-            margin: 20px 30px;
-            padding: 0;
-        }
-        
-        @page {
-            margin: 20mm 15mm;
-        }
-        
-        .container {
-            max-width: 100%;
-            margin: 0 auto;
-            padding: 0 15px;
-        }
-        
-        .header {
-            text-align: center;
-            margin-bottom: 25px;
-            border-bottom: 2px solid #000;
-            padding-bottom: 15px;
-        }
-        
-        .company-logo {
-            max-height: 70px;
-            margin-bottom: 8px;
-        }
-        
-        .company-info h1 {
-            font-size: 22px;
-            font-weight: bold;
-            margin-bottom: 4px;
-            color: #000;
-        }
-        
-        .company-info p {
-            margin: 1px 0;
-            color: #666;
-            font-size: 11px;
-        }
-        
-        .report-title {
-            font-size: 18px;
-            font-weight: bold;
-            margin: 15px 0 8px 0;
-            color: #d32f2f;
-        }
-        
-        .report-info {
-            margin-bottom: 15px;
-        }
-        
-        .report-info table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        
-        .report-info td {
-            padding: 5px;
-            border: 1px solid #000;
-        }
-        
-        .report-info .label {
-            background-color: #f5f5f5;
-            font-weight: bold;
-            width: 150px;
-        }
-        
-        .summary-section {
-            margin-bottom: 20px;
-        }
-        
-        .summary-cards {
-            display: table;
-            width: 100%;
-            margin-bottom: 15px;
-        }
-        
-        .summary-card {
-            display: table-cell;
-            width: 25%;
-            padding: 8px;
-            text-align: center;
-            border: 2px solid #000;
-            vertical-align: top;
-        }
-        
-        .summary-card h3 {
-            font-size: 12px;
-            margin-bottom: 3px;
-            color: #d32f2f;
-        }
-        
-        .summary-card .value {
-            font-size: 16px;
-            font-weight: bold;
-            color: #000;
-        }
-        
-        .data-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 8px;
-        }
-        
-        .data-table th,
-        .data-table td {
-            border: 1px solid #000;
-            padding: 4px 3px;
-            text-align: left;
-            font-size: 9px;
-        }
-        
-        .data-table th {
-            background-color: #f0f0f0;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        .text-right {
-            text-align: right;
-        }
-        
-        .text-center {
-            text-align: center;
-        }
-        
-        .severity-low { background-color: #e8f5e8; }
-        .severity-medium { background-color: #fff3cd; }
-        .severity-high { background-color: #f8d7da; }
-        .severity-critical { background-color: #d1ecf1; }
-        
-        .amount {
-            font-weight: bold;
-            color: #d32f2f;
-        }
-        
-        .footer {
-            margin-top: 30px;
-            border-top: 1px solid #000;
-            padding-top: 10px;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
-        
-        .page-break {
-            page-break-before: always;
-        }
+        @page { size: A3 landscape; margin: 10mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 9px; color: #000; line-height: 1.3; }
+        .header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #000; }
+        .logo { max-height: 50px; margin-bottom: 5px; }
+        .company-name { font-size: 16px; font-weight: bold; color: #000; margin: 3px 0; }
+        .company-details { font-size: 9px; color: #000; margin: 2px 0; }
+        .report-title { font-size: 12px; font-weight: bold; color: #000; margin: 8px 0 3px 0; text-transform: uppercase; }
+        .report-info { font-size: 9px; color: #000; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 8px; color: #000; }
+        th { background-color: #000; color: #fff; font-weight: bold; text-align: center; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .total-row { background-color: #f0f0f0; font-weight: bold; }
+        .footer { margin-top: 15px; padding-top: 8px; border-top: 1px solid #000; text-align: center; font-size: 8px; color: #000; }
+        .footer p { margin: 2px 0; }
+        .digital-signature { margin-top: 5px; font-size: 7px; color: #000; font-style: italic; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <!-- Header Section -->
-        <div class="header">
-        @if($company && $company->logo)
-            <img src="{{ public_path('storage/' . $company->logo) }}" alt="Company Logo" class="company-logo">
+    @php
+        $logoBase64 = null;
+        $logoPath = null;
+        if (isset($company) && $company && !empty($company->logo)) {
+            $storagePath = public_path('storage/' . $company->logo);
+            if (file_exists($storagePath)) { $logoPath = $storagePath; }
+        }
+        if (!$logoPath && file_exists(public_path('assets/images/logo-img.png'))) {
+            $logoPath = public_path('assets/images/logo-img.png');
+        }
+        if ($logoPath && file_exists($logoPath)) {
+            $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/' . $logoType . ';base64,' . base64_encode($logoData);
+        }
+    @endphp
+
+    <!-- Header -->
+    <div class="header">
+        @if($logoBase64)<img src="{{ $logoBase64 }}" alt="Logo" class="logo">@endif
+        <div class="company-name">{{ $company->name ?? config('app.name', 'SmartFinance') }}</div>
+        @if(isset($company) && $company)
+            @if($company->address)<div class="company-details">{{ $company->address }}</div>@endif
+            <div class="company-details">
+                @if($company->phone)Phone: {{ $company->phone }}@endif
+                @if($company->phone && $company->email) | @endif
+                @if($company->email)Email: {{ $company->email }}@endif
+            </div>
         @endif
-        
-        <div class="company-info">
-            @if($company)
-                <h1>{{ $company->name }}</h1>
-                @if($company->address)
-                    <h3>{{ $company->address }}</h3>
-                @endif
-                @if($company->phone)
-                    <h3>Phone: {{ $company->phone }}</h3>
-                @endif
-                @if($company->email)
-                    <h3>Email: {{ $company->email }}</h3>
-                @endif
-            @else
-            @endif
-        </div>
-        
-        <h2>LOAN ARREARS REPORT</h2>
+        <div class="report-title">Loan Arrears Report</div>
+        <div class="report-info"><strong>Branch:</strong> {{ $branch_name ?? 'All Branches' }} | <strong>Group:</strong> {{ $group_name ?? 'All Groups' }} | <strong>Loan Officer:</strong> {{ $loan_officer_name ?? 'All Officers' }}</div>
+        <div class="report-info"><strong>Report Date:</strong> {{ $generated_date ?? \Carbon\Carbon::now()->format('d/m/Y H:i:s') }}</div>
     </div>
-
-    <!-- Report Information -->
-    <div class="report-info">
-        <table>
-            <tr>
-                <td class="label">Report Date:</td>
-                <td>{{ $generated_date }}</td>
-                <td class="label">Branch:</td>
-                <td>{{ $branch_name }}</td>
-            </tr>
-            <tr>
-                <td class="label">Group:</td>
-                <td>{{ $group_name }}</td>
-                <td class="label">Loan Officer:</td>
-                <td>{{ $loan_officer_name }}</td>
-            </tr>
-            <tr>
-                <td class="label">Total Loans in Arrears:</td>
-                <td colspan="3"><strong>{{ count($arrears_data) }}</strong></td>
-            </tr>
-        </table>
-    </div>
-
-    <!-- Summary Section -->
-    @if(count($arrears_data) > 0)
-    <div class="summary-section">
-        <div class="summary-cards">
-            <div class="summary-card">
-                <h3>Total Loans</h3>
-                <div class="value">{{ count($arrears_data) }}</div>
-            </div>
-            <div class="summary-card">
-                <h3>Total Arrears</h3>
-                <div class="value">TZS {{ number_format(array_sum(array_column($arrears_data, 'arrears_amount')), 2) }}</div>
-            </div>
-            <div class="summary-card">
-                <h3>Avg Days</h3>
-                <div class="value">{{ round(array_sum(array_column($arrears_data, 'days_in_arrears')) / count($arrears_data)) }} days</div>
-            </div>
-            <div class="summary-card">
-                <h3>Critical Cases</h3>
-                <div class="value">{{ count(array_filter($arrears_data, function($item) { return $item['days_in_arrears'] > 90; })) }}</div>
-            </div>
-        </div>
-    </div>
-    @endif
 
     <!-- Data Table -->
-    <table class="data-table">
+    <table>
         <thead>
             <tr>
-                <th style="width: 3%;">#</th>
-                <th style="width: 12%;">Customer</th>
-                <th style="width: 7%;">Customer No</th>
+                <th style="width: 3%;">S/N</th>
+                <th style="width: 10%;">Customer</th>
+                <th style="width: 6%;">Customer No</th>
                 <th style="width: 7%;">Phone</th>
-                <th style="width: 7%;">Loan No</th>
-                <th style="width: 9%;">Loan Amount</th>
-                <th style="width: 7%;">Disbursed</th>
-                <th style="width: 8%;">Branch</th>
-                <th style="width: 8%;">Group</th>
-                <th style="width: 9%;">Officer</th>
-                <th style="width: 10%;">Arrears Amount</th>
+                <th style="width: 6%;">Loan No</th>
+                <th style="width: 8%;">Loan Amount</th>
+                <th style="width: 7%;">Disbursed Date</th>
+                <th style="width: 7%;">Branch</th>
+                <th style="width: 7%;">Group</th>
+                <th style="width: 8%;">Loan Officer</th>
+                <th style="width: 9%;">Arrears Amount</th>
                 <th style="width: 5%;">Days</th>
-                <th style="width: 4%;">Items</th>
-                <th style="width: 5%;">Severity</th>
+                <th style="width: 5%;">Items</th>
+                <th style="width: 6%;">Severity</th>
             </tr>
         </thead>
         <tbody>
-            @if(count($arrears_data) > 0)
-                @foreach($arrears_data as $index => $row)
-                <tr class="severity-{{ strtolower($row['arrears_severity']) }}">
+            @php $totalArrears = 0; $totalDays = 0; $count = 0; @endphp
+            @forelse($arrears_data as $index => $row)
+                @php
+                    $count++;
+                    $totalArrears += $row['arrears_amount'] ?? 0;
+                    $totalDays += $row['days_in_arrears'] ?? 0;
+                @endphp
+                <tr>
                     <td class="text-center">{{ $index + 1 }}</td>
                     <td>{{ $row['customer'] }}</td>
                     <td class="text-center">{{ $row['customer_no'] }}</td>
@@ -271,34 +98,30 @@
                     <td>{{ $row['branch'] }}</td>
                     <td>{{ $row['group'] }}</td>
                     <td>{{ $row['loan_officer'] }}</td>
-                    <td class="text-right amount">{{ number_format($row['arrears_amount'], 2) }}</td>
+                    <td class="text-right">{{ number_format($row['arrears_amount'], 2) }}</td>
                     <td class="text-center">{{ $row['days_in_arrears'] }}</td>
                     <td class="text-center">{{ $row['overdue_schedules_count'] }}</td>
                     <td class="text-center">{{ $row['arrears_severity'] }}</td>
                 </tr>
-                @endforeach
-                
-                <!-- Summary Row -->
-                <tr style="background-color: #f0f0f0; font-weight: bold;">
-                    <td colspan="10" class="text-center">TOTAL</td>
-                    <td class="text-right amount">TZS {{ number_format(array_sum(array_column($arrears_data, 'arrears_amount')), 2) }}</td>
-                    <td colspan="3" class="text-center">{{ count($arrears_data) }} Loans</td>
-                </tr>
-            @else
-                <tr>
-                    <td colspan="14" class="text-center" style="padding: 20px; color: #28a745; font-weight: bold;">
-                        No loans in arrears found. All loans are current with their payments.
-                    </td>
-                </tr>
-            @endif
+            @empty
+                <tr><td colspan="14" class="text-center">No records found</td></tr>
+            @endforelse
+            <!-- Total Row -->
+            <tr class="total-row">
+                <td class="text-center" colspan="2"><strong>TOTAL</strong></td>
+                <td colspan="8" class="text-right"><strong>{{ number_format($count) }} Records</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalArrears, 2) }}</strong></td>
+                <td class="text-center"><strong>{{ $count > 0 ? number_format($totalDays / $count, 0) : 0 }} Avg</strong></td>
+                <td colspan="2"></td>
+            </tr>
         </tbody>
     </table>
 
     <!-- Footer -->
     <div class="footer">
-        <p>This report was generated on {{ $generated_date }} | System: Loan Management System</p>
-        <p>Page 1 of 1</p>
-    </div>
+        <p><strong>&copy; {{ date('Y') }} {{ $company->name ?? config('app.name', 'SmartFinance') }}. All Rights Reserved.</strong></p>
+        <p class="digital-signature">This is a digitally generated document from {{ $company->name ?? config('app.name', 'SmartFinance') }} System. No signature required.</p>
+        <p class="digital-signature">Generated on: {{ \Carbon\Carbon::now()->format('d/m/Y H:i:s') }} | Document ID: {{ strtoupper(uniqid('DOC-')) }}</p>
     </div>
 </body>
 </html>

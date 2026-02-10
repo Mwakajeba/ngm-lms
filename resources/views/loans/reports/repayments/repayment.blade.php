@@ -202,7 +202,7 @@
                                             {{ number_format(
                                             $repayment->principal +
                                             $repayment->interest +
-                                            $repayment->fees_amount +
+                                            $repayment->fee_amount +
                                             $repayment->penalt_amount,
                                             2
                                         ) }}
@@ -214,7 +214,7 @@
                                         <td>{{ $repayment->loan->product->name ?? 'N/A' }}</td>
                                         <td class="text-right">{{ number_format($repayment->principal, 2) }}</td>
                                         <td class="text-right">{{ number_format($repayment->interest, 2) }}</td>
-                                        <td class="text-right">{{ number_format($repayment->fees_amount, 2) }}</td>
+                                        <td class="text-right">{{ number_format($repayment->fee_amount, 2) }}</td>
                                         <td class="text-right">{{ number_format($repayment->penalt_amount, 2) }}</td>
                                         <td class="text-right">{{ number_format($repayment->loan->balance, 2) }}</td>
                                         <td>{{ $repayment->loan->branch->name ?? 'N/A' }}</td>
@@ -245,7 +245,7 @@
         formData.append('export_type', type);
         formData.append('export_action', action);
 
-        const url = '{{ route("accounting.loans.reports.repayment") }}?' + new URLSearchParams(Object.fromEntries(formData));
+        const url = '{{ route("accounting.loans.reports.loan-export-repayment") }}?' + new URLSearchParams(Object.fromEntries(formData));
 
         Swal.fire({
             title: 'Generating Report...',

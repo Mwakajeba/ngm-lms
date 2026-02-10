@@ -29,7 +29,7 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
+
         // Pata data ya kuchuja kutoka kwenye request, ukiweka default values
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
@@ -117,7 +117,7 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
+
         // 1. Pata filters kutoka kwenye request
         $startDate = $request->input('start_date');
         $endDate = $request->input('end_date');
@@ -162,7 +162,7 @@ class LoanReportController extends Controller
 
         // 3. Tekeleza mantiki ya export kulingana na aina ya faili
         if ($exportType === 'pdf') {
-            $pdf = PDF::loadView('loans.reports.pdf', compact('disbursements', 'startDate', 'endDate', 'branch'))
+            $pdf = PDF::loadView('loans.reports.pdf', compact('disbursements', 'startDate', 'endDate', 'branch','company'))
                 ->setPaper('a3', 'landscape');
 
             if ($exportAction === 'view') {
@@ -468,10 +468,10 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        // 1. Pata filters kutoka kwenye request
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+
+        // Get filters from request with proper null handling
+        $startDate = ($request->input('start_date') ?? now()->startOfMonth()->format('Y-m-d'));
+        $endDate = ($request->input('end_date') ?? now()->format('Y-m-d'));
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
@@ -495,8 +495,8 @@ class LoanReportController extends Controller
             ->pluck('branches.id')
             ->toArray();
 
-        // 2. Unda query ya malipo
-        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+        // Build repayments query
+        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer', 'loan.group', 'chartAccount'])
             ->whereBetween('payment_date', [$startDate, $endDate])
             ->whereHas('loan', function ($query) use ($assignedBranchIds) {
                 $query->whereIn('branch_id', $assignedBranchIds);
@@ -551,10 +551,10 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        // 1. Pata filters kutoka kwenye request
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+
+        // Get filters from request with proper null handling
+        $startDate = ($request->input('start_date') ?? now()->startOfMonth()->format('Y-m-d'));
+        $endDate = ($request->input('end_date') ?? now()->format('Y-m-d'));
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
@@ -567,8 +567,8 @@ class LoanReportController extends Controller
             ->pluck('branches.id')
             ->toArray();
 
-        // 2. Unda query ya malipo
-        $repaymentsQuery = Repayment::with(['loan.customer','loan.group', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+        // Build repayments query
+        $repaymentsQuery = Repayment::with(['loan.customer','loan.group', 'loan.branch', 'loan.product', 'loan.loanOfficer', 'chartAccount'])
             ->whereBetween('payment_date', [$startDate, $endDate])
             ->whereHas('loan', function ($query) use ($assignedBranchIds) {
                 $query->whereIn('branch_id', $assignedBranchIds);
@@ -592,13 +592,17 @@ class LoanReportController extends Controller
 
         $repayments = $repaymentsQuery->get();
         $summary['total_paid'] = $repayments->sum(function ($repayment) {
-            return $repayment->sum('principal') + $repayment->sum('interest') + $repayment->sum('fee_amount') + $repayment->sum('penalt_amount');
+            return ($repayment->principal ?? 0) + ($repayment->interest ?? 0) + ($repayment->fee_amount ?? 0) + ($repayment->penalt_amount ?? 0);
         });
 
-        $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
+        // Get branch name for display - handle 'all' or null properly
+        $branch = ($branchId && $branchId !== 'all') ? Branch::find($branchId) : null;
+        if (!$branch) {
+            $branch = (object)['name' => 'All Branches'];
+        }
+
         if ($exportType === 'pdf') {
-            $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
-            $pdf = PDF::loadView('loans.reports.repayments.pdf', compact('repayments', 'summary', 'startDate', 'endDate', 'branch'))
+            $pdf = PDF::loadView('loans.reports.repayments.pdf', compact('repayments', 'summary', 'startDate', 'endDate', 'branch', 'company'))
                 ->setPaper('a3', 'landscape');
 
             if ($exportAction === 'view') {
@@ -607,10 +611,9 @@ class LoanReportController extends Controller
 
             return $pdf->download('loan_repayment_report.pdf');
         } elseif ($exportType === 'excel') {
-            // Hapa tunatumia Maatwebsite/Excel
-            return Excel::download(new RepaymentExport($repayments), 'loan_disbursement_report.xlsx');
+            return Excel::download(new RepaymentExport($repayments), 'loan_repayment_report.xlsx');
         }
-        // ... kwa excel, utahitaji kuongeza mantiki hapa
+
         return response()->json(['message' => 'Invalid export type.'], 400);
     }
     /**
@@ -620,8 +623,8 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        $asOfDate = $request->input('as_of_date', date('Y-m-d'));
+
+        $asOfDate = ($request->input('as_of_date') ?? date('Y-m-d'));
         $branchId = $request->input('branch_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
@@ -773,8 +776,8 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        $asOfDate = $request->input('as_of_date', date('Y-m-d'));
+
+        $asOfDate = ($request->input('as_of_date') ?? date('Y-m-d'));
         $branchId = $request->input('branch_id');
         $loanOfficerId = $request->input('loan_officer_id');
         $exportType = $request->input('export_type');
@@ -809,7 +812,7 @@ class LoanReportController extends Controller
         $loansQuery = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
             ->whereIn('status', ['active', 'written_off', 'defaulted'])
             ->whereIn('branch_id', $assignedBranchIds);
-            
+
         if ($branchId && $branchId !== 'all') {
             $loansQuery->where('branch_id', $branchId);
         }
@@ -1060,8 +1063,8 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
 
@@ -1099,7 +1102,7 @@ class LoanReportController extends Controller
 
     public function exportLoanAgingInstallmentToExcel(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
 
@@ -1163,7 +1166,7 @@ class LoanReportController extends Controller
 
     public function exportLoanAgingInstallmentToPdf(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = $request->get('as_of_date') ?? now()->format('Y-m-d');
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
 
@@ -1284,7 +1287,7 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
+
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
@@ -1504,7 +1507,7 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
+
         $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', Carbon::now()->toDateString());
         $branchId = $request->input('branch_id');
@@ -1858,8 +1861,8 @@ class LoanReportController extends Controller
      */
     public function portfolioTrackingReport(Request $request)
     {
-        $fromDate = $request->get('from_date', now()->startOfMonth()->format('Y-m-d'));
-        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $fromDate = ($request->get('from_date') ?? now()->startOfMonth()->format('Y-m-d'));
+        $toDate = ($request->get('to_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -1906,8 +1909,8 @@ class LoanReportController extends Controller
      */
     public function exportPortfolioTrackingToExcel(Request $request)
     {
-        $fromDate = $request->get('from_date', now()->startOfMonth()->format('Y-m-d'));
-        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $fromDate = ($request->get('from_date') ?? now()->startOfMonth()->format('Y-m-d'));
+        $toDate = ($request->get('to_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -1965,8 +1968,8 @@ class LoanReportController extends Controller
      */
     public function exportPortfolioTrackingToPdf(Request $request)
     {
-        $fromDate = $request->get('from_date', now()->startOfMonth()->format('Y-m-d'));
-        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $fromDate = ($request->get('from_date') ?? now()->startOfMonth()->format('Y-m-d'));
+        $toDate = ($request->get('to_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -2303,7 +2306,7 @@ class LoanReportController extends Controller
         $user = auth()->user();
         $company = $user->company;
 
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
@@ -2347,7 +2350,7 @@ class LoanReportController extends Controller
      */
     public function exportInternalPortfolioAnalysisToExcel(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
@@ -2374,7 +2377,7 @@ class LoanReportController extends Controller
      */
     public function exportInternalPortfolioAnalysisToPdf(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
@@ -2585,8 +2588,8 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -2645,7 +2648,7 @@ class LoanReportController extends Controller
      */
     public function exportPortfolioToExcel(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -2663,7 +2666,7 @@ class LoanReportController extends Controller
      */
     public function exportPortfolioToPdf(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -2863,9 +2866,9 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
-        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+
+        $fromDate = ($request->get('from_date') ?? now()->subMonth()->format('Y-m-d'));
+        $toDate = ($request->get('to_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -2923,8 +2926,8 @@ class LoanReportController extends Controller
      */
     public function exportPerformanceToExcel(Request $request)
     {
-        $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
-        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $fromDate = ($request->get('from_date') ?? now()->subMonth()->format('Y-m-d'));
+        $toDate = ($request->get('to_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -2941,8 +2944,8 @@ class LoanReportController extends Controller
      */
     public function exportPerformanceToPdf(Request $request)
     {
-        $fromDate = $request->get('from_date', now()->subMonth()->format('Y-m-d'));
-        $toDate = $request->get('to_date', now()->format('Y-m-d'));
+        $fromDate = ($request->get('from_date') ?? now()->subMonth()->format('Y-m-d'));
+        $toDate = ($request->get('to_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -3215,8 +3218,8 @@ class LoanReportController extends Controller
     {
         $user = auth()->user();
         $company = $user->company;
-        
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -3276,7 +3279,7 @@ class LoanReportController extends Controller
      */
     public function exportDelinquencyToExcel(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -3295,7 +3298,7 @@ class LoanReportController extends Controller
      */
     public function exportDelinquencyToPdf(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id') ?: null;
         $groupId = $request->get('group_id') ?: null;
         $loanOfficerId = $request->get('loan_officer_id') ?: null;
@@ -3571,7 +3574,7 @@ class LoanReportController extends Controller
         $user = auth()->user();
         $company = $user->company;
 
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
@@ -3716,7 +3719,7 @@ class LoanReportController extends Controller
      */
     public function exportNPLToExcel(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $groupId = $request->get('group_id');
         $loanOfficerId = $request->get('loan_officer_id');
@@ -3730,7 +3733,7 @@ class LoanReportController extends Controller
      */
     public function exportNPLToPdf(Request $request)
     {
-        $asOfDate = $request->get('as_of_date', now()->format('Y-m-d'));
+        $asOfDate = ($request->get('as_of_date') ?? now()->format('Y-m-d'));
         $branchId = $request->get('branch_id');
         $loanOfficerId = $request->get('loan_officer_id');
         $groupId = $request->get('group_id');
