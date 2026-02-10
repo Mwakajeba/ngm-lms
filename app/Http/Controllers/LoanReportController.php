@@ -469,9 +469,9 @@ class LoanReportController extends Controller
         $user = auth()->user();
         $company = $user->company;
 
-        // 1. Pata filters kutoka kwenye request
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        // Get filters from request with proper null handling
+        $startDate = ($request->input('start_date') ?? now()->startOfMonth()->format('Y-m-d'));
+        $endDate = ($request->input('end_date') ?? now()->format('Y-m-d'));
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
@@ -495,8 +495,8 @@ class LoanReportController extends Controller
             ->pluck('branches.id')
             ->toArray();
 
-        // 2. Unda query ya malipo
-        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer'])
+        // Build repayments query
+        $repaymentsQuery = Repayment::with(['loan.customer', 'loan.branch', 'loan.product', 'loan.loanOfficer', 'loan.group', 'chartAccount'])
             ->whereBetween('payment_date', [$startDate, $endDate])
             ->whereHas('loan', function ($query) use ($assignedBranchIds) {
                 $query->whereIn('branch_id', $assignedBranchIds);
