@@ -41,6 +41,27 @@
                 @enderror
             </div>
         </div>
+
+        <div class="col-md-12">
+            <div class="mb-3">
+                <label for="branches" class="form-label">Assign Branches</label>
+                <select class="form-select select2-multiple @error('branches') is-invalid @enderror" name="branches[]" id="branches" multiple>
+                    @if(isset($branches) && $branches->count() > 0)
+                        @foreach($branches as $branch)
+                            <option value="{{ $branch->id }}" {{ (in_array($branch->id, old('branches', isset($bankAccount) && $bankAccount->branches ? $bankAccount->branches->pluck('id')->toArray() : []))) ? 'selected' : '' }}>
+                                {{ $branch->name }}
+                            </option>
+                        @endforeach
+                    @else
+                        <option value="">No branches available</option>
+                    @endif
+                </select>
+                <small class="form-text text-muted">Select one or more branches that can access this bank account.</small>
+                @error('branches')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
     </div>
 
     <div class="d-flex justify-content-end gap-2">

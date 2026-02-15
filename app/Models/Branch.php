@@ -37,6 +37,15 @@ class Branch extends Model
     }
 
     /**
+     * Get the bank accounts accessible by this branch.
+     */
+    public function bankAccounts()
+    {
+        return $this->belongsToMany(BankAccount::class, 'bank_branches', 'branch_id', 'bank_account_id')
+            ->withTimestamps();
+    }
+
+    /**
      * Get the hash ID for the branch
      *
      * @return string

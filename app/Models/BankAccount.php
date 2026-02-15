@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BankAccount extends Model
 {
@@ -72,5 +73,14 @@ class BankAccount extends Model
     public function loans()
     {
         return $this->hasMany(Loan::class);
+    }
+
+    /**
+     * Get the branches that have access to this bank account.
+     */
+    public function branches(): BelongsToMany
+    {
+        return $this->belongsToMany(Branch::class, 'bank_branches', 'bank_account_id', 'branch_id')
+            ->withTimestamps();
     }
 }

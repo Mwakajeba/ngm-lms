@@ -60,3 +60,18 @@
         <p class="mb-0">Copyright © 2021. All right reserved.</p>
     </footer>
 @endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 for multiple select
+        $('#branches').select2({
+            placeholder: 'Select branches',
+            allowClear: true,
+            width: '100%',
+            theme: 'bootstrap-5',
+            closeOnSelect: false
+        });
+    });
+</script>
+@endpush
