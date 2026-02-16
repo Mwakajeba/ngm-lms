@@ -28,12 +28,8 @@ class UserController extends Controller
 
         $query = User::with(['branch', 'roles']);
 
-        // Hide super-admin users from non-super-admin users
-        if (!$isSuperAdmin) {
-            $query->whereDoesntHave('roles', function ($q) {
-                $q->where('name', 'super-admin');
-            });
-        }
+        // Hide super-admin users from all users
+        $query->excludeSuperAdmin();
 
         // Optionally filter by status
         if ($request->has('status') && $request->status) {
@@ -49,13 +45,8 @@ class UserController extends Controller
 
         $users = $query->latest()->paginate(20);
 
-        // Count users excluding super-admins for non-super-admin users
-        $userCountQuery = User::query();
-        if (!$isSuperAdmin) {
-            $userCountQuery->whereDoesntHave('roles', function ($q) {
-                $q->where('name', 'super-admin');
-            });
-        }
+        // Count users excluding super-admins
+        $userCountQuery = User::excludeSuperAdmin();
         $totalUsers = (clone $userCountQuery)->count();
         $activeUsers = (clone $userCountQuery)->where('status', 'active')->count();
         $inactiveUsers = (clone $userCountQuery)->where('status', 'inactive')->count();
@@ -438,6 +429,7 @@ class UserController extends Controller
 
         if ($groupsCount > 0) {
             // Set loan_officer to null for all groups assigned to this user
+            // This is handled by the foreign key constraint, but we do it explicitly for clarity
             \App\Models\Group::where('loan_officer', $user->id)->update(['loan_officer' => null]);
 
             \Log::info('Groups loan officer set to null before user deletion', [
@@ -446,6 +438,7 @@ class UserController extends Controller
             ]);
         }
 
+        // Delete the user (foreign keys will handle setting loan_officer to null)
         $user->delete();
 
         $message = 'User deleted successfully!';

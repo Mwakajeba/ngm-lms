@@ -209,9 +209,7 @@ class CheckSubscriptionStatus
     private function lockCompanyUsers(int $companyId): void
     {
         $users = \App\Models\User::where('company_id', $companyId)
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'super-admin');
-            })
+            ->excludeSuperAdmin()
             ->get();
 
         foreach ($users as $user) {

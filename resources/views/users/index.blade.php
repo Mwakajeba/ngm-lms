@@ -150,7 +150,7 @@
                                     @if($hasGL)
                                         <button class="btn btn-sm btn-outline-danger" title="Cannot delete: User has GL transactions." disabled><i class="bx bx-lock"></i></button>
                                     @else
-                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form" onsubmit="return confirmDelete(this, '{{ __('app.are_you_sure_delete_user') }}');">
+                                    <form action="{{ route('users.destroy', $user) }}" method="POST" style="display:inline-block;" class="delete-form" data-user-name="{{ $user->name }}">
                                         @csrf
                                         @method('DELETE')
                                         <button type="submit" class="btn btn-sm btn-outline-danger" title="Delete"><i class="bx bx-trash"></i></button>
@@ -214,14 +214,22 @@ $(function() {
 </script>
 <script>
 // Delete user functionality with SweetAlert
-$(document).on('click', '.delete-user-btn', function(e) {
+$(document).on('submit', '.delete-form', function(e) {
+    const $form = $(this);
+    
+    // Check if this submission is already confirmed
+    if ($form.data('confirmed') === true) {
+        return true; // Allow form to submit
+    }
+    
     e.preventDefault();
-    const userId = $(this).data('user-id');
-    const userName = $(this).data('user-name');
+    e.stopPropagation();
+    
+    const userName = $form.data('user-name') || 'this user';
     
     Swal.fire({
-        title: '{{ __('app.are_you_sure_delete_user') }}',
-        text: `Are you sure you want to delete user "${userName}"? This action cannot be undone.`,
+        title: 'Delete "' + userName + '"?',
+        text: 'This action cannot be undone!',
         icon: 'warning',
         showCancelButton: true,
         confirmButtonColor: '#d33',
@@ -231,73 +239,13 @@ $(document).on('click', '.delete-user-btn', function(e) {
         reverseButtons: true
     }).then((result) => {
         if (result.isConfirmed) {
-            submitDeleteUserForm(userId);
+            // Mark as confirmed and submit
+            $form.data('confirmed', true);
+            $form.submit();
         }
     });
+    
+    return false;
 });
-
-// Helper function to submit delete user form
-function submitDeleteUserForm(userId) {
-    const form = document.createElement('form');
-    form.method = 'POST';
-    form.action = `/users/${userId}`;
-    
-    // Add CSRF token
-    const csrfToken = document.createElement('input');
-    csrfToken.type = 'hidden';
-    csrfToken.name = '_token';
-    csrfToken.value = '{{ csrf_token() }}';
-    form.appendChild(csrfToken);
-    
-    // Add method override
-    const methodField = document.createElement('input');
-    methodField.type = 'hidden';
-    methodField.name = '_method';
-    methodField.value = 'DELETE';
-    form.appendChild(methodField);
-    
-    // Submit the form
-    document.body.appendChild(form);
-    form.submit();
-}
-
-        // Search functionality
-        document.getElementById('searchInput').addEventListener('keyup', function () {
-            const searchTerm = this.value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
-
-            rows.forEach(row => {
-                const text = row.textContent.toLowerCase();
-                row.style.display = text.includes(searchTerm) ? '' : 'none';
-            });
-        });
-
-        // Status filter
-        document.getElementById('statusFilter').addEventListener('change', function () {
-            const status = this.value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
-
-            rows.forEach(row => {
-                const statusCell = row.querySelector('td:nth-child(6)');
-                if (statusCell) {
-                    const userStatus = statusCell.textContent.toLowerCase();
-                    row.style.display = !status || userStatus.includes(status) ? '' : 'none';
-                }
-            });
-        });
-
-        // Role filter
-        document.getElementById('roleFilter').addEventListener('change', function () {
-            const role = this.value.toLowerCase();
-            const rows = document.querySelectorAll('tbody tr');
-
-            rows.forEach(row => {
-                const roleCell = row.querySelector('td:nth-child(5)');
-                if (roleCell) {
-                    const userRoles = roleCell.textContent.toLowerCase();
-                    row.style.display = !role || userRoles.includes(role) ? '' : 'none';
-                }
-            });
-        });
-    </script>
+</script>
 @endpush

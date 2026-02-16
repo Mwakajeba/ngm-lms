@@ -44,7 +44,7 @@ class ActivityLogsController extends Controller
         $filteredCount = $this->queryWithFilters($request)->count();
 
         $userIds = ActivityLog::whereNotNull('user_id')->distinct()->pluck('user_id');
-        $users = User::whereIn('id', $userIds)->orderBy('name')->get(['id', 'name']);
+        $users = User::whereIn('id', $userIds)->excludeSuperAdmin()->orderBy('name')->get(['id', 'name']);
         $models = ActivityLog::select('model')
             ->whereNotNull('model')
             ->distinct()

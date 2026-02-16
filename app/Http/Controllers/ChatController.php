@@ -14,6 +14,7 @@ class ChatController extends Controller
     {
         $users = User::where('id', '!=', Auth::id())
             ->where('company_id', Auth::user()->company_id)
+            ->excludeSuperAdmin()
             ->orderBy('name')
             ->get();
             
@@ -204,6 +205,7 @@ class ChatController extends Controller
             // This is a simplified version - in a real app you'd track actual online status
             $onlineUsers = User::where('id', '!=', Auth::id())
                 ->where('company_id', Auth::user()->company_id)
+                ->excludeSuperAdmin()
                 ->where('id', 'like', '%0') // Simple logic to show some users as online
                 ->select('id', 'name')
                 ->get();

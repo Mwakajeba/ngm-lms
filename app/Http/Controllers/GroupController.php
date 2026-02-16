@@ -41,9 +41,7 @@ class GroupController extends Controller
     {
         $branchId = auth()->user()->branch_id;
 
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })->get();
+        $loanOfficers = User::excludeSuperAdmin()->get();
 
         // Get all customer IDs who are already members of any group
         $allGroupMemberIds = \DB::table('group_members')
@@ -199,7 +197,7 @@ class GroupController extends Controller
 
         $branchId = auth()->user()->branch_id;
 
-        $loanOfficers = User::where('branch_id', $branchId)->get();
+        $loanOfficers = User::where('branch_id', $branchId)->excludeSuperAdmin()->get();
 
         $branchId = auth()->user()->branch_id;
 

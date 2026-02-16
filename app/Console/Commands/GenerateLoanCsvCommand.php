@@ -50,17 +50,10 @@ class GenerateLoanCsvCommand extends Command
         // Get some default data for loans
         $branches = Branch::all();
         $loanProducts = LoanProduct::all();
-        $loanOfficers = User::whereHas('roles', function($query) {
-            $query->where('name', 'like', '%officer%');
-        })->get();
+        $loanOfficers = User::excludeSuperAdmin()->get();
         
         // Get available groups
         $groups = \App\Models\Group::all();
-
-        // If no specific loan officers, get any users
-        if ($loanOfficers->isEmpty()) {
-            $loanOfficers = User::take(10)->get();
-        }
 
         $csvData = [];
         

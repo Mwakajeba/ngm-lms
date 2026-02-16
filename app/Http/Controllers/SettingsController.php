@@ -762,7 +762,7 @@ class SettingsController extends Controller
         
         // Load roles and users for dropdowns
         $roles = \Spatie\Permission\Models\Role::all();
-        $users = \App\Models\User::where('company_id', $user->company_id)->get();
+        $users = \App\Models\User::where('company_id', $user->company_id)->excludeSuperAdmin()->get();
         
         // Load existing approval settings
         $settings = \App\Models\PaymentVoucherApprovalSetting::where('company_id', $user->company_id)->first();
