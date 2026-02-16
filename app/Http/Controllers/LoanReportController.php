@@ -97,9 +97,7 @@ class LoanReportController extends Controller
         $companies = Company::all();
         $groups = Group::all();
         // Only show loan officers assigned to the selected branch (if any)
-        $loanOfficers = User::whereHas('roles', function($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
         ->when($branchId, function($query) use ($branchId) {
             $query->whereHas('branches', function($q) use ($branchId) {
             $q->where('branches.id', $branchId);
@@ -533,9 +531,7 @@ class LoanReportController extends Controller
 
         // 4. Pata data ya groups na loan officers
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -640,9 +636,7 @@ class LoanReportController extends Controller
             $branchId = $branches->first()->id;
         }
 
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -793,9 +787,7 @@ class LoanReportController extends Controller
             $branchId = $branches->first()->id;
         }
 
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -1085,9 +1077,7 @@ class LoanReportController extends Controller
         // Get aging data for installments
         $agingData = $this->getInstallmentAgingData($asOfDate, $branchId, $loanOfficerId);
 
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -1304,9 +1294,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -1526,9 +1514,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -1770,9 +1756,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 if ($branchId !== 'all') {
                     $query->whereHas('branches', function ($q) use ($branchId) {
@@ -1883,9 +1867,7 @@ class LoanReportController extends Controller
         }
 
         $groups = \App\Models\Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -2324,9 +2306,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 if ($branchId !== 'all') {
                     $query->whereHas('branches', function ($q) use ($branchId) {
@@ -2608,9 +2588,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -2674,9 +2652,7 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -2886,9 +2862,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -2952,9 +2926,7 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -3239,9 +3211,7 @@ class LoanReportController extends Controller
         }
 
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -3307,9 +3277,7 @@ class LoanReportController extends Controller
 
         $branches = Branch::all();
         $groups = Group::all();
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 $query->whereHas('branches', function ($q) use ($branchId) {
                     $q->where('branches.id', $branchId);
@@ -3591,9 +3559,7 @@ class LoanReportController extends Controller
             $branchId = $branches->first()->id;
         }
 
-        $loanOfficers = User::whereHas('roles', function ($q) {
-            $q->where('name', 'like', '%officer%');
-        })
+        $loanOfficers = User::excludeSuperAdmin()
             ->when($branchId, function ($query) use ($branchId) {
                 if ($branchId !== 'all') {
                     $query->whereHas('branches', function ($q) use ($branchId) {

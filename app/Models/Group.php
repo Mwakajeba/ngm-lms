@@ -10,6 +10,24 @@ class Group extends Model
 {
     use HasFactory, LogsActivity;
 
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted()
+    {
+        // Prevent deletion of the "Individual" group (ID: 1)
+        static::deleting(function ($group) {
+            if ($group->id === self::getIndividualGroupId()) {
+                \Log::warning('Attempted to delete Individual group', [
+                    'group_id' => $group->id,
+                    'group_name' => $group->name,
+                    'user_id' => auth()->id(),
+                ]);
+                throw new \Exception('Cannot delete the Individual group. This is a system group.');
+            }
+        });
+    }
+
     protected $fillable = [
         'name',
         'loan_officer',

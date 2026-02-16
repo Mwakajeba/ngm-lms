@@ -111,9 +111,7 @@ class CheckSubscriptionExpiryJob implements ShouldQueue
             // Check if users are currently active and suspend them
             $activeUsers = User::where('company_id', $subscription->company_id)
                 ->where('status', 'active')
-                ->whereDoesntHave('roles', function ($query) {
-                    $query->where('name', 'super-admin');
-                })
+                ->excludeSuperAdmin()
                 ->get();
 
             if ($activeUsers->count() > 0) {
@@ -140,9 +138,7 @@ class CheckSubscriptionExpiryJob implements ShouldQueue
     private function lockCompanyUsers(int $companyId): void
     {
         $users = User::where('company_id', $companyId)
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'super-admin');
-            })
+            ->excludeSuperAdmin()
             ->get();
 
         foreach ($users as $user) {
@@ -161,9 +157,7 @@ class CheckSubscriptionExpiryJob implements ShouldQueue
     public function unlockCompanyUsers(int $companyId): void
     {
         $users = User::where('company_id', $companyId)
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'super-admin');
-            })
+            ->excludeSuperAdmin()
             ->get();
 
         foreach ($users as $user) {

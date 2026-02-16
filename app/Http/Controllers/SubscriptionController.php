@@ -321,9 +321,7 @@ class SubscriptionController extends Controller
     private function unlockCompanyUsers(int $companyId): void
     {
         $users = \App\Models\User::where('company_id', $companyId)
-            ->whereDoesntHave('roles', function ($query) {
-                $query->where('name', 'super-admin');
-            })
+            ->excludeSuperAdmin()
             ->get();
 
         foreach ($users as $user) {

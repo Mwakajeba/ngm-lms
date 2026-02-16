@@ -78,7 +78,7 @@ class PaymentVoucherApprovalSetting extends Model
         if ($approvalType === 'role') {
             return \Spatie\Permission\Models\Role::whereIn('name', $approvers)->get();
         } elseif ($approvalType === 'user') {
-            return User::whereIn('id', $approvers)->get();
+            return User::whereIn('id', $approvers)->excludeSuperAdmin()->get();
         }
 
         return collect();
