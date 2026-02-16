@@ -24,6 +24,7 @@
                 </div>
             </div>
             <hr />
+
             <!-- Log Files Tabs -->
             <div class="row">
                 <div class="col-12">
@@ -57,18 +58,18 @@
                                                             <div class="log-timestamp">{{ $log['timestamp'] }}</div>
                                                             <div class="log-level">
                                                                 <span
-                                                                    class="badge
-                                                                                                                                                                                                                                            @if($log['level'] === 'ERROR' || $log['level'] === 'CRITICAL' || $log['level'] === 'EMERGENCY' || $log['level'] === 'ALERT')
-                                                                                                                                                                                                                                                bg-danger
-                                                                                                                                                                                                                                            @elseif($log['level'] === 'WARNING')
-                                                                                                                                                                                                                                                bg-warning
-                                                                                                                                                                                                                                            @elseif($log['level'] === 'INFO')
-                                                                                                                                                                                                                                                bg-info
-                                                                                                                                                                                                                                            @elseif($log['level'] === 'DEBUG')
-                                                                                                                                                                                                                                                bg-secondary
-                                                                                                                                                                                                                                            @else
-                                                                                                                                                                                                                                                bg-primary
-                                                                                                                                                                                                                                            @endif">
+                                                                    class="badge 
+                                                                                                                                        @if($log['level'] === 'ERROR' || $log['level'] === 'CRITICAL' || $log['level'] === 'EMERGENCY' || $log['level'] === 'ALERT')
+                                                                                                                                            bg-danger
+                                                                                                                                        @elseif($log['level'] === 'WARNING')
+                                                                                                                                            bg-warning
+                                                                                                                                        @elseif($log['level'] === 'INFO')
+                                                                                                                                            bg-info
+                                                                                                                                        @elseif($log['level'] === 'DEBUG')
+                                                                                                                                            bg-secondary
+                                                                                                                                        @else
+                                                                                                                                            bg-primary
+                                                                                                                                        @endif">
                                                                     {{ $log['level'] }}
                                                                 </span>
                                                             </div>
