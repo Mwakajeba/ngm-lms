@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BankAccount extends Model
 {
@@ -82,5 +83,27 @@ class BankAccount extends Model
     {
         return $this->belongsToMany(Branch::class, 'bank_branches', 'bank_account_id', 'branch_id')
             ->withTimestamps();
+    }
+
+    /**
+     * Scope to filter bank accounts by user's assigned branches
+     */
+    public function scopeForUserBranches($query, $user = null)
+    {
+        $user = $user ?? auth()->user();
+        if (!$user) {
+            return $query->whereRaw('1 = 0'); // Return empty if no user
+        }
+        
+        $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+        
+        if (empty($userBranchIds)) {
+            // If user has no branches, return empty
+            return $query->whereRaw('1 = 0');
+        }
+        
+        return $query->whereHas('branches', function($q) use ($userBranchIds) {
+            $q->whereIn('branches.id', $userBranchIds);
+        });
     }
 }

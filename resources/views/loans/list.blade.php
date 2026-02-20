@@ -530,6 +530,53 @@
                 // Disable submit button and show loading
                 submitBtn.prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin"></i> Importing...');
 
+                // Show progress modal
+                const progressModal = `
+                    <div class="modal fade" id="importProgressModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Importing Loans...</h5>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <div class="d-flex justify-content-between mb-2">
+                                            <span>Progress</span>
+                                            <span id="progressText">0%</span>
+                                        </div>
+                                        <div class="progress" style="height: 25px;">
+                                            <div class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                 role="progressbar" 
+                                                 id="progressBar" 
+                                                 style="width: 0%"
+                                                 aria-valuenow="0" 
+                                                 aria-valuemin="0" 
+                                                 aria-valuemax="100">
+                                                0%
+                                            </div>
+                                        </div>
+                                    </div>
+                                    <div class="text-center">
+                                        <p class="mb-1"><strong>Processing:</strong> <span id="currentRow">0</span> / <span id="totalRows">0</span> rows</p>
+                                        <p class="mb-1 text-success"><strong>Success:</strong> <span id="successCount">0</span></p>
+                                        <p class="mb-1 text-danger"><strong>Failed:</strong> <span id="failedCount">0</span></p>
+                                        <p class="mb-0 text-warning"><strong>Skipped:</strong> <span id="skippedCount">0</span></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Remove existing modal if any
+                $('#importProgressModal').remove();
+                $('body').append(progressModal);
+                const modal = new bootstrap.Modal(document.getElementById('importProgressModal'));
+                modal.show();
+
+                let importId = null;
+                let progressInterval = null;
+
                 // Submit form via Ajax
                 $.ajax({
                     url: $(this).attr('action'),
@@ -538,20 +585,74 @@
                     processData: false,
                     contentType: false,
                     success: function (response) {
+                        // Clear progress interval
+                        if (progressInterval) {
+                            clearInterval(progressInterval);
+                        }
+
+                        // Get import ID and start polling for progress
+                        if (typeof response === 'object' && response !== null && response.import_id) {
+                            importId = response.import_id;
+                            
+                            // Check progress immediately
+                            $.ajax({
+                                url: '{{ route("loans.import-progress") }}',
+                                method: 'GET',
+                                data: { import_id: importId },
+                                success: function(progress) {
+                                    if (progress.status === 'completed' || progress.status === 'error') {
+                                        $('#importProgressModal').modal('hide');
+                                        handleImportComplete(response, progress);
+                                    } else {
+                                        // Update initial progress
+                                        const percentage = progress.percentage || 0;
+                                        $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
+                                        $('#progressText').text(percentage + '%');
+                                        $('#currentRow').text(progress.current || 0);
+                                        $('#totalRows').text(progress.total || 0);
+                                        $('#successCount').text(progress.success || 0);
+                                        $('#failedCount').text(progress.failed || 0);
+                                        $('#skippedCount').text(progress.skipped || 0);
+                                        
+                                        // Start polling for progress updates
+                                        progressInterval = setInterval(function() {
+                                            $.ajax({
+                                                url: '{{ route("loans.import-progress") }}',
+                                                method: 'GET',
+                                                data: { import_id: importId },
+                                                success: function(progress) {
+                                                    if (progress.status === 'completed' || progress.status === 'error') {
+                                                        clearInterval(progressInterval);
+                                                        $('#importProgressModal').modal('hide');
+                                                        handleImportComplete(response, progress);
+                                                    } else if (progress.status === 'processing') {
+                                                        // Update progress bar
+                                                        const percentage = progress.percentage || 0;
+                                                        $('#progressBar').css('width', percentage + '%').attr('aria-valuenow', percentage).text(percentage + '%');
+                                                        $('#progressText').text(percentage + '%');
+                                                        $('#currentRow').text(progress.current || 0);
+                                                        $('#totalRows').text(progress.total || 0);
+                                                        $('#successCount').text(progress.success || 0);
+                                                        $('#failedCount').text(progress.failed || 0);
+                                                        $('#skippedCount').text(progress.skipped || 0);
+                                                    }
+                                                },
+                                                error: function() {
+                                                    // Continue polling even on error
+                                                }
+                                            });
+                                        }, 500); // Poll every 500ms
+                                    }
+                                }
+                            });
+                            
+                            return; // Don't show success/error yet, wait for progress completion
+                        }
+
                         // If controller returns JSON, use it; otherwise fallback to generic success
                         if (typeof response === 'object' && response !== null && 'success' in response) {
                             if (response.success) {
-                                Swal.fire({
-                                    title: 'Import Successful',
-                                    text: response.message || 'Loans have been imported successfully.',
-                                    icon: 'success',
-                                    confirmButtonText: 'OK'
-                                }).then(() => {
-                                    $('#importModal').modal('hide');
-                                    $('#loansTable').DataTable().ajax.reload();
-                                    $('#importForm')[0].reset();
-                                    $('#account_id').prop('disabled', true).html('<option value="">Select loan type first</option>');
-                                });
+                                handleImportComplete(response);
                             } else {
                                 // Show SweetAlert with errors/logs/tips
                                 const errors = Array.isArray(response.errors) ? response.errors : [];
@@ -646,10 +747,99 @@
                         });
                     },
                     complete: function () {
-                        // Re-enable submit button
-                        submitBtn.prop('disabled', false).html(originalText);
+                        // Re-enable submit button (will be disabled again if progress modal is shown)
+                        if (!importId) {
+                            submitBtn.prop('disabled', false).html(originalText);
+                        }
                     }
                 });
+
+                // Function to handle import completion
+                function handleImportComplete(response, progress) {
+                    const hasFailedRecords = (response.failed_export_url || (progress && progress.failed > 0));
+                    
+                    if (response.success) {
+                        let html = '<p>' + (response.message || 'Loans have been imported successfully.') + '</p>';
+                        
+                        if (hasFailedRecords && response.failed_export_url) {
+                            html += '<p class="mt-3"><strong>Some records failed to import.</strong></p>';
+                            html += '<a href="' + response.failed_export_url + '" class="btn btn-danger btn-sm mt-2" download>';
+                            html += '<i class="bx bx-download"></i> Download Failed Records (Excel)';
+                            html += '</a>';
+                        }
+                        
+                        Swal.fire({
+                            title: 'Import Successful',
+                            html: html,
+                            icon: 'success',
+                            confirmButtonText: 'OK'
+                        }).then(() => {
+                            $('#importModal').modal('hide');
+                            $('#loansTable').DataTable().ajax.reload();
+                            $('#importForm')[0].reset();
+                            $('#account_id').prop('disabled', true).html('<option value="">Select loan type first</option>');
+                        });
+                    } else {
+                        // Handle errors with failed records download
+                        const errors = Array.isArray(response.errors) ? response.errors : [];
+                        const tips = Array.isArray(response.tips) ? response.tips : [];
+                        
+                        function escapeHtml(str) {
+                            return String(str)
+                                .replace(/&/g, '&amp;')
+                                .replace(/</g, '&lt;')
+                                .replace(/>/g, '&gt;')
+                                .replace(/\"/g, '&quot;')
+                                .replace(/'/g, '&#039;');
+                        }
+                        
+                        let html = '';
+                        if (errors.length) {
+                            html += '<div style="text-align:left; margin-bottom:10px;"><strong>Errors:</strong><ul style="max-height:200px; overflow:auto; padding-left:18px; margin-top:6px;">';
+                            errors.slice(0, 10).forEach(function (e) { html += '<li>' + escapeHtml(e) + '</li>'; });
+                            if (errors.length > 10) {
+                                html += '<li><em>... and ' + (errors.length - 10) + ' more errors</em></li>';
+                            }
+                            html += '</ul></div>';
+                        }
+                        
+                        if (hasFailedRecords && response.failed_export_url) {
+                            html += '<div class="mt-3 p-3 bg-light rounded">';
+                            html += '<p class="mb-2"><strong>Download failed records with full details:</strong></p>';
+                            html += '<a href="' + response.failed_export_url + '" class="btn btn-danger btn-sm" download>';
+                            html += '<i class="bx bx-download"></i> Download Failed Records (Excel)';
+                            html += '</a>';
+                            html += '</div>';
+                        }
+                        
+                        if (tips.length) {
+                            html += '<div style="text-align:left; margin-top:10px;"><strong>What you must correct:</strong><ul style="max-height:200px; overflow:auto; padding-left:18px; margin-top:6px;">';
+                            tips.forEach(function (t) { html += '<li>fix: ' + escapeHtml(t) + '</li>'; });
+                            html += '</ul></div>';
+                        }
+                        
+                        let summary = (response.message || '').trim();
+                        const counts = [];
+                        if (typeof response.imported === 'number') counts.push(`Imported: ${response.imported}`);
+                        if (typeof response.skipped === 'number') counts.push(`Skipped: ${response.skipped}`);
+                        if (typeof response.failed === 'number') counts.push(`Failed: ${response.failed}`);
+                        if (counts.length) {
+                            summary = counts.join(' • ');
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Import Completed with Errors',
+                            html: (summary ? `<p style="margin:0 0 8px 0;">${escapeHtml(summary)}</p>` : '') + html,
+                            width: 900,
+                            showCloseButton: true,
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                    
+                    // Re-enable submit button
+                    submitBtn.prop('disabled', false).html(originalText);
+                }
             });
 
             // Handle loan type change to load appropriate chart accounts

@@ -494,6 +494,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/receipt-vouchers/data', [ReceiptVoucherController::class, 'getReceiptVouchersData'])->name('receipt-vouchers.data');
     Route::get('/receipt-vouchers/create', [ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
     Route::post('/receipt-vouchers', [ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
+    Route::get('/receipt-vouchers/customer-loans', [ReceiptVoucherController::class, 'getCustomerLoans'])->name('receipt-vouchers.customer-loans');
     Route::get('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
     Route::get('/receipt-vouchers/{encodedId}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
     Route::put('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');
@@ -933,6 +934,8 @@ Route::middleware(['auth'])->group(function () {
     })->name('loans.writtenoff');
     Route::get('loans/chart-accounts/{type}', [LoanController::class, 'getChartAccountsByType'])->name('loans.chart-accounts');
     Route::post('loans/import', [LoanController::class, 'importLoans'])->name('loans.import');
+    Route::get('loans/import-progress', [LoanController::class, 'getImportProgress'])->name('loans.import-progress');
+    Route::get('loans/import/failed/{file}', [LoanController::class, 'downloadFailedRecords'])->name('loans.import.download-failed');
     Route::get('loans/import-template', [LoanController::class, 'downloadTemplate'])->name('loans.import-template');
     Route::get('loans/status/{status}', [LoanController::class, 'loansByStatus'])->name('loans.by-status');
 

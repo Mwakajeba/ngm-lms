@@ -194,11 +194,12 @@ class PaymentVoucherController extends Controller
     {
         $user = Auth::user();
 
-        // Get bank accounts for the current company
+        // Get bank accounts for the current company and user's branches
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
+            ->forUserBranches($user)
             ->orderBy('name')
             ->get();
 
@@ -327,6 +328,16 @@ class PaymentVoucherController extends Controller
                 $payment->refresh();
                 if ($payment->approved) {
                     $bankAccount = BankAccount::find($request->bank_account_id);
+                    
+                    // Validate bank account is accessible by user's branches
+                    if ($bankAccount) {
+                        $user = Auth::user();
+                        $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                        if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                            DB::rollBack();
+                            return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                        }
+                    }
 
                     // Prepare description for GL transactions
                     $glDescription = $request->description ?: "Payment voucher {$payment->reference}";
@@ -414,11 +425,12 @@ class PaymentVoucherController extends Controller
                 ->withErrors(['error' => 'Cannot edit an approved payment voucher.']);
         }
 
-        // Get bank accounts for the current company
+        // Get bank accounts for the current company and user's branches
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
+            ->forUserBranches($user)
             ->orderBy('name')
             ->get();
 
@@ -567,6 +579,16 @@ class PaymentVoucherController extends Controller
 
                 // Create new GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
+                
+                // Validate bank account is accessible by user's branches
+                if ($bankAccount) {
+                    $user = Auth::user();
+                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                        DB::rollBack();
+                        return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                    }
+                }
 
                 // Prepare description for GL transactions
                 $glDescription = $request->description ?: "Payment voucher {$paymentVoucher->reference}";

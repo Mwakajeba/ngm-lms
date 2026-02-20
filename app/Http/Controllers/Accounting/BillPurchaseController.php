@@ -353,7 +353,7 @@ class BillPurchaseController extends Controller
     {
         $billPurchase->load(['supplier', 'creditAccount']);
 
-        $bankAccounts = BankAccount::orderBy('name')->get();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $chartAccounts = ChartAccount::orderBy('account_name')->get();
 
         return view('accounting.bill-purchases.payment', compact('billPurchase', 'bankAccounts', 'chartAccounts'));
@@ -406,6 +406,15 @@ class BillPurchaseController extends Controller
 
             // Create GL transactions
             $bankAccount = BankAccount::find($request->bank_account_id);
+            
+            // Validate bank account is accessible by user's branches
+            if ($bankAccount) {
+                $user = Auth::user();
+                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                }
+            }
 
             // Credit bank account
             GlTransaction::create([
@@ -468,7 +477,7 @@ class BillPurchaseController extends Controller
     {
         $payment->load(['bankAccount', 'supplier']);
 
-        $bankAccounts = BankAccount::orderBy('name')->get();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $suppliers = \App\Models\Supplier::where('status', 'active')->orderBy('name')->get();
 
         return view('accounting.bill-purchases.payment-edit', compact('payment', 'bankAccounts', 'suppliers'));
@@ -514,6 +523,15 @@ class BillPurchaseController extends Controller
 
             // Create new GL transactions
             $bankAccount = BankAccount::find($request->bank_account_id);
+            
+            // Validate bank account is accessible by user's branches
+            if ($bankAccount) {
+                $user = Auth::user();
+                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                }
+            }
 
             // Credit bank account
             GlTransaction::create([

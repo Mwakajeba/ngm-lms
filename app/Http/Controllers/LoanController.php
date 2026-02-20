@@ -24,6 +24,9 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Cache;
+use Maatwebsite\Excel\Facades\Excel;
+use App\Exports\FailedLoanImportExport;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Vinkla\Hashids\Facades\Hashids;
@@ -556,6 +559,7 @@ class LoanController extends Controller
                         ->orWhere('name', 'LIKE', '%Asset%')
                         ->orWhere('name', 'LIKE', '%asset%');
                 })
+                    ->forUserBranches()
                     ->with('chartAccount')
                     ->select('id', 'name', 'account_number')
                     ->orderBy('name')
@@ -583,6 +587,7 @@ class LoanController extends Controller
                         ->orWhere('name', 'LIKE', '%Business Capital%')
                         ->orWhere('name', 'LIKE', '%Capital%');
                 })
+                    ->forUserBranches()
                     ->with('chartAccount')
                     ->select('id', 'name', 'account_number')
                     ->orderBy('name')
@@ -688,22 +693,51 @@ class LoanController extends Controller
             $errorCount = 0;
             $skippedCount = 0;
             $errors = [];
+            $failedRecords = []; // Store failed records with full data
+
+            // Create unique import ID for progress tracking
+            $importId = 'import_' . $userId . '_' . time();
+            $totalRows = count($data);
+
+            // Initialize progress tracking
+            Cache::put($importId, [
+                'status' => 'processing',
+                'current' => 0,
+                'total' => $totalRows,
+                'success' => 0,
+                'failed' => 0,
+                'skipped' => 0,
+                'percentage' => 0
+            ], 600); // 10 minutes expiry
 
             // Add debugging
             \Log::info('Import started', [
-                'total_rows' => count($data),
+                'total_rows' => $totalRows,
                 'product_id' => $request->product_id,
                 'branch_id' => $branchId,
                 'user_id' => $userId,
-                'skip_errors' => $request->has('skip_errors')
+                'skip_errors' => $request->has('skip_errors'),
+                'import_id' => $importId
             ]);
 
             $skipErrors = $request->has('skip_errors');
             $importStartedAt = now();
             $customerNameIndex = array_search('customer_name', $header, true);
 
-            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, $skipErrors, $customerNameIndex, &$successCount, &$errorCount, &$skippedCount, &$errors) {
+            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, $skipErrors, $customerNameIndex, $importId, $totalRows, &$successCount, &$errorCount, &$skippedCount, &$errors, &$failedRecords) {
                 foreach ($data as $rowIndex => $row) {
+                    // Update progress
+                    $currentRow = $rowIndex + 1;
+                    $percentage = round(($currentRow / $totalRows) * 100);
+                    Cache::put($importId, [
+                        'status' => 'processing',
+                        'current' => $currentRow,
+                        'total' => $totalRows,
+                        'success' => $successCount,
+                        'failed' => $errorCount,
+                        'skipped' => $skippedCount,
+                        'percentage' => $percentage
+                    ], 600);
                     try {
                         // Normalize row to header length
                         $row = array_map(function ($v) {
@@ -739,6 +773,21 @@ class LoanController extends Controller
                                 } else {
                                     $errors[] = $validated['error'];
                                     $errorCount++;
+                                    // Store failed record with full data
+                                    $failedRecords[] = [
+                                        'row_number' => $rowIndex + 2,
+                                        'customer_no' => $rowData['customer_no'] ?? '',
+                                        'customer_name' => $rowData['customer_name'] ?? '',
+                                        'amount' => $rowData['amount'] ?? '',
+                                        'period' => $rowData['period'] ?? '',
+                                        'interest' => $rowData['interest'] ?? '',
+                                        'date_applied' => $rowData['date_applied'] ?? '',
+                                        'interest_cycle' => $rowData['interest_cycle'] ?? '',
+                                        'loan_officer' => $rowData['loan_officer'] ?? '',
+                                        'group_id' => $rowData['group_id'] ?? '',
+                                        'sector' => $rowData['sector'] ?? '',
+                                        'error_reason' => $validated['error']
+                                    ];
                                 }
                             }
                             continue;
@@ -756,8 +805,24 @@ class LoanController extends Controller
                                 \Log::info('Skipping row due to product limits error', ['row' => $rowIndex + 2]);
                                 continue;
                             } else {
-                                $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                                $errorMsg = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                                $errors[] = $errorMsg;
                                 $errorCount++;
+                                // Store failed record
+                                $failedRecords[] = [
+                                    'row_number' => $rowIndex + 2,
+                                    'customer_no' => $rowData['customer_no'] ?? '',
+                                    'customer_name' => $rowData['customer_name'] ?? '',
+                                    'amount' => $rowData['amount'] ?? '',
+                                    'period' => $rowData['period'] ?? '',
+                                    'interest' => $rowData['interest'] ?? '',
+                                    'date_applied' => $rowData['date_applied'] ?? '',
+                                    'interest_cycle' => $rowData['interest_cycle'] ?? '',
+                                    'loan_officer' => $rowData['loan_officer'] ?? '',
+                                    'group_id' => $rowData['group_id'] ?? '',
+                                    'sector' => $rowData['sector'] ?? '',
+                                    'error_reason' => $errorMsg
+                                ];
                                 continue;
                             }
                         }
@@ -777,6 +842,21 @@ class LoanController extends Controller
                                 } else {
                                     $errors[] = $errorMsg;
                                     $errorCount++;
+                                    // Store failed record
+                                    $failedRecords[] = [
+                                        'row_number' => $rowIndex + 2,
+                                        'customer_no' => $rowData['customer_no'] ?? '',
+                                        'customer_name' => $rowData['customer_name'] ?? '',
+                                        'amount' => $rowData['amount'] ?? '',
+                                        'period' => $rowData['period'] ?? '',
+                                        'interest' => $rowData['interest'] ?? '',
+                                        'date_applied' => $rowData['date_applied'] ?? '',
+                                        'interest_cycle' => $rowData['interest_cycle'] ?? '',
+                                        'loan_officer' => $rowData['loan_officer'] ?? '',
+                                        'group_id' => $rowData['group_id'] ?? '',
+                                        'sector' => $rowData['sector'] ?? '',
+                                        'error_reason' => $errorMsg
+                                    ];
                                     continue;
                                 }
                             }
@@ -798,6 +878,21 @@ class LoanController extends Controller
                             } else {
                                 $errors[] = $errorMsg;
                                 $errorCount++;
+                                // Store failed record
+                                $failedRecords[] = [
+                                    'row_number' => $rowIndex + 2,
+                                    'customer_no' => $rowData['customer_no'] ?? '',
+                                    'customer_name' => $rowData['customer_name'] ?? '',
+                                    'amount' => $rowData['amount'] ?? '',
+                                    'period' => $rowData['period'] ?? '',
+                                    'interest' => $rowData['interest'] ?? '',
+                                    'date_applied' => $rowData['date_applied'] ?? '',
+                                    'interest_cycle' => $rowData['interest_cycle'] ?? '',
+                                    'loan_officer' => $rowData['loan_officer'] ?? '',
+                                    'group_id' => $rowData['group_id'] ?? '',
+                                    'sector' => $rowData['sector'] ?? '',
+                                    'error_reason' => $errorMsg
+                                ];
                                 continue;
                             }
                         }
@@ -813,12 +908,40 @@ class LoanController extends Controller
                             $skippedCount++;
                             \Log::info('Skipping row due to creation error', ['row' => $rowIndex + 2, 'error' => $e->getMessage()]);
                         } else {
-                            $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                            $errorMsg = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
+                            $errors[] = $errorMsg;
                             $errorCount++;
+                            // Store failed record
+                            $failedRecords[] = [
+                                'row_number' => $rowIndex + 2,
+                                'customer_no' => $rowData['customer_no'] ?? '',
+                                'customer_name' => $rowData['customer_name'] ?? '',
+                                'amount' => $rowData['amount'] ?? '',
+                                'period' => $rowData['period'] ?? '',
+                                'interest' => $rowData['interest'] ?? '',
+                                'date_applied' => $rowData['date_applied'] ?? '',
+                                'interest_cycle' => $rowData['interest_cycle'] ?? '',
+                                'loan_officer' => $rowData['loan_officer'] ?? '',
+                                'group_id' => $rowData['group_id'] ?? '',
+                                'sector' => $rowData['sector'] ?? '',
+                                'error_reason' => $errorMsg
+                            ];
                         }
                     }
                 }
             });
+
+            // Update final progress
+            Cache::put($importId, [
+                'status' => 'completed',
+                'current' => $totalRows,
+                'total' => $totalRows,
+                'success' => $successCount,
+                'failed' => $errorCount,
+                'skipped' => $skippedCount,
+                'percentage' => 100,
+                'failed_records' => $failedRecords
+            ], 600);
 
             $message = "Import completed. Successfully imported: $successCount loans.";
             if ($skippedCount > 0) {
@@ -826,6 +949,25 @@ class LoanController extends Controller
             }
             if ($errorCount > 0) {
                 $message .= " Failed: $errorCount loans.";
+            }
+
+            // Generate failed records export if there are failures
+            $failedExportPath = null;
+            if (!empty($failedRecords)) {
+                try {
+                    $fileName = 'failed_loan_import_' . date('Y_m_d_His') . '.xlsx';
+                    $filePath = storage_path('app/exports/' . $fileName);
+                    
+                    // Ensure directory exists
+                    if (!file_exists(storage_path('app/exports'))) {
+                        mkdir(storage_path('app/exports'), 0755, true);
+                    }
+                    
+                    Excel::store(new FailedLoanImportExport($failedRecords), 'exports/' . $fileName);
+                    $failedExportPath = route('loans.import.download-failed', ['file' => $fileName]);
+                } catch (\Exception $e) {
+                    \Log::error('Failed to generate export file', ['error' => $e->getMessage()]);
+                }
             }
 
             // Consider import a failure if there are errors OR zero successful imports
@@ -843,12 +985,15 @@ class LoanController extends Controller
                         'skipped' => $skippedCount,
                         'failed' => $errorCount,
                         'imported' => $successCount,
+                        'import_id' => $importId,
+                        'failed_export_url' => $failedExportPath,
                     ]);
                 }
                 return redirect()->back()
                     ->with('warning', $message)
                     ->with('import_errors', $errors)
-                    ->with('import_tips', $tips);
+                    ->with('import_tips', $tips)
+                    ->with('failed_export_url', $failedExportPath);
             }
 
             if ($request->ajax()) {
@@ -858,15 +1003,66 @@ class LoanController extends Controller
                     'imported' => $successCount,
                     'skipped' => $skippedCount,
                     'failed' => $errorCount,
+                    'import_id' => $importId,
+                    'failed_export_url' => $failedExportPath,
                 ]);
             }
 
-            return redirect()->route('loans.list')->with('success', $message);
+            return redirect()->route('loans.list')
+                ->with('success', $message)
+                ->with('failed_export_url', $failedExportPath);
         } catch (\Exception $e) {
+            // Update progress to error state
+            if (isset($importId)) {
+                Cache::put($importId, [
+                    'status' => 'error',
+                    'error' => $e->getMessage()
+                ], 600);
+            }
+            
             return redirect()->back()->withErrors([
                 'import_file' => 'Error processing import: ' . $e->getMessage()
             ]);
         }
+    }
+
+    /**
+     * Get import progress
+     */
+    public function getImportProgress(Request $request)
+    {
+        $importId = $request->get('import_id');
+        
+        if (!$importId) {
+            return response()->json([
+                'error' => 'Import ID is required'
+            ], 400);
+        }
+
+        $progress = Cache::get($importId);
+        
+        if (!$progress) {
+            return response()->json([
+                'status' => 'not_found',
+                'message' => 'Import progress not found'
+            ]);
+        }
+
+        return response()->json($progress);
+    }
+
+    /**
+     * Download failed records export
+     */
+    public function downloadFailedRecords(Request $request, $file)
+    {
+        $filePath = storage_path('app/exports/' . $file);
+        
+        if (!file_exists($filePath)) {
+            return redirect()->back()->withErrors(['File not found']);
+        }
+
+        return response()->download($filePath)->deleteFileAfterSend(true);
     }
 
     private function validateLoanRow($rowData, $rowNumber)
@@ -1361,9 +1557,10 @@ class LoanController extends Controller
 
         $userId = auth()->id();
         $branchId = auth()->user()->branch_id;
+        $loan = null;
 
         try {
-            DB::transaction(function () use ($validated, $product, $userId, $branchId) {
+            DB::transaction(function () use ($validated, $product, $userId, $branchId, &$loan) {
                 // Step 1: Create Loan with initial status
 
 
@@ -1430,6 +1627,14 @@ class LoanController extends Controller
 
                 // Step 5: Record Payment
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
+                
+                // Validate bank account is accessible by user's branches
+                $user = auth()->user();
+                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    throw new \Exception('You do not have access to this bank account.');
+                }
+                
                 $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
                 $principalReceivable = optional($product->principalReceivableAccount)->id;
                 if (!$principalReceivable) {
@@ -1571,6 +1776,104 @@ class LoanController extends Controller
                 }
             });
 
+            // Send SMS notification to customer after loan creation
+            try {
+                $loan->refresh();
+                $loan->load(['customer', 'schedule', 'product']);
+                
+                $customer = $loan->customer;
+                if ($customer && !empty($customer->phone1)) {
+                    // Get first repayment schedule
+                    $firstSchedule = $loan->schedule()->orderBy('due_date')->first();
+                    
+                    if ($firstSchedule) {
+                        // Calculate payment amount per cycle
+                        $paymentAmount = $firstSchedule->principal + $firstSchedule->interest + 
+                                        ($firstSchedule->fee_amount ?? 0) + ($firstSchedule->penalty_amount ?? 0);
+                        
+                        // Get first repayment date
+                        $firstRepaymentDate = \Carbon\Carbon::parse($firstSchedule->due_date);
+                        
+                        // Format interest cycle in Swahili
+                        $cycleSwahili = '';
+                        switch (strtolower($loan->interest_cycle)) {
+                            case 'daily':
+                                $cycleSwahili = 'kila siku';
+                                break;
+                            case 'weekly':
+                                $cycleSwahili = 'kila wiki';
+                                break;
+                            case 'monthly':
+                                $cycleSwahili = 'kila mwezi';
+                                break;
+                            case 'quarterly':
+                                $cycleSwahili = 'kila robo mwaka';
+                                break;
+                            case 'semi_annually':
+                                $cycleSwahili = 'kila nusu mwaka';
+                                break;
+                            case 'annually':
+                                $cycleSwahili = 'kila mwaka';
+                                break;
+                            default:
+                                $cycleSwahili = 'kila mwezi';
+                        }
+                        
+                        // Get company information
+                        $company = null;
+                        if ($loan->branch_id) {
+                            $branch = \App\Models\Branch::with('company')->find($loan->branch_id);
+                            if ($branch && $branch->company) {
+                                $company = $branch->company;
+                            }
+                        }
+                        
+                        if (!$company && $customer->company_id) {
+                            $company = \App\Models\Company::find($customer->company_id);
+                        }
+                        
+                        if (!$company) {
+                            $company = auth()->user()->company;
+                        }
+                        
+                        $companyName = $company ? $company->name : 'SMARTFINANCE';
+                        $companyPhone = $company ? ($company->phone ?? '') : '';
+                        
+                        // Format dates in Swahili format (DD/MM/YYYY)
+                        $loanDate = \Carbon\Carbon::parse($loan->date_applied)->format('d/m/Y');
+                        $repaymentStartDate = $firstRepaymentDate->format('d/m/Y');
+                        
+                        // Format amount with commas
+                        $formattedAmount = number_format($loan->amount, 0);
+                        $formattedPaymentAmount = number_format($paymentAmount, 0);
+                        
+                        // Build SMS message in Swahili
+                        $smsMessage = "Umepokea mkopo wa Tsh {$formattedAmount} tarehe {$loanDate}, Marejesho yako yataanza {$repaymentStartDate} na utakuwa unalipa Tsh {$formattedPaymentAmount} {$cycleSwahili}. Asante. Ujumbe umetoka {$companyName}";
+                        
+                        if (!empty($companyPhone)) {
+                            $smsMessage .= " kwa mawasiliano piga {$companyPhone}";
+                        }
+                        
+                        // Send SMS
+                        \App\Helpers\SmsHelper::send($customer->phone1, $smsMessage);
+                        
+                        \Log::info('Loan creation SMS sent', [
+                            'loan_id' => $loan->id,
+                            'customer_id' => $customer->id,
+                            'phone' => $customer->phone1,
+                            'message' => $smsMessage
+                        ]);
+                    }
+                }
+            } catch (\Exception $e) {
+                // Log error but don't fail the loan creation
+                \Log::error('Failed to send loan creation SMS', [
+                    'loan_id' => $loan->id ?? null,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
+
             return redirect()->route('loans.list')->with('success', 'Loan application created successfully.');
         } catch (\Throwable $th) {
             return back()->withErrors([
@@ -1609,7 +1912,7 @@ class LoanController extends Controller
             ->select('groups.*')
             ->get();
         $products = LoanProduct::where('is_active', true)->get();
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // You can move this to config if reusable
 
         return view('loans.edit', [
@@ -1761,6 +2064,14 @@ class LoanController extends Controller
 
                 // Create payment record
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
+                
+                // Validate bank account is accessible by user's branches
+                $user = auth()->user();
+                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    throw new \Exception('You do not have access to this bank account.');
+                }
+                
                 $notes = "Being disbursement for loan of {$product->name}, paid to {$loan->customer->name}, TSHS.{$validated['amount']}";
                 $principalReceivable = optional($product->principalReceivableAccount)->id;
                 if (!$principalReceivable) {
