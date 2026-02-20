@@ -1363,17 +1363,22 @@ $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()-
 
                 <!-- Action Buttons -->
                 <div class="row mt-3">
-                    <div class="col-md-4">
-                        <button type="button" class="btn btn-outline-primary w-100" id="sendBulkSMS">
-                            <i class="bx bx-send me-2"></i>Send Bulk SMS
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-danger w-100" id="sendBulkSMSArrears">
+                            <i class="bx bx-send me-2"></i>Send Bulk SMS for Arrears
                         </button>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-6">
+                        <button type="button" class="btn btn-outline-primary w-100" id="sendBulkSMS">
+                            <i class="bx bx-send me-2"></i>Send Bulk SMS (All)
+                        </button>
+                    </div>
+                    <div class="col-md-4 mt-2">
                         <button type="button" class="btn btn-outline-success w-100" id="markAllRead">
                             <i class="bx bx-check-double me-2"></i>Mark All as Read
                         </button>
                     </div>
-                    <div class="col-md-4">
+                    <div class="col-md-4 mt-2">
                         <button type="button" class="btn btn-outline-info w-100" id="exportMessages">
                             <i class="bx bx-download me-2"></i>Export Messages
                         </button>
@@ -2178,6 +2183,12 @@ $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()-
         });
 
         // Action button event listeners
+        // Send Bulk SMS for Arrears
+        document.getElementById('sendBulkSMSArrears').addEventListener('click', function () {
+            showBulkSMSArrearsConfig();
+        });
+
+        // Send Bulk SMS for All Messages
         document.getElementById('sendBulkSMS').addEventListener('click', function () {
             showBulkSMSPrompt();
         });
@@ -2447,6 +2458,124 @@ $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()-
                         timerProgressBar: true
                     });
                 }
+            });
+        }
+
+        function showBulkSMSArrearsConfig() {
+            Swal.fire({
+                title: 'Configure Bulk SMS for Arrears',
+                html: `
+                    <form id="arrearsSMSConfigForm">
+                        <div class="mb-3 text-start">
+                            <label class="form-label">Branch</label>
+                            <select class="form-select" name="branch_id" id="arrearsBranchSelect">
+                                <option value="">All Branches</option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <div class="col-md-6 mb-3 text-start">
+                                <label class="form-label">Minimum Days Overdue</label>
+                                <input type="number" class="form-control" name="min_days_overdue" id="minDaysOverdue" value="0" min="0" placeholder="0">
+                                <small class="text-muted">Leave 0 for all arrears</small>
+                            </div>
+                            <div class="col-md-6 mb-3 text-start">
+                                <label class="form-label">Maximum Days Overdue</label>
+                                <input type="number" class="form-control" name="max_days_overdue" id="maxDaysOverdue" value="" min="0" placeholder="Leave empty for no limit">
+                            </div>
+                        </div>
+                        <div class="alert alert-info text-start">
+                            <small><i class="bx bx-info-circle me-1"></i>This will send SMS to all customers with loans in arrears matching your criteria.</small>
+                        </div>
+                    </form>
+                `,
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Send SMS',
+                cancelButtonText: 'Cancel',
+                didOpen: () => {
+                    // Load branches if needed
+                    const branchSelect = document.getElementById('arrearsBranchSelect');
+                    // You can populate branches here if needed
+                },
+                preConfirm: () => {
+                    const form = document.getElementById('arrearsSMSConfigForm');
+                    const formData = new FormData(form);
+                    const data = {
+                        branch_id: formData.get('branch_id') || null,
+                        min_days_overdue: parseInt(formData.get('min_days_overdue')) || 0,
+                        max_days_overdue: formData.get('max_days_overdue') ? parseInt(formData.get('max_days_overdue')) : null,
+                    };
+                    return data;
+                }
+            }).then((result) => {
+                if (result.isConfirmed && result.value) {
+                    sendBulkSMSForArrears(result.value);
+                }
+            });
+        }
+
+        function sendBulkSMSForArrears(config) {
+            Swal.fire({
+                title: 'Sending SMS...',
+                html: 'Please wait while we send bulk SMS for arrears.',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+
+            fetch('{{ route("loan-messages.send-bulk-sms-arrears") }}', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    Swal.fire({
+                        title: 'SMS Sent!',
+                        html: `
+                            <div class="text-start">
+                                <p><strong>${data.results.sent}</strong> SMS sent successfully</p>
+                                <p><strong>${data.results.failed}</strong> SMS failed</p>
+                                <p><strong>${data.results.total_customers}</strong> total customers</p>
+                                ${data.results.errors.length > 0 ? `
+                                    <div class="alert alert-warning mt-3">
+                                        <strong>Errors:</strong>
+                                        <ul class="mb-0 mt-2">
+                                            ${data.results.errors.slice(0, 5).map(e => `<li>${e}</li>`).join('')}
+                                            ${data.results.errors.length > 5 ? `<li>... and ${data.results.errors.length - 5} more</li>` : ''}
+                                        </ul>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        `,
+                        icon: data.results.failed === 0 ? 'success' : 'warning',
+                        confirmButtonColor: '#28a745',
+                        confirmButtonText: 'OK'
+                    });
+                } else {
+                    Swal.fire({
+                        title: 'Error',
+                        text: data.message || 'Failed to send bulk SMS',
+                        icon: 'error',
+                        confirmButtonColor: '#dc3545'
+                    });
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                Swal.fire({
+                    title: 'Error',
+                    text: 'Failed to send bulk SMS. Please try again.',
+                    icon: 'error',
+                    confirmButtonColor: '#dc3545'
+                });
             });
         }
 

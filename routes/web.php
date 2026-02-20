@@ -1067,6 +1067,7 @@ Route::middleware(['auth'])->group(function () {
 Route::middleware(['auth'])->group(function () {
     Route::get('/calendar', [App\Http\Controllers\CalendarController::class, 'index'])->name('calendar.index');
     Route::get('/loan-messages', [App\Http\Controllers\LoanMessagesController::class, 'getMessages'])->name('loan-messages.get');
+    Route::post('/loan-messages/send-bulk-sms-arrears', [App\Http\Controllers\LoanMessagesController::class, 'sendBulkSmsForArrears'])->name('loan-messages.send-bulk-sms-arrears');
 });
 
 Route::post('sms/bulk', [App\Http\Controllers\DashboardController::class, 'sendBulkSms'])->name('sms.bulk');
