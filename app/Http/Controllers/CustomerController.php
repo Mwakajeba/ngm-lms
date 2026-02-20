@@ -144,12 +144,12 @@ class CustomerController extends Controller
     public function create()
     {
         $branchId = auth()->user()->branch_id;
-        $loanOfficers = User::where('branch_id', $branchId)->get();
+        $loanOfficers = User::where('branch_id', $branchId)->excludeSuperAdmin()->get();
         $filetypes = Filetype::orderBy('name')->get();
         $collateralTypes = CashCollateralType::where('is_active', 1)->get(); // active types only
         $branches = Branch::all();
         $companies = Company::all();
-        $registrars = User::all();
+        $registrars = User::excludeSuperAdmin()->get();
         $regions = Region::all();
         $groups = \App\Models\Group::where('branch_id', $branchId)->where('id', '!=', 1)->get();
 
@@ -326,11 +326,11 @@ class CustomerController extends Controller
         }
         $customer = Customer::findOrFail($id);
         $branchId = auth()->user()->branch_id;
-        $loanOfficers = User::where('branch_id', $branchId)->get();
+        $loanOfficers = User::where('branch_id', $branchId)->excludeSuperAdmin()->get();
         $collateralTypes = \App\Models\CashCollateralType::where('is_active', 1)->get();
         $branches = \App\Models\Branch::all();
         $companies = \App\Models\Company::all();
-        $registrars = \App\Models\User::all();
+        $registrars = \App\Models\User::excludeSuperAdmin()->get();
         $regions = \App\Models\Region::all();
         $filetypes = \App\Models\Filetype::orderBy('name')->get();
         $groups = \App\Models\Group::where('branch_id', $branchId)->get();

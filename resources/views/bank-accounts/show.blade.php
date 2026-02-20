@@ -119,6 +119,26 @@
                                     </div>
                                 </div>
                             </div>
+
+                            <div class="col-md-12">
+                                <div class="d-flex align-items-start mb-3">
+                                    <div class="bg-light rounded-circle p-2 me-3">
+                                        <i class="bx bx-building text-info fs-5"></i>
+                                    </div>
+                                    <div class="flex-grow-1">
+                                        <small class="text-muted d-block mb-2">Assigned Branches</small>
+                                        @if($bankAccount->branches->count() > 0)
+                                            <div class="d-flex flex-wrap gap-2">
+                                                @foreach($bankAccount->branches as $branch)
+                                                    <span class="badge bg-primary fs-6">{{ $branch->name }}</span>
+                                                @endforeach
+                                            </div>
+                                        @else
+                                            <span class="text-muted fst-italic">No branches assigned</span>
+                                        @endif
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

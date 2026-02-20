@@ -54,7 +54,7 @@ class CreateSampleLoansCommand extends Command
         $loanProducts = LoanProduct::with('principalReceivableAccount')->get();
         $bankAccount = BankAccount::first();
         $branches = Branch::all();
-        $users = User::take(10)->get();
+        $users = User::excludeSuperAdmin()->take(10)->get();
         $groups = Group::all();
 
         if (!$bankAccount) {

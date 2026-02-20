@@ -1,224 +1,161 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta charset="utf-8">
+    <meta charset="UTF-8">
     <title>Loan Outstanding Balance Report</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            font-size: 12px;
-            margin: 0;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 30px;
-        }
-        .company-name {
-            font-size: 18px;
-            font-weight: bold;
-            margin-bottom: 10px;
-        }
-        .report-title {
-            font-size: 16px;
-            font-weight: bold;
-            margin-bottom: 5px;
-        }
-        .report-info {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 20px;
-        }
-        .summary-section {
-            background-color: #f8f9fa;
-            padding: 15px;
-            margin-bottom: 20px;
-            border-radius: 5px;
-        }
-        .summary-title {
-            font-weight: bold;
-            font-size: 14px;
-            margin-bottom: 10px;
-        }
-        .summary-grid {
-            display: grid;
-            grid-template-columns: repeat(2, 1fr);
-            gap: 10px;
-        }
-        .summary-item {
-            display: flex;
-            justify-content: space-between;
-            padding: 5px 0;
-            border-bottom: 1px solid #dee2e6;
-        }
-        .summary-label {
-            font-weight: bold;
-        }
-        .summary-value {
-            color: #495057;
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-top: 20px;
-        }
-        th, td {
-            border: 1px solid #dee2e6;
-            padding: 8px;
-            text-align: left;
-        }
-        th {
-            background-color: #f8f9fa;
-            font-weight: bold;
-            text-align: center;
-        }
-        .text-right {
-            text-align: right;
-        }
-        .text-center {
-            text-align: center;
-        }
-        .total-row {
-            background-color: #e9ecef;
-            font-weight: bold;
-        }
-        .section-header {
-            background-color: #007bff;
-            color: white;
-            font-weight: bold;
-            text-align: center;
-            padding: 8px;
-        }
-        .footer {
-            margin-top: 30px;
-            text-align: center;
-            font-size: 10px;
-            color: #666;
-        }
+        @page { size: A3 landscape; margin: 10mm; }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: Arial, sans-serif; font-size: 9px; color: #000; line-height: 1.3; }
+        .header { text-align: center; margin-bottom: 10px; padding-bottom: 8px; border-bottom: 2px solid #000; }
+        .logo { max-height: 50px; margin-bottom: 5px; }
+        .company-name { font-size: 16px; font-weight: bold; color: #000; margin: 3px 0; }
+        .company-details { font-size: 9px; color: #000; margin: 2px 0; }
+        .report-title { font-size: 12px; font-weight: bold; color: #000; margin: 8px 0 3px 0; text-transform: uppercase; }
+        .report-info { font-size: 9px; color: #000; margin: 2px 0; }
+        table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        th, td { border: 1px solid #000; padding: 3px 2px; text-align: left; font-size: 7px; color: #000; }
+        th { background-color: #000; color: #fff; font-weight: bold; text-align: center; }
+        .text-right { text-align: right; }
+        .text-center { text-align: center; }
+        .total-row { background-color: #f0f0f0; font-weight: bold; }
+        .footer { margin-top: 15px; padding-top: 8px; border-top: 1px solid #000; text-align: center; font-size: 8px; color: #000; }
+        .footer p { margin: 2px 0; }
+        .digital-signature { margin-top: 5px; font-size: 7px; color: #000; font-style: italic; }
     </style>
 </head>
 <body>
+    @php
+        $logoBase64 = null;
+        $logoPath = null;
+        if (isset($company) && $company && !empty($company->logo)) {
+            $storagePath = public_path('storage/' . $company->logo);
+            if (file_exists($storagePath)) { $logoPath = $storagePath; }
+        }
+        if (!$logoPath && file_exists(public_path('assets/images/logo-img.png'))) {
+            $logoPath = public_path('assets/images/logo-img.png');
+        }
+        if ($logoPath && file_exists($logoPath)) {
+            $logoType = pathinfo($logoPath, PATHINFO_EXTENSION);
+            $logoData = file_get_contents($logoPath);
+            $logoBase64 = 'data:image/' . $logoType . ';base64,' . base64_encode($logoData);
+        }
+    @endphp
+
+    <!-- Header -->
     <div class="header">
-        <div class="company-name">{{ $company->name ?? 'SmartFinance' }}</div>
-        <div class="report-title">LOAN OUTSTANDING BALANCE REPORT</div>
-        <div class="report-info">
-            As of: {{ \Carbon\Carbon::parse($asOfDate)->format('F d, Y') }}
-            @if($branch)
-                | Branch: {{ $branch->name }}
-            @endif
-            @if($loanOfficer)
-                | Loan Officer: {{ $loanOfficer->name }}
-            @endif
-        </div>
+        @if($logoBase64)<img src="{{ $logoBase64 }}" alt="Logo" class="logo">@endif
+        <div class="company-name">{{ $company->name ?? config('app.name', 'SmartFinance') }}</div>
+        @if(isset($company) && $company)
+            @if($company->address)<div class="company-details">{{ $company->address }}</div>@endif
+            <div class="company-details">
+                @if($company->phone)Phone: {{ $company->phone }}@endif
+                @if($company->phone && $company->email) | @endif
+                @if($company->email)Email: {{ $company->email }}@endif
+            </div>
+        @endif
+        <div class="report-title">Loan Outstanding Balance Report</div>
+        <div class="report-info"><strong>Branch:</strong> {{ $branch->name ?? 'All Branches' }} | <strong>Loan Officer:</strong> {{ $loanOfficer->name ?? 'All Officers' }}</div>
+        <div class="report-info"><strong>As of Date:</strong> {{ \Carbon\Carbon::parse($asOfDate)->format('d/m/Y') }} | <strong>Report Date:</strong> {{ \Carbon\Carbon::now()->format('d/m/Y H:i:s') }}</div>
     </div>
 
-    @if(!empty($outstandingData))
-        <!-- Summary Section -->
-        <div class="summary-section">
-            <div class="summary-title">SUMMARY</div>
-            <div class="summary-grid">
-                <div class="summary-item">
-                    <span class="summary-label">Total Principal Disbursed:</span>
-                    <span class="summary-value">{{ number_format($summary['total_principal_disbursed'], 2) }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Total Expected Interest:</span>
-                    <span class="summary-value">{{ number_format($summary['total_expected_interest'], 2) }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Total Principal Paid:</span>
-                    <span class="summary-value">{{ number_format($summary['total_principal_paid'], 2) }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Total Interest Paid:</span>
-                    <span class="summary-value">{{ number_format($summary['total_paid_interest'], 2) }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Total Outstanding Interest:</span>
-                    <span class="summary-value">{{ number_format($summary['total_outstanding_interest'], 2) }}</span>
-                </div>
-                <div class="summary-item">
-                    <span class="summary-label">Total Accrued Interest:</span>
-                    <span class="summary-value">{{ number_format($summary['total_accrued_interest'], 2) }}</span>
-                </div>
-            </div>
-        </div>
-
-        <!-- Data Table -->
-        <table>
-            <thead>
+    <!-- Data Table -->
+    <table>
+        <thead>
+            <tr>
+                <th style="width: 2%;">S/N</th>
+                <th style="width: 8%;">Customer</th>
+                <th style="width: 5%;">Cust No</th>
+                <th style="width: 5%;">Phone</th>
+                <th style="width: 5%;">Loan No</th>
+                <th style="width: 6%;">Disbursed</th>
+                <th style="width: 6%;">Interest</th>
+                <th style="width: 5%;">Disb Date</th>
+                <th style="width: 5%;">Expiry</th>
+                <th style="width: 6%;">Branch</th>
+                <th style="width: 6%;">Officer</th>
+                <th style="width: 6%;">Principal Paid</th>
+                <th style="width: 5%;">Int Paid</th>
+                <th style="width: 6%;">Out Principal</th>
+                <th style="width: 5%;">Out Interest</th>
+                <th style="width: 5%;">Accrued Int</th>
+                <th style="width: 5%;">Not Due Int</th>
+                <th style="width: 6%;">Out Balance</th>
+            </tr>
+        </thead>
+        <tbody>
+            @php
+                $totalDisbursed = 0;
+                $totalInterest = 0;
+                $totalPrincipalPaid = 0;
+                $totalInterestPaid = 0;
+                $totalOutPrincipal = 0;
+                $totalOutInterest = 0;
+                $totalAccrued = 0;
+                $totalNotDue = 0;
+                $totalOutBalance = 0;
+                $count = 0;
+            @endphp
+            @forelse($outstandingData as $index => $row)
+                @php
+                    $count++;
+                    $totalDisbursed += $row['amount'] ?? 0;
+                    $totalInterest += $row['interest'] ?? 0;
+                    $totalPrincipalPaid += $row['principal_paid'] ?? 0;
+                    $totalInterestPaid += $row['interest_paid'] ?? 0;
+                    $outPrincipal = ($row['amount'] ?? 0) - ($row['principal_paid'] ?? 0);
+                    $totalOutPrincipal += $outPrincipal;
+                    $totalOutInterest += $row['outstanding_interest'] ?? 0;
+                    $totalAccrued += $row['accrued_interest'] ?? 0;
+                    $totalNotDue += $row['not_due_interest'] ?? 0;
+                    $totalOutBalance += $row['outstanding_balance'] ?? 0;
+                @endphp
                 <tr>
-                    <th colspan="10" class="text-center">DISBURSEMENT</th>
-                    <th colspan="2" class="text-center">REPAYMENT</th>
-                    <th colspan="6" class="text-center">OUTSTANDING & INTEREST BREAKDOWN</th>
+                    <td class="text-center">{{ $index + 1 }}</td>
+                    <td>{{ $row['customer'] }}</td>
+                    <td class="text-center">{{ $row['customer_no'] }}</td>
+                    <td class="text-center">{{ $row['phone'] }}</td>
+                    <td class="text-center">{{ $row['loan_no'] }}</td>
+                    <td class="text-right">{{ number_format($row['amount'], 0) }}</td>
+                    <td class="text-right">{{ number_format($row['interest'], 0) }}</td>
+                    <td class="text-center">{{ $row['disbursed_no'] }}</td>
+                    <td class="text-center">{{ $row['expiry'] }}</td>
+                    <td>{{ $row['branch'] }}</td>
+                    <td>{{ $row['loan_officer'] }}</td>
+                    <td class="text-right">{{ number_format($row['principal_paid'], 0) }}</td>
+                    <td class="text-right">{{ number_format($row['interest_paid'], 0) }}</td>
+                    <td class="text-right">{{ number_format($outPrincipal, 0) }}</td>
+                    <td class="text-right">{{ number_format($row['outstanding_interest'], 0) }}</td>
+                    <td class="text-right">{{ number_format($row['accrued_interest'], 0) }}</td>
+                    <td class="text-right">{{ number_format($row['not_due_interest'], 0) }}</td>
+                    <td class="text-right">{{ number_format($row['outstanding_balance'], 0) }}</td>
                 </tr>
-                <tr>
-                    <th>Customer</th>
-                    <th>Customer No</th>
-                    <th>Phone</th>
-                    <th>Loan No</th>
-                    <th>Disbursed Amount</th>
-                    <th>Expected Interest</th>
-                    <th>Disbursed Date</th>
-                    <th>Expiry</th>
-                    <th>Branch</th>
-                    <th>Loan Officer</th>
-                    <th class="text-right">Principal Paid</th>
-                    <th class="text-right">Interest Paid</th>
-                    <th class="text-right">Outstanding Principal</th>
-                    <th class="text-right">Outstanding Interest</th>
-                    <th class="text-right">Accrued Interest</th>
-                    <th class="text-right">Not Due Interest</th>
-                    <th class="text-right">Outstanding Balance</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach($outstandingData as $row)
-                    <tr>
-                        <td>{{ $row['customer'] }}</td>
-                        <td>{{ $row['customer_no'] }}</td>
-                        <td>{{ $row['phone'] }}</td>
-                        <td>{{ $row['loan_no'] }}</td>
-                        <td class="text-right">{{ number_format($row['amount'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['interest'], 2) }}</td>
-                        <td>{{ $row['disbursed_no'] }}</td>
-                        <td>{{ $row['expiry'] }}</td>
-                        <td>{{ $row['branch'] }}</td>
-                        <td>{{ $row['loan_officer'] }}</td>
-                        <td class="text-right">{{ number_format($row['principal_paid'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['interest_paid'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['amount'] - $row['principal_paid'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['outstanding_interest'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['accrued_interest'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['not_due_interest'], 2) }}</td>
-                        <td class="text-right">{{ number_format($row['outstanding_balance'], 2) }}</td>
-                    </tr>
-                @endforeach
-            </tbody>
-            <tfoot>
-                <tr class="total-row">
-                    <th colspan="4" class="text-center">TOTALS</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('amount'), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('interest'), 2) }}</th>
-                    <th colspan="4"></th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('principal_paid'), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('interest_paid'), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum(function($row) { return $row['amount'] - $row['principal_paid']; }), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('outstanding_interest'), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('accrued_interest'), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('not_due_interest'), 2) }}</th>
-                    <th class="text-right">{{ number_format(collect($outstandingData)->sum('outstanding_balance'), 2) }}</th>
-                </tr>
-            </tfoot>
-        </table>
-    @else
-        <div class="text-center" style="padding: 50px;">
-            <p>No outstanding data found for the selected criteria.</p>
-        </div>
-    @endif
+            @empty
+                <tr><td colspan="18" class="text-center">No records found</td></tr>
+            @endforelse
+            <!-- Total Row -->
+            <tr class="total-row">
+                <td class="text-center" colspan="2"><strong>TOTAL</strong></td>
+                <td colspan="3" class="text-right"><strong>{{ number_format($count) }} Records</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalDisbursed, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalInterest, 0) }}</strong></td>
+                <td colspan="4"></td>
+                <td class="text-right"><strong>{{ number_format($totalPrincipalPaid, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalInterestPaid, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalOutPrincipal, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalOutInterest, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalAccrued, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalNotDue, 0) }}</strong></td>
+                <td class="text-right"><strong>{{ number_format($totalOutBalance, 0) }}</strong></td>
+            </tr>
+        </tbody>
+    </table>
 
+    <!-- Footer -->
     <div class="footer">
-        Generated on {{ now()->format('F d, Y \a\t g:i A') }}
+        <p><strong>&copy; {{ date('Y') }} {{ $company->name ?? config('app.name', 'SmartFinance') }}. All Rights Reserved.</strong></p>
+        <p class="digital-signature">This is a digitally generated document from {{ $company->name ?? config('app.name', 'SmartFinance') }} System. No signature required.</p>
+        <p class="digital-signature">Generated on: {{ \Carbon\Carbon::now()->format('d/m/Y H:i:s') }} | Document ID: {{ strtoupper(uniqid('DOC-')) }}</p>
     </div>
 </body>
 </html>

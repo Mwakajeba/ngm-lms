@@ -498,10 +498,10 @@ class LoanController extends Controller
                         }
                     }
 
-                        // // Change status action (available to users who can edit loans)
-                        // if (auth()->user()->can('edit loan')) {
-                        //     $actions .= '<button class="btn btn-sm btn-outline-secondary change-status-btn me-1" data-id="' . $encodedId . '" title="Change Status"><i class="bx bx-transfer"></i></button>';
-                        // }
+                    // // Change status action (available to users who can edit loans)
+                    // if (auth()->user()->can('edit loan')) {
+                    //     $actions .= '<button class="btn btn-sm btn-outline-secondary change-status-btn me-1" data-id="' . $encodedId . '" title="Change Status"><i class="bx bx-transfer"></i></button>';
+                    // }
 
                     return '<div class="text-center">' . $actions . '</div>';
                 })
@@ -1459,7 +1459,7 @@ class LoanController extends Controller
         // Removed heavy debug dump of customers to avoid timeouts
         $products = LoanProduct::where('is_active', true)->get();
 
-        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
+        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->excludeSuperAdmin()->get();
 
         $interestCycles = [
             'daily' => 'Daily',
@@ -1892,7 +1892,7 @@ class LoanController extends Controller
         $loanId = $decoded[0];
         $loan = Loan::findOrFail($loanId);
         // Log::info("=== LOAN EDIT METHOD ===", ["encoded_id" => $encodedId, "loan_id" => $loan->id, "loan_data" => ["amount" => $loan->amount, "interest" => $loan->interest, "period" => $loan->period, "interest_cycle" => $loan->interest_cycle, "customer_id" => $loan->customer_id, "group_id" => $loan->group_id, "product_id" => $loan->product_id, "bank_account_id" => $loan->bank_account_id, "loan_officer_id" => $loan->loan_officer_id, "sector" => $loan->sector]]);
-        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->get();
+        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->excludeSuperAdmin()->get();
 
         $interestCycles = [
             'daily' => 'Daily',
@@ -2751,7 +2751,7 @@ class LoanController extends Controller
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
-        $this->validateProductLimits($validated, $product);
+        $this->validateProductLimits(                                                           $validated, $product);
 
         try {
             $updateData = [

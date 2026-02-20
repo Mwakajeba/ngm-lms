@@ -23,7 +23,13 @@ class UserController extends Controller
 
     public function index(Request $request)
     {
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
         $query = User::with(['branch', 'roles']);
+
+        // Hide super-admin users from all users
+        $query->excludeSuperAdmin();
 
         // Optionally filter by status
         if ($request->has('status') && $request->status) {
@@ -38,9 +44,12 @@ class UserController extends Controller
         }
 
         $users = $query->latest()->paginate(20);
-        $totalUsers = User::count();
-        $activeUsers = User::where('status', 'active')->count();
-        $inactiveUsers = User::where('status', 'inactive')->count();
+
+        // Count users excluding super-admins
+        $userCountQuery = User::excludeSuperAdmin();
+        $totalUsers = (clone $userCountQuery)->count();
+        $activeUsers = (clone $userCountQuery)->where('status', 'active')->count();
+        $inactiveUsers = (clone $userCountQuery)->where('status', 'inactive')->count();
 
         return view('users.index', compact('users', 'totalUsers', 'activeUsers', 'inactiveUsers'));
     }
@@ -195,6 +204,14 @@ class UserController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from viewing super-admin users
+        if (!$isSuperAdmin && $user->hasRole('super-admin')) {
+            abort(403, 'Unauthorized access.');
+        }
+
         // Load user relationships
         $user->load(['branch', 'company', 'roles', 'permissions']);
 
@@ -208,8 +225,23 @@ class UserController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
+        $currentUser = auth()->user();
+        $isSuperAdmin = $currentUser->hasRole('super-admin');
+
+        // Prevent non-super-admin from editing super-admin users
+        if (!$isSuperAdmin && $user->hasRole('super-admin')) {
+            abort(403, 'Unauthorized access.');
+        }
+
         $branches = Branch::forCompany()->active()->get();
-        $roles = Role::where('guard_name', 'web')->orderBy('name')->get();
+
+        // Filter out super-admin role for non-super-admin users
+        $rolesQuery = Role::where('guard_name', 'web');
+        if (!$isSuperAdmin) {
+            $rolesQuery->where('name', '!=', 'super-admin');
+        }
+        $roles = $rolesQuery->orderBy('name')->get();
+
         $user->load('roles');
 
         return view('users.form', compact('user', 'branches', 'roles'));
@@ -376,8 +408,45 @@ class UserController extends Controller
             return redirect()->route('users.index')->with('error', 'You cannot delete your own account.');
         }
 
+        // Prevent deletion of super-admin users by non-super-admin
+        $currentUser = auth()->user();
+        if (!$currentUser->hasRole('super-admin') && $user->hasRole('super-admin')) {
+            return redirect()->route('users.index')->with('error', 'You cannot delete a super admin user.');
+        }
+
+        // Check if user has active loans as loan officer
+        $activeLoansCount = \App\Models\Loan::where('loan_officer_id', $user->id)
+            ->whereNotIn('status', ['completed', 'closed', 'written_off'])
+            ->count();
+
+        if ($activeLoansCount > 0) {
+            return redirect()->route('users.index')
+                ->with('error', "Cannot delete user. They have {$activeLoansCount} active loan(s) assigned. Please reassign the loans first.");
+        }
+
+        // Check if user is assigned as loan officer for any groups
+        $groupsCount = \App\Models\Group::where('loan_officer', $user->id)->count();
+
+        if ($groupsCount > 0) {
+            // Set loan_officer to null for all groups assigned to this user
+            // This is handled by the foreign key constraint, but we do it explicitly for clarity
+            \App\Models\Group::where('loan_officer', $user->id)->update(['loan_officer' => null]);
+
+            \Log::info('Groups loan officer set to null before user deletion', [
+                'deleted_user_id' => $user->id,
+                'groups_affected' => $groupsCount
+            ]);
+        }
+
+        // Delete the user (foreign keys will handle setting loan_officer to null)
         $user->delete();
-        return redirect()->route('users.index')->with('success', 'User deleted successfully!');
+
+        $message = 'User deleted successfully!';
+        if ($groupsCount > 0) {
+            $message .= " Note: {$groupsCount} group(s) previously assigned to this user now have no loan officer.";
+        }
+
+        return redirect()->route('users.index')->with('success', $message);
     }
 
     public function profile()
@@ -390,7 +459,7 @@ class UserController extends Controller
 
     public function updateProfile(Request $request)
     {
-        $user = auth()->user();
+        $user = User::find(auth()->id());
 
         // Custom validation for email to handle existing email
         $emailRules = 'nullable|email';
@@ -402,7 +471,8 @@ class UserController extends Controller
             'name' => 'required|string|max:255',
             'phone' => 'required|string|max:20|unique:users,phone,' . $user->id . ',id,company_id,' . current_company_id(),
             'email' => $emailRules,
-            'password' => 'nullable|string|min:8|confirmed',
+            'current_password' => 'nullable|required_with:new_password',
+            'new_password' => 'nullable|string|min:8|confirmed',
         ]);
 
         $userData = [
@@ -411,8 +481,16 @@ class UserController extends Controller
             'email' => $request->email,
         ];
 
-        if ($request->filled('password')) {
-            $userData['password'] = Hash::make($request->password);
+        // Handle password change
+        if ($request->filled('new_password')) {
+            // Verify current password
+            if (!Hash::check($request->current_password, $user->password)) {
+                return redirect()->back()
+                    ->withErrors(['current_password' => 'The current password is incorrect.'])
+                    ->withInput($request->except(['current_password', 'new_password', 'new_password_confirmation']));
+            }
+
+            $userData['password'] = Hash::make($request->new_password);
         }
 
         $user->update($userData);

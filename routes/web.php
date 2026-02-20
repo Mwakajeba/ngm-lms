@@ -292,9 +292,16 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // Penalty Settings
     Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
     Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
-    //////logs route///
-    Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
-
+           // Activity Logs
+           Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
+           Route::get('/logs/data', [ActivityLogsController::class, 'data'])->name('logs.data');
+           Route::get('/logs/{id}', [ActivityLogsController::class, 'show'])->name('logs.show');
+            //////logs route///
+            Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
+            Route::get('/logs/data', [ActivityLogsController::class, 'getData'])->name('logs.data');
+            Route::get('/logs/export/excel', [ActivityLogsController::class, 'exportExcel'])->name('logs.export.excel');
+            Route::get('/logs/export/pdf', [ActivityLogsController::class, 'exportPdf'])->name('logs.export.pdf');
+           
     // Fees Settings
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
     Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');

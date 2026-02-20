@@ -112,7 +112,7 @@ class BankAccountController extends Controller
         }
 
         $bankAccount = BankAccount::findOrFail($decoded[0]);
-        $bankAccount->load('chartAccount.accountClassGroup.accountClass');
+        $bankAccount->load(['chartAccount.accountClassGroup.accountClass', 'branches']);
 
         return view('bank-accounts.show', compact('bankAccount'));
     }

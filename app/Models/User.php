@@ -54,6 +54,16 @@ class User extends Authenticatable
     }
 
     /**
+     * Scope to exclude super admin users from queries
+     */
+    public function scopeExcludeSuperAdmin($query)
+    {
+        return $query->whereDoesntHave('roles', function($q) {
+            $q->where('name', 'super-admin');
+        });
+    }
+
+    /**
      * Scope to find user by phone number with flexible matching
      */
     public function scopeByPhone($query, $phone)
