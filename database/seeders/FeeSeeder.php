@@ -64,30 +64,7 @@ class FeeSeeder extends Seeder
                 'created_by' => $user->id ?? 1,
                 'updated_by' => $user->id ?? 1,
             ],
-            [
-                'name' => 'Late Payment Penalty',
-                'chart_account_id' => $chartAccountId,
-                'fee_type' => 'percentage',
-                'amount' => 5.00,
-                'description' => 'Penalty fee for late loan payments',
-                'status' => 'active',
-                'company_id' => $company->id ?? 1,
-                'branch_id' => $branch->id ?? null,
-                'created_by' => $user->id ?? 1,
-                'updated_by' => $user->id ?? 1,
-            ],
-            [
-                'name' => 'Documentation Fee',
-                'chart_account_id' => $chartAccountId,
-                'fee_type' => 'fixed',
-                'amount' => 3000.00,
-                'description' => 'Fee for document preparation and processing',
-                'status' => 'active',
-                'company_id' => $company->id ?? 1,
-                'branch_id' => $branch->id ?? null,
-                'created_by' => $user->id ?? 1,
-                'updated_by' => $user->id ?? 1,
-            ],
+          
             [
                 'name' => 'Insurance Fee',
                 'chart_account_id' => $chartAccountId,
@@ -112,30 +89,7 @@ class FeeSeeder extends Seeder
                 'created_by' => $user->id ?? 1,
                 'updated_by' => $user->id ?? 1,
             ],
-            [
-                'name' => 'Early Repayment Fee',
-                'chart_account_id' => $chartAccountId,
-                'fee_type' => 'percentage',
-                'amount' => 3.00,
-                'description' => 'Fee charged for early loan repayment',
-                'status' => 'inactive',
-                'company_id' => $company->id ?? 1,
-                'branch_id' => $branch->id ?? null,
-                'created_by' => $user->id ?? 1,
-                'updated_by' => $user->id ?? 1,
-            ],
-            [
-                'name' => 'Consultation Fee',
-                'chart_account_id' => $chartAccountId,
-                'fee_type' => 'fixed',
-                'amount' => 10000.00,
-                'description' => 'Financial consultation and advisory services fee',
-                'status' => 'active',
-                'company_id' => $company->id ?? 1,
-                'branch_id' => $branch->id ?? null,
-                'created_by' => $user->id ?? 1,
-                'updated_by' => $user->id ?? 1,
-            ],
+          
         ];
 
         // Create fees
