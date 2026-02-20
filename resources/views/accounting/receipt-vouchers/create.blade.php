@@ -167,6 +167,32 @@
                                     </div>
                                 </div>
 
+                                <!-- Customer Loans Section (shown when customer is selected) -->
+                                <div class="row mb-4" id="customerLoansSection" style="display: none;">
+                                    <div class="col-12">
+                                        <div class="card border-info">
+                                            <div class="card-header bg-info text-white">
+                                                <h6 class="mb-0 fw-bold">
+                                                    <i class="bx bx-credit-card me-2"></i>Customer Loans
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <div id="loansLoading" style="display: none;">
+                                                    <div class="text-center">
+                                                        <div class="spinner-border spinner-border-sm text-primary" role="status">
+                                                            <span class="visually-hidden">Loading...</span>
+                                                        </div>
+                                                        <span class="ms-2">Loading loans...</span>
+                                                    </div>
+                                                </div>
+                                                <div id="loansContainer">
+                                                    <!-- Loans will be displayed here -->
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Transaction Description and Attachment -->
                                 <div class="row mb-4">
                                     <div class="col-12">
@@ -335,18 +361,91 @@
                     $('#otherPayeeSection').hide();
                     $('#customer_id').prop('required', true);
                     $('#payee_name').prop('required', false);
+                    // Load loans if customer is already selected
+                    if ($('#customer_id').val()) {
+                        loadCustomerLoans($('#customer_id').val());
+                    }
                 } else if (payeeType === 'other') {
                     $('#customerSection').hide();
+                    $('#customerLoansSection').hide();
                     $('#otherPayeeSection').show();
                     $('#customer_id').prop('required', false);
                     $('#payee_name').prop('required', true);
                 } else {
                     $('#customerSection').hide();
+                    $('#customerLoansSection').hide();
                     $('#otherPayeeSection').hide();
                     $('#customer_id').prop('required', false);
                     $('#payee_name').prop('required', false);
                 }
             });
+
+            // Handle customer selection change
+            $('#customer_id').on('change', function () {
+                const customerId = $(this).val();
+                if (customerId) {
+                    loadCustomerLoans(customerId);
+                } else {
+                    $('#customerLoansSection').hide();
+                }
+            });
+
+            // Function to load customer loans
+            function loadCustomerLoans(customerId) {
+                $('#customerLoansSection').show();
+                $('#loansLoading').show();
+                $('#loansContainer').html('');
+
+                $.ajax({
+                    url: '{{ route("accounting.receipt-vouchers.customer-loans") }}',
+                    method: 'GET',
+                    data: {
+                        customer_id: customerId
+                    },
+                    success: function (response) {
+                        $('#loansLoading').hide();
+                        if (response.success && response.loans.length > 0) {
+                            let loansHtml = '<div class="table-responsive"><table class="table table-hover table-sm">';
+                            loansHtml += '<thead class="table-light"><tr>';
+                            loansHtml += '<th>Loan Number</th>';
+                            loansHtml += '<th>Product</th>';
+                            loansHtml += '<th>Amount</th>';
+                            loansHtml += '<th>Status</th>';
+                            loansHtml += '<th>Date Applied</th>';
+                            loansHtml += '<th>Disbursed On</th>';
+                            loansHtml += '<th>Branch</th>';
+                            loansHtml += '</tr></thead><tbody>';
+
+                            response.loans.forEach(function (loan) {
+                                loansHtml += '<tr>';
+                                loansHtml += '<td><strong>' + loan.loanNo + '</strong></td>';
+                                loansHtml += '<td>' + loan.product_name + '</td>';
+                                loansHtml += '<td>TZS ' + loan.amount + '</td>';
+                                loansHtml += '<td><span class="badge bg-' + (loan.status === 'Active' ? 'success' : 'warning') + '">' + loan.status + '</span></td>';
+                                loansHtml += '<td>' + loan.date_applied + '</td>';
+                                loansHtml += '<td>' + loan.disbursed_on + '</td>';
+                                loansHtml += '<td>' + loan.branch_name + '</td>';
+                                loansHtml += '</tr>';
+                            });
+
+                            loansHtml += '</tbody></table></div>';
+                            $('#loansContainer').html(loansHtml);
+                        } else {
+                            $('#loansContainer').html('<div class="alert alert-info mb-0"><i class="bx bx-info-circle me-2"></i>No loans found for this customer.</div>');
+                        }
+                    },
+                    error: function (xhr) {
+                        $('#loansLoading').hide();
+                        $('#loansContainer').html('<div class="alert alert-danger mb-0"><i class="bx bx-error-circle me-2"></i>Error loading loans. Please try again.</div>');
+                        console.error('Error loading loans:', xhr);
+                    }
+                });
+            }
+
+            // Load loans if customer is pre-selected (from old input)
+            if ($('#customer_id').val() && $('#payee_type').val() === 'customer') {
+                loadCustomerLoans($('#customer_id').val());
+            }
 
             // Trigger change event on page load if value exists
             if ($('#payee_type').val()) {

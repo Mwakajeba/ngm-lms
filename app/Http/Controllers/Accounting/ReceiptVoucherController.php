@@ -171,11 +171,12 @@ class ReceiptVoucherController extends Controller
     {
         $user = Auth::user();
 
-        // Get bank accounts for the current company
+        // Get bank accounts for the current company and user's branches
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
+            ->forUserBranches($user)
             ->orderBy('name')
             ->get();
 
@@ -195,6 +196,42 @@ class ReceiptVoucherController extends Controller
             ->get();
 
         return view('accounting.receipt-vouchers.create', compact('bankAccounts', 'customers', 'chartAccounts'));
+    }
+
+    /**
+     * Get loans for a customer (AJAX endpoint)
+     */
+    public function getCustomerLoans(Request $request)
+    {
+        $request->validate([
+            'customer_id' => 'required|exists:customers,id'
+        ]);
+
+        $customerId = $request->customer_id;
+        
+        // Get all loans for the customer (active and applied status)
+        $loans = \App\Models\Loan::where('customer_id', $customerId)
+            ->whereIn('status', ['active', 'applied'])
+            ->with(['product', 'branch'])
+            ->orderBy('date_applied', 'desc')
+            ->get()
+            ->map(function ($loan) {
+                return [
+                    'id' => $loan->id,
+                    'loanNo' => $loan->loanNo,
+                    'product_name' => $loan->product->name ?? 'N/A',
+                    'amount' => number_format($loan->amount, 2),
+                    'status' => ucfirst($loan->status),
+                    'date_applied' => $loan->date_applied ? $loan->date_applied->format('M d, Y') : 'N/A',
+                    'disbursed_on' => $loan->disbursed_on ? $loan->disbursed_on->format('M d, Y') : 'N/A',
+                    'branch_name' => $loan->branch->name ?? 'N/A',
+                ];
+            });
+
+        return response()->json([
+            'success' => true,
+            'loans' => $loans
+        ]);
     }
 
     /**
@@ -314,6 +351,16 @@ class ReceiptVoucherController extends Controller
 
                 // Create GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
+                
+                // Validate bank account is accessible by user's branches
+                if ($bankAccount) {
+                    $user = Auth::user();
+                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                        DB::rollBack();
+                        return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                    }
+                }
 
                 // Prepare description for GL transactions
                 $glDescription = $request->description ?: "Receipt voucher {$receipt->reference}";
@@ -420,11 +467,12 @@ class ReceiptVoucherController extends Controller
 
         $user = Auth::user();
 
-        // Get bank accounts for the current company
+        // Get bank accounts for the current company and user's branches
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
+            ->forUserBranches($user)
             ->orderBy('name')
             ->get();
 
@@ -554,6 +602,16 @@ class ReceiptVoucherController extends Controller
 
                 // Create new GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
+                
+                // Validate bank account is accessible by user's branches
+                if ($bankAccount) {
+                    $user = Auth::user();
+                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                        DB::rollBack();
+                        return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                    }
+                }
 
                 // Prepare description for GL transactions
                 $glDescription = $request->description ?: "Receipt voucher {$receiptVoucher->reference}";
@@ -890,6 +948,16 @@ class ReceiptVoucherController extends Controller
 
                 // Create GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
+                
+                // Validate bank account is accessible by user's branches
+                if ($bankAccount) {
+                    $user = Auth::user();
+                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                        DB::rollBack();
+                        return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                    }
+                }
 
                 // Debit bank account
                 GlTransaction::create([

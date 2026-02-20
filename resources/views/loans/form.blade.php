@@ -109,8 +109,9 @@ $isEdit = isset($loan);
             <label class="form-label">Amount <span class="text-danger">*</span>
                 <small id="amountRangeLabel" class="text-muted ms-2"></small>
             </label>
-            <input type="number" id="amountInput" step="0.000000000000001" name="amount" class="form-control @error('amount') is-invalid @enderror"
-                value="{{ old('amount', $loan->amount ?? '') }}" placeholder="Enter loan amount" required>
+            <input type="text" id="amountInput" class="form-control @error('amount') is-invalid @enderror"
+                value="{{ old('amount', isset($loan) && $loan->amount ? number_format($loan->amount, 0, '.', ',') : '') }}" placeholder="Enter loan amount" required>
+            <input type="hidden" id="amountInputHidden" name="amount" value="{{ old('amount', isset($loan) ? $loan->amount : '') }}">
             @error('amount') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
           <!-- Interest Rate -->
@@ -145,13 +146,8 @@ $isEdit = isset($loan);
                 Period <span class="text-danger">*</span>
                 <small id="periodRangeLabel" class="text-muted ms-2"></small>
             </label>
-            <div class="input-group">
-                <input type="number" id="periodInput" name="period" class="form-control @error('period') is-invalid @enderror"
-                    value="{{ old('period', $loan->period ?? '') }}" placeholder="Enter period in months" required>
-                <button type="button" class="btn btn-outline-primary" id="loanCalculatorBtn" title="Open Loan Calculator">
-                    <i class="bx bx-calculator"></i> Calculate
-                </button>
-            </div>
+            <input type="number" id="periodInput" name="period" class="form-control @error('period') is-invalid @enderror"
+                value="{{ old('period', isset($loan) ? $loan->period : '') }}" placeholder="Enter period in months" required>
             @error('period') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
@@ -396,11 +392,10 @@ $isEdit = isset($loan);
                 interestInput.max = product.maximum_interest_rate;
                 interestRangeLabel.innerText = `(min: ${product.minimum_interest_rate}%, max: ${product.maximum_interest_rate}%)`;
 
-                ///set amount principal limit
-
-                amountInput.min = product.minimum_principal;
-                amountInput.max = product.maximum_principal;
-                amountRangeLabel.innerText = `(min: ${product.minimum_principal}, max: ${product.maximum_principal})`;
+                ///set amount principal limit (format with commas)
+                const minFormatted = product.minimum_principal ? product.minimum_principal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+                const maxFormatted = product.maximum_principal ? product.maximum_principal.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',') : '';
+                amountRangeLabel.innerText = `(min: ${minFormatted}, max: ${maxFormatted})`;
 
             } else {
                 periodInput.removeAttribute('min');
@@ -459,12 +454,90 @@ $isEdit = isset($loan);
                 }
             }
         @endif
+
+        // Format number with commas for amount input
+        function formatNumberWithCommas(value) {
+            // Remove all non-digit characters
+            let numValue = value.toString().replace(/[^\d]/g, '');
+            
+            // Add commas
+            return numValue.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+        }
+
+        // Remove commas from number
+        function removeCommas(value) {
+            return value.toString().replace(/,/g, '');
+        }
+
+        // Initialize amount formatting
+        if (amountInput) {
+            // Format on input
+            amountInput.addEventListener('input', function(e) {
+                let value = e.target.value;
+                let cursorPosition = e.target.selectionStart;
+                
+                // Get the number of commas before cursor
+                let beforeCursor = value.substring(0, cursorPosition);
+                let commasBefore = (beforeCursor.match(/,/g) || []).length;
+                
+                // Format the value
+                let formatted = formatNumberWithCommas(value);
+                
+                // Calculate new cursor position
+                let commasAfter = (formatted.substring(0, cursorPosition).match(/,/g) || []).length;
+                let cursorOffset = commasAfter - commasBefore;
+                
+                // Update the input value
+                e.target.value = formatted;
+                
+                // Update hidden field with numeric value
+                const amountInputHidden = document.getElementById('amountInputHidden');
+                if (amountInputHidden) {
+                    amountInputHidden.value = removeCommas(formatted);
+                }
+                
+                // Restore cursor position
+                let newCursorPosition = cursorPosition + cursorOffset;
+                e.target.setSelectionRange(newCursorPosition, newCursorPosition);
+            });
+
+            // Format on blur (when user leaves the field)
+            amountInput.addEventListener('blur', function(e) {
+                let value = removeCommas(e.target.value);
+                if (value && !isNaN(value)) {
+                    e.target.value = formatNumberWithCommas(value);
+                    const amountInputHidden = document.getElementById('amountInputHidden');
+                    if (amountInputHidden) {
+                        amountInputHidden.value = value;
+                    }
+                }
+            });
+
+            // Format initial value if exists
+            if (amountInput.value) {
+                let initialValue = removeCommas(amountInput.value);
+                amountInput.value = formatNumberWithCommas(initialValue);
+                const amountInputHidden = document.getElementById('amountInputHidden');
+                if (amountInputHidden) {
+                    amountInputHidden.value = initialValue;
+                }
+            }
+        }
     });
 </script>
 
 @push('scripts')
     <script>
         function handleSubmit(form) {
+            // Remove commas from amount and update hidden field before submission
+            const amountInput = document.getElementById('amountInput');
+            const amountInputHidden = document.getElementById('amountInputHidden');
+            
+            if (amountInput && amountInputHidden) {
+                let numericValue = amountInput.value.toString().replace(/,/g, '');
+                amountInputHidden.value = numericValue;
+            }
+            
             // Prevent multiple submissions
             if (form.dataset.submitted === "true") return false;
             form.dataset.submitted = "true";
@@ -503,11 +576,10 @@ $isEdit = isset($loan);
             }
         });
 
-        // Loan Calculator Integration
-        document.getElementById('loanCalculatorBtn').addEventListener('click', function() {
-            openLoanCalculator();
-        });
-
+        // Loan Calculator Integration - Calculator button removed from Period field
+        // The calculator modal is still available but not accessible via Period field button
+        // Event listener removed since button no longer exists
+        
         function openLoanCalculator() {
             // Get current form values
             const productId = document.getElementById('productSelect').value;

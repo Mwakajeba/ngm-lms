@@ -24,6 +24,9 @@ class LoanRepaymentService
      */
     public function processRepayment($loanId, $amount, $paymentData, $calculationMethod = 'flat_rate')
     {
+        // Store payment date for SMS
+        $paymentDateForSms = $paymentData['payment_date'] ?? now();
+        
         DB::beginTransaction();
         $loan = Loan::with(['product', 'customer', 'schedule'])->findOrFail($loanId);
         $remainingAmount = $amount;
@@ -99,7 +102,7 @@ class LoanRepaymentService
         $loan->load(['schedule', 'customer', 'company', 'branch.company']);
 
         // Send SMS notification to customer after successful repayment
-        $this->sendRepaymentSms($loan, $totalPaidAmount);
+        $this->sendRepaymentSms($loan, $totalPaidAmount, $paymentDateForSms);
 
         return [
             'success' => true,
@@ -113,7 +116,7 @@ class LoanRepaymentService
     /**
      * Send SMS notification to customer after repayment
      */
-    private function sendRepaymentSms($loan, $amount)
+    private function sendRepaymentSms($loan, $amount, $paymentDate = null)
     {
         try {
             // Ensure customer relationship is loaded
@@ -131,7 +134,8 @@ class LoanRepaymentService
                 'customer_name' => $customer->name ?? null,
                 'phone1' => $customer->phone1 ?? null,
                 'phone1_empty' => empty($customer->phone1 ?? null),
-                'amount' => $amount
+                'amount' => $amount,
+                'payment_date' => $paymentDate
             ]);
             
             if (!$customer || empty($customer->phone1)) {
@@ -197,11 +201,13 @@ class LoanRepaymentService
             }
             
             $companyName = $company ? $company->name : 'SMARTFINANCE';
+            $companyPhone = $company ? ($company->phone ?? '') : '';
             
             Log::info('Company name resolved for SMS', [
                 'loan_id' => $loan->id,
                 'company_id' => $company->id ?? null,
                 'company_name' => $companyName,
+                'company_phone' => $companyPhone,
                 'source' => $source,
                 'loan_company_id' => $loan->company_id ?? null,
                 'customer_company_id' => $customer->company_id ?? null,
@@ -214,21 +220,34 @@ class LoanRepaymentService
             // Format phone number (remove any non-numeric characters except +)
             $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
 
-            // Calculate remaining/outstanding amount
-            $remainingAmount = $loan->getTotalOutstandingAmount();
+            // Format payment date (DD/MM/YYYY)
+            $paymentDateFormatted = $paymentDate ? \Carbon\Carbon::parse($paymentDate)->format('d/m/Y') : now()->format('d/m/Y');
 
-            // Format message as specified - include remaining amount
-            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amount, 0) . '. Salio: Tsh ' . number_format($remainingAmount, 0) . '. ' . $companyName;
+            // Format amount with commas
+            $formattedAmount = number_format($amount, 0);
+
+            // Get loan number
+            $loanNo = $loan->loanNo ?? 'N/A';
+
+            // Build SMS message in Swahili as specified
+            $smsMessage = "Habari! {$customerName}, Tumepokea marejesho ya Tsh {$formattedAmount} tarehe {$paymentDateFormatted} kutoka kwenye mkopo namba {$loanNo}. Asante. Ujumbe umetoka {$companyName}";
+            
+            if (!empty($companyPhone)) {
+                $smsMessage .= " kwa mawasiliano tupigie {$companyPhone}";
+            }
 
             // Send SMS
-            $smsResult = SmsHelper::send($phone, $message);
+            $smsResult = SmsHelper::send($phone, $smsMessage);
 
             if (is_array($smsResult) && ($smsResult['success'] ?? false)) {
                 Log::info('Repayment SMS sent successfully', [
                     'loan_id' => $loan->id,
+                    'loan_no' => $loanNo,
                     'customer_id' => $customer->id,
                     'phone' => $phone,
-                    'amount' => $amount
+                    'amount' => $amount,
+                    'payment_date' => $paymentDateFormatted,
+                    'message' => $smsMessage
                 ]);
             } else {
                 Log::warning('Repayment SMS failed', [

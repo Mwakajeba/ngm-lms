@@ -128,6 +128,39 @@ class ChartAccountSeeder extends Seeder
                 'cash_flow_category_id' => 1,
                 'equity_category_id' => null,
             ],
+
+            // Direct Write Off Account (Expense) - Operating Expenses (Group ID: 12)
+            [
+                'account_code' => '5101',
+                'account_name' => 'Direct Write Off Account',
+                'account_class_group_id' => 12,
+                'has_cash_flow' => 1,
+                'has_equity' => 0,
+                'cash_flow_category_id' => 1,
+                'equity_category_id' => null,
+            ],
+
+            // Using Provision Account (Asset) - Other Receivables (Group ID: 4)
+            [
+                'account_code' => '1301',
+                'account_name' => 'Using Provision Account',
+                'account_class_group_id' => 4,
+                'has_cash_flow' => 1,
+                'has_equity' => 0,
+                'cash_flow_category_id' => 1,
+                'equity_category_id' => null,
+            ],
+
+            // Income Provision Account (Income) - Other Income (Group ID: 10)
+            [
+                'account_code' => '4101',
+                'account_name' => 'Income Provision Account',
+                'account_class_group_id' => 10,
+                'has_cash_flow' => 1,
+                'has_equity' => 0,
+                'cash_flow_category_id' => 1,
+                'equity_category_id' => null,
+            ],
         ];
 
         foreach ($accounts as $account) {

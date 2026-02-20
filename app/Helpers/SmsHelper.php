@@ -7,213 +7,194 @@ use Illuminate\Support\Facades\Log;
 class SmsHelper
 {
     /**
-     * Get SMS configuration from environment variables
-     * Reads from the settings configured in the SMS Settings page
-     * Checks config() first (for temporary testing), then falls back to env()
-     */
-    protected static function getConfig()
-    {
-        // Read from config first (allows temporary override for testing), then fall back to env
-        // These values are set via the SMS Settings form
-        return [
-            'senderid' => trim((string) (config('services.sms.senderid') ?: env('BEEM_SENDER_ID', env('SMS_SENDERID', '')))),
-            'token' => trim((string) (config('services.sms.token') ?: env('BEEM_SECRET_KEY', env('SMS_TOKEN', '')))),
-            'key' => trim((string) (config('services.sms.key') ?: env('BEEM_API_KEY', env('SMS_KEY', '')))),
-            'url' => trim((string) (config('services.sms.url') ?: env('BEEM_SMS_URL', env('SMS_URL', 'https://apisms.beem.africa/v1/send')))),
-        ];
-    }
-
-    /**
-     * Check if SMS is properly configured
-     */
-    public static function isConfigured()
-    {
-        $config = self::getConfig();
-        return !empty($config['senderid']) 
-            && !empty($config['token']) 
-            && !empty($config['key']) 
-            && !empty($config['url']);
-    }
-
-    /**
-     * Send SMS message
+     * Send SMS using configured provider (Kilakona or Beem Africa)
      * 
-     * @param string $phone Phone number (will be cleaned)
+     * @param string $phone Phone number(s) - single or comma-separated
      * @param string $message Message content
-     * @return array|string Returns array with success status and response, or error string
+     * @return array Response data
      */
     public static function send($phone, $message)
     {
-        try {
-            // Get configuration from environment (set via SMS Settings)
-            $config = self::getConfig();
+        $provider = config('services.sms.provider', 'kilakona');
+        
+        if ($provider === 'kilakona') {
+            return self::sendViaKilakona($phone, $message);
+        } else {
+            return self::sendViaBeem($phone, $message);
+        }
+    }
 
-            // Validate configuration
-            if (!self::isConfigured()) {
-                $error = 'SMS is not properly configured. Please configure SMS settings in Settings > SMS Setting.';
-                Log::error('SMS Error: ' . $error);
-                return [
-                    'success' => false,
-                    'error' => $error,
-                    'message' => 'SMS configuration missing'
-                ];
-            }
+    /**
+     * Send SMS via Kilakona API
+     */
+    protected static function sendViaKilakona($phone, $message)
+    {
+        $senderId = trim((string) config('services.sms.senderid'));
+        $apiKey = trim((string) config('services.sms.api_key'));
+        $apiSecret = trim((string) config('services.sms.api_secret'));
+        $url = trim((string) config('services.sms.url'));
+        $callbackUrl = config('services.sms.callback_url');
 
-            // Clean phone number - remove any non-numeric characters except +
-            $phone = preg_replace('/[^0-9+]/', '', $phone);
-            
-            if (empty($phone)) {
-                $error = 'Invalid phone number provided.';
-                Log::error('SMS Error: ' . $error);
-                return [
-                    'success' => false,
-                    'error' => $error,
-                    'message' => 'Invalid phone number'
-                ];
-            }
-
-            // Validate message
-            if (empty(trim($message))) {
-                $error = 'Message cannot be empty.';
-                Log::error('SMS Error: ' . $error);
-                return [
-                    'success' => false,
-                    'error' => $error,
-                    'message' => 'Empty message'
-                ];
-            }
-
-            // Prepare POST data
-            $postData = [
-                'source_addr' => $config['senderid'],
-                'encoding' => 0,
-                'schedule_time' => '',
-                'message' => $message,
-                'recipients' => [
-                    [
-                        'recipient_id' => '1',
-                        'dest_addr' => $phone
-                    ]
-                ]
-            ];
-
-            // Initialize cURL
-            $ch = curl_init($config['url']);
-            if ($ch === false) {
-                $error = 'Failed to initialize cURL.';
-                Log::error('SMS Error: ' . $error);
-                return [
-                    'success' => false,
-                    'error' => $error,
-                    'message' => 'cURL initialization failed'
-                ];
-            }
-
-            // Set cURL options
-            curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
-            curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
-            curl_setopt_array($ch, [
-                CURLOPT_POST => true,
-                CURLOPT_RETURNTRANSFER => true,
-                CURLOPT_TIMEOUT => 30,
-                CURLOPT_CONNECTTIMEOUT => 10,
-                CURLOPT_HTTPHEADER => [
-                    'Authorization:Basic ' . base64_encode("{$config['key']}:{$config['token']}"),
-                    'Content-Type: application/json'
-                ],
-                CURLOPT_POSTFIELDS => json_encode($postData)
+        if (empty($senderId) || empty($apiKey) || empty($apiSecret) || empty($url)) {
+            $error = 'Kilakona SMS is not properly configured. Please set sender ID, API key, API secret, and URL.';
+            Log::error('SMS sending failed (Kilakona) - Missing config', [
+                'senderid' => $senderId,
+                'api_key' => $apiKey ? 'set' : 'missing',
+                'api_secret' => $apiSecret ? 'set' : 'missing',
+                'url' => $url
             ]);
+            return [
+                'success' => false,
+                'error' => $error,
+                'http_code' => 0,
+                'response' => null
+            ];
+        }
 
-            // Execute request
-            $response = curl_exec($ch);
-            $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-            $curlError = curl_error($ch);
-            $curlErrno = curl_errno($ch);
+        $data = [
+            'senderId' => $senderId,
+            'messageType' => 'text',
+            'message' => $message,
+            'contacts' => $phone,
+        ];
 
-            // Handle cURL errors
-            if ($curlErrno !== 0) {
-                $error = "cURL Error ({$curlErrno}): {$curlError}";
-                Log::error('SMS Error: ' . $error, [
-                    'phone' => $phone,
-                    'url' => $config['url']
-                ]);
-                curl_close($ch);
-                return [
-                    'success' => false,
-                    'error' => $error,
-                    'message' => 'Network error occurred'
-                ];
-            }
+        // Add callback URL if configured
+        if ($callbackUrl) {
+            $data['deliveryReportUrl'] = $callbackUrl;
+        }
 
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_POST, true);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($data));
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, [
+            'Content-Type: application/json',
+            'api_key: ' . $apiKey,
+            'api_secret: ' . $apiSecret
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
             curl_close($ch);
-
-            // Parse response
-            $responseData = json_decode($response, true);
             
-            // Check HTTP status code
-            if ($httpCode >= 200 && $httpCode < 300) {
-                Log::info('SMS sent successfully', [
-                    'phone' => $phone,
-                    'http_code' => $httpCode,
-                    'response' => $responseData
-                ]);
-                
-                return [
-                    'success' => true,
-                    'response' => $responseData ?: $response,
-                    'http_code' => $httpCode,
-                    'message' => 'SMS sent successfully'
-                ];
-            } else {
-                $error = "SMS API returned error (HTTP {$httpCode}): " . ($responseData['message'] ?? $response);
-                Log::error('SMS Error: ' . $error, [
-                    'phone' => $phone,
-                    'http_code' => $httpCode,
-                    'response' => $response
-                ]);
-                
-                return [
-                    'success' => false,
-                    'error' => $error,
-                    'http_code' => $httpCode,
-                    'response' => $responseData ?: $response,
-                    'message' => 'SMS API error'
-                ];
-            }
-
-        } catch (\Exception $e) {
-            $error = 'Exception occurred while sending SMS: ' . $e->getMessage();
-            Log::error('SMS Exception: ' . $error, [
-                'phone' => $phone ?? 'unknown',
-                'trace' => $e->getTraceAsString()
+            Log::error('SMS sending failed (Kilakona) - cURL Error', [
+                'error' => $error,
+                'phone' => $phone,
+                'message' => $message
             ]);
             
             return [
                 'success' => false,
                 'error' => $error,
-                'message' => 'Unexpected error occurred'
+                'http_code' => 0,
+                'response' => null
             ];
         }
+
+        curl_close($ch);
+        
+        $responseData = json_decode($response, true);
+        
+        // Log based on success
+        if ($httpCode >= 200 && $httpCode < 300) {
+            Log::info('SMS sent successfully (Kilakona)', [
+                'phone' => $phone,
+                'http_code' => $httpCode,
+                'response' => $responseData
+            ]);
+        } else {
+            Log::error('SMS sending failed (Kilakona) - API Error', [
+                'phone' => $phone,
+                'http_code' => $httpCode,
+                'raw_response' => $response,
+                'response' => $responseData,
+                'message' => $message
+            ]);
+        }
+        
+        return [
+            'success' => $httpCode >= 200 && $httpCode < 300,
+            'http_code' => $httpCode,
+            'response' => $responseData,
+            'raw_response' => $response,
+            'error' => $httpCode >= 400 ? ($responseData['message'] ?? 'API request failed') : null
+        ];
     }
 
     /**
-     * Test SMS configuration by sending a test message
-     * 
-     * @param string $testPhone Phone number to send test message to
-     * @return array Result with success status and message
+     * Send SMS via Beem Africa API (legacy support)
      */
-    public static function test($testPhone)
+    protected static function sendViaBeem($phone, $message)
     {
-        if (!self::isConfigured()) {
+        $sid = trim((string) config('services.sms.senderid'));
+        $token = trim((string) config('services.sms.token'));
+        $key = trim((string) config('services.sms.key'));
+        $url = trim((string) config('services.sms.url', 'https://apisms.beem.africa/v1/send'));
+
+        $postData = [
+            'source_addr' => $sid,
+            'encoding' => 0,
+            'schedule_time' => '',
+            'message' => $message,
+            'recipients' => [
+                [
+                    'recipient_id' => '1',
+                    'dest_addr' => $phone
+                ]
+            ]
+        ];
+
+        $ch = curl_init($url);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 0);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt_array($ch, [
+            CURLOPT_POST => TRUE,
+            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_HTTPHEADER => [
+                'Authorization:Basic ' . base64_encode("$key:$token"),
+                'Content-Type: application/json'
+            ],
+            CURLOPT_POSTFIELDS => json_encode($postData)
+        ]);
+
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+
+        if (curl_errno($ch)) {
+            $error = curl_error($ch);
+            curl_close($ch);
+            
+            Log::error('SMS sending failed (Beem)', [
+                'error' => $error,
+                'phone' => $phone
+            ]);
+            
             return [
                 'success' => false,
-                'message' => 'SMS is not properly configured. Please configure all SMS settings.'
+                'error' => $error,
+                'response' => null
             ];
         }
 
-        $testMessage = 'Test SMS from SmartFinance system. If you receive this, your SMS configuration is working correctly.';
-        $result = self::send($testPhone, $testMessage);
+        curl_close($ch);
+        
+        $responseData = json_decode($response, true);
+        
+        Log::info('SMS sent (Beem)', [
+            'phone' => $phone,
+            'http_code' => $httpCode,
+            'response' => $responseData
+        ]);
 
-        return $result;
+        return [
+            'success' => $httpCode >= 200 && $httpCode < 300,
+            'http_code' => $httpCode,
+            'response' => $responseData
+        ];
     }
 }

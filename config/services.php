@@ -35,12 +35,18 @@ return [
         ],
     ],
 
+
     'sms' => [
         // Beem Africa SMS credentials
+        'provider' => env('SMS_PROVIDER', 'kilakona'),
         'senderid' => env('BEEM_SENDER_ID', env('SMS_SENDERID')),
         'token' => env('BEEM_SECRET_KEY', env('SMS_TOKEN')),
         'key' => env('BEEM_API_KEY', env('SMS_KEY')),
         'url' => env('BEEM_SMS_URL', env('SMS_URL', 'https://apisms.beem.africa/v1/send')),
+        // Kilakona SMS credentials
+        'api_key' => env('KILAKONA_API_KEY', env('SMS_API_KEY')),
+        'api_secret' => env('KILAKONA_API_SECRET', env('SMS_API_SECRET')),
+        'callback_url' => env('KILAKONA_CALLBACK_URL', env('SMS_CALLBACK_URL')),
     ],
 
 ];

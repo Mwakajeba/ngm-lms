@@ -367,7 +367,7 @@ class CashCollateralController extends Controller
 
         $collateral = CashCollateral::with('customer')->findOrFail($id);
         $customer = $collateral->customer;
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
         return view('cash_collaterals.deposit', compact('bankAccounts', 'customer', 'collateral'));
     }
@@ -508,7 +508,7 @@ class CashCollateralController extends Controller
         }
         $collateral = CashCollateral::with('customer')->findOrFail($id);
         $customer = $collateral->customer;
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
         return view('cash_collaterals.withdraw', compact('bankAccounts', 'customer', 'collateral'));
     }
@@ -538,6 +538,13 @@ class CashCollateralController extends Controller
                 $user = Auth::user();
                 $collateral = CashCollateral::with(['customer', 'type'])->findOrFail($collateralId);
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                
+                // Validate bank account is accessible by user's branches
+                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.']);
+                }
+                
                 $notes =  "Being withdraw for {$collateral->type->name}, paid to {$collateral->customer->name}, TSHS.{$request->amount}";
 
                 // Check if withdrawal amount is available
@@ -752,7 +759,7 @@ class CashCollateralController extends Controller
             // Check authorization
             $this->authorizeUserAccess($collateral);
 
-            $bankAccounts = BankAccount::all();
+            $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
             return view('cash_collaterals.edit_receipt', compact('receipt', 'collateral', 'bankAccounts'));
         } catch (\Throwable $e) {
@@ -879,7 +886,7 @@ class CashCollateralController extends Controller
             // Check authorization
             $this->authorizeUserAccess($collateral);
 
-            $bankAccounts = BankAccount::all();
+            $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
             return view('cash_collaterals.edit_payment', compact('payment', 'collateral', 'bankAccounts'));
         } catch (\Throwable $e) {

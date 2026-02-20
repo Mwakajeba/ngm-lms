@@ -63,11 +63,41 @@
                                                 ->sum(\DB::raw('principal + interest'));
 
                                             $diff = number_format($scheduled - $paid, 2);
+                                            
+                                            // Calculate real days in arrears
+                                            $today = now()->toDateString();
+                                            $daysInArrears = \DB::table('loan_schedules as s')
+                                                ->leftJoin('repayments as r', 's.id', '=', 'r.loan_schedule_id')
+                                                ->where('s.customer_id', $customer->id)
+                                                ->whereDate('s.due_date', '<', $today)
+                                                ->selectRaw('
+                                                    s.id,
+                                                    s.due_date,
+                                                    (s.principal + s.interest) as amount_due,
+                                                    IFNULL(SUM(r.principal + r.interest), 0) as total_paid,
+                                                    CASE
+                                                        WHEN IFNULL(SUM(r.principal + r.interest), 0) < (s.principal + s.interest)
+                                                            AND ? > s.due_date
+                                                            THEN DATEDIFF(?, s.due_date)
+                                                        WHEN IFNULL(SUM(r.principal + r.interest), 0) >= (s.principal + s.interest)
+                                                            AND MAX(r.payment_date) > s.due_date
+                                                            THEN DATEDIFF(MAX(r.payment_date), s.due_date)
+                                                        ELSE 0
+                                                    END as days_in_arrears', [$today, $today])
+                                                ->groupBy('s.id', 's.due_date', 's.principal', 's.interest')
+                                                ->orderBy('s.due_date')
+                                                ->get();
+                                            $maxDays = $daysInArrears->max('days_in_arrears') ?? 0;
                                         @endphp
                                         {{ $diff }}
                                     </h4>
                                     <p class="mb-0 font-13 text-danger">
-                                        <i class="bx bxs-down-arrow align-middle"></i> In arrears (10 days)
+                                        <i class="bx bxs-down-arrow align-middle"></i> 
+                                        @if($maxDays > 0)
+                                            In arrears ({{ $maxDays }} {{ $maxDays == 1 ? 'day' : 'days' }})
+                                        @else
+                                            Up to date
+                                        @endif
                                     </p>
                                 </div>
                                 <div class="widgets-icons bg-light-danger text-danger ms-auto">

@@ -82,6 +82,14 @@ class LoanRepaymentController extends Controller
 
             // Use normal repayment process
             $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            
+            // Validate bank account is accessible by user's branches
+            $user = Auth::user();
+            $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+            if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.']);
+            }
+            
             $bankChartAccount = $bankAccount->chart_account_id;
 
             // Check cash deposit balance if using cash deposit
@@ -172,6 +180,14 @@ class LoanRepaymentController extends Controller
 
             $repayment = Repayment::with(['loan', 'bankAccount'])->findOrFail($id);
             $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+            
+            // Validate bank account is accessible by user's branches
+            $user = Auth::user();
+            $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+            if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.']);
+            }
+            
             $bankChartAccount = $bankAccount->chart_account_id;
 
             // Store the loan and schedule info before deletion
@@ -403,6 +419,14 @@ class LoanRepaymentController extends Controller
                 'repayments.*.bank_account_id' => 'required|exists:bank_accounts,id',
             ]);
             $bankAccount = BankAccount::findOrFail($request->repayments[0]['bank_account_id']);
+            
+            // Validate bank account is accessible by user's branches
+            $user = Auth::user();
+            $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+            if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                return redirect()->back()->withErrors(['repayments.0.bank_account_id' => 'You do not have access to this bank account.']);
+            }
+            
             $bankChartAccount = $bankAccount->chart_account_id;
 
             $results = [];
@@ -562,6 +586,14 @@ class LoanRepaymentController extends Controller
 
             if ($request->payment_source === 'bank') {
                 $bankAccount = BankAccount::findOrFail($request->bank_account_id);
+                
+                // Validate bank account is accessible by user's branches
+                $user = Auth::user();
+                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
+                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.']);
+                }
+                
                 $paymentData['bank_chart_account_id'] = $bankAccount->chart_account_id;
                 $paymentData['bank_account_id'] = $request->bank_account_id;
             } else {
