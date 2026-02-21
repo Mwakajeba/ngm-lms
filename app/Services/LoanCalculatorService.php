@@ -601,9 +601,11 @@ class LoanCalculatorService
         $releaseDateFees = 0; // Only fees with charge_fee_on_release_date
         foreach ($fees as $fee) {
             $totalFees += $fee['application']['total'];
-            // Only include fees with deduction_criteria = 'charge_fee_on_release_date'
-            if ($fee['criteria'] === 'charge_fee_on_release_date') {
-                $releaseDateFees += $fee['application']['total'];
+            // Only include fees that are charged on release date
+            // Check the application type which is set to 'release_date' for charge_fee_on_release_date criteria
+            if (isset($fee['application']['type']) && $fee['application']['type'] === 'release_date') {
+                // Use the fee amount directly (the calculated fee amount for this loan)
+                $releaseDateFees += $fee['amount'];
             }
         }
         
