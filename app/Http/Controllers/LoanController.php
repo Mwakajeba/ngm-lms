@@ -1656,9 +1656,19 @@ class LoanController extends Controller
                         foreach ($releaseFees as $fee) {
                             $feeAmount = (float) $fee->amount;
                             $feeType = $fee->fee_type;
-                            $calculatedFee = $feeType === 'percentage'
-                                ? ((float) $validated['amount'] * (float) $feeAmount / 100)
-                                : (float) $feeAmount;
+                            $calculatedFee = 0;
+                            
+                            if ($feeType === 'percentage') {
+                                $calculatedFee = ((float) $validated['amount'] * (float) $feeAmount / 100);
+                            } elseif ($feeType === 'range') {
+                                $feeModel = \App\Models\Fee::find($fee->id);
+                                if ($feeModel) {
+                                    $calculatedFee = (float) $feeModel->calculateRangeFee($validated['amount']);
+                                }
+                            } else {
+                                $calculatedFee = (float) $feeAmount;
+                            }
+                            
                             $releaseFeeTotal += $calculatedFee;
                             \Log::info("Fee: {$fee->name}, Type: $feeType, Amount: $feeAmount, Calculated: $calculatedFee");
                         }

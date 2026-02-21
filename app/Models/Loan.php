@@ -608,9 +608,17 @@ class Loan extends Model
                 $chartAccountId = $releaseFee->chart_account_id;
 
                 if ($chartAccountId && $bankChartAccountId) {
-                    $totalFee = $feeType === 'percentage'
-                        ? ((float) $principal * (float) $feeAmount / 100)
-                        : (float) $feeAmount;
+                    $totalFee = 0;
+                    if ($feeType === 'percentage') {
+                        $totalFee = ((float) $principal * (float) $feeAmount / 100);
+                    } elseif ($feeType === 'range') {
+                        $feeModel = \App\Models\Fee::find($releaseFee->id);
+                        if ($feeModel) {
+                            $totalFee = (float) $feeModel->calculateRangeFee($principal);
+                        }
+                    } else {
+                        $totalFee = (float) $feeAmount;
+                    }
                     $totalFeeFloat = (float) $totalFee;
 
                     // Create journal and GL transaction for release fee
@@ -676,9 +684,18 @@ class Loan extends Model
 
                     if ($includeInSchedule && $status === 'active') {
                         // Total fee basis (for distribution or per-installment use)
-                        $totalFee = $feeType === 'percentage'
-                            ? ((float) $principal * (float) $feeAmount / 100)
-                            : (float) $feeAmount;
+                        $totalFee = 0;
+                        if ($feeType === 'percentage') {
+                            $totalFee = ((float) $principal * (float) $feeAmount / 100);
+                        } elseif ($feeType === 'range') {
+                            // Get fee model to calculate range fee
+                            $feeModel = \App\Models\Fee::find($fee->id);
+                            if ($feeModel) {
+                                $totalFee = (float) $feeModel->calculateRangeFee($principal);
+                            }
+                        } else {
+                            $totalFee = (float) $feeAmount;
+                        }
                         $totalFeeFloat = (float) $totalFee;
 
                         $feeValue = 0;

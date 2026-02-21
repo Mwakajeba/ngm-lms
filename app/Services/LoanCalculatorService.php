@@ -354,6 +354,9 @@ class LoanCalculatorService
         if ($fee->fee_type === 'percentage') {
             return round(($principal * $fee->amount) / 100, 2);
         }
+        if ($fee->fee_type === 'range') {
+            return round($fee->calculateRangeFee($principal), 2);
+        }
         return round($fee->amount, 2);
     }
     
