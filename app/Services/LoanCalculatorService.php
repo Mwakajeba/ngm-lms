@@ -37,6 +37,10 @@ class LoanCalculatorService
             // Calculate penalties (if applicable)
             $penalties = $this->calculatePenalties($params, $product);
             
+            // Get converted interest rate for display
+            $selectedCycle = $params['interest_cycle'] ?? 'monthly';
+            $convertedRate = $this->convertInterestRate($params['interest_rate'], $selectedCycle);
+            
             return [
                 'success' => true,
                 'product' => $this->formatProduct($product),
@@ -45,7 +49,7 @@ class LoanCalculatorService
                 'penalties' => $penalties,
                 'schedule' => $schedule,
                 'totals' => $totals,
-                'summary' => $this->generateSummary($params, $totals)
+                'summary' => $this->generateSummary($params, $totals, $convertedRate)
             ];
             
         } catch (\Exception $e) {
@@ -671,19 +675,20 @@ class LoanCalculatorService
     /**
      * Generate summary
      */
-    private function generateSummary(array $params, array $totals): array
+    private function generateSummary(array $params, array $totals, float $convertedRate): array
     {
         $interestCycle = $params['interest_cycle'] ?? 'monthly';
         
         return [
             'loan_amount' => $totals['principal'],
-            'interest_rate' => $params['interest_rate'],
+            'interest_rate' => $convertedRate, // Use converted rate for display
+            'original_interest_rate' => $params['interest_rate'], // Keep original for reference
             'period' => $params['period'],
             'monthly_payment' => $totals['monthly_payment'],
             'total_interest' => $totals['total_interest'],
             'total_fees' => $totals['total_fees'],
             'total_amount' => $totals['total_amount'],
-            'interest_percentage' => round(($totals['total_interest'] / $totals['principal']) * 100, 2),
+            'interest_percentage' => round($convertedRate, 2), // Display converted rate percentage
             'interest_cycle' => $interestCycle
         ];
     }
