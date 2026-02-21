@@ -598,8 +598,13 @@ class LoanCalculatorService
         
         // Calculate total fees
         $totalFees = 0;
+        $releaseDateFees = 0; // Only fees with charge_fee_on_release_date
         foreach ($fees as $fee) {
             $totalFees += $fee['application']['total'];
+            // Only include fees with deduction_criteria = 'charge_fee_on_release_date'
+            if ($fee['criteria'] === 'charge_fee_on_release_date') {
+                $releaseDateFees += $fee['application']['total'];
+            }
         }
         
         // Calculate from schedule
@@ -610,6 +615,7 @@ class LoanCalculatorService
             'principal' => round($principal, 2),
             'total_interest' => round($totalInterest, 2),
             'total_fees' => round($totalFees, 2),
+            'release_date_fees' => round($releaseDateFees, 2), // Fees charged on release date only
             'total_amount' => round($principal + $totalInterest + $totalFees, 2),
             'monthly_payment' => round($totalScheduleAmount / count($schedule), 2),
             'schedule_total' => round($totalScheduleAmount, 2),
