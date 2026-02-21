@@ -1487,9 +1487,10 @@ class LoanController extends Controller
                 'interest' => 'required|numeric|min:0',
                 'amount' => 'required|numeric|min:0',
                 'interest_cycle' => 'required|string|max:50',
+                'account_id' => 'nullable|exists:bank_accounts,id', // Optional for GL summary
             ]);
 
-            $product = LoanProduct::findOrFail($validated['product_id']);
+            $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
             $principal = (float) $validated['amount'];
             
             // Convert interest rate based on selected cycle
@@ -1498,14 +1499,18 @@ class LoanController extends Controller
             // Calculate release date fees
             $releaseFeeTotal = 0;
             $releaseFees = [];
+            $allFees = [];
             if ($product && $product->fees_ids) {
                 $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
                 if (is_array($feeIds)) {
-                    $fees = \DB::table('fees')
+                    // Get all fees for the product
+                    $allProductFees = \DB::table('fees')
                         ->whereIn('id', $feeIds)
-                        ->where('deduction_criteria', 'charge_fee_on_release_date')
                         ->where('status', 'active')
                         ->get();
+                    
+                    // Get release date fees
+                    $fees = $allProductFees->where('deduction_criteria', 'charge_fee_on_release_date');
                     
                     foreach ($fees as $fee) {
                         $feeAmount = (float) $fee->amount;
@@ -1525,9 +1530,38 @@ class LoanController extends Controller
                         
                         $releaseFeeTotal += $calculatedFee;
                         $releaseFees[] = [
+                            'id' => $fee->id,
                             'name' => $fee->name,
                             'type' => $feeType,
                             'amount' => $calculatedFee,
+                            'criteria' => $fee->deduction_criteria,
+                        ];
+                    }
+                    
+                    // Store all fees for duplicate detection
+                    foreach ($allProductFees as $fee) {
+                        $feeAmount = (float) $fee->amount;
+                        $feeType = $fee->fee_type;
+                        $calculatedFee = 0;
+                        
+                        if ($feeType === 'percentage') {
+                            $calculatedFee = ($principal * $feeAmount / 100);
+                        } elseif ($feeType === 'range') {
+                            $feeModel = \App\Models\Fee::find($fee->id);
+                            if ($feeModel) {
+                                $calculatedFee = (float) $feeModel->calculateRangeFee($principal);
+                            }
+                        } else {
+                            $calculatedFee = (float) $feeAmount;
+                        }
+                        
+                        $allFees[] = [
+                            'id' => $fee->id,
+                            'name' => $fee->name,
+                            'type' => $feeType,
+                            'amount' => $calculatedFee,
+                            'criteria' => $fee->deduction_criteria,
+                            'include_in_schedule' => $fee->include_in_schedule ?? 0,
                         ];
                     }
                 }
@@ -1554,6 +1588,127 @@ class LoanController extends Controller
                 ], 400);
             }
             
+            // Detect duplicate fees (fees that are charged on release date AND also in schedule)
+            $duplicateFees = [];
+            $releaseFeeIds = collect($releaseFees)->pluck('id')->toArray();
+            
+            // Get all fees that are included in schedule
+            $scheduleFees = [];
+            if ($product && $product->fees_ids) {
+                $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+                if (is_array($feeIds)) {
+                    $scheduleFeesData = \DB::table('fees')
+                        ->whereIn('id', $feeIds)
+                        ->where('status', 'active')
+                        ->where(function($query) {
+                            $query->where('include_in_schedule', 1)
+                                  ->orWhereIn('deduction_criteria', [
+                                      'distribute_fee_evenly_to_all_repayments',
+                                      'charge_same_fee_to_all_repayments',
+                                      'charge_fee_on_first_repayment',
+                                      'charge_fee_on_last_repayment'
+                                  ]);
+                        })
+                        ->get();
+                    
+                    foreach ($scheduleFeesData as $fee) {
+                        if (in_array($fee->id, $releaseFeeIds)) {
+                            // This fee is both charged on release date AND in schedule
+                            $feeAmount = (float) $fee->amount;
+                            $feeType = $fee->fee_type;
+                            $calculatedFee = 0;
+                            
+                            if ($feeType === 'percentage') {
+                                $calculatedFee = ($principal * $feeAmount / 100);
+                            } elseif ($feeType === 'range') {
+                                $feeModel = \App\Models\Fee::find($fee->id);
+                                if ($feeModel) {
+                                    $calculatedFee = (float) $feeModel->calculateRangeFee($principal);
+                                }
+                            } else {
+                                $calculatedFee = (float) $feeAmount;
+                            }
+                            
+                            $duplicateFees[] = [
+                                'name' => $fee->name,
+                                'amount' => round($calculatedFee, 2),
+                                'criteria' => $fee->deduction_criteria,
+                                'include_in_schedule' => $fee->include_in_schedule ?? 0,
+                            ];
+                        }
+                    }
+                }
+            }
+            
+            // Calculate GL Summary
+            $glDebits = [];
+            $glCredits = [];
+            
+            // Get bank account chart account ID (from request)
+            $bankAccountId = $request->input('account_id');
+            $bankAccount = null;
+            $bankChartAccountId = null;
+            if ($bankAccountId) {
+                $bankAccount = \App\Models\BankAccount::with('chartAccount')->find($bankAccountId);
+                if ($bankAccount) {
+                    $bankChartAccountId = $bankAccount->chart_account_id;
+                }
+            }
+            
+            // Get principal receivable account
+            $principalReceivableAccount = $product->principalReceivableAccount;
+            $principalReceivableAccountId = $principalReceivableAccount ? $principalReceivableAccount->id : null;
+            
+            // GL Entry 1: Principal Receivable (Debit)
+            if ($principalReceivableAccountId) {
+                $glDebits[] = [
+                    'account_name' => $principalReceivableAccount->name ?? 'Principal Receivable',
+                    'account_code' => $principalReceivableAccount->code ?? '',
+                    'amount' => round($principal, 2),
+                    'description' => 'Loan Principal'
+                ];
+            }
+            
+            // GL Entry 2: Bank Account (Credit) - for disbursement
+            if ($bankChartAccountId && $bankAccount && $bankAccount->chartAccount) {
+                $glCredits[] = [
+                    'account_name' => $bankAccount->name ?? 'Bank Account',
+                    'account_code' => $bankAccount->chartAccount->code ?? '',
+                    'amount' => round($netDisbursed, 2),
+                    'description' => 'Loan Disbursement'
+                ];
+            }
+            
+            // GL Entry 3: Release Date Fees
+            foreach ($releaseFees as $fee) {
+                $feeModel = \App\Models\Fee::with('chartAccount')->find($fee['id']);
+                if ($feeModel && $feeModel->chart_account_id) {
+                    $feeChartAccount = $feeModel->chartAccount;
+                    
+                    // Credit: Fee Income Account
+                    $glCredits[] = [
+                        'account_name' => $feeChartAccount->name ?? $fee['name'],
+                        'account_code' => $feeChartAccount->code ?? '',
+                        'amount' => round($fee['amount'], 2),
+                        'description' => $fee['name'] . ' Fee Income'
+                    ];
+                    
+                    // Debit: Bank Account (for fee payment)
+                    if ($bankChartAccountId && $bankAccount && $bankAccount->chartAccount) {
+                        $glDebits[] = [
+                            'account_name' => $bankAccount->name ?? 'Bank Account',
+                            'account_code' => $bankAccount->chartAccount->code ?? '',
+                            'amount' => round($fee['amount'], 2),
+                            'description' => $fee['name'] . ' Fee Payment'
+                        ];
+                    }
+                }
+            }
+            
+            // Calculate totals
+            $totalDebits = array_sum(array_column($glDebits, 'amount'));
+            $totalCredits = array_sum(array_column($glCredits, 'amount'));
+            
             return response()->json([
                 'success' => true,
                 'summary' => [
@@ -1568,6 +1723,14 @@ class LoanController extends Controller
                     'monthly_payment' => $calculation['totals']['monthly_payment'],
                     'total_amount' => $calculation['totals']['total_amount'],
                     'release_fees_breakdown' => $releaseFees,
+                    'duplicate_fees' => $duplicateFees,
+                    'all_fees' => $allFees,
+                    'gl_summary' => [
+                        'debits' => $glDebits,
+                        'credits' => $glCredits,
+                        'total_debits' => round($totalDebits, 2),
+                        'total_credits' => round($totalCredits, 2),
+                    ],
                 ],
                 'calculation' => $calculation
             ]);
