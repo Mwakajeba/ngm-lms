@@ -155,6 +155,32 @@ class LoanCalculatorService
     }
     
     /**
+     * Convert interest rate based on interest cycle
+     * Base is monthly (as stored in loan product)
+     */
+    private function convertInterestRate(float $monthlyRate, string $selectedCycle): float
+    {
+        switch (strtolower($selectedCycle)) {
+            case 'daily':
+                return $monthlyRate / 30;
+            case 'weekly':
+                return $monthlyRate / 4;
+            case 'bimonthly':
+                return $monthlyRate / 2;
+            case 'monthly':
+                return $monthlyRate; // Base rate
+            case 'quarterly':
+                return $monthlyRate * 4;
+            case 'semi_annually':
+                return $monthlyRate * 6;
+            case 'annually':
+                return $monthlyRate * 12;
+            default:
+                return $monthlyRate; // Default to monthly if unknown
+        }
+    }
+
+    /**
      * Calculate interest based on method
      */
     private function calculateInterest(array $params, LoanProduct $product): array
@@ -164,8 +190,15 @@ class LoanCalculatorService
         $period = $params['period'];
         $method = $product->interest_method;
         
-        // Validate against product limits
+        // Convert interest rate based on selected cycle (base is monthly)
+        $selectedCycle = $params['interest_cycle'] ?? 'monthly';
+        $convertedRate = $this->convertInterestRate($rate, $selectedCycle);
+        
+        // Validate against product limits (use original rate for validation)
         $this->validateProductLimits($params, $product);
+        
+        // Use converted rate for calculation
+        $rate = $convertedRate;
         
         switch ($method) {
             case 'flat_rate':

@@ -42,7 +42,8 @@ class LoanCalculatorController extends Controller
             'amount' => 'required|numeric|min:1',
             'period' => 'required|integer|min:1',
             'interest_rate' => 'required|numeric|min:0',
-            'start_date' => 'required|date|after_or_equal:today'
+            'start_date' => 'required|date|after_or_equal:today',
+            'interest_cycle' => 'nullable|string|in:daily,weekly,bimonthly,monthly,quarterly,semi_annually,annually'
         ]);
         
         if ($validator->fails()) {
@@ -175,7 +176,8 @@ class LoanCalculatorController extends Controller
             'amount' => 'required|numeric|min:1',
             'period' => 'required|integer|min:1',
             'interest_rate' => 'required|numeric|min:0',
-            'start_date' => 'required|date|after_or_equal:today'
+            'start_date' => 'required|date|after_or_equal:today',
+            'interest_cycle' => 'nullable|string|in:daily,weekly,bimonthly,monthly,quarterly,semi_annually,annually'
         ]);
         
         if ($validator->fails()) {
@@ -212,7 +214,8 @@ class LoanCalculatorController extends Controller
             'amount' => 'required|numeric|min:1',
             'period' => 'required|integer|min:1',
             'interest_rate' => 'required|numeric|min:0',
-            'start_date' => 'required|date|after_or_equal:today'
+            'start_date' => 'required|date|after_or_equal:today',
+            'interest_cycle' => 'nullable|string|in:daily,weekly,bimonthly,monthly,quarterly,semi_annually,annually'
         ]);
         
         if ($validator->fails()) {
@@ -259,7 +262,8 @@ class LoanCalculatorController extends Controller
             'amount' => 'required|numeric|min:1',
             'period' => 'required|integer|min:1',
             'interest_rate' => 'required|numeric|min:0',
-            'start_date' => 'required|date|after_or_equal:today'
+            'start_date' => 'required|date|after_or_equal:today',
+            'interest_cycle' => 'nullable|string|in:daily,weekly,bimonthly,monthly,quarterly,semi_annually,annually'
         ]);
         
         if ($validator->fails()) {

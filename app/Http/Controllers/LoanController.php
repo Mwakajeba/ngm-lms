@@ -1464,6 +1464,7 @@ class LoanController extends Controller
         $interestCycles = [
             'daily' => 'Daily',
             'weekly' => 'Weekly',
+            'bimonthly' => 'Bi-monthly',
             'monthly' => 'Monthly',
             'quarterly' => 'Quarterly',
             'semi_annually' => 'Semi Annually',
@@ -1563,13 +1564,14 @@ class LoanController extends Controller
             DB::transaction(function () use ($validated, $product, $userId, $branchId, &$loan) {
                 // Step 1: Create Loan with initial status
 
-
+                // Convert interest rate based on selected cycle (base is monthly)
+                $convertedInterest = $this->convertInterestRate($validated['interest'], $validated['interest_cycle']);
 
                 // Step 1: Create Loan
                 $loan = Loan::create([
                     'product_id' => $validated['product_id'],
                     'period' => $validated['period'],
-                    'interest' => $validated['interest'],
+                    'interest' => $convertedInterest, // Store converted interest rate
                     'amount' => $validated['amount'],
                     'customer_id' => $validated['customer_id'],
                     'group_id' => $validated['group_id'],
@@ -1584,8 +1586,8 @@ class LoanController extends Controller
                 ]);
                 info('loaan-->' . $loan);
 
-                // Step 2: Calculate interest and repayment dates
-                $interestAmount = $loan->calculateInterestAmount($validated['interest']);
+                // Step 2: Calculate interest and repayment dates (use converted interest)
+                $interestAmount = $loan->calculateInterestAmount($convertedInterest);
                 $repaymentDates = $loan->getRepaymentDates();
 
                 // Step 3: Update Loan with totals and schedule
@@ -1596,8 +1598,8 @@ class LoanController extends Controller
                     'last_repayment_date' => $repaymentDates['last_repayment_date'],
                 ]);
 
-                // Step 4: Generate repayment schedule
-                $loan->generateRepaymentSchedule($validated['interest']);
+                // Step 4: Generate repayment schedule (use converted interest)
+                $loan->generateRepaymentSchedule($convertedInterest);
 
                 // Step 4.5: Post matured interest for past loans
                 $loan->postMaturedInterestForPastLoan();
@@ -1907,6 +1909,7 @@ class LoanController extends Controller
         $interestCycles = [
             'daily' => 'Daily',
             'weekly' => 'Weekly',
+            'bimonthly' => 'Bi-monthly',
             'monthly' => 'Monthly',
             'quarterly' => 'Quarterly',
             'semi_annually' => 'Semi Annually',
@@ -2167,6 +2170,32 @@ class LoanController extends Controller
         }
     }
 
+
+    /**
+     * Convert interest rate based on interest cycle
+     * Base is monthly (as stored in loan product)
+     */
+    protected function convertInterestRate(float $monthlyRate, string $selectedCycle): float
+    {
+        switch (strtolower($selectedCycle)) {
+            case 'daily':
+                return $monthlyRate / 30;
+            case 'weekly':
+                return $monthlyRate / 4;
+            case 'bimonthly':
+                return $monthlyRate / 2;
+            case 'monthly':
+                return $monthlyRate; // Base rate
+            case 'quarterly':
+                return $monthlyRate * 4;
+            case 'semi_annually':
+                return $monthlyRate * 6;
+            case 'annually':
+                return $monthlyRate * 12;
+            default:
+                return $monthlyRate; // Default to monthly if unknown
+        }
+    }
 
     //////PRODUCT LIMITS ////////////////////////////////
     protected function validateProductLimits(array $data, LoanProduct $product)
@@ -2530,7 +2559,7 @@ class LoanController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'group_id' => 'nullable|exists:groups,id',
             'sector' => 'required|string',
-            'interest_cycle' => 'required|string|in:daily,weekly,monthly,quarterly,semi_annually,annually',
+            'interest_cycle' => 'required|string|in:daily,weekly,bimonthly,monthly,quarterly,semi_annually,annually',
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
@@ -2625,10 +2654,13 @@ class LoanController extends Controller
             // All loan applications start as 'applied' status
             $initialStatus = Loan::STATUS_APPLIED;
 
+            // Convert interest rate based on selected cycle (base is monthly)
+            $convertedInterest = $this->convertInterestRate($validated['interest'], $validated['interest_cycle']);
+
             $loan = Loan::create([
                 'product_id' => $validated['product_id'],
                 'period' => $validated['period'],
-                'interest' => $validated['interest'],
+                'interest' => $convertedInterest, // Store converted interest rate
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
@@ -2763,7 +2795,7 @@ class LoanController extends Controller
             'customer_id' => 'required|exists:customers,id',
             'group_id' => 'nullable|exists:groups,id',
             'sector' => 'required|string',
-            'interest_cycle' => 'required|string|in:daily,weekly,monthly,quarterly,semi_annually,annually',
+            'interest_cycle' => 'required|string|in:daily,weekly,bimonthly,monthly,quarterly,semi_annually,annually',
         ]);
 
         $product = LoanProduct::with('principalReceivableAccount')->findOrFail($validated['product_id']);
