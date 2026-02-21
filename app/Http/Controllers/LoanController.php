@@ -1475,6 +1475,112 @@ class LoanController extends Controller
         return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts', 'loanOfficers', 'interestCycles'));
     }
 
+    /**
+     * Calculate loan summary before creation
+     */
+    public function calculateLoanSummary(Request $request)
+    {
+        try {
+            $validated = $request->validate([
+                'product_id' => 'required|exists:loan_products,id',
+                'period' => 'required|integer|min:1',
+                'interest' => 'required|numeric|min:0',
+                'amount' => 'required|numeric|min:0',
+                'interest_cycle' => 'required|string|max:50',
+            ]);
+
+            $product = LoanProduct::findOrFail($validated['product_id']);
+            $principal = (float) $validated['amount'];
+            
+            // Convert interest rate based on selected cycle
+            $convertedInterest = $this->convertInterestRate($validated['interest'], $validated['interest_cycle']);
+            
+            // Calculate release date fees
+            $releaseFeeTotal = 0;
+            $releaseFees = [];
+            if ($product && $product->fees_ids) {
+                $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+                if (is_array($feeIds)) {
+                    $fees = \DB::table('fees')
+                        ->whereIn('id', $feeIds)
+                        ->where('deduction_criteria', 'charge_fee_on_release_date')
+                        ->where('status', 'active')
+                        ->get();
+                    
+                    foreach ($fees as $fee) {
+                        $feeAmount = (float) $fee->amount;
+                        $feeType = $fee->fee_type;
+                        $calculatedFee = 0;
+                        
+                        if ($feeType === 'percentage') {
+                            $calculatedFee = ($principal * $feeAmount / 100);
+                        } elseif ($feeType === 'range') {
+                            $feeModel = \App\Models\Fee::find($fee->id);
+                            if ($feeModel) {
+                                $calculatedFee = (float) $feeModel->calculateRangeFee($principal);
+                            }
+                        } else {
+                            $calculatedFee = (float) $feeAmount;
+                        }
+                        
+                        $releaseFeeTotal += $calculatedFee;
+                        $releaseFees[] = [
+                            'name' => $fee->name,
+                            'type' => $feeType,
+                            'amount' => $calculatedFee,
+                        ];
+                    }
+                }
+            }
+            
+            // Calculate net disbursed amount
+            $netDisbursed = $principal - $releaseFeeTotal;
+            
+            // Use calculator service for full calculation
+            $calculatorService = new \App\Services\LoanCalculatorService();
+            $calculation = $calculatorService->calculateLoan([
+                'product_id' => $validated['product_id'],
+                'amount' => $principal,
+                'period' => $validated['period'],
+                'interest_rate' => $validated['interest'],
+                'interest_cycle' => $validated['interest_cycle'],
+                'start_date' => now()->format('Y-m-d'),
+            ]);
+            
+            if (!$calculation['success']) {
+                return response()->json([
+                    'success' => false,
+                    'error' => $calculation['error'] ?? 'Calculation failed'
+                ], 400);
+            }
+            
+            return response()->json([
+                'success' => true,
+                'summary' => [
+                    'loan_amount' => $principal,
+                    'interest_rate' => $convertedInterest,
+                    'period' => $validated['period'],
+                    'interest_cycle' => $validated['interest_cycle'],
+                    'total_interest' => $calculation['totals']['total_interest'],
+                    'total_fees' => $calculation['totals']['total_fees'],
+                    'release_date_fees' => round($releaseFeeTotal, 2),
+                    'net_disbursed' => round($netDisbursed, 2),
+                    'monthly_payment' => $calculation['totals']['monthly_payment'],
+                    'total_amount' => $calculation['totals']['total_amount'],
+                    'release_fees_breakdown' => $releaseFees,
+                ],
+                'calculation' => $calculation
+            ]);
+            
+        } catch (\Exception $e) {
+            \Log::error('Loan summary calculation error: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 400);
+        }
+    }
+
     public function store(Request $request)
     {
         // Debug: Log all request data
