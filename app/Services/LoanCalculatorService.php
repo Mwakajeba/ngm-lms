@@ -673,6 +673,8 @@ class LoanCalculatorService
      */
     private function generateSummary(array $params, array $totals): array
     {
+        $interestCycle = $params['interest_cycle'] ?? 'monthly';
+        
         return [
             'loan_amount' => $totals['principal'],
             'interest_rate' => $params['interest_rate'],
@@ -681,7 +683,8 @@ class LoanCalculatorService
             'total_interest' => $totals['total_interest'],
             'total_fees' => $totals['total_fees'],
             'total_amount' => $totals['total_amount'],
-            'interest_percentage' => round(($totals['total_interest'] / $totals['principal']) * 100, 2)
+            'interest_percentage' => round(($totals['total_interest'] / $totals['principal']) * 100, 2),
+            'interest_cycle' => $interestCycle
         ];
     }
     

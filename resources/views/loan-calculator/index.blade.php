@@ -505,7 +505,7 @@ $(document).ready(function() {
                     <div class="card border-0 bg-primary text-white">
                         <div class="card-body text-center">
                             <h3 class="mb-1">${formatCurrency(totals.monthly_payment)}</h3>
-                            <p class="mb-0">Monthly Payment</p>
+                            <p class="mb-0" id="paymentLabel">${getPaymentLabel(summary.interest_cycle || 'monthly')}</p>
                         </div>
                     </div>
                 </div>
@@ -612,7 +612,7 @@ $(document).ready(function() {
                                 </div>
                                 <div class="col-6">
                                     <strong>Rate:</strong> ${$('#interest_rate').val()}%<br>
-                                    <strong>Monthly Payment:</strong> ${formatCurrency(currentCalculation.totals.monthly_payment)}<br>
+                                    <strong>${getPaymentLabel(currentCalculation.summary.interest_cycle || 'monthly')}:</strong> ${formatCurrency(currentCalculation.totals.monthly_payment)}<br>
                                     <strong>Total Amount:</strong> ${formatCurrency(currentCalculation.totals.total_amount)}
                                 </div>
                             </div>
@@ -819,13 +819,19 @@ $(document).ready(function() {
                             <th>Amount</th>
                             <th>Period</th>
                             <th>Rate</th>
-                            <th>Monthly Payment</th>
+                            <th id="comparisonPaymentHeader">Monthly Payment</th>
                             <th>Total Interest</th>
                             <th>Total Amount</th>
                         </tr>
                     </thead>
                     <tbody>
         `;
+        
+        // Get payment label from first scenario or default to monthly
+        const firstCycle = comparisons.length > 0 && comparisons[0].result.success 
+            ? (comparisons[0].result.summary.interest_cycle || 'monthly')
+            : 'monthly';
+        $('#comparisonPaymentHeader').text(getPaymentLabel(firstCycle));
         
         comparisons.forEach(comparison => {
             if (comparison.result.success) {
@@ -935,6 +941,19 @@ $(document).ready(function() {
         $('#compareBtn').prop('disabled', true);
     }
     
+    function getPaymentLabel(cycle) {
+        const labels = {
+            'daily': 'Daily Payment',
+            'weekly': 'Weekly Payment',
+            'bimonthly': 'Bi-monthly Payment',
+            'monthly': 'Monthly Payment',
+            'quarterly': 'Quarterly Payment',
+            'semi_annually': 'Semi-annual Payment',
+            'annually': 'Annual Payment'
+        };
+        return labels[cycle] || 'Monthly Payment';
+    }
+
     function formatCurrency(amount) {
         return new Intl.NumberFormat('en-TZ', {
             style: 'currency',
