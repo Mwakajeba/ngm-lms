@@ -93,12 +93,14 @@
                                     </p>
                                 </div>
 
-                                <div class="col-12 mb-3">
-                                    <label class="form-label fw-bold text-muted">Amount</label>
-                                    <p class="mb-0 fw-bold text-primary h4">
-                                        {{ $fee->formatted_amount }}
-                                    </p>
-                                </div>
+                                @if($fee->fee_type !== 'range')
+                                    <div class="col-12 mb-3">
+                                        <label class="form-label fw-bold text-muted">Amount</label>
+                                        <p class="mb-0 fw-bold text-primary h4">
+                                            {{ $fee->formatted_amount }}
+                                        </p>
+                                    </div>
+                                @endif
 
                                 <div class="col-12 mb-3">
                                     <label class="form-label fw-bold text-muted">Deduction Criteria</label>
@@ -174,6 +176,41 @@
                         </div>
                     </div>
                 </div>
+
+                <!-- Fee Ranges (for Range type fees) -->
+                @if($fee->fee_type === 'range' && $fee->feeRanges->count() > 0)
+                    <div class="col-12 mb-4">
+                        <div class="card radius-10">
+                            <div class="card-header bg-light">
+                                <h5 class="mb-0"><i class="bx bx-list-ul me-2"></i>Fee Ranges</h5>
+                            </div>
+                            <div class="card-body">
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>From Amount</th>
+                                                <th>To Amount</th>
+                                                <th>Fee Amount</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($fee->feeRanges as $index => $range)
+                                                <tr>
+                                                    <td>{{ $index + 1 }}</td>
+                                                    <td class="fw-bold">{{ number_format($range->from_amount, 2) }} TZS</td>
+                                                    <td class="fw-bold">{{ number_format($range->to_amount, 2) }} TZS</td>
+                                                    <td class="fw-bold text-primary">{{ number_format($range->amount, 2) }} TZS</td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
 
                 <!-- Description -->
                 @if($fee->description)
