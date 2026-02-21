@@ -79,13 +79,26 @@ $(document).ready(function() {
             $('#productInterestMethod').text(selectedOption.data('interest-method'));
             $('#productMinAmount').text(formatCurrency(selectedOption.data('min-amount')));
             $('#productMaxAmount').text(formatCurrency(selectedOption.data('max-amount')));
-            $('#productMinPeriod').text(selectedOption.data('min-period'));
-            $('#productMaxPeriod').text(selectedOption.data('max-period'));
+            const minPeriod = parseInt(selectedOption.data('min-period'));
+            const maxPeriod = parseInt(selectedOption.data('max-period'));
+            
+            // Skip period validation if range is 1-4 months
+            if (minPeriod == 1 && maxPeriod == 4) {
+                $('#productMinPeriod').text('');
+                $('#productMaxPeriod').text('');
+                $('#periodRangeLabel').text('');
+                $('#period').removeAttr('min').removeAttr('max');
+            } else {
+                $('#productMinPeriod').text(minPeriod);
+                $('#productMaxPeriod').text(maxPeriod);
+                $('#periodRangeLabel').text('Range: ' + minPeriod + ' - ' + maxPeriod + ' months');
+                $('#period').attr('min', minPeriod).attr('max', maxPeriod);
+            }
+            
             $('#productInterestRange').text(selectedOption.data('min-interest') + '% - ' + selectedOption.data('max-interest') + '%');
             
             // Update range labels
             $('#amountRangeLabel').text('Range: ' + formatCurrency(selectedOption.data('min-amount')) + ' - ' + formatCurrency(selectedOption.data('max-amount')));
-            $('#periodRangeLabel').text('Range: ' + selectedOption.data('min-period') + ' - ' + selectedOption.data('max-period') + ' months');
             $('#interestRangeLabel').text('Range: ' + selectedOption.data('min-interest') + '% - ' + selectedOption.data('max-interest') + '%');
             
             // Set default values
@@ -93,7 +106,7 @@ $(document).ready(function() {
                 $('#amount').val(selectedOption.data('min-amount'));
             }
             if (!$('#period').val()) {
-                $('#period').val(selectedOption.data('min-period'));
+                $('#period').val(minPeriod == 1 && maxPeriod == 4 ? '' : selectedOption.data('min-period'));
             }
             if (!$('#interest_rate').val()) {
                 $('#interest_rate').val(selectedOption.data('min-interest'));

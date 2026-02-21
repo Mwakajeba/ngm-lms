@@ -691,12 +691,15 @@ class LoanCalculatorService
             throw new \InvalidArgumentException("Amount exceeds maximum: {$product->maximum_principal}");
         }
         
-        if ($params['period'] < $product->minimum_period) {
-            throw new \InvalidArgumentException("Period is below minimum: {$product->minimum_period}");
-        }
-        
-        if ($params['period'] > $product->maximum_period) {
-            throw new \InvalidArgumentException("Period exceeds maximum: {$product->maximum_period}");
+        // Skip period validation if range is 1-4 months
+        if (!($product->minimum_period == 1 && $product->maximum_period == 4)) {
+            if ($params['period'] < $product->minimum_period) {
+                throw new \InvalidArgumentException("Period is below minimum: {$product->minimum_period}");
+            }
+            
+            if ($params['period'] > $product->maximum_period) {
+                throw new \InvalidArgumentException("Period exceeds maximum: {$product->maximum_period}");
+            }
         }
         
         if ($params['interest_rate'] < $product->minimum_interest_rate) {

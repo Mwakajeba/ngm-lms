@@ -382,10 +382,16 @@ $isEdit = isset($loan);
             const product = products.find(p => p.id === selectedId);
 
             if (product) {
-                // Set period limits
-                periodInput.min = product.minimum_period;
-                periodInput.max = product.maximum_period;
-                periodRangeLabel.innerText = `(min: ${product.minimum_period}, max: ${product.maximum_period})`;
+                // Set period limits - skip validation if range is 1-4 months
+                if (product.minimum_period == 1 && product.maximum_period == 4) {
+                    periodInput.removeAttribute('min');
+                    periodInput.removeAttribute('max');
+                    periodRangeLabel.innerText = '';
+                } else {
+                    periodInput.min = product.minimum_period;
+                    periodInput.max = product.maximum_period;
+                    periodRangeLabel.innerText = `(min: ${product.minimum_period}, max: ${product.maximum_period})`;
+                }
 
                 // Set interest limits
                 interestInput.min = product.minimum_interest_rate;
