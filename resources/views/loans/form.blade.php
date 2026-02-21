@@ -16,7 +16,7 @@ $isEdit = isset($loan);
 @endif
 
 <form action="{{ $isEdit ? route('loans.update', Hashids::encode($loan->id)) : route('loans.store') }}"
-    method="POST" enctype="multipart/form-data" onsubmit="return handleSubmit(this)">
+    method="POST" enctype="multipart/form-data" id="loanForm" onsubmit="return handleSubmit(event, this)">
     @csrf
     @if($isEdit) @method('PUT') @endif
 
@@ -534,7 +534,21 @@ $isEdit = isset($loan);
 
 @push('scripts')
     <script>
-        function handleSubmit(form) {
+        function handleSubmit(e, form) {
+            // Only show summary modal for create (not edit)
+            const isEdit = form.action.includes('/edit') || form.querySelector('input[name="_method"][value="PUT"]');
+            if (isEdit) {
+                // For edit, proceed with normal submission
+                return proceedWithSubmission(form);
+            }
+            
+            // For create, show summary modal first
+            e.preventDefault();
+            showLoanSummaryModal(form);
+            return false;
+        }
+        
+        function proceedWithSubmission(form) {
             // Remove commas from amount and update hidden field before submission
             const amountInput = document.getElementById('amountInput');
             const amountInputHidden = document.getElementById('amountInputHidden');
@@ -569,6 +583,196 @@ $isEdit = isset($loan);
 
             // Allow the submit to proceed
             return true;
+        }
+        
+        function showLoanSummaryModal(form) {
+            // Get form data
+            const formData = new FormData(form);
+            const data = {
+                product_id: formData.get('product_id'),
+                period: formData.get('period'),
+                interest: formData.get('interest'),
+                amount: document.getElementById('amountInputHidden')?.value || formData.get('amount'),
+                interest_cycle: formData.get('interest_cycle'),
+            };
+            
+            // Validate required fields
+            if (!data.product_id || !data.period || !data.interest || !data.amount || !data.interest_cycle) {
+                Swal.fire({
+                    icon: 'error',
+                    title: 'Missing Information',
+                    text: 'Please fill in all required fields before proceeding.',
+                    confirmButtonText: 'OK'
+                });
+                return;
+            }
+            
+            // Show loading
+            Swal.fire({
+                title: 'Calculating Loan Summary...',
+                allowOutsideClick: false,
+                didOpen: () => {
+                    Swal.showLoading();
+                }
+            });
+            
+            // Calculate summary
+            $.ajax({
+                url: '{{ route("loans.calculate-summary") }}',
+                method: 'POST',
+                data: data,
+                headers: {
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content')
+                },
+                success: function(response) {
+                    Swal.close();
+                    if (response.success) {
+                        displayLoanSummaryModal(response.summary, response.calculation, form);
+                    } else {
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Calculation Failed',
+                            text: response.error || 'Unable to calculate loan summary.',
+                            confirmButtonText: 'OK'
+                        });
+                    }
+                },
+                error: function(xhr) {
+                    Swal.close();
+                    const error = xhr.responseJSON?.error || 'Unable to calculate loan summary.';
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Error',
+                        text: error,
+                        confirmButtonText: 'OK'
+                    });
+                }
+            });
+        }
+        
+        function getPaymentLabel(cycle) {
+            const labels = {
+                'daily': 'Daily Payment',
+                'weekly': 'Weekly Payment',
+                'bimonthly': 'Bi-monthly Payment',
+                'monthly': 'Monthly Payment',
+                'quarterly': 'Quarterly Payment',
+                'semi_annually': 'Semi-annual Payment',
+                'annually': 'Annual Payment'
+            };
+            return labels[cycle] || 'Monthly Payment';
+        }
+        
+        function formatCurrency(amount) {
+            return new Intl.NumberFormat('en-TZ', {
+                style: 'currency',
+                currency: 'TZS',
+                minimumFractionDigits: 2
+            }).format(amount);
+        }
+        
+        function displayLoanSummaryModal(summary, calculation, form) {
+            const summaryHtml = `
+                <div class="loan-summary-modal">
+                    <div class="row mb-4">
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-primary mb-1">${formatCurrency(summary.loan_amount)}</h4>
+                                <small class="text-muted">Loan Amount</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-success mb-1">${formatCurrency(summary.total_interest)}</h4>
+                                <small class="text-muted">Total Interest</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-warning mb-1">${formatCurrency(summary.total_fees)}</h4>
+                                <small class="text-muted">Total Fees</small>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <div class="text-center p-3 bg-light rounded">
+                                <h4 class="text-danger mb-1">${formatCurrency(summary.total_amount)}</h4>
+                                <small class="text-muted">Total Amount</small>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-primary text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-1">${formatCurrency(summary.monthly_payment)}</h3>
+                                    <p class="mb-0">${getPaymentLabel(summary.interest_cycle)}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="card border-0 bg-info text-white">
+                                <div class="card-body text-center">
+                                    <h3 class="mb-1">${summary.interest_rate.toFixed(2)}%</h3>
+                                    <p class="mb-0">Interest Rate (${summary.interest_cycle})</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-md-12">
+                            <div class="card border-0 bg-success text-white">
+                                <div class="card-body text-center">
+                                    <h4 class="mb-1">${formatCurrency(summary.net_disbursed)}</h4>
+                                    <p class="mb-0"><strong>Net Amount to Disburse</strong> (After Release Date Fees)</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${summary.release_date_fees > 0 ? `
+                        <div class="alert alert-info">
+                            <h6><i class="bx bx-info-circle me-2"></i>Release Date Fees Breakdown:</h6>
+                            <ul class="mb-0">
+                                ${summary.release_fees_breakdown.map(fee => `
+                                    <li>${fee.name}: ${formatCurrency(fee.amount)}</li>
+                                `).join('')}
+                            </ul>
+                            <p class="mb-0 mt-2"><strong>Total Release Fees:</strong> ${formatCurrency(summary.release_date_fees)}</p>
+                        </div>
+                    ` : ''}
+                    
+                    <div class="alert alert-warning">
+                        <i class="bx bx-info-circle me-2"></i>
+                        <strong>Note:</strong> The net disbursed amount (${formatCurrency(summary.net_disbursed)}) is the actual amount that will be paid to the customer after deducting all fees charged on release date.
+                    </div>
+                </div>
+            `;
+            
+            Swal.fire({
+                title: 'Loan Summary',
+                html: summaryHtml,
+                icon: 'info',
+                showCancelButton: true,
+                confirmButtonText: 'Confirm & Create Loan',
+                cancelButtonText: 'Cancel',
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                width: '800px',
+                customClass: {
+                    popup: 'loan-summary-popup'
+                },
+                didOpen: () => {
+                    // Add custom styling if needed
+                }
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    // Proceed with form submission
+                    proceedWithSubmission(form);
+                    form.submit();
+                }
+            });
         }
 
         // Optional safety: prevent Enter-key spamming multiple submits in some browsers

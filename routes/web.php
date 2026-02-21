@@ -959,6 +959,7 @@ Route::middleware(['auth'])->group(function () {
 
     // General loan routes (must come AFTER specific routes)
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
+    Route::post('loans/calculate-summary', [LoanController::class, 'calculateLoanSummary'])->name('loans.calculate-summary');
     Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
     Route::get('loans/{encodedId}/edit', [LoanController::class, 'edit'])->name('loans.edit');
