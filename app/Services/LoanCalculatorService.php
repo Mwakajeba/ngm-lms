@@ -200,15 +200,17 @@ class LoanCalculatorService
         // Use converted rate for calculation
         $rate = $convertedRate;
         
+        $startDate = isset($params['start_date']) ? Carbon::parse($params['start_date']) : Carbon::now();
+        
         switch ($method) {
             case 'flat_rate':
                 return $this->calculateFlatRate($principal, $rate, $period);
                 
             case 'reducing_balance_with_equal_installment':
-                return $this->calculateReducingBalanceEqualInstallment($principal, $rate, $period);
+                return $this->calculateReducingBalanceEqualInstallment($principal, $rate, $period, $selectedCycle, $startDate);
                 
             case 'reducing_balance_with_equal_principal':
-                return $this->calculateReducingBalanceEqualPrincipal($principal, $rate, $period);
+                return $this->calculateReducingBalanceEqualPrincipal($principal, $rate, $period, $selectedCycle, $startDate);
                 
             default:
                 throw new \InvalidArgumentException("Unsupported interest method: {$method}");
@@ -238,7 +240,7 @@ class LoanCalculatorService
     /**
      * Calculate reducing balance with equal installments
      */
-    private function calculateReducingBalanceEqualInstallment(float $principal, float $rate, int $period): array
+    private function calculateReducingBalanceEqualInstallment(float $principal, float $rate, int $period, string $cycle = 'monthly', Carbon $startDate = null): array
     {
         $ratePerPeriod = $rate / 100;
         
@@ -250,7 +252,7 @@ class LoanCalculatorService
         // Generate schedule for equal installments
         $schedule = [];
         $remainingBalance = $principal;
-        $startDate = Carbon::now(); // This will be overridden by the actual start date from params
+        $startDate = $startDate ?? Carbon::now();
         
         for ($i = 1; $i <= $period; $i++) {
             $interest = $remainingBalance * $ratePerPeriod;
@@ -272,9 +274,12 @@ class LoanCalculatorService
                 $newRemaining = 0.0;
             }
 
+            // Calculate due date based on interest cycle
+            $dueDate = $this->calculateDueDate($startDate, $i - 1, $cycle);
+
             $schedule[] = [
                 'installment_number' => $i,
-                'due_date' => $startDate->copy()->addMonths($i)->format('Y-m-d'),
+                'due_date' => $dueDate->format('Y-m-d'),
                 'principal' => $principalPayment,
                 'interest' => $interest,
                 'fee_amount' => 0, // Will be calculated separately
@@ -298,7 +303,7 @@ class LoanCalculatorService
     /**
      * Calculate reducing balance with equal principal
      */
-    private function calculateReducingBalanceEqualPrincipal(float $principal, float $rate, int $period): array
+    private function calculateReducingBalanceEqualPrincipal(float $principal, float $rate, int $period, string $cycle = 'monthly', Carbon $startDate = null): array
     {
         $ratePerPeriod = $rate / 100;
         $monthlyPrincipal = $principal / $period;
@@ -306,7 +311,7 @@ class LoanCalculatorService
         $schedule = [];
         $remainingBalance = $principal;
         
-        $startDate = Carbon::now(); // This will be overridden by the actual start date from params
+        $startDate = $startDate ?? Carbon::now();
         
         for ($i = 1; $i <= $period; $i++) {
             $interest = $remainingBalance * $ratePerPeriod;
@@ -326,9 +331,12 @@ class LoanCalculatorService
                 $newRemaining = 0.0;
             }
 
+            // Calculate due date based on interest cycle
+            $dueDate = $this->calculateDueDate($startDate, $i - 1, $cycle);
+
             $schedule[] = [
                 'installment_number' => $i,
-                'due_date' => $startDate->copy()->addMonths($i)->format('Y-m-d'),
+                'due_date' => $dueDate->format('Y-m-d'),
                 'principal' => $principalForRow,
                 'interest' => $interest,
                 'fee_amount' => 0, // Will be calculated separately
@@ -603,11 +611,13 @@ class LoanCalculatorService
      */
     private function calculateDueDate(Carbon $startDate, int $installmentIndex, string $cycle): Carbon
     {
-        switch ($cycle) {
+        switch (strtolower($cycle)) {
             case 'daily':
                 return $startDate->copy()->addDays($installmentIndex);
             case 'weekly':
                 return $startDate->copy()->addWeeks($installmentIndex);
+            case 'bimonthly':
+                return $startDate->copy()->addMonths($installmentIndex * 2);
             case 'monthly':
                 return $startDate->copy()->addMonths($installmentIndex);
             case 'quarterly':
