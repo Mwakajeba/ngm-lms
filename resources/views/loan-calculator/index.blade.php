@@ -395,9 +395,14 @@ $(document).ready(function() {
         $('#amount').attr('min', minAmount).attr('max', maxAmount);
         $('#amount-range').text(`Range: ${formatCurrency(minAmount)} - ${formatCurrency(maxAmount)}`);
         
-        // Update period field
-        $('#period').attr('min', minPeriod).attr('max', maxPeriod);
-        $('#period-range').text(`Range: ${minPeriod} - ${maxPeriod} ${cycle}`);
+        // Update period field - skip validation if range is 1-4 months
+        if (minPeriod == 1 && maxPeriod == 4) {
+            $('#period').removeAttr('min').removeAttr('max');
+            $('#period-range').text('');
+        } else {
+            $('#period').attr('min', minPeriod).attr('max', maxPeriod);
+            $('#period-range').text(`Range: ${minPeriod} - ${maxPeriod} ${cycle}`);
+        }
         $('#interest_cycle').val(cycle);
         
         // Update interest rate field

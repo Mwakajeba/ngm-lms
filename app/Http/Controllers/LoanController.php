@@ -2171,10 +2171,13 @@ class LoanController extends Controller
     //////PRODUCT LIMITS ////////////////////////////////
     protected function validateProductLimits(array $data, LoanProduct $product)
     {
-        if ($data['period'] < $product->minimum_period || $data['period'] > $product->maximum_period) {
-            throw \Illuminate\Validation\ValidationException::withMessages([
-                'period' => "Period must be between {$product->minimum_period} and {$product->maximum_period} months.",
-            ]);
+        // Skip period validation if range is 1-4 months
+        if (!($product->minimum_period == 1 && $product->maximum_period == 4)) {
+            if ($data['period'] < $product->minimum_period || $data['period'] > $product->maximum_period) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'period' => "Period must be between {$product->minimum_period} and {$product->maximum_period} months.",
+                ]);
+            }
         }
 
         if ($data['interest'] < $product->minimum_interest_rate || $data['interest'] > $product->maximum_interest_rate) {
@@ -2558,8 +2561,11 @@ class LoanController extends Controller
         }
 
         //check the min and max period for the loan product
-        if ($validated['period'] < $product->minimum_period || $validated['period'] > $product->maximum_period) {
-            return back()->withErrors(['error' => 'Period must be between ' . $product->minimum_period . ' and ' . $product->maximum_period . '.']);
+        // Skip period validation if range is 1-4 months
+        if (!($product->minimum_period == 1 && $product->maximum_period == 4)) {
+            if ($validated['period'] < $product->minimum_period || $validated['period'] > $product->maximum_period) {
+                return back()->withErrors(['error' => 'Period must be between ' . $product->minimum_period . ' and ' . $product->maximum_period . '.']);
+            }
         }
 
         //check if member has enough collateral balance

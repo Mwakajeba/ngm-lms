@@ -445,10 +445,20 @@
                 document.getElementById("maxInterest").textContent = product.maximum_interest_rate;
                 document.getElementById("productDescription").textContent = product.description || 'No description available';
 
-                // Set period limits
-                periodInput.min = product.minimum_period;
-                periodInput.max = product.maximum_period;
-                periodRangeLabel.innerText = `(min: ${product.minimum_period}, max: ${product.maximum_period})`;
+                // Set period limits - skip validation if range is 1-4 months
+                if (product.minimum_period == 1 && product.maximum_period == 4) {
+                    periodInput.removeAttribute('min');
+                    periodInput.removeAttribute('max');
+                    periodRangeLabel.innerText = '';
+                    document.getElementById("minPeriod").textContent = '';
+                    document.getElementById("maxPeriod").textContent = '';
+                } else {
+                    periodInput.min = product.minimum_period;
+                    periodInput.max = product.maximum_period;
+                    periodRangeLabel.innerText = `(min: ${product.minimum_period}, max: ${product.maximum_period})`;
+                    document.getElementById("minPeriod").textContent = product.minimum_period;
+                    document.getElementById("maxPeriod").textContent = product.maximum_period;
+                }
 
                 // Set interest limits
                 interestInput.min = product.minimum_interest_rate;
