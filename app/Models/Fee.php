@@ -59,6 +59,11 @@ class Fee extends Model
         return $this->belongsTo(User::class, 'updated_by');
     }
 
+    public function feeRanges()
+    {
+        return $this->hasMany(FeeRange::class)->orderBy('order');
+    }
+
     // Scopes
     public function scopeActive($query)
     {
@@ -100,6 +105,7 @@ class Fee extends Model
         return match ($this->fee_type) {
             'fixed' => '<span class="badge bg-primary">Fixed</span>',
             'percentage' => '<span class="badge bg-info">Percentage</span>',
+            'range' => '<span class="badge bg-warning">Range</span>',
             default => '<span class="badge bg-secondary">Unknown</span>',
         };
     }
@@ -124,6 +130,14 @@ class Fee extends Model
     {
         if ($this->fee_type === 'percentage') {
             return number_format($this->amount, 2) . '%';
+        }
+        if ($this->fee_type === 'range') {
+            $ranges = $this->feeRanges;
+            if ($ranges->isEmpty()) {
+                return 'No ranges defined';
+            }
+            $rangeCount = $ranges->count();
+            return "{$rangeCount} range(s) defined";
         }
         return number_format($this->amount, 2);
     }
@@ -150,6 +164,49 @@ class Fee extends Model
         return $this->fee_type === 'percentage';
     }
 
+    public function isRange()
+    {
+        return $this->fee_type === 'range';
+    }
+
+    /**
+     * Calculate fee amount based on loan amount for range type fees
+     */
+    public function calculateRangeFee($loanAmount)
+    {
+        if (!$this->isRange()) {
+            return 0;
+        }
+
+        // Get all ranges ordered by from_amount
+        $ranges = $this->feeRanges()->orderBy('from_amount')->get();
+
+        if ($ranges->isEmpty()) {
+            return 0;
+        }
+
+        // Find the range that contains the loan amount
+        foreach ($ranges as $range) {
+            if ($range->containsAmount($loanAmount)) {
+                return $range->amount;
+            }
+        }
+
+        // If loan amount is below minimum range, use first range
+        $firstRange = $ranges->first();
+        if ($loanAmount < $firstRange->from_amount) {
+            return $firstRange->amount;
+        }
+
+        // If loan amount is above maximum range, use last range
+        $lastRange = $ranges->last();
+        if ($loanAmount > $lastRange->to_amount) {
+            return $lastRange->amount;
+        }
+
+        return 0;
+    }
+
     public function activate()
     {
         $this->update(['status' => 'active']);
@@ -174,6 +231,7 @@ class Fee extends Model
         return [
             'fixed' => 'Fixed Amount',
             'percentage' => 'Percentage',
+            'range' => 'Range',
         ];
     }
 
