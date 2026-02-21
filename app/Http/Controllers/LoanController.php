@@ -1669,7 +1669,7 @@ class LoanController extends Controller
                 ];
             }
             
-            // GL Entry 2: Bank Account (Credit) - for disbursement
+            // GL Entry 2: Bank Account (Credit) - for net disbursement amount
             if ($bankChartAccountId && $bankAccount && $bankAccount->chartAccount) {
                 $glCredits[] = [
                     'account_name' => $bankAccount->name ?? 'Bank Account',
@@ -1708,6 +1708,30 @@ class LoanController extends Controller
             // Calculate totals
             $totalDebits = array_sum(array_column($glDebits, 'amount'));
             $totalCredits = array_sum(array_column($glCredits, 'amount'));
+            
+            // If there's a remaining balance, credit/debit the selected bank account to balance
+            $balanceDifference = $totalDebits - $totalCredits;
+            if (abs($balanceDifference) > 0.01 && $bankChartAccountId && $bankAccount && $bankAccount->chartAccount) {
+                if ($balanceDifference > 0) {
+                    // Need to credit more to balance
+                    $glCredits[] = [
+                        'account_name' => $bankAccount->name ?? 'Bank Account',
+                        'account_code' => $bankAccount->chartAccount->code ?? '',
+                        'amount' => round($balanceDifference, 2),
+                        'description' => 'Balance Adjustment'
+                    ];
+                    $totalCredits += $balanceDifference;
+                } else {
+                    // Need to debit more to balance
+                    $glDebits[] = [
+                        'account_name' => $bankAccount->name ?? 'Bank Account',
+                        'account_code' => $bankAccount->chartAccount->code ?? '',
+                        'amount' => round(abs($balanceDifference), 2),
+                        'description' => 'Balance Adjustment'
+                    ];
+                    $totalDebits += abs($balanceDifference);
+                }
+            }
             
             return response()->json([
                 'success' => true,
