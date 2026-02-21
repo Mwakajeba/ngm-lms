@@ -673,30 +673,30 @@ $isEdit = isset($loan);
         
         function displayLoanSummaryModal(summary, calculation, form) {
             const summaryHtml = `
-                <div class="loan-summary-modal" style="font-size: 11px; color: #000;">
+                <div class="loan-summary-modal">
                     <div class="row mb-3">
                         <div class="col-md-3">
                             <div class="text-center p-3 bg-light rounded">
-                                <h4 class="mb-1" style="font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.loan_amount)}</h4>
-                                <small style="font-size: 11px; color: #000;">Loan Amount</small>
+                                <h4 class="mb-1 text-primary">${formatCurrency(summary.loan_amount)}</h4>
+                                <small class="text-muted">Loan Amount</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center p-3 bg-light rounded">
-                                <h4 class="mb-1" style="font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.total_interest)}</h4>
-                                <small style="font-size: 11px; color: #000;">Total Interest</small>
+                                <h4 class="mb-1 text-success">${formatCurrency(summary.total_interest)}</h4>
+                                <small class="text-muted">Total Interest</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center p-3 bg-light rounded">
-                                <h4 class="mb-1" style="font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.total_fees)}</h4>
-                                <small style="font-size: 11px; color: #000;">Total Fees</small>
+                                <h4 class="mb-1 text-warning">${formatCurrency(summary.total_fees)}</h4>
+                                <small class="text-muted">Total Fees</small>
                             </div>
                         </div>
                         <div class="col-md-3">
                             <div class="text-center p-3 bg-light rounded">
-                                <h4 class="mb-1" style="font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.total_amount)}</h4>
-                                <small style="font-size: 11px; color: #000;">Total Amount</small>
+                                <h4 class="mb-1 text-danger">${formatCurrency(summary.total_amount)}</h4>
+                                <small class="text-muted">Total Amount</small>
                             </div>
                         </div>
                     </div>
@@ -705,16 +705,16 @@ $isEdit = isset($loan);
                         <div class="col-md-6">
                             <div class="card border-0 bg-primary text-white">
                                 <div class="card-body text-center">
-                                    <h3 class="mb-1" style="font-size: 11px; color: #fff; font-weight: bold;">${formatCurrency(summary.monthly_payment)}</h3>
-                                    <p class="mb-0" style="font-size: 11px;">${getPaymentLabel(summary.interest_cycle)}</p>
+                                    <h3 class="mb-1">${formatCurrency(summary.monthly_payment)}</h3>
+                                    <p class="mb-0">${getPaymentLabel(summary.interest_cycle)}</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-md-6">
                             <div class="card border-0 bg-info text-white">
                                 <div class="card-body text-center">
-                                    <h3 class="mb-1" style="font-size: 11px; color: #fff; font-weight: bold;">${summary.interest_rate.toFixed(2)}%</h3>
-                                    <p class="mb-0" style="font-size: 11px;">Interest Rate (${summary.interest_cycle})</p>
+                                    <h3 class="mb-1">${summary.interest_rate.toFixed(2)}%</h3>
+                                    <p class="mb-0">Interest Rate (${summary.interest_cycle})</p>
                                 </div>
                             </div>
                         </div>
@@ -724,8 +724,8 @@ $isEdit = isset($loan);
                         <div class="col-md-12">
                             <div class="card border-0 bg-success text-white">
                                 <div class="card-body text-center">
-                                    <h4 class="mb-1" style="font-size: 11px; color: #fff; font-weight: bold;">${formatCurrency(summary.net_disbursed)}</h4>
-                                    <p class="mb-0" style="font-size: 11px;"><strong>Net Amount to Disburse</strong> (After Release Date Fees)</p>
+                                    <h4 class="mb-1">${formatCurrency(summary.net_disbursed)}</h4>
+                                    <p class="mb-0"><strong>Net Amount to Disburse</strong> (After Release Date Fees)</p>
                                 </div>
                             </div>
                         </div>
@@ -733,26 +733,26 @@ $isEdit = isset($loan);
                     
                     ${summary.release_date_fees > 0 ? `
                         <div class="alert alert-info mb-3">
-                            <h6 style="font-size: 11px; color: #000; font-weight: bold;"><i class="bx bx-info-circle me-2"></i>Release Date Fees Breakdown:</h6>
-                            <table class="table table-sm table-bordered" style="font-size: 11px; color: #000;">
+                            <h6 class="mb-2"><i class="bx bx-info-circle me-2"></i>Release Date Fees Breakdown:</h6>
+                            <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: left; font-size: 11px; color: #000;">Fee Name</th>
-                                        <th style="text-align: left; font-size: 11px; color: #000;">Type</th>
-                                        <th style="text-align: right; font-size: 11px; color: #000;">Amount</th>
+                                        <th style="text-align: left;">Fee Name</th>
+                                        <th style="text-align: left;">Type</th>
+                                        <th style="text-align: right;">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${summary.release_fees_breakdown.map(fee => `
                                         <tr>
-                                            <td style="text-align: left; font-size: 11px; color: #000;">${fee.name}</td>
-                                            <td style="text-align: left; font-size: 11px; color: #000;">${fee.type}</td>
-                                            <td style="text-align: right; font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(fee.amount)}</td>
+                                            <td style="text-align: left;">${fee.name}</td>
+                                            <td style="text-align: left;">${fee.type}</td>
+                                            <td style="text-align: right; font-weight: bold;">${formatCurrency(fee.amount)}</td>
                                         </tr>
                                     `).join('')}
                                     <tr style="background-color: #f0f0f0;">
-                                        <td colspan="2" style="text-align: left; font-size: 11px; color: #000; font-weight: bold;">Total Release Fees:</td>
-                                        <td style="text-align: right; font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.release_date_fees)}</td>
+                                        <td colspan="2" style="text-align: left; font-weight: bold;">Total Release Fees:</td>
+                                        <td style="text-align: right; font-weight: bold;">${formatCurrency(summary.release_date_fees)}</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -761,22 +761,22 @@ $isEdit = isset($loan);
                     
                     ${summary.duplicate_fees && summary.duplicate_fees.length > 0 ? `
                         <div class="alert alert-warning mb-3">
-                            <h6 style="font-size: 11px; color: #856404; font-weight: bold;"><i class="bx bx-error-circle me-2"></i>Duplicate Fees Detected:</h6>
-                            <p style="font-size: 11px; color: #856404;">The following fees are charged on release date AND also included in the repayment schedule. This means they will be charged twice:</p>
-                            <table class="table table-sm table-bordered" style="font-size: 11px; color: #856404;">
+                            <h6 class="mb-2"><i class="bx bx-error-circle me-2"></i>Duplicate Fees Detected:</h6>
+                            <p>The following fees are charged on release date AND also included in the repayment schedule. This means they will be charged twice:</p>
+                            <table class="table table-bordered">
                                 <thead>
                                     <tr>
-                                        <th style="text-align: left; font-size: 11px; color: #856404;">Fee Name</th>
-                                        <th style="text-align: left; font-size: 11px; color: #856404;">Criteria</th>
-                                        <th style="text-align: right; font-size: 11px; color: #856404;">Amount</th>
+                                        <th style="text-align: left;">Fee Name</th>
+                                        <th style="text-align: left;">Criteria</th>
+                                        <th style="text-align: right;">Amount</th>
                                     </tr>
                                 </thead>
                                 <tbody>
                                     ${summary.duplicate_fees.map(fee => `
                                         <tr>
-                                            <td style="text-align: left; font-size: 11px; color: #856404;">${fee.name}</td>
-                                            <td style="text-align: left; font-size: 11px; color: #856404;">${fee.criteria}</td>
-                                            <td style="text-align: right; font-size: 11px; color: #856404; font-weight: bold;">${formatCurrency(fee.amount)}</td>
+                                            <td style="text-align: left;">${fee.name}</td>
+                                            <td style="text-align: left;">${fee.criteria}</td>
+                                            <td style="text-align: right; font-weight: bold;">${formatCurrency(fee.amount)}</td>
                                         </tr>
                                     `).join('')}
                                 </tbody>
@@ -786,75 +786,75 @@ $isEdit = isset($loan);
                     
                     ${summary.gl_summary ? `
                         <div class="alert alert-secondary mb-3">
-                            <h6 style="font-size: 11px; color: #000; font-weight: bold;"><i class="bx bx-book me-2"></i>GL Summary (General Ledger Entries):</h6>
+                            <h6 class="mb-3"><i class="bx bx-book me-2"></i>GL Summary (General Ledger Entries):</h6>
                             <div class="row">
                                 <div class="col-md-6">
-                                    <h6 style="font-size: 11px; color: #000; font-weight: bold; margin-bottom: 10px;">Debits:</h6>
-                                    <table class="table table-sm table-bordered" style="font-size: 11px; color: #000;">
+                                    <h6 class="mb-2 font-weight-bold">Debits:</h6>
+                                    <table class="table table-bordered">
                                         <thead>
                                             <tr>
-                                                <th style="text-align: left; font-size: 11px; color: #000;">Account</th>
-                                                <th style="text-align: right; font-size: 11px; color: #000;">Amount</th>
+                                                <th style="text-align: left;">Account</th>
+                                                <th style="text-align: right;">Amount</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             ${summary.gl_summary.debits && summary.gl_summary.debits.length > 0 ? summary.gl_summary.debits.map(entry => `
                                                 <tr>
-                                                    <td style="text-align: left; font-size: 11px; color: #000;">
+                                                    <td style="text-align: left;">
                                                         ${entry.account_code ? entry.account_code + ' - ' : ''}${entry.account_name}
-                                                        ${entry.description ? '<br><small style="color: #666;">' + entry.description + '</small>' : ''}
+                                                        ${entry.description ? '<br><small class="text-muted">' + entry.description + '</small>' : ''}
                                                     </td>
-                                                    <td style="text-align: right; font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(entry.amount)}</td>
+                                                    <td style="text-align: right; font-weight: bold;">${formatCurrency(entry.amount)}</td>
                                                 </tr>
-                                            `).join('') : '<tr><td colspan="2" style="text-align: center; font-size: 11px; color: #000;">No debits</td></tr>'}
-                                            <tr style="background-color: #f0f0f0;">
-                                                <td style="text-align: left; font-size: 11px; color: #000; font-weight: bold;">Total Debits:</td>
-                                                <td style="text-align: right; font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.gl_summary.total_debits)}</td>
+                                            `).join('') : '<tr><td colspan="2" class="text-center">No debits</td></tr>'}
+                                            <tr class="bg-light">
+                                                <td style="text-align: left; font-weight: bold;">Total Debits:</td>
+                                                <td style="text-align: right; font-weight: bold;">${formatCurrency(summary.gl_summary.total_debits)}</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
                                 <div class="col-md-6">
-                                    <h6 style="font-size: 11px; color: #000; font-weight: bold; margin-bottom: 10px;">Credits:</h6>
-                                    <table class="table table-sm table-bordered" style="font-size: 11px; color: #000;">
+                                    <h6 class="mb-2 font-weight-bold">Credits:</h6>
+                                    <table class="table table-bordered">
                                         <thead>
                                             <tr>
-                                                <th style="text-align: left; font-size: 11px; color: #000;">Account</th>
-                                                <th style="text-align: right; font-size: 11px; color: #000;">Amount</th>
+                                                <th style="text-align: left;">Account</th>
+                                                <th style="text-align: right;">Amount</th>
                                             </tr>
                                         </thead>
                                         <tbody>
                                             ${summary.gl_summary.credits && summary.gl_summary.credits.length > 0 ? summary.gl_summary.credits.map(entry => `
                                                 <tr>
-                                                    <td style="text-align: left; font-size: 11px; color: #000;">
+                                                    <td style="text-align: left;">
                                                         ${entry.account_code ? entry.account_code + ' - ' : ''}${entry.account_name}
-                                                        ${entry.description ? '<br><small style="color: #666;">' + entry.description + '</small>' : ''}
+                                                        ${entry.description ? '<br><small class="text-muted">' + entry.description + '</small>' : ''}
                                                     </td>
-                                                    <td style="text-align: right; font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(entry.amount)}</td>
+                                                    <td style="text-align: right; font-weight: bold;">${formatCurrency(entry.amount)}</td>
                                                 </tr>
-                                            `).join('') : '<tr><td colspan="2" style="text-align: center; font-size: 11px; color: #000;">No credits</td></tr>'}
-                                            <tr style="background-color: #f0f0f0;">
-                                                <td style="text-align: left; font-size: 11px; color: #000; font-weight: bold;">Total Credits:</td>
-                                                <td style="text-align: right; font-size: 11px; color: #000; font-weight: bold;">${formatCurrency(summary.gl_summary.total_credits)}</td>
+                                            `).join('') : '<tr><td colspan="2" class="text-center">No credits</td></tr>'}
+                                            <tr class="bg-light">
+                                                <td style="text-align: left; font-weight: bold;">Total Credits:</td>
+                                                <td style="text-align: right; font-weight: bold;">${formatCurrency(summary.gl_summary.total_credits)}</td>
                                             </tr>
                                         </tbody>
                                     </table>
                                 </div>
                             </div>
                             ${summary.gl_summary.total_debits !== summary.gl_summary.total_credits ? `
-                                <div class="alert alert-danger mt-2" style="font-size: 11px;">
+                                <div class="alert alert-danger mt-2">
                                     <strong>Warning:</strong> Debits (${formatCurrency(summary.gl_summary.total_debits)}) do not equal Credits (${formatCurrency(summary.gl_summary.total_credits)}). 
                                     Difference: ${formatCurrency(Math.abs(summary.gl_summary.total_debits - summary.gl_summary.total_credits))}
                                 </div>
                             ` : `
-                                <div class="alert alert-success mt-2" style="font-size: 11px;">
+                                <div class="alert alert-success mt-2">
                                     <strong>✓ Balanced:</strong> Total Debits = Total Credits = ${formatCurrency(summary.gl_summary.total_debits)}
                                 </div>
                             `}
                         </div>
                     ` : ''}
                     
-                    <div class="alert alert-warning" style="font-size: 11px; color: #856404;">
+                    <div class="alert alert-warning">
                         <i class="bx bx-info-circle me-2"></i>
                         <strong>Note:</strong> The net disbursed amount (${formatCurrency(summary.net_disbursed)}) is the actual amount that will be paid to the customer after deducting all fees charged on release date.
                     </div>
