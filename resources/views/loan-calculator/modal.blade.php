@@ -214,7 +214,7 @@ $(document).ready(function() {
                     <div class="card border-0 bg-primary text-white">
                         <div class="card-body text-center">
                             <h3 class="mb-1">${formatCurrency(totals.monthly_payment)}</h3>
-                            <p class="mb-0">Monthly Payment</p>
+                            <p class="mb-0" id="paymentLabel">${getPaymentLabel(summary.interest_cycle || 'monthly')}</p>
                         </div>
                     </div>
                 </div>
@@ -383,6 +383,19 @@ $(document).ready(function() {
     };
     
     // Utility functions
+    function getPaymentLabel(cycle) {
+        const labels = {
+            'daily': 'Daily Payment',
+            'weekly': 'Weekly Payment',
+            'bimonthly': 'Bi-monthly Payment',
+            'monthly': 'Monthly Payment',
+            'quarterly': 'Quarterly Payment',
+            'semi_annually': 'Semi-annual Payment',
+            'annually': 'Annual Payment'
+        };
+        return labels[cycle] || 'Monthly Payment';
+    }
+
     function formatCurrency(amount) {
         return new Intl.NumberFormat('en-TZ', {
             style: 'currency',
