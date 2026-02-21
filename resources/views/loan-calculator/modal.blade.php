@@ -219,7 +219,7 @@ $(document).ready(function() {
                 <div class="col-md-12">
                     <div class="card border-0 bg-success text-white">
                         <div class="card-body text-center">
-                            <h4 class="mb-1">${formatCurrency(totals.principal - totals.total_fees)}</h4>
+                            <h4 class="mb-1">${formatCurrency(totals.principal - (totals.release_date_fees || 0))}</h4>
                             <p class="mb-0">Net Amount After Fees (Disbursed)</p>
                         </div>
                     </div>
