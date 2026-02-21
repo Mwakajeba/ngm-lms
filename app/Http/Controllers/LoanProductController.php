@@ -60,6 +60,7 @@ class LoanProductController extends Controller
         $interestCycles = [
             'daily' => 'Daily',
             'weekly' => 'Weekly',
+            'bimonthly' => 'Bi-monthly',
             'monthly' => 'Monthly',
             'quarterly' => 'Quarterly',
             'semi_annually' => 'Semi Annually',
@@ -313,6 +314,7 @@ class LoanProductController extends Controller
         $interestCycles = [
             'daily' => 'Daily',
             'weekly' => 'Weekly',
+            'bimonthly' => 'Bi-monthly',
             'monthly' => 'Monthly',
             'quarterly' => 'Quarterly',
             'semi_annually' => 'Semi Annually',

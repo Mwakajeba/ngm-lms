@@ -77,12 +77,21 @@
             <label class="form-label">Interest Cycle <span class="text-danger">*</span></label>
             <select name="interest_cycle" class="form-select @error('interest_cycle') is-invalid @enderror" required>
                 <option value="">-- Select Interest Cycle --</option>
+                <!-- Base interest rate is stored as monthly, other cycles are converted during loan creation -->
+                <option value="monthly" {{ old('interest_cycle', $loanProduct->interest_cycle ?? 'monthly') == 'monthly' ? 'selected' : '' }}>
+                    Monthly
+                </option>
+                {{-- Other cycles are commented out as base rate is monthly
                 @foreach($interestCycles as $key => $value)
-                    <option value="{{ $key }}" {{ old('interest_cycle', $loanProduct->interest_cycle ?? '') == $key ? 'selected' : '' }}>
-                        {{ $value }}
-                    </option>
+                    @if($key !== 'monthly')
+                        <option value="{{ $key }}" {{ old('interest_cycle', $loanProduct->interest_cycle ?? '') == $key ? 'selected' : '' }}>
+                            {{ $value }}
+                        </option>
+                    @endif
                 @endforeach
+                --}}
             </select>
+            <small class="form-text text-muted">Base interest rate is stored as monthly. Other cycles (daily, weekly, quarterly, etc.) are converted during loan creation/application.</small>
             @error('interest_cycle') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
