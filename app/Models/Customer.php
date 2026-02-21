@@ -130,6 +130,18 @@ class Customer extends Model
         }
     }
 
+    // Mutator for customer name - convert to uppercase when saving
+    public function setNameAttribute($value)
+    {
+        $this->attributes['name'] = strtoupper(trim($value));
+    }
+
+    // Accessor for customer name - ensure it's always uppercase when retrieved
+    public function getNameAttribute($value)
+    {
+        return strtoupper($value ?? '');
+    }
+
     public function filetypes()
     {
         return $this->belongsToMany(Filetype::class, 'customer_file_types')
