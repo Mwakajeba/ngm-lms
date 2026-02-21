@@ -455,7 +455,7 @@ class Loan extends Model
         $disbursedOn = Carbon::parse($this->disbursed_on);
 
         // 1. Get first repayment date
-        switch ($cycle) {
+        switch (strtolower($cycle)) {
             case 'daily':
                 $first = $disbursedOn->copy()->addDay();
                 $last = $first->copy()->addDays($period - 1);
@@ -464,6 +464,11 @@ class Loan extends Model
             case 'weekly':
                 $first = $disbursedOn->copy()->addWeek();
                 $last = $first->copy()->addWeeks($period - 1);
+                break;
+
+            case 'bimonthly':
+                $first = $disbursedOn->copy()->addMonths(2);
+                $last = $first->copy()->addMonths(2 * ($period - 1));
                 break;
 
             case 'monthly':
@@ -511,6 +516,8 @@ class Loan extends Model
                 return 'addDay';
             case 'weekly':
                 return 'addWeek';
+            case 'bimonthly':
+                return 'addMonths';
             case 'monthly':
                 return 'addMonth';
             case 'quarterly':
@@ -536,6 +543,8 @@ class Loan extends Model
                 return $index;
             case 'weekly':
                 return $index;
+            case 'bimonthly':
+                return $index * 2; // 2 months per bi-monthly period
             case 'monthly':
                 return $index;
             case 'quarterly':
