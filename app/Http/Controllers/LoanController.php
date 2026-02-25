@@ -19,9 +19,11 @@ use App\Models\ChartAccount;
 use App\Models\Payment;
 use App\Models\PaymentItem;
 use App\Models\Penalty;
+use App\Models\Receipt;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
+use App\Services\LoanRestructuringService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
@@ -270,6 +272,7 @@ class LoanController extends Controller
             'rejected' => Loan::where('branch_id', $branchId)->where('status', 'rejected')->count(),
             'written_off' => Loan::where('branch_id', $branchId)->where('status', 'written_off')->count(),
             'completed' => Loan::where('branch_id', $branchId)->where('status', 'completed')->count(),
+            'restructured' => Loan::where('branch_id', $branchId)->where('status', 'restructured')->count(),
         ];
 
         // Data for opening balance modal
@@ -404,6 +407,10 @@ class LoanController extends Controller
                         case 'completed':
                             $badgeClass = 'bg-success';
                             $statusText = 'Completed';
+                            break;
+                        case 'restructured':
+                            $badgeClass = 'bg-info';
+                            $statusText = 'Restructured';
                             break;
                         default:
                             $badgeClass = 'bg-secondary';
@@ -1417,7 +1424,7 @@ class LoanController extends Controller
         $branchId = auth()->user()->branch_id;
 
         // Validate status
-        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected', 'completed'];
+        $validStatuses = ['applied', 'checked', 'approved', 'authorized', 'active', 'defaulted', 'rejected', 'completed', 'restructured'];
         if (!in_array($status, $validStatuses)) {
             return redirect()->route('loans.index')->withErrors(['Invalid loan status.']);
         }
@@ -1436,7 +1443,8 @@ class LoanController extends Controller
             'active' => 'Active Loans',
             'defaulted' => 'Defaulted Loans',
             'rejected' => 'Rejected Applications',
-            'completed' => 'Completed Loans'
+            'completed' => 'Completed Loans',
+            'restructured' => 'Restructured Loans'
         ];
 
         $pageTitle = $statusNames[$status] ?? ucfirst($status) . ' Loans';
@@ -2656,6 +2664,19 @@ class LoanController extends Controller
             'guarantors' // add this if not eager loaded already
         ])->findOrFail($decoded[0]);
 
+        // Load active receipts (loan repayment receipts only)
+        $activeReceipts = Receipt::where('reference', $loan->id)
+            ->whereIn('reference_type', ['loan_repayment', 'Repayment'])
+            ->with(['repayments', 'bankAccount', 'user'])
+            ->get();
+
+        // Load reversed receipts (soft-deleted)
+        $reversedReceipts = Receipt::onlyTrashed()
+            ->where('reference', $loan->id)
+            ->whereIn('reference_type', ['loan_repayment', 'Repayment'])
+            ->with(['repayments', 'bankAccount', 'user'])
+            ->get();
+
         // Get IDs of guarantors already attached to this loan
         $guarantorIdsAlreadyAdded = $loan->guarantors->pluck('id')->toArray();
 
@@ -2669,10 +2690,23 @@ class LoanController extends Controller
         // Get bank accounts for repayment modal
         $bankAccounts = BankAccount::all();
 
+        // Load active receipts (loan repayment receipts only)
+        $activeReceipts = Receipt::where('reference', $loan->id)
+            ->whereIn('reference_type', ['loan_repayment', 'Repayment'])
+            ->with(['repayments', 'bankAccount', 'user'])
+            ->get();
+
+        // Load reversed receipts (soft-deleted)
+        $reversedReceipts = Receipt::onlyTrashed()
+            ->where('reference', $loan->id)
+            ->whereIn('reference_type', ['loan_repayment', 'Repayment'])
+            ->with(['repayments', 'bankAccount', 'user'])
+            ->get();
+
         // Set the encoded ID for the loan object
         $loan->encodedId = $encodedId;
 
-        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts'));
+        return view('loans.show', compact('loan', 'guarantorCustomers', 'filetypes', 'bankAccounts', 'activeReceipts', 'reversedReceipts'));
     }
 
 
@@ -3740,6 +3774,124 @@ class LoanController extends Controller
 
         fclose($handle);
         exit;
+    }
+
+        /**
+     * Show loan restructuring form
+     */
+    public function restructure($encodedId)
+    {
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $loan = Loan::with(['customer', 'schedule.repayments'])->find($decoded[0]);
+        if (!$loan) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        // Calculate outstanding amounts
+        $schedules = $loan->schedule ?? collect();
+
+        // Outstanding Principal: Original loan amount - total paid principal
+        // This avoids rounding errors from summing schedule principal amounts
+        $paidPrincipal = $schedules->sum(function ($schedule) {
+            return $schedule->repayments->sum('principal');
+        });
+        $outstandingPrincipal = max(0, $loan->amount - $paidPrincipal);
+
+        // Outstanding Interest: Total interest from unpaid schedules - paid interest
+        $unpaidSchedules = $schedules->filter(function ($schedule) {
+            return !$schedule->is_fully_paid;
+        });
+        $totalInterest = $unpaidSchedules->sum('interest');
+        $paidInterest = $unpaidSchedules->sum(function ($schedule) {
+            return $schedule->repayments->sum('interest');
+        });
+        $outstandingInterest = max(0, $totalInterest - $paidInterest);
+
+        // Outstanding Penalty: Total penalty from all schedules - paid penalty
+        $totalPenalty = $schedules->sum('penalty_amount');
+        $paidPenalty = $schedules->sum(function ($schedule) {
+            return $schedule->repayments->sum('penalt_amount');
+        });
+        $outstandingPenalty = max(0, $totalPenalty - $paidPenalty);
+
+        $outstanding = [
+            'principal' => round($outstandingPrincipal, 2),
+            'interest' => round($outstandingInterest, 2),
+            'penalty' => round($outstandingPenalty, 2),
+        ];
+
+        // Set the encoded ID for the loan object
+        $loan->encodedId = $encodedId;
+
+        return view('loans.restructure', compact('loan', 'outstanding'));
+    }
+
+    /**
+     * Process loan restructuring
+     */
+    public function processRestructure(Request $request, $encodedId)
+    {
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        $loan = Loan::with(['customer', 'schedule.repayments', 'product'])->find($decoded[0]);
+        if (!$loan) {
+            return redirect()->route('loans.list')->withErrors(['Loan not found.']);
+        }
+
+        // Store old values for logging
+        $oldPeriod = $loan->period;
+        $oldInterestRate = $loan->interest;
+
+        $request->validate([
+            'new_tenure' => 'required|integer|min:1',
+            'new_interest_rate' => 'required|numeric|min:0|max:100',
+            'new_start_date' => 'required|date',
+            'penalty_waived' => 'nullable|boolean',
+        ]);
+
+        try {
+            $restructuringService = new LoanRestructuringService();
+
+            $params = [
+                'new_tenure' => $request->new_tenure,
+                'new_interest_rate' => $request->new_interest_rate,
+                'new_start_date' => $request->new_start_date,
+                'penalty_waived' => $request->has('penalty_waived') && $request->penalty_waived,
+            ];
+
+            $userId = auth()->id() ?? 1;
+
+            // Use the service to restructure the loan
+            $restructuredLoan = $restructuringService->restructure($loan, $params, $userId);
+
+            Log::info('Loan restructured via service', [
+                'loan_id' => $restructuredLoan->id,
+                'old_period' => $oldPeriod,
+                'new_period' => $request->new_tenure,
+                'old_interest_rate' => $oldInterestRate,
+                'new_interest_rate' => $request->new_interest_rate,
+                'penalty_waived' => $params['penalty_waived'],
+            ]);
+
+            return redirect()->route('loans.show', Hashids::encode($restructuredLoan->id))
+                ->with('success', 'Loan restructured successfully. A new loan has been created with the restructured terms.');
+        } catch (\Exception $e) {
+            Log::error('Loan restructuring failed: ' . $e->getMessage(), [
+                'loan_id' => $loan->id,
+                'error' => $e->getTraceAsString(),
+            ]);
+
+            return redirect()->back()
+                ->withErrors(['error' => 'Failed to restructure loan: ' . $e->getMessage()])
+                ->withInput();
+        }
     }
 
     /**

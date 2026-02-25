@@ -5,15 +5,17 @@ namespace App\Models;
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Repayment extends Model
 {
-    use HasFactory, LogsActivity;
+    use HasFactory, LogsActivity, SoftDeletes;
     protected $table = 'repayments';
     protected $fillable = [
         'customer_id',
         'loan_id',
         'loan_schedule_id',
+        'receipt_id',
         'bank_account_id',
         'principal',
         'interest',
@@ -57,7 +59,7 @@ class Repayment extends Model
 
     public function receipt()
     {
-        return $this->hasOne(Receipt::class, 'reference_number', 'id');
+        return $this->belongsTo(Receipt::class);
     }
 
     /***********

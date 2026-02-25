@@ -979,6 +979,8 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loans/{loan}/guarantors', [LoanController::class, 'addGuarantor'])->name('loans.addGuarantor');
     Route::delete('/loans/{loan}/guarantors/{guarantor}', [LoanController::class, 'removeGuarantor'])->name('loans.removeGuarantor');
     Route::get('/loans/{encodedId}/export-details', [LoanController::class, 'exportLoanDetails'])->name('loans.export-details');
+    Route::get('/loans/{encodedId}/restructure', [LoanController::class, 'restructure'])->name('loans.restructure');
+    Route::post('/loans/{encodedId}/restructure/process', [LoanController::class, 'processRestructure'])->name('loans.restructure.process');
 
     // Loan Collateral Routes
     Route::post('/loan-collaterals', [LoanCollateralController::class, 'store'])->name('loan-collaterals.store');
@@ -1003,6 +1005,13 @@ Route::middleware(['auth'])->group(function () {
     Route::put('/repayments/{id}', [LoanRepaymentController::class, 'update'])->name('repayments.update');
     Route::delete('/repayments/{id}', [LoanRepaymentController::class, 'destroy'])->name('repayments.destroy');
     Route::get('/repayments/{id}/print', [LoanRepaymentController::class, 'printReceipt'])->name('repayments.print');
+
+    // Receipt Management Routes
+    Route::delete('/repayments/receipt/{receipt}', [LoanRepaymentController::class, 'reverseReceipt'])->name('repayments.receipt.reverse');
+    Route::post('/repayments/receipts/bulk-delete', [LoanRepaymentController::class, 'bulkReverseReceipts'])->name('repayments.receipts.bulk-reverse');
+    Route::post('/repayments/receipt/{id}/restore', [LoanRepaymentController::class, 'restoreReceipt'])->name('repayments.receipt.restore');
+    Route::delete('/repayments/receipt/{id}/permanent', [LoanRepaymentController::class, 'permanentlyDeleteReceipt'])->name('repayments.receipt.permanent-delete');
+    Route::post('/repayments/receipts/bulk-permanent-delete', [LoanRepaymentController::class, 'bulkPermanentlyDeleteReceipts'])->name('repayments.receipts.bulk-permanent-delete');
 });
 
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////

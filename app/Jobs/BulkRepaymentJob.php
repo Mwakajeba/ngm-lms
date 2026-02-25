@@ -162,6 +162,7 @@ class BulkRepaymentJob implements ShouldQueue
     private function getUnpaidSchedules($loan)
     {
         return $loan->schedule()
+            ->where('status', '!=', 'restructured') // Exclude restructured schedules
             ->whereRaw('(
                 SELECT COALESCE(SUM(principal), 0) + COALESCE(SUM(interest), 0) + COALESCE(SUM(fee_amount), 0) + COALESCE(SUM(penalt_amount), 0)
                 FROM repayments

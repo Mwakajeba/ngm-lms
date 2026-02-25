@@ -216,6 +216,25 @@
                                         </div>
                                     </div>
                                 @endcan
+                                @can('view loans')
+                                    <!-- Restructured Loans -->
+                                    <div class="col-md-6 col-lg-4 mb-4">
+                                        <div class="card border-info position-relative">
+                                            <span
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">{{ $stats['restructured'] ?? 0 }}</span>
+                                            <div class="card-body text-center">
+                                                <div class="mb-3">
+                                                    <i class="bx bx-refresh fs-1 text-info"></i>
+                                                </div>
+                                                <h5 class="card-title">Restructured Loans</h5>
+                                                <p class="card-text">Manage all restructured loans.</p>
+                                                <a href="{{ route('loans.by-status', 'restructured') }}" class="btn btn-info position-relative">
+                                                    <i class="bx bx-refresh me-1"></i> View Loans
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endcan
                             </div>
                         </div>
                     </div>

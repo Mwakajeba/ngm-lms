@@ -488,6 +488,190 @@ class LoanRepaymentController extends Controller
     }
 
     /**
+     * Reverse a receipt (single)
+     */
+    public function reverseReceipt(Receipt $receipt)
+    {
+        try {
+            $result = $this->repaymentService->reverseReceipt($receipt);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $result['message']
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to reverse receipt', [
+                'receipt_id' => $receipt->id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Bulk reverse receipts
+     */
+    public function bulkReverseReceipts(Request $request)
+    {
+        $request->validate([
+            'receipt_ids' => 'required|array',
+            'receipt_ids.*' => 'required|integer|exists:receipts,id'
+        ]);
+
+        try {
+            $receiptIds = $request->receipt_ids;
+            $receipts = Receipt::whereIn('id', $receiptIds)
+                ->whereIn('reference_type', ['loan_repayment', 'Repayment'])
+                ->get();
+
+            $successCount = 0;
+            $errors = [];
+
+            foreach ($receipts as $receipt) {
+                try {
+                    $this->repaymentService->reverseReceipt($receipt);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'receipt_id' => $receipt->id,
+                        'error' => $e->getMessage()
+                    ];
+                    Log::error('Failed to reverse receipt in bulk', [
+                        'receipt_id' => $receipt->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Reversed {$successCount} receipt(s) successfully",
+                'count' => $successCount,
+                'errors' => $errors
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Bulk reverse receipts error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process bulk reverse: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Restore a reversed receipt
+     */
+    public function restoreReceipt($id)
+    {
+        try {
+            $receipt = Receipt::withTrashed()->findOrFail($id);
+            $result = $this->repaymentService->restoreReversedReceipt($receipt);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $result['message']
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to restore receipt', [
+                'receipt_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Permanently delete a receipt
+     */
+    public function permanentlyDeleteReceipt($id)
+    {
+        try {
+            $receipt = Receipt::withTrashed()->findOrFail($id);
+            $result = $this->repaymentService->permanentlyDeleteReceipt($receipt);
+            
+            return response()->json([
+                'success' => true,
+                'message' => $result['message']
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to permanently delete receipt', [
+                'receipt_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage()
+            ], 422);
+        }
+    }
+
+    /**
+     * Bulk permanently delete receipts
+     */
+    public function bulkPermanentlyDeleteReceipts(Request $request)
+    {
+        $request->validate([
+            'receipt_ids' => 'required|array',
+            'receipt_ids.*' => 'required|integer'
+        ]);
+
+        try {
+            $receiptIds = $request->receipt_ids;
+            $receipts = Receipt::withTrashed()
+                ->whereIn('id', $receiptIds)
+                ->whereIn('reference_type', ['loan_repayment', 'Repayment'])
+                ->get();
+
+            $successCount = 0;
+            $errors = [];
+
+            foreach ($receipts as $receipt) {
+                try {
+                    $this->repaymentService->permanentlyDeleteReceipt($receipt);
+                    $successCount++;
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'receipt_id' => $receipt->id,
+                        'error' => $e->getMessage()
+                    ];
+                    Log::error('Failed to permanently delete receipt in bulk', [
+                        'receipt_id' => $receipt->id,
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => "Permanently deleted {$successCount} receipt(s)",
+                'count' => $successCount,
+                'errors' => $errors
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Bulk permanent delete receipts error', [
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to process bulk permanent delete: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
      * Print receipt for repayment
      */
     public function printReceipt($id)

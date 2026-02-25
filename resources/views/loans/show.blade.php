@@ -32,6 +32,13 @@
                             class="btn btn-success"><i class="bx bx-plus-circle me-2"></i> Loan Fees Receipt</a>
 
                         @if($loan->status === 'active' || $loan->status === 'disbursed')
+                            <a href="{{ route('loans.restructure', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
+                                class="btn btn-primary">
+                                <i class="bx bx-refresh me-2"></i>Loan Restructure
+                            </a>
+                        @endif
+
+                        @if($loan->status === 'active' || $loan->status === 'disbursed')
                             <button type="button" class="btn btn-warning" onclick="showSettleLoanModal()">
                                 <i class="bx bx-check-circle me-2"></i>Settle Loan
                             </button>
@@ -119,7 +126,7 @@
             </div>
 
             <!-- Arrears Information Card -->
-            @if($loan->is_in_arrears)
+            @if($loan->is_in_arrears && $loan->status !== 'restructured')
                 <div class="card shadow-sm border-0 mb-4 border-start border-danger border-4">
                     <div class="card-body">
                         <div class="row g-3">
@@ -262,6 +269,11 @@
                 <li class="nav-item" role="presentation">
                     <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#repayments" role="tab">
                         <i class="bx bx-credit-card me-2 font-18"></i>Repayments
+                    </a>
+                </li>
+                <li class="nav-item" role="presentation">
+                    <a class="nav-link d-flex align-items-center" data-bs-toggle="tab" href="#receipts" role="tab">
+                        <i class="bx bx-receipt me-2 font-18"></i>Receipts
                     </a>
                 </li>
                 <li class="nav-item" role="presentation">
@@ -668,7 +680,9 @@
                                                     <td class="text-end pe-4 text-danger">{{ number_format($remainingAmount, 2) }}
                                                     </td>
                                                     <td class="text-center">
-                                                        @if($isFullyPaid)
+                                                        @if($item->status === 'restructured')
+                                                            <span class="badge bg-info">Restructured</span>
+                                                        @elseif($isFullyPaid)
                                                             <span class="badge bg-success">Paid</span>
                                                         @elseif($paidAmount > 0)
                                                             <span class="badge bg-warning text-dark">{{ $paymentPercentage }}%</span>
@@ -677,7 +691,11 @@
                                                         @endif
                                                     </td>
                                                     <td class="text-center">
-                                                        @if($isFullyPaid || $completed)
+                                                        @if($item->status === 'restructured')
+                                                            <button type="button" class="btn btn-sm btn-secondary" disabled>
+                                                                <i class="bx bx-refresh me-1"></i>Restructured
+                                                            </button>
+                                                        @elseif($isFullyPaid || $completed)
                                                             <button type="button" class="btn btn-sm btn-success" disabled>
                                                                 <i class="bx bx-check-circle me-1"></i>Paid
                                                             </button>
@@ -989,6 +1007,167 @@
                             <p class="text-secondary">Click the button above to add the first repayment.</p>
                         </div>
                     @endif
+                </div>
+
+                <div class="tab-pane fade" id="receipts" role="tabpanel">
+                    <!-- Sub-tabs for Receipts and Reversed Receipts History -->
+                    <ul class="nav nav-tabs mb-3" role="tablist">
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link active" data-bs-toggle="tab" href="#active-receipts" role="tab">
+                                <i class="bx bx-receipt me-2"></i>Receipts
+                            </a>
+                        </li>
+                        <li class="nav-item" role="presentation">
+                            <a class="nav-link" data-bs-toggle="tab" href="#reversed-receipts" role="tab">
+                                <i class="bx bx-history me-2"></i>Reversed Receipts History
+                            </a>
+                        </li>
+                    </ul>
+
+                    <div class="tab-content">
+                        <!-- Active Receipts Tab -->
+                        <div class="tab-pane fade show active" id="active-receipts" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0 text-dark">Receipts</h5>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-warning d-flex align-items-center" id="bulkReverseReceiptsBtn" disabled>
+                                        <i class="bx bx-undo me-2 font-18"></i>Bulk Reverse
+                                    </button>
+                                    <button type="button" class="btn btn-danger d-flex align-items-center" id="bulkDeleteReceiptsBtn" disabled>
+                                        <i class="bx bx-trash me-2 font-18"></i>Bulk Delete
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if($activeReceipts && $activeReceipts->count())
+                                <div class="card radius-10">
+                                    <div class="card-header bg-primary text-white">
+                                        <h6 class="mb-0"><i class="bx bx-receipt me-2"></i>RECEIPTS</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th class="text-center" style="width:32px;"><input type="checkbox" id="select_all_receipts"></th>
+                                                        <th>#</th>
+                                                        <th>Receipt #</th>
+                                                        <th>Amount</th>
+                                                        <th>Description</th>
+                                                        <th>Date</th>
+                                                        <th>Payee</th>
+                                                        <th>Received By</th>
+                                                        <th class="text-center">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($activeReceipts->sortByDesc('date') as $index => $receipt)
+                                                        <tr>
+                                                            <td class="text-center"><input type="checkbox" class="receipt-select" value="{{ $receipt->id }}"></td>
+                                                            <th scope="row" class="ps-4">{{ $index + 1 }}</th>
+                                                            <td>#{{ $receipt->id }}</td>
+                                                            <td class="text-success fw-bold">TZS {{ number_format($receipt->amount, 2) }}</td>
+                                                            <td>{{ $receipt->description ?? 'N/A' }}</td>
+                                                            <td>{{ \Carbon\Carbon::parse($receipt->date)->format('M d, Y') }}</td>
+                                                            <td>{{ $receipt->payee_display_name ?? 'N/A' }}</td>
+                                                            <td>{{ $receipt->user->name ?? 'N/A' }}</td>
+                                                            <td class="text-center">
+                                                                <div class="btn-group">
+                                                                    <button type="button" class="btn btn-sm btn-info" onclick="printReceiptDocument({{ $receipt->id }})" title="Print">
+                                                                        <i class="bx bx-printer"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-sm btn-warning" onclick="reverseReceipt({{ $receipt->id }})" title="Reverse">
+                                                                        <i class="bx bx-undo"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-sm btn-danger" onclick="permanentlyDeleteReceipt({{ $receipt->id }})" title="Permanent Delete">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="card card-body text-center p-5">
+                                    <h4 class="text-muted">No receipts recorded yet.</h4>
+                                </div>
+                            @endif
+                        </div>
+
+                        <!-- Reversed Receipts History Tab -->
+                        <div class="tab-pane fade" id="reversed-receipts" role="tabpanel">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <h5 class="mb-0 text-dark">Reversed Receipts History</h5>
+                                <div class="d-flex gap-2">
+                                    <button type="button" class="btn btn-danger d-flex align-items-center" id="bulkPermanentDeleteReceiptsBtn" disabled>
+                                        <i class="bx bx-trash me-2 font-18"></i>Bulk Permanent Delete
+                                    </button>
+                                </div>
+                            </div>
+
+                            @if($reversedReceipts && $reversedReceipts->count())
+                                <div class="card radius-10">
+                                    <div class="card-header bg-secondary text-white">
+                                        <h6 class="mb-0"><i class="bx bx-history me-2"></i>REVERSED RECEIPTS</h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="table-responsive">
+                                            <table class="table table-bordered table-striped mb-0">
+                                                <thead class="bg-light">
+                                                    <tr>
+                                                        <th class="text-center" style="width:32px;"><input type="checkbox" id="select_all_reversed_receipts"></th>
+                                                        <th>#</th>
+                                                        <th>Receipt #</th>
+                                                        <th>Amount</th>
+                                                        <th>Description</th>
+                                                        <th>Date</th>
+                                                        <th>Payee</th>
+                                                        <th>Received By</th>
+                                                        <th>Reversed At</th>
+                                                        <th class="text-center">Actions</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @foreach($reversedReceipts->sortByDesc('deleted_at') as $index => $receipt)
+                                                        <tr>
+                                                            <td class="text-center"><input type="checkbox" class="reversed-receipt-select" value="{{ $receipt->id }}"></td>
+                                                            <th scope="row" class="ps-4">{{ $index + 1 }}</th>
+                                                            <td>#{{ $receipt->id }}</td>
+                                                            <td class="text-muted fw-bold">TZS {{ number_format($receipt->amount, 2) }}</td>
+                                                            <td>{{ $receipt->description ?? 'N/A' }}</td>
+                                                            <td>{{ \Carbon\Carbon::parse($receipt->date)->format('M d, Y') }}</td>
+                                                            <td>{{ $receipt->payee_display_name ?? 'N/A' }}</td>
+                                                            <td>{{ $receipt->user->name ?? 'N/A' }}</td>
+                                                            <td>{{ \Carbon\Carbon::parse($receipt->deleted_at)->format('M d, Y H:i') }}</td>
+                                                            <td class="text-center">
+                                                                <div class="btn-group">
+                                                                    <button type="button" class="btn btn-sm btn-success" onclick="restoreReceipt({{ $receipt->id }})" title="Restore">
+                                                                        <i class="bx bx-refresh"></i>
+                                                                    </button>
+                                                                    <button type="button" class="btn btn-sm btn-danger" onclick="permanentlyDeleteReceipt({{ $receipt->id }})" title="Permanent Delete">
+                                                                        <i class="bx bx-trash"></i>
+                                                                    </button>
+                                                                </div>
+                                                            </td>
+                                                        </tr>
+                                                    @endforeach
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            @else
+                                <div class="card card-body text-center p-5">
+                                    <h4 class="text-muted">No reversed receipts.</h4>
+                                    <p class="text-secondary">Receipts you reverse will appear here and can be restored.</p>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
                 </div>
 
                 <div class="tab-pane fade" id="collaterals" role="tabpanel">
@@ -4312,6 +4491,299 @@
                 }
             });
         }
+
+        // Receipt Management Functions
+        function reverseReceipt(receiptId) {
+            Swal.fire({
+                title: 'Reverse Receipt?',
+                text: 'Receipt will be moved to Reversed Receipts History. You can restore it later.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#ffc107',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Reverse',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/repayments/receipt/${receiptId}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Reversed', data.message || 'Receipt reversed successfully', 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to reverse receipt', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Error', 'Failed to reverse receipt', 'error');
+                    });
+                }
+            });
+        }
+
+        function restoreReceipt(receiptId) {
+            Swal.fire({
+                title: 'Restore Receipt?',
+                text: 'This receipt will be moved back to the Receipts tab.',
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#28a745',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Restore',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/repayments/receipt/${receiptId}/restore`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Restored', data.message || 'Receipt restored successfully', 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to restore receipt', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Error', 'Failed to restore receipt', 'error');
+                    });
+                }
+            });
+        }
+
+        function permanentlyDeleteReceipt(receiptId) {
+            Swal.fire({
+                title: 'Permanently Delete Receipt?',
+                text: 'This will delete the receipt and all related data. This cannot be undone.',
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#dc3545',
+                cancelButtonColor: '#6c757d',
+                confirmButtonText: 'Yes, Delete Permanently',
+                cancelButtonText: 'Cancel',
+                dangerMode: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    fetch(`/repayments/receipt/${receiptId}/permanent`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': getCsrfToken()
+                        }
+                    })
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.success) {
+                            Swal.fire('Deleted', data.message || 'Receipt permanently deleted', 'success').then(() => location.reload());
+                        } else {
+                            Swal.fire('Error', data.message || 'Failed to delete receipt', 'error');
+                        }
+                    })
+                    .catch(error => {
+                        Swal.fire('Error', 'Failed to delete receipt', 'error');
+                    });
+                }
+            });
+        }
+
+        function printReceiptDocument(receiptId) {
+            // Note: This may need to be adjusted based on your actual receipt print route
+            // For now, using the repayment print route as receipts are linked to repayments
+            window.open(`/repayments/${receiptId}/print`, '_blank');
+        }
+
+        // Bulk Receipt Operations
+        function getSelectedReceiptIds(selector) {
+            const checkboxes = document.querySelectorAll(`${selector}:checked`);
+            return Array.from(checkboxes).map(cb => parseInt(cb.value));
+        }
+
+        function toggleBulkButtons(selector, buttonIds) {
+            const selected = getSelectedReceiptIds(selector);
+            buttonIds.forEach(btnId => {
+                const btn = document.getElementById(btnId);
+                if (btn) {
+                    btn.disabled = selected.length === 0;
+                }
+            });
+        }
+
+        // Active Receipts Checkbox Handlers
+        document.addEventListener('DOMContentLoaded', function() {
+            const selectAllReceipts = document.getElementById('select_all_receipts');
+            const receiptCheckboxes = document.querySelectorAll('.receipt-select');
+            const bulkReverseBtn = document.getElementById('bulkReverseReceiptsBtn');
+            const bulkDeleteBtn = document.getElementById('bulkDeleteReceiptsBtn');
+
+            if (selectAllReceipts) {
+                selectAllReceipts.addEventListener('change', function() {
+                    receiptCheckboxes.forEach(cb => cb.checked = this.checked);
+                    toggleBulkButtons('.receipt-select', ['bulkReverseReceiptsBtn', 'bulkDeleteReceiptsBtn']);
+                });
+            }
+
+            receiptCheckboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    if (selectAllReceipts) {
+                        selectAllReceipts.checked = Array.from(receiptCheckboxes).every(c => c.checked);
+                    }
+                    toggleBulkButtons('.receipt-select', ['bulkReverseReceiptsBtn', 'bulkDeleteReceiptsBtn']);
+                });
+            });
+
+            if (bulkReverseBtn) {
+                bulkReverseBtn.addEventListener('click', function() {
+                    const ids = getSelectedReceiptIds('.receipt-select');
+                    if (ids.length === 0) return;
+
+                    Swal.fire({
+                        title: 'Bulk Reverse Receipts?',
+                        text: `You are about to reverse ${ids.length} receipt(s). They will be moved to Reversed Receipts History.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#ffc107',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, Reverse All',
+                        cancelButtonText: 'Cancel'
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('/repayments/receipts/bulk-delete', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': getCsrfToken()
+                                },
+                                body: JSON.stringify({ receipt_ids: ids })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Reversed', data.message || `Reversed ${data.count} receipt(s)`, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to reverse receipts', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire('Error', 'Failed to reverse receipts', 'error');
+                            });
+                        }
+                    });
+                });
+            }
+
+            if (bulkDeleteBtn) {
+                bulkDeleteBtn.addEventListener('click', function() {
+                    const ids = getSelectedReceiptIds('.receipt-select');
+                    if (ids.length === 0) return;
+
+                    Swal.fire({
+                        title: 'Permanently Delete Receipts?',
+                        text: `You are about to permanently delete ${ids.length} receipt(s). This cannot be undone.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, Delete All',
+                        cancelButtonText: 'Cancel',
+                        dangerMode: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('/repayments/receipts/bulk-permanent-delete', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': getCsrfToken()
+                                },
+                                body: JSON.stringify({ receipt_ids: ids })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Deleted', data.message || `Deleted ${data.count} receipt(s)`, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to delete receipts', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire('Error', 'Failed to delete receipts', 'error');
+                            });
+                        }
+                    });
+                });
+            }
+
+            // Reversed Receipts Checkbox Handlers
+            const selectAllReversedReceipts = document.getElementById('select_all_reversed_receipts');
+            const reversedReceiptCheckboxes = document.querySelectorAll('.reversed-receipt-select');
+            const bulkPermanentDeleteBtn = document.getElementById('bulkPermanentDeleteReceiptsBtn');
+
+            if (selectAllReversedReceipts) {
+                selectAllReversedReceipts.addEventListener('change', function() {
+                    reversedReceiptCheckboxes.forEach(cb => cb.checked = this.checked);
+                    toggleBulkButtons('.reversed-receipt-select', ['bulkPermanentDeleteReceiptsBtn']);
+                });
+            }
+
+            reversedReceiptCheckboxes.forEach(cb => {
+                cb.addEventListener('change', function() {
+                    if (selectAllReversedReceipts) {
+                        selectAllReversedReceipts.checked = Array.from(reversedReceiptCheckboxes).every(c => c.checked);
+                    }
+                    toggleBulkButtons('.reversed-receipt-select', ['bulkPermanentDeleteReceiptsBtn']);
+                });
+            });
+
+            if (bulkPermanentDeleteBtn) {
+                bulkPermanentDeleteBtn.addEventListener('click', function() {
+                    const ids = getSelectedReceiptIds('.reversed-receipt-select');
+                    if (ids.length === 0) return;
+
+                    Swal.fire({
+                        title: 'Permanently Delete Receipts?',
+                        text: `You are about to permanently delete ${ids.length} receipt(s). This cannot be undone.`,
+                        icon: 'warning',
+                        showCancelButton: true,
+                        confirmButtonColor: '#dc3545',
+                        cancelButtonColor: '#6c757d',
+                        confirmButtonText: 'Yes, Delete All',
+                        cancelButtonText: 'Cancel',
+                        dangerMode: true
+                    }).then((result) => {
+                        if (result.isConfirmed) {
+                            fetch('/repayments/receipts/bulk-permanent-delete', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': getCsrfToken()
+                                },
+                                body: JSON.stringify({ receipt_ids: ids })
+                            })
+                            .then(response => response.json())
+                            .then(data => {
+                                if (data.success) {
+                                    Swal.fire('Deleted', data.message || `Deleted ${data.count} receipt(s)`, 'success').then(() => location.reload());
+                                } else {
+                                    Swal.fire('Error', data.message || 'Failed to delete receipts', 'error');
+                                }
+                            })
+                            .catch(error => {
+                                Swal.fire('Error', 'Failed to delete receipts', 'error');
+                            });
+                        }
+                    });
+                });
+            }
+        });
 
     </script>
 @endpush
