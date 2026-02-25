@@ -791,10 +791,20 @@ class Loan extends Model
      */
     public function getArrearsAmountAttribute()
     {
+        // Restructured loans should not show arrears
+        if ($this->status === 'restructured') {
+            return 0;
+        }
+
         $today = Carbon::now();
         $totalArrears = 0;
 
         foreach ($this->schedule as $scheduleItem) {
+            // Exclude restructured schedules from arrears calculation
+            if ($scheduleItem->status === 'restructured') {
+                continue;
+            }
+
             $dueDate = Carbon::parse($scheduleItem->due_date);
 
             // If the due date has passed and there's a remaining amount
@@ -811,10 +821,20 @@ class Loan extends Model
      */
     public function getDaysInArrearsAttribute()
     {
+        // Restructured loans should not show arrears
+        if ($this->status === 'restructured') {
+            return 0;
+        }
+
         $today = Carbon::now();
         $firstOverdueDate = null;
 
         foreach ($this->schedule->sortBy('due_date') as $scheduleItem) {
+            // Exclude restructured schedules from arrears calculation
+            if ($scheduleItem->status === 'restructured') {
+                continue;
+            }
+
             $dueDate = Carbon::parse($scheduleItem->due_date);
 
             // If the due date has passed and there's a remaining amount
