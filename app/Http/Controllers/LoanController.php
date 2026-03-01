@@ -24,11 +24,13 @@ use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
 use App\Services\LoanRestructuringService;
+use App\Jobs\BulkLoanImportJob;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Cache;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Exports\FailedLoanImportExport;
+use App\Exports\LoanImportTemplateExport;
 use PhpOffice\PhpSpreadsheet\IOFactory;
 use PhpOffice\PhpSpreadsheet\Shared\Date as ExcelDate;
 use Vinkla\Hashids\Facades\Hashids;
@@ -646,49 +648,180 @@ class LoanController extends Controller
             }
 
             $extension = strtolower($file->getClientOriginalExtension());
+            $data = [];
+            $header = [];
+
+            // Read file based on extension
             if (in_array($extension, ['xlsx', 'xls'])) {
+                // Read Excel file
                 $spreadsheet = IOFactory::load($path);
-                $sheet = $spreadsheet->getActiveSheet();
-                $rows = $sheet->toArray(null, true, true, false);
-                $data = $rows;
+                $worksheet = $spreadsheet->getActiveSheet();
+                $rows = $worksheet->toArray();
+                
+                if (empty($rows)) {
+                    return redirect()->back()->withErrors([
+                        'import_file' => 'Excel file is empty.'
+                    ]);
+                }
+                
+                // Find header row (skip instruction rows)
+                $headerRowIndex = 0;
+                
+                // Look for header row - it should contain at least 'customer_no' and 'amount'
+                for ($i = 0; $i < min(20, count($rows)); $i++) {
+                    $potentialHeader = array_map(function($cell) {
+                        $value = is_null($cell) ? '' : (string)$cell;
+                        return strtolower(trim($value));
+                    }, $rows[$i]);
+                    
+                    // Skip rows that are clearly not headers
+                    $nonEmptyCells = array_filter($potentialHeader, function($val) {
+                        return !empty($val) && 
+                               !preg_match('/^(instruction|note|delete|fill|use|template|loan import)/i', $val);
+                    });
+                    
+                    if (count($nonEmptyCells) < 4) {
+                        continue;
+                    }
+                    
+                    // Normalize column names
+                    $normalizedHeader = array_map(function($col) {
+                        $col = strtolower(trim($col));
+                        $col = preg_replace('/\s+/', '', $col);
+                        $col = preg_replace('/[^a-z0-9_]/', '', $col);
+                        
+                        $variations = [
+                            'customer_no' => ['customerno', 'customer_no', 'customernumber', 'customer_number'],
+                            'customer_name' => ['customername', 'customer_name', 'name'],
+                            'amount' => ['amount', 'loanamount', 'loan_amount'],
+                            'period' => ['period', 'tenure', 'duration'],
+                            'interest' => ['interest', 'interestrate', 'interest_rate'],
+                            'date_applied' => ['dateapplied', 'date_applied', 'applieddate', 'applicationdate'],
+                            'interest_cycle' => ['interestcycle', 'interest_cycle', 'cycle'],
+                            'loan_officer' => ['loanofficer', 'loan_officer', 'loanofficer_id', 'loan_officer_id'],
+                            'group_id' => ['groupid', 'group_id', 'group'],
+                            'sector' => ['sector', 'businesssector'],
+                        ];
+                        
+                        foreach ($variations as $standard => $aliases) {
+                            if (in_array($col, $aliases)) {
+                                return $standard;
+                            }
+                        }
+                        return $col;
+                    }, $potentialHeader);
+                    
+                    // Check if this row contains required columns
+                    if (in_array('customer_no', $normalizedHeader) && in_array('amount', $normalizedHeader)) {
+                        $header = $normalizedHeader;
+                        $headerRowIndex = $i;
+                        break;
+                    }
+                }
+                
+                if (empty($header)) {
+                    return redirect()->back()->withErrors([
+                        'import_file' => 'Could not find header row. Please ensure the file has columns: customer_no, amount, period, interest, date_applied, interest_cycle, loan_officer, group_id, sector'
+                    ]);
+                }
+                
+                // Remove rows before header and the header row itself
+                $rows = array_slice($rows, $headerRowIndex + 1);
+                
+                // Convert rows to associative arrays
+                foreach ($rows as $row) {
+                    $rowData = [];
+                    foreach ($header as $index => $headerName) {
+                        $rowData[$headerName] = trim($row[$index] ?? '');
+                    }
+                    if (!empty(array_filter($rowData, function($val) { return $val !== ''; }))) {
+                        $data[] = $rowData;
+                    }
+                }
             } else {
-                $data = array_map('str_getcsv', file($path));
+                // Read CSV file
+                $csvData = array_map('str_getcsv', file($path));
+                
+                // Find header row
+                $headerRowIndex = 0;
+                
+                for ($i = 0; $i < min(10, count($csvData)); $i++) {
+                    $potentialHeader = array_map(function($cell) {
+                        return strtolower(trim($cell ?? ''));
+                    }, $csvData[$i]);
+                    
+                    // Normalize column names
+                    $normalizedHeader = array_map(function($col) {
+                        $col = strtolower(trim($col));
+                        $col = preg_replace('/\s+/', '', $col);
+                        $variations = [
+                            'customer_no' => ['customerno', 'customer_no', 'customernumber'],
+                            'customer_name' => ['customername', 'customer_name', 'name'],
+                            'amount' => ['amount', 'loanamount'],
+                            'period' => ['period', 'tenure'],
+                            'interest' => ['interest', 'interestrate'],
+                            'date_applied' => ['dateapplied', 'date_applied'],
+                            'interest_cycle' => ['interestcycle', 'interest_cycle'],
+                            'loan_officer' => ['loanofficer', 'loan_officer', 'loanofficer_id'],
+                            'group_id' => ['groupid', 'group_id'],
+                            'sector' => ['sector'],
+                        ];
+                        
+                        foreach ($variations as $standard => $aliases) {
+                            if (in_array($col, $aliases)) {
+                                return $standard;
+                            }
+                        }
+                        return $col;
+                    }, $potentialHeader);
+                    
+                    if (in_array('customer_no', $normalizedHeader) && in_array('amount', $normalizedHeader)) {
+                        $header = $normalizedHeader;
+                        $headerRowIndex = $i;
+                        break;
+                    }
+                }
+                
+                if (empty($header)) {
+                    return redirect()->back()->withErrors([
+                        'import_file' => 'Could not find header row. Please ensure the file has columns: customer_no, amount, period, interest, date_applied, interest_cycle, loan_officer, group_id, sector'
+                    ]);
+                }
+                
+                // Remove rows before header and the header row itself
+                $csvData = array_slice($csvData, $headerRowIndex + 1);
+                
+                // Convert rows to associative arrays
+                foreach ($csvData as $row) {
+                    if (count($row) >= count($header)) {
+                        $rowData = [];
+                        foreach ($header as $index => $headerName) {
+                            $rowData[$headerName] = trim($row[$index] ?? '');
+                        }
+                        if (!empty(array_filter($rowData, function($val) { return $val !== ''; }))) {
+                            $data[] = $rowData;
+                        }
+                    }
+                }
             }
 
             if (empty($data)) {
                 return redirect()->back()->withErrors([
-                    'import_file' => 'The CSV file is empty.'
+                    'import_file' => 'No data rows found in the file after header.'
                 ]);
             }
 
-            $header = array_shift($data);
-            $header = array_map(function ($h) {
-                return strtolower(trim((string) $h));
-            }, $header);
-
-            // Validate CSV header
-            $expectedHeaders = [
-                'customer_no',
-                'amount',
-                'period',
-                'interest',
-                'date_applied',
-                'interest_cycle',
-                'loan_officer',
-                'group_id',
-                'sector'
-            ];
-
-            $missingHeaders = array_diff($expectedHeaders, $header);
-            if (!empty($missingHeaders)) {
+            // Validate file structure
+            $requiredColumns = ['customer_no', 'amount', 'period', 'interest', 'date_applied', 'interest_cycle', 'loan_officer', 'group_id', 'sector'];
+            $missingColumns = array_diff($requiredColumns, $header);
+            
+            if (!empty($missingColumns)) {
+                $foundColumns = implode(', ', array_keys(array_intersect_key($header, array_flip($requiredColumns))));
+                $allFoundColumns = implode(', ', array_keys($header));
                 return redirect()->back()->withErrors([
-                    'import_file' => 'CSV file is missing required columns: ' . implode(', ', $missingHeaders)
-                ]);
-            }
-
-            if (empty($data)) {
-                return redirect()->back()->withErrors([
-                    'import_file' => 'No data rows found in the CSV file after header.'
+                    'import_file' => 'Missing required columns: ' . implode(', ', $missingColumns) . 
+                    '. Found columns: ' . ($allFoundColumns ?: 'none') . 
+                    '. Please ensure your file has the correct header row.'
                 ]);
             }
 
@@ -728,215 +861,48 @@ class LoanController extends Controller
             ]);
 
             $skipErrors = $request->has('skip_errors');
-            $importStartedAt = now();
-            $customerNameIndex = array_search('customer_name', $header, true);
+            
+            // Process data in chunks of 20 synchronously for immediate results
+            $chunkSize = 20;
+            $chunks = array_chunk($data, $chunkSize);
+            $totalChunks = count($chunks);
+            
+            $successCount = 0;
+            $errorCount = 0;
+            $skippedCount = 0;
+            $errors = [];
+            $failedRecords = [];
 
-            DB::transaction(function () use ($data, $header, $product, $request, $userId, $branchId, $skipErrors, $customerNameIndex, $importId, $totalRows, &$successCount, &$errorCount, &$skippedCount, &$errors, &$failedRecords) {
-                foreach ($data as $rowIndex => $row) {
-                    // Update progress
-                    $currentRow = $rowIndex + 1;
-                    $percentage = round(($currentRow / $totalRows) * 100);
-                    Cache::put($importId, [
-                        'status' => 'processing',
-                        'current' => $currentRow,
-                        'total' => $totalRows,
-                        'success' => $successCount,
-                        'failed' => $errorCount,
-                        'skipped' => $skippedCount,
-                        'percentage' => $percentage
-                    ], 600);
-                    try {
-                        // Normalize row to header length
-                        $row = array_map(function ($v) {
-                            return is_string($v) ? trim($v) : $v;
-                        }, $row);
-                        $row = array_pad($row, count($header), '');
-                        $rowData = array_combine($header, $row);
-                        \Log::info('Processing row', ['row' => $rowIndex + 2, 'data' => $rowData]);
-
-                        // Skip instructional note rows under customer_name
-                        if ($customerNameIndex !== false && isset($rowData['customer_name'])) {
-                            $val = strtolower(trim((string) $rowData['customer_name']));
-                            if ($val !== '' && (str_starts_with($val, 'n.b') || str_contains($val, 'delete first customer name'))) {
-                                $skippedCount++;
-                                continue;
-                            }
-                        }
-
-                        // Validate each row
-                        $validated = $this->validateLoanRow($rowData, $rowIndex + 2); // +2 for header and 0-based index
-
-                        if (isset($validated['error'])) {
-                            \Log::warning('Row validation failed', ['row' => $rowIndex + 2, 'error' => $validated['error']]);
-                            // Check if it's a customer not found error (skip silently)
-                            if (strpos($validated['error'], 'Customer number') !== false && strpos($validated['error'], 'not found') !== false) {
-                                $skippedCount++;
-                                // Log the skip but don't add to errors list for display
-                                error_log("Skipped row " . ($rowIndex + 2) . ": Customer number not found");
-                            } else {
-                                if ($skipErrors) {
-                                    $skippedCount++;
-                                    \Log::info('Skipping row due to validation error', ['row' => $rowIndex + 2, 'error' => $validated['error']]);
-                                } else {
-                                    $errors[] = $validated['error'];
-                                    $errorCount++;
-                                    // Store failed record with full data
-                                    $failedRecords[] = [
-                                        'row_number' => $rowIndex + 2,
-                                        'customer_no' => $rowData['customer_no'] ?? '',
-                                        'customer_name' => $rowData['customer_name'] ?? '',
-                                        'amount' => $rowData['amount'] ?? '',
-                                        'period' => $rowData['period'] ?? '',
-                                        'interest' => $rowData['interest'] ?? '',
-                                        'date_applied' => $rowData['date_applied'] ?? '',
-                                        'interest_cycle' => $rowData['interest_cycle'] ?? '',
-                                        'loan_officer' => $rowData['loan_officer'] ?? '',
-                                        'group_id' => $rowData['group_id'] ?? '',
-                                        'sector' => $rowData['sector'] ?? '',
-                                        'error_reason' => $validated['error']
-                                    ];
-                                }
-                            }
-                            continue;
-                        }
-
-                        \Log::info('Row validated successfully', ['row' => $rowIndex + 2, 'validated' => $validated]);
-
-                        // Check product limits
-                        try {
-                            $this->validateProductLimits($validated, $product);
-                        } catch (\Exception $e) {
-                            \Log::warning('Product limits validation failed', ['row' => $rowIndex + 2, 'error' => $e->getMessage()]);
-                            if ($skipErrors) {
-                                $skippedCount++;
-                                \Log::info('Skipping row due to product limits error', ['row' => $rowIndex + 2]);
-                                continue;
-                            } else {
-                                $errorMsg = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
-                                $errors[] = $errorMsg;
-                                $errorCount++;
-                                // Store failed record
-                                $failedRecords[] = [
-                                    'row_number' => $rowIndex + 2,
-                                    'customer_no' => $rowData['customer_no'] ?? '',
-                                    'customer_name' => $rowData['customer_name'] ?? '',
-                                    'amount' => $rowData['amount'] ?? '',
-                                    'period' => $rowData['period'] ?? '',
-                                    'interest' => $rowData['interest'] ?? '',
-                                    'date_applied' => $rowData['date_applied'] ?? '',
-                                    'interest_cycle' => $rowData['interest_cycle'] ?? '',
-                                    'loan_officer' => $rowData['loan_officer'] ?? '',
-                                    'group_id' => $rowData['group_id'] ?? '',
-                                    'sector' => $rowData['sector'] ?? '',
-                                    'error_reason' => $errorMsg
-                                ];
-                                continue;
-                            }
-                        }
-
-                        // Check collateral if required
-                        if ($product->requiresCollateral()) {
-                            $requiredCollateral = $product->calculateRequiredCollateral($validated['amount']);
-                            $availableCollateral = CashCollateral::getCashCollateralBalance($validated['customer_id']);
-
-                            if ($availableCollateral < $requiredCollateral) {
-                                $errorMsg = "Row " . ($rowIndex + 2) . ": Insufficient collateral. Required: " . number_format($requiredCollateral, 2) . ", Available: " . number_format($availableCollateral, 2);
-                                \Log::warning('Collateral validation failed', ['row' => $rowIndex + 2, 'error' => $errorMsg]);
-                                if ($skipErrors) {
-                                    $skippedCount++;
-                                    \Log::info('Skipping row due to insufficient collateral', ['row' => $rowIndex + 2]);
-                                    continue;
-                                } else {
-                                    $errors[] = $errorMsg;
-                                    $errorCount++;
-                                    // Store failed record
-                                    $failedRecords[] = [
-                                        'row_number' => $rowIndex + 2,
-                                        'customer_no' => $rowData['customer_no'] ?? '',
-                                        'customer_name' => $rowData['customer_name'] ?? '',
-                                        'amount' => $rowData['amount'] ?? '',
-                                        'period' => $rowData['period'] ?? '',
-                                        'interest' => $rowData['interest'] ?? '',
-                                        'date_applied' => $rowData['date_applied'] ?? '',
-                                        'interest_cycle' => $rowData['interest_cycle'] ?? '',
-                                        'loan_officer' => $rowData['loan_officer'] ?? '',
-                                        'group_id' => $rowData['group_id'] ?? '',
-                                        'sector' => $rowData['sector'] ?? '',
-                                        'error_reason' => $errorMsg
-                                    ];
-                                    continue;
-                                }
-                            }
-                        }
-
-                        // Check for existing active loan
-                        $existingLoan = Loan::where('customer_id', $validated['customer_id'])
-                            ->where('product_id', $request->product_id)
-                            ->where('status', 'active')
-                            ->first();
-
-                        if ($existingLoan) {
-                            $errorMsg = "Row " . ($rowIndex + 2) . ": Customer already has an active loan for this product";
-                            \Log::warning('Existing loan check failed', ['row' => $rowIndex + 2, 'error' => $errorMsg]);
-                            if ($skipErrors) {
-                                $skippedCount++;
-                                \Log::info('Skipping row due to existing active loan', ['row' => $rowIndex + 2]);
-                                continue;
-                            } else {
-                                $errors[] = $errorMsg;
-                                $errorCount++;
-                                // Store failed record
-                                $failedRecords[] = [
-                                    'row_number' => $rowIndex + 2,
-                                    'customer_no' => $rowData['customer_no'] ?? '',
-                                    'customer_name' => $rowData['customer_name'] ?? '',
-                                    'amount' => $rowData['amount'] ?? '',
-                                    'period' => $rowData['period'] ?? '',
-                                    'interest' => $rowData['interest'] ?? '',
-                                    'date_applied' => $rowData['date_applied'] ?? '',
-                                    'interest_cycle' => $rowData['interest_cycle'] ?? '',
-                                    'loan_officer' => $rowData['loan_officer'] ?? '',
-                                    'group_id' => $rowData['group_id'] ?? '',
-                                    'sector' => $rowData['sector'] ?? '',
-                                    'error_reason' => $errorMsg
-                                ];
-                                continue;
-                            }
-                        }
-
-                        // Create loan using the same logic as store method
-                        \Log::info('Creating loan', ['row' => $rowIndex + 2, 'customer_id' => $validated['customer_id']]);
-                        $this->createLoanFromImport($validated, $product, $request->account_id, $userId, $branchId);
-                        $successCount++;
-                        \Log::info('Loan created successfully', ['row' => $rowIndex + 2, 'success_count' => $successCount]);
-                    } catch (\Exception $e) {
-                        \Log::error('Error creating loan', ['row' => $rowIndex + 2, 'error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
-                        if ($skipErrors) {
-                            $skippedCount++;
-                            \Log::info('Skipping row due to creation error', ['row' => $rowIndex + 2, 'error' => $e->getMessage()]);
-                        } else {
-                            $errorMsg = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
-                            $errors[] = $errorMsg;
-                            $errorCount++;
-                            // Store failed record
-                            $failedRecords[] = [
-                                'row_number' => $rowIndex + 2,
-                                'customer_no' => $rowData['customer_no'] ?? '',
-                                'customer_name' => $rowData['customer_name'] ?? '',
-                                'amount' => $rowData['amount'] ?? '',
-                                'period' => $rowData['period'] ?? '',
-                                'interest' => $rowData['interest'] ?? '',
-                                'date_applied' => $rowData['date_applied'] ?? '',
-                                'interest_cycle' => $rowData['interest_cycle'] ?? '',
-                                'loan_officer' => $rowData['loan_officer'] ?? '',
-                                'group_id' => $rowData['group_id'] ?? '',
-                                'sector' => $rowData['sector'] ?? '',
-                                'error_reason' => $errorMsg
-                            ];
-                        }
-                    }
+            // Process each chunk synchronously
+            foreach ($chunks as $chunkIndex => $chunk) {
+                $job = new \App\Jobs\BulkLoanImportJob(
+                    $chunk,
+                    $request->product_id,
+                    $request->account_id,
+                    $branchId,
+                    $userId,
+                    $skipErrors,
+                    $chunkIndex,
+                    $totalChunks,
+                    $importId
+                );
+                
+                try {
+                    $job->handle();
+                    
+                    // Get updated counts from cache
+                    $progress = Cache::get($importId, []);
+                    $successCount = $progress['success'] ?? 0;
+                    $errorCount = $progress['failed'] ?? 0;
+                    $skippedCount = $progress['skipped'] ?? 0;
+                } catch (\Exception $e) {
+                    Log::error('Error processing loan import chunk', [
+                        'chunk_index' => $chunkIndex,
+                        'error' => $e->getMessage()
+                    ]);
+                    $errorCount += count($chunk);
                 }
-            });
+            }
 
             // Update final progress
             Cache::put($importId, [
@@ -946,63 +912,18 @@ class LoanController extends Controller
                 'success' => $successCount,
                 'failed' => $errorCount,
                 'skipped' => $skippedCount,
-                'percentage' => 100,
-                'failed_records' => $failedRecords
+                'percentage' => 100
             ], 600);
 
-            $message = "Import completed. Successfully imported: $successCount loans.";
+            $message = "Import completed. Successfully imported: {$successCount} loans.";
             if ($skippedCount > 0) {
-                $message .= " Skipped: $skippedCount loans (customer not found).";
+                $message .= " Skipped: {$skippedCount} loans.";
             }
             if ($errorCount > 0) {
-                $message .= " Failed: $errorCount loans.";
+                $message .= " Failed: {$errorCount} loans.";
             }
 
-            // Generate failed records export if there are failures
-            $failedExportPath = null;
-            if (!empty($failedRecords)) {
-                try {
-                    $fileName = 'failed_loan_import_' . date('Y_m_d_His') . '.xlsx';
-                    $filePath = storage_path('app/exports/' . $fileName);
-                    
-                    // Ensure directory exists
-                    if (!file_exists(storage_path('app/exports'))) {
-                        mkdir(storage_path('app/exports'), 0755, true);
-                    }
-                    
-                    Excel::store(new FailedLoanImportExport($failedRecords), 'exports/' . $fileName);
-                    $failedExportPath = route('loans.import.download-failed', ['file' => $fileName]);
-                } catch (\Exception $e) {
-                    \Log::error('Failed to generate export file', ['error' => $e->getMessage()]);
-                }
-            }
-
-            // Consider import a failure if there are errors OR zero successful imports
-            $hasErrors = !empty($errors);
-            $isZeroImported = ($successCount === 0);
-            if ($hasErrors || $isZeroImported) {
-                $tips = $this->buildImportTips($errors, $product);
-                if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => $message,
-                        'errors' => $errors,
-                        'errors_count' => $errorCount,
-                        'tips' => $tips,
-                        'skipped' => $skippedCount,
-                        'failed' => $errorCount,
-                        'imported' => $successCount,
-                        'import_id' => $importId,
-                        'failed_export_url' => $failedExportPath,
-                    ]);
-                }
-                return redirect()->back()
-                    ->with('warning', $message)
-                    ->with('import_errors', $errors)
-                    ->with('import_tips', $tips)
-                    ->with('failed_export_url', $failedExportPath);
-            }
-
+            // Return response
             if ($request->ajax()) {
                 return response()->json([
                     'success' => true,
@@ -1011,13 +932,13 @@ class LoanController extends Controller
                     'skipped' => $skippedCount,
                     'failed' => $errorCount,
                     'import_id' => $importId,
-                    'failed_export_url' => $failedExportPath,
+                    'status' => 'completed'
                 ]);
             }
 
-            return redirect()->route('loans.list')
+            return redirect()->back()
                 ->with('success', $message)
-                ->with('failed_export_url', $failedExportPath);
+                ->with('import_id', $importId);
         } catch (\Exception $e) {
             // Update progress to error state
             if (isset($importId)) {
@@ -3708,6 +3629,12 @@ class LoanController extends Controller
     }
 
     public function downloadTemplate()
+    {
+        return Excel::download(new LoanImportTemplateExport(), 'loan_import_template.xlsx');
+    }
+
+    // Legacy CSV template method (kept for reference)
+    private function downloadTemplateCSV()
     {
         $headers = [
             'customer_name',

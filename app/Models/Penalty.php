@@ -18,6 +18,8 @@ class Penalty extends Model
         'penalty_receivables_account_id',
         'penalty_type',
         'charge_frequency',
+        'frequency_cycle',
+        'penalty_limit_days',
         'amount',
         'deduction_type',
         'description',
@@ -214,6 +216,17 @@ class Penalty extends Model
             'over_due_interest_amount' => 'Over Due Interest Amount',
             'over_due_principal_and_interest' => 'Over Due Principal and Interest',
             'total_principal_amount_released' => 'Total Principal Amount Released',
+        ];
+    }
+
+    public static function getFrequencyCycleOptions()
+    {
+        return [
+            'daily' => 'Daily',
+            'weekly' => 'Weekly',
+            'monthly' => 'Monthly',
+            'quarterly' => 'Quarterly',
+            'yearly' => 'Yearly',
         ];
     }
 

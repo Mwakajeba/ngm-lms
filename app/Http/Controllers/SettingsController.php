@@ -12,6 +12,10 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
+use App\Jobs\AccruePenaltyJob;
+use App\Jobs\CalculateDailyInterestJob;
+use Barryvdh\DomPDF\Facade\Pdf;
 
 class SettingsController extends Controller
 {
@@ -874,6 +878,354 @@ class SettingsController extends Controller
             return redirect()->route('settings.payment-voucher-approval')->with('success', 'Payment voucher approval settings updated successfully!');
         } catch (\Exception $e) {
             return redirect()->route('settings.payment-voucher-approval')->with('error', 'Failed to update payment voucher approval settings: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Job Logs Index
+     */
+    public function jobLogsIndex()
+    {
+        // Check permissions
+        if (!auth()->user()->can('view logs activity')) {
+            abort(403, 'You do not have permission to view job logs.');
+        }
+
+        return view('settings.job-logs.index');
+    }
+
+    /**
+     * Get Job Logs Data for DataTable
+     */
+    public function jobLogsData(Request $request)
+    {
+        try {
+            // Check permissions
+            if (!auth()->user()->can('view logs activity')) {
+                return response()->json([
+                    'error' => 'You do not have permission to view job logs.'
+                ], 403);
+            }
+
+            $query = \App\Models\JobLog::query();
+
+            // Apply filters
+            if ($request->filled('job_name')) {
+                $query->where('job_name', $request->job_name);
+            }
+
+            if ($request->filled('status')) {
+                $query->where('status', $request->status);
+            }
+
+            if ($request->filled('date_from')) {
+                $query->whereDate('started_at', '>=', $request->date_from);
+            }
+
+            if ($request->filled('date_to')) {
+                $query->whereDate('started_at', '<=', $request->date_to);
+            }
+
+            // Calculate summary statistics
+            $totalJobs = \App\Models\JobLog::count();
+            $completedJobs = \App\Models\JobLog::where('status', 'completed')->count();
+            $failedJobs = \App\Models\JobLog::where('status', 'failed')->count();
+            $runningJobs = \App\Models\JobLog::where('status', 'running')->count();
+
+            return DataTables::of($query)
+                ->addIndexColumn()
+                ->addColumn('status_badge', function ($row) {
+                    $badges = [
+                        'pending' => '<span class="badge bg-warning">Pending</span>',
+                        'running' => '<span class="badge bg-info">Running</span>',
+                        'completed' => '<span class="badge bg-success">Completed</span>',
+                        'failed' => '<span class="badge bg-danger">Failed</span>',
+                    ];
+                    return $badges[$row->status] ?? '<span class="badge bg-secondary">' . ucfirst($row->status) . '</span>';
+                })
+                ->addColumn('formatted_amount', function ($row) {
+                    return $row->total_amount ? 'TZS ' . number_format($row->total_amount, 2) : '-';
+                })
+                ->addColumn('formatted_duration', function ($row) {
+                    if (!$row->duration_seconds) {
+                        return 'N/A';
+                    }
+                    $minutes = floor($row->duration_seconds / 60);
+                    $seconds = $row->duration_seconds % 60;
+                    if ($minutes > 0) {
+                        return "{$minutes}m {$seconds}s";
+                    }
+                    return "{$seconds}s";
+                })
+                ->addColumn('started_at_formatted', function ($row) {
+                    return $row->started_at ? $row->started_at->format('Y-m-d H:i:s') : '-';
+                })
+                ->addColumn('actions', function ($row) {
+                    $actions = '<div class="btn-group" role="group">';
+                    $actions .= '<a href="' . route('settings.job-logs.show', $row->id) . '" class="btn btn-sm btn-info" title="View Details">';
+                    $actions .= '<i class="bx bx-show"></i>';
+                    $actions .= '</a>';
+                    $actions .= '</div>';
+                    return $actions;
+                })
+                ->rawColumns(['status_badge', 'actions'])
+                ->with([
+                    'summary' => [
+                        'total' => $totalJobs,
+                        'completed' => $completedJobs,
+                        'failed' => $failedJobs,
+                        'running' => $runningJobs,
+                    ]
+                ])
+                ->make(true);
+        } catch (\Exception $e) {
+            \Log::error('Job Logs DataTable Error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'error' => 'An error occurred while loading job logs data.',
+                'message' => $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Show Job Log Details
+     */
+    public function jobLogsShow($id)
+    {
+        // Check permissions
+        if (!auth()->user()->can('view logs activity')) {
+            abort(403, 'You do not have permission to view job logs.');
+        }
+
+        $jobLog = \App\Models\JobLog::findOrFail($id);
+        
+        // Get cached details if available
+        $details = \Illuminate\Support\Facades\Cache::get('penalty_accrual_job_details_' . $id, []);
+
+        return view('settings.job-logs.show', compact('jobLog', 'details'));
+    }
+
+    /**
+     * Export Job Log
+     */
+    public function jobLogsExport(Request $request, $jobLog)
+    {
+        // Check permissions
+        if (!auth()->user()->can('view logs activity')) {
+            abort(403, 'You do not have permission to export job logs.');
+        }
+
+        // If $jobLog is an ID, find the model
+        if (is_numeric($jobLog)) {
+            $jobLog = \App\Models\JobLog::findOrFail($jobLog);
+        }
+        $format = $request->get('format', 'pdf'); // 'pdf' or 'excel'
+        
+        // Get cached details if available
+        $details = \Illuminate\Support\Facades\Cache::get('penalty_accrual_job_details_' . $id, []);
+        
+        // Get company information
+        $company = Company::find(current_company_id());
+        $exportDate = now()->format('d-m-Y H:i:s');
+
+        if ($format === 'excel') {
+            // For Excel export, we'll use a simple approach
+            // You can create a dedicated Export class if needed
+            return $this->exportJobLogToExcel($jobLog, $details, $company, $exportDate);
+        } else {
+            // PDF export
+            $viewName = 'settings.job-logs.pdf-penalty';
+            if ($jobLog->job_name === 'CalculateDailyInterestJob') {
+                $viewName = 'settings.job-logs.pdf-interest';
+            }
+            
+            $pdf = Pdf::loadView($viewName, compact('jobLog', 'details', 'company', 'exportDate'));
+            $filename = 'job_log_' . $jobLog->job_name . '_' . $jobLog->id . '_' . now()->format('Y_m_d_H_i_s') . '.pdf';
+            
+            return $pdf->download($filename);
+        }
+    }
+
+    /**
+     * Export Job Log to Excel
+     */
+    private function exportJobLogToExcel($jobLog, $details, $company, $exportDate)
+    {
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Set title
+        $sheet->setCellValue('A1', ($company->name ?? 'Company Name') . ' - Job Log Details');
+        $sheet->mergeCells('A1:F1');
+        $sheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        
+        // Job Information
+        $row = 3;
+        $sheet->setCellValue('A' . $row, 'Job Name:');
+        $sheet->setCellValue('B' . $row, $jobLog->job_name);
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Status:');
+        $sheet->setCellValue('B' . $row, ucfirst($jobLog->status));
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Started At:');
+        $sheet->setCellValue('B' . $row, $jobLog->started_at ? $jobLog->started_at->format('d-m-Y H:i:s') : 'N/A');
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Completed At:');
+        $sheet->setCellValue('B' . $row, $jobLog->completed_at ? $jobLog->completed_at->format('d-m-Y H:i:s') : 'N/A');
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Duration:');
+        $sheet->setCellValue('B' . $row, $jobLog->formatted_duration);
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Total Processed:');
+        $sheet->setCellValue('B' . $row, $jobLog->processed);
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Successful:');
+        $sheet->setCellValue('B' . $row, $jobLog->successful);
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Failed:');
+        $sheet->setCellValue('B' . $row, $jobLog->failed);
+        $row++;
+        $sheet->setCellValue('A' . $row, 'Total Amount:');
+        $sheet->setCellValue('B' . $row, $jobLog->total_amount ? 'TZS ' . number_format($jobLog->total_amount, 2) : 'N/A');
+        
+        // Details table
+        if (!empty($details)) {
+            $row += 2;
+            $headers = [];
+            if ($jobLog->job_name === 'CalculateDailyInterestJob') {
+                $headers = ['#', 'Loan No', 'Customer Name', 'Principal Balance', 'Interest Accrued', 'Status'];
+            } else {
+                $headers = ['#', 'Loan No', 'Customer Name', 'Due Date', 'Base Amount', 'Penalty Rate', 'Penalty Amount', 'Status'];
+            }
+            
+            $col = 'A';
+            foreach ($headers as $header) {
+                $sheet->setCellValue($col . $row, $header);
+                $sheet->getStyle($col . $row)->getFont()->setBold(true);
+                $col++;
+            }
+            $row++;
+            
+            foreach ($details as $index => $detail) {
+                $col = 'A';
+                $sheet->setCellValue($col . $row, $index + 1);
+                $col++;
+                
+                if ($jobLog->job_name === 'CalculateDailyInterestJob') {
+                    $sheet->setCellValue($col . $row, $detail['loan_no'] ?? 'N/A');
+                    $col++;
+                    $sheet->setCellValue($col . $row, $detail['customer_name'] ?? 'N/A');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['principal_balance']) ? number_format($detail['principal_balance'], 2) : '-');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['interest_accrued']) ? number_format($detail['interest_accrued'], 2) : '-');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['error']) ? 'Failed' : 'Success');
+                } else {
+                    $sheet->setCellValue($col . $row, $detail['loan_no'] ?? 'N/A');
+                    $col++;
+                    $sheet->setCellValue($col . $row, $detail['customer_name'] ?? 'N/A');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['due_date']) ? \Carbon\Carbon::parse($detail['due_date'])->format('d-m-Y') : 'N/A');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['base_amount']) ? number_format($detail['base_amount'], 2) : '-');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['penalty_rate']) ? number_format($detail['penalty_rate'], 2) . '%' : '-');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['penalty_amount']) ? number_format($detail['penalty_amount'], 2) : '-');
+                    $col++;
+                    $sheet->setCellValue($col . $row, isset($detail['error']) ? 'Failed' : 'Success');
+                }
+                $row++;
+            }
+        }
+        
+        // Auto-size columns
+        foreach (range('A', 'H') as $column) {
+            $sheet->getColumnDimension($column)->setAutoSize(true);
+        }
+        
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $filename = 'job_log_' . $jobLog->job_name . '_' . $jobLog->id . '_' . now()->format('Y_m_d_H_i_s') . '.xlsx';
+        
+        $tempFile = tempnam(sys_get_temp_dir(), 'job_log');
+        $writer->save($tempFile);
+        
+        return response()->download($tempFile, $filename)->deleteFileAfterSend();
+    }
+
+    /**
+     * Run Penalty Accrual Job
+     */
+    public function runPenaltyAccrual(Request $request)
+    {
+        // Check permissions
+        if (!auth()->user()->can('manage penalty setting')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to run penalty accrual.'
+            ], 403);
+        }
+
+        try {
+            // Get optional accrual date from request, default to today
+            $accrualDate = $request->input('accrual_date', now()->toDateString());
+
+            // Run the penalty accrual job synchronously for immediate processing
+            $job = new AccruePenaltyJob($accrualDate);
+            dispatch_sync($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Penalty accrual job has been completed successfully. Check Job Logs for details.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to dispatch penalty accrual job: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to start penalty accrual job: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Run Daily Accrual Interest Job
+     */
+    public function runDailyAccrualInterest(Request $request)
+    {
+        // Check permissions
+        if (!auth()->user()->can('manage penalty setting')) {
+            return response()->json([
+                'success' => false,
+                'message' => 'You do not have permission to run daily accrual interest.'
+            ], 403);
+        }
+
+        try {
+            // Get optional accrual date from request, default to today
+            $accrualDate = $request->input('accrual_date', now()->toDateString());
+
+            // Run the daily interest accrual job synchronously for immediate processing
+            $job = new CalculateDailyInterestJob($accrualDate);
+            dispatch_sync($job);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Daily accrual interest job has been completed successfully. Check Job Logs for details.'
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to dispatch daily accrual interest job: ' . $e->getMessage());
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to start daily accrual interest job: ' . $e->getMessage()
+            ], 500);
         }
     }
 }

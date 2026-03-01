@@ -165,15 +165,19 @@
 
 
         <div class="col-md-6 mb-3">
-            <label class="form-label">Penalty Criteria Deduction <span class="text-danger">*</span></label>
+            <label class="form-label">Accrual Interest Calculation Method <span class="text-danger">*</span></label>
             <select name="penalt_deduction_criteria" id="penalt_deduction_criteria"
                 class="form-select @error('penalt_deduction_criteria') is-invalid @enderror">
-                <option value="">-- Select Deduction Type --</option>
-                @foreach($penaltycriteriaDeductions as $key => $value)
-                    <option value="{{ $key }}" {{ old('penalt_deduction_criteria', $loanProduct->penalt_deduction_criteria ?? '') == $key ? 'selected' : '' }}>
-                        {{ $value }}
-                    </option>
-                @endforeach
+                <option value="">-- Select Method --</option>
+                {{-- ENUM values in DB include: daily, as_expected_interest (legacy: daily_bases, full_amount) --}}
+                <option value="daily"
+                    {{ in_array(old('penalt_deduction_criteria', $loanProduct->penalt_deduction_criteria ?? ''), ['daily', 'daily_bases'], true) ? 'selected' : '' }}>
+                    Daily
+                </option>
+                <option value="as_expected_interest"
+                    {{ in_array(old('penalt_deduction_criteria', $loanProduct->penalt_deduction_criteria ?? ''), ['as_expected_interest', 'full_amount'], true) ? 'selected' : '' }}>
+                    As Expected Interest
+                </option>
             </select>
             @error('penalt_deduction_criteria') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>

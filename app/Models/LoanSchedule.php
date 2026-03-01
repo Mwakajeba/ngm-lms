@@ -10,7 +10,20 @@ class LoanSchedule extends Model
 {
     use HasFactory, LogsActivity;
     protected $table = 'loan_schedules';
-    protected $fillable = ['loan_id', 'interest', 'principal', 'end_date', 'end_grace_date', 'end_pernalty_date', 'customer_id', 'due_date', 'fee_amount', 'penalty_amount', 'status'];
+    protected $fillable = [
+        'loan_id',
+        'interest',
+        'principal',
+        'end_date',
+        'end_grace_date',
+        'end_pernalty_date',
+        'customer_id',
+        'due_date',
+        'fee_amount',
+        'penalty_amount',
+        'accrued_interest',
+        'status'
+    ];
 
     public function loan()
     {

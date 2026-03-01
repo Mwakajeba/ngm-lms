@@ -222,6 +222,42 @@
                             </div>
                             @endcan
 
+                            <!-- Run Penalty Accrual -->
+                            @can('manage penalty setting')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-calculator fs-1 text-warning"></i>
+                                        </div>
+                                        <h5 class="card-title">Run Penalty Accrual</h5>
+                                        <p class="card-text">Kokotoa adhabu za mikopo iliyochelewa (Calculate penalties for overdue loans).</p>
+                                        <button type="button" class="btn btn-warning" onclick="runPenaltyAccrual()">
+                                            <i class="bx bx-play-circle me-1"></i> Run Penalty Accrual
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
+
+                            <!-- Run Daily Accrual Interest -->
+                            @can('manage penalty setting')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-primary">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-trending-up fs-1 text-primary"></i>
+                                        </div>
+                                        <h5 class="card-title">Run Daily Accrual Interest</h5>
+                                        <p class="card-text">Calculate daily interest accrual for loans using daily accrual method.</p>
+                                        <button type="button" class="btn btn-primary" onclick="runDailyAccrualInterest()">
+                                            <i class="bx bx-play-circle me-1"></i> Run Daily Accrual Interest
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
+
                             <!-- Filetypes Settings -->
                             @can('manage filetype setting')
                             <div class="col-md-6 col-lg-4 mb-4">
@@ -344,6 +380,27 @@
                             </div>
                             @endrole
 
+                            <!-- Job Logs -->
+                            @can('view logs activity')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-list-ul fs-1 text-info"></i>
+                                        </div>
+                                        <h5 class="card-title">Job Logs</h5>
+                                        <p class="card-text">
+                                            View and monitor background job execution logs.
+                                            Track job status, performance, and execution history.
+                                        </p>
+                                        <a href="{{ route('settings.job-logs.index') }}" class="btn btn-info">
+                                            <i class="bx bx-list-ul me-1"></i> View Job Logs
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
+
                             @endcan
                         </div>
                     </div>
@@ -363,6 +420,108 @@
 </footer>
 
 @endsection
+
+@push('scripts')
+<script>
+    function runPenaltyAccrual() {
+        Swal.fire({
+            title: 'Run Penalty Accrual?',
+            text: 'This will calculate penalties for all overdue loans. This process may take a few minutes.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#ffc107',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Run It',
+            cancelButtonText: 'Cancel',
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch('{{ route("settings.penalty-accrual.run") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.message || 'Failed to run penalty accrual');
+                    }
+                    return data;
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(error.message || 'Request failed');
+                });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: result.value.message || 'Penalty accrual job has been started. Check Job Logs for progress.',
+                    icon: 'success',
+                    confirmButtonText: 'View Job Logs',
+                    showCancelButton: true,
+                    cancelButtonText: 'Close'
+                }).then((swalResult) => {
+                    if (swalResult.isConfirmed) {
+                        window.location.href = '{{ route("settings.job-logs.index") }}';
+                    }
+                });
+            }
+        });
+    }
+
+    function runDailyAccrualInterest() {
+        Swal.fire({
+            title: 'Run Daily Accrual Interest?',
+            text: 'This will calculate daily interest accrual for loans using daily accrual method. This process may take a few minutes.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#0d6efd',
+            cancelButtonColor: '#6c757d',
+            confirmButtonText: 'Yes, Run It',
+            cancelButtonText: 'Cancel',
+            showLoaderOnConfirm: true,
+            preConfirm: () => {
+                return fetch('{{ route("settings.daily-accrual-interest.run") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    }
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.success) {
+                        throw new Error(data.message || 'Failed to run daily accrual interest');
+                    }
+                    return data;
+                })
+                .catch(error => {
+                    Swal.showValidationMessage(error.message || 'Request failed');
+                });
+            },
+            allowOutsideClick: () => !Swal.isLoading()
+        }).then((result) => {
+            if (result.isConfirmed) {
+                Swal.fire({
+                    title: 'Success!',
+                    text: result.value.message || 'Daily accrual interest job has been completed. Check Job Logs for details.',
+                    icon: 'success',
+                    confirmButtonText: 'View Job Logs',
+                    showCancelButton: true,
+                    cancelButtonText: 'Close'
+                }).then((swalResult) => {
+                    if (swalResult.isConfirmed) {
+                        window.location.href = '{{ route("settings.job-logs.index") }}';
+                    }
+                });
+            }
+        });
+    }
+</script>
+@endpush
 
 @push('styles')
 <style>

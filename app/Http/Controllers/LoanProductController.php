@@ -123,7 +123,8 @@ class LoanProductController extends Controller
             'maximum_period' => 'required|integer|min:1|gte:minimum_period',
             'grace_period' => 'nullable|integer|min:0',
             'maximum_number_of_loans' => 'nullable|integer|min:1',
-            'penalt_deduction_criteria' => 'nullable|string',
+            // Accrual Interest Calculation Method (supports legacy values too)
+            'penalt_deduction_criteria' => 'nullable|in:daily,as_expected_interest,daily_bases,full_amount',
             'has_top_up' => 'boolean',
             'top_up_type' => 'nullable|required_if:has_top_up,1|string|max:50',
             'top_up_type_value' => 'nullable|required_if:top_up_type,percentage,fixed_amount|numeric|min:0',

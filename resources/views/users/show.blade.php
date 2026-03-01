@@ -59,6 +59,18 @@
                                                 <td>{{ $user->branch->name ?? 'N/A' }}</td>
                                             </tr>
                                             <tr>
+                                                <th scope="row">Assigned Branches :</th>
+                                                <td>
+                                                    @if($user->branches && $user->branches->count())
+                                                        @foreach($user->branches as $branch)
+                                                            <span class="badge bg-secondary me-1 mb-1">{{ $branch->name }}</span>
+                                                        @endforeach
+                                                    @else
+                                                        <span class="text-muted">No additional branches</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                            <tr>
                                                 <th scope="row">Company :</th>
                                                 <td>{{ $user->company->name ?? 'N/A' }}</td>
                                             </tr>
@@ -184,6 +196,44 @@
                                     </div>
                                 </div>
                             </div>
+
+                            {{-- Loans assigned to this user as loan officer --}}
+                            <hr class="my-4">
+                            <h4 class="card-title mb-3">Loans Assigned to This User</h4>
+                            @if($user->loans && $user->loans->count())
+                                <div class="table-responsive">
+                                    <table class="table table-striped table-bordered align-middle">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>#</th>
+                                                <th>Loan No</th>
+                                                <th>Customer</th>
+                                                <th>Product</th>
+                                                <th>Branch</th>
+                                                <th>Amount</th>
+                                                <th>Status</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @foreach($user->loans as $index => $loan)
+                                                <tr>
+                                                    <td>{{ $index + 1 }}</td>
+                                                    <td>{{ $loan->loanNo }}</td>
+                                                    <td>{{ optional($loan->customer)->name ?? 'N/A' }}</td>
+                                                    <td>{{ optional($loan->product)->name ?? 'N/A' }}</td>
+                                                    <td>{{ optional($loan->branch)->name ?? 'N/A' }}</td>
+                                                    <td>{{ number_format($loan->amount, 2) }}</td>
+                                                    <td>
+                                                        <span class="badge bg-info text-uppercase">{{ $loan->status }}</span>
+                                                    </td>
+                                                </tr>
+                                            @endforeach
+                                        </tbody>
+                                    </table>
+                                </div>
+                            @else
+                                <p class="text-muted mb-0">No loans are currently assigned to this user as loan officer.</p>
+                            @endif
 
                             <div class="row">
                                 <div class="col-md-6">

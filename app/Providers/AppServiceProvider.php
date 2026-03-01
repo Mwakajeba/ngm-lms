@@ -2,7 +2,8 @@
 
 namespace App\Providers;
 
-use App\Jobs\CollectMatureInterestJob;
+use App\Jobs\AccruePenaltyJob;
+use App\Jobs\CalculateDailyInterestJob;
 use Carbon\Carbon;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Support\Facades\Cache;
@@ -25,24 +26,40 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        // Run mature interest collection once per day on first user login
+        // Run jobs once per day on first user login
         Event::listen(Login::class, function () {
-            Log::info('Login event triggered - checking mature interest job');
+            Log::info('Login event triggered - checking daily jobs');
+
+            // Run penalty accrual once per day on first user login
             try {
-                $cacheKey = 'mature_interest_job_ran_' . Carbon::today()->toDateString();
+                $penaltyCacheKey = 'penalty_accrual_job_ran_' . Carbon::today()->toDateString();
 
-                // Only run once per day; Cache::add sets the key if it does not exist
-                $added = Cache::add($cacheKey, true, Carbon::now()->endOfDay());
-                if (!$added) {
-                    Log::info('Mature interest job already ran today, skipping');
-                    return; // Already ran today
+                // Only run once per day
+                $penaltyAdded = Cache::add($penaltyCacheKey, true, Carbon::now()->endOfDay());
+                if (!$penaltyAdded) {
+                    Log::info('Penalty accrual job already ran today, skipping');
+                } else {
+                    Log::info('Running AccruePenaltyJob synchronously from login event (once per day)');
+                    dispatch_sync(new AccruePenaltyJob());
                 }
-
-                Log::info('Running CollectMatureInterestJob synchronously from login event (once per day)');
-                // Run immediately so it processes on user login without needing a worker
-                dispatch_sync(new CollectMatureInterestJob());
             } catch (\Throwable $e) {
-                Log::error('Failed dispatching CollectMatureInterestJob on login: ' . $e->getMessage());
+                Log::error('Failed dispatching AccruePenaltyJob on login: ' . $e->getMessage());
+            }
+
+            // Run daily accrual interest once per day on first user login
+            try {
+                $dailyInterestCacheKey = 'daily_accrual_interest_job_ran_' . Carbon::today()->toDateString();
+
+                // Only run once per day
+                $dailyInterestAdded = Cache::add($dailyInterestCacheKey, true, Carbon::now()->endOfDay());
+                if (!$dailyInterestAdded) {
+                    Log::info('Daily accrual interest job already ran today, skipping');
+                } else {
+                    Log::info('Running CalculateDailyInterestJob synchronously from login event (once per day)');
+                    dispatch_sync(new CalculateDailyInterestJob());
+                }
+            } catch (\Throwable $e) {
+                Log::error('Failed dispatching CalculateDailyInterestJob on login: ' . $e->getMessage());
             }
         });
     }

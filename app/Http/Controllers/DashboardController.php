@@ -333,6 +333,32 @@ class DashboardController extends Controller
             $paidInterest += $loanPaidInterest;
         }
 
+        // Loan officer-specific portfolio & arrears (for logged-in user)
+        $officerLoansQuery = \App\Models\Loan::with(['schedule.repayments'])
+            ->where('loan_officer_id', $user->id)
+            ->whereHas('branch', function($query) use ($company) {
+                $query->where('company_id', $company->id);
+            });
+
+        // Apply same branch filter logic
+        if ($selectedBranchId) {
+            $officerLoansQuery->where('branch_id', $selectedBranchId);
+        } elseif (!empty($userBranchIds)) {
+            $officerLoansQuery->whereIn('branch_id', $userBranchIds);
+        }
+
+        $officerLoans = $officerLoansQuery->get();
+
+        $officerTotalPortfolio = 0;
+        $officerTotalArrears = 0;
+
+        foreach ($officerLoans as $loan) {
+            // Total outstanding (principal + interest + fees + penalties) for this loan
+            $officerTotalPortfolio += $loan->getTotalOutstandingAmount();
+            // Total arrears (overdue part only) for this loan
+            $officerTotalArrears += $loan->arrears_amount;
+        }
+
         $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance($selectedBranchId);
         info('penaltyBalance'.$penaltyBalance);
 
@@ -358,6 +384,8 @@ class DashboardController extends Controller
             'notDueInterest',
             'paidInterest',
             'outstandingInterestDetailed',
+            'officerTotalPortfolio',
+            'officerTotalArrears',
             'branches',
             'selectedBranchId'
         ));
