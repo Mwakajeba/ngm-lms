@@ -321,6 +321,18 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
         Route::post('/bulk-email/send', [\App\Http\Controllers\BulkEmailController::class, 'send'])->name('bulk-email.send');
         Route::get('/bulk-email/recipients', [\App\Http\Controllers\BulkEmailController::class, 'getRecipients'])->name('bulk-email.recipients');
     });
+
+    // Job Logs
+    Route::get('/job-logs', [SettingsController::class, 'jobLogsIndex'])->name('job-logs.index');
+    Route::get('/job-logs/data', [SettingsController::class, 'jobLogsData'])->name('job-logs.data');
+    Route::get('/job-logs/{id}', [SettingsController::class, 'jobLogsShow'])->name('job-logs.show');
+    Route::get('/job-logs/{jobLog}/export', [SettingsController::class, 'jobLogsExport'])->name('job-logs.export');
+
+    // Run Penalty Accrual
+    Route::post('/penalty-accrual/run', [SettingsController::class, 'runPenaltyAccrual'])->name('penalty-accrual.run');
+    
+    // Run Daily Accrual Interest
+    Route::post('/daily-accrual-interest/run', [SettingsController::class, 'runDailyAccrualInterest'])->name('daily-accrual-interest.run');
 });
 
 ////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
@@ -806,6 +818,7 @@ Route::middleware(['auth'])->group(function () {
     // Bulk upload routes (must come before parameterized routes)
     Route::get('customers/bulk-upload', [CustomerController::class, 'bulkUpload'])->name('customers.bulk-upload');
     Route::post('customers/bulk-upload', [CustomerController::class, 'bulkUploadStore'])->name('customers.bulk-upload.store');
+    Route::get('customers/download-failed-records', [CustomerController::class, 'downloadFailedRecords'])->name('customers.download-failed-records');
     Route::get('customers/download-sample', [CustomerController::class, 'downloadSample'])->name('customers.download-sample');
 
     // Documents upload/delete

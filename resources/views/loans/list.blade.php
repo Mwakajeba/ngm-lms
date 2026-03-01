@@ -187,14 +187,15 @@
                                             <i class="bx bx-info-circle me-2"></i>
                                             <strong>Import Instructions:</strong>
                                             <ul class="mb-0 mt-2">
-                                                <li>Upload a CSV file with loan data</li>
+                                                <li>Upload an Excel file (.xlsx, .xls) or CSV file with loan data</li>
                                                 <li>Select loan type to determine chart account source</li>
                                                 <li>Configure default settings for the import</li>
-                                                <li>Maximum file size: 5MB</li>
-                                                <li>Required CSV columns: customer_no, amount, period, interest,
+                                                <li>Maximum file size: 10MB</li>
+                                                <li>Required columns: customer_no, amount, period, interest,
                                                     date_applied, interest_cycle, loan_officer, group_id, sector</li>
                                                 <li><strong>Customer Number:</strong> Use the customer number (not ID).
                                                     Invalid customer numbers will be skipped.</li>
+                                                <li>Use dropdowns in Excel template for Interest Cycle and Sector</li>
                                             </ul>
                                         </div>
                                     </div>
@@ -213,11 +214,11 @@
                                         </div>
                                     </div>
                                     <div class="col-md-6 mb-3">
-                                        <label for="import_file" class="form-label">Select CSV File <span
+                                        <label for="import_file" class="form-label">Select Excel/CSV File <span
                                                 class="text-danger">*</span></label>
                                         <input type="file" class="form-control" id="import_file" name="import_file"
-                                            accept=".csv,.txt" required>
-                                        <div class="form-text">Supported: CSV, TXT (Max: 5MB)</div>
+                                            accept=".xlsx,.xls,.csv,.txt" required>
+                                        <div class="form-text">Supported: Excel (.xlsx, .xls), CSV, TXT (Max: 10MB)</div>
                                     </div>
                                 </div>
 

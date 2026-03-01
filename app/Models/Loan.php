@@ -674,6 +674,13 @@ class Loan extends Model
             }
         }
 
+        // Accrual Interest Calculation Method:
+        // - as_expected_interest: seed accrued_interest = scheduled interest
+        // - otherwise: keep accrued_interest = 0 (daily accrual will build it up later)
+        // Backward compatibility: legacy value 'full_amount' is treated as 'as_expected_interest'
+        $accrualMethod = $product->penalt_deduction_criteria;
+        $seedAccruedInterest = in_array($accrualMethod, ['as_expected_interest', 'full_amount'], true);
+
         foreach ($schedule as $i => $row) {
             $dueDate = $startDate->copy()->{$this->getDateIncrementMethod()}($this->getDateIncrementValue($i));
             $endDate = $dueDate->copy()->addDays(5);
@@ -772,6 +779,7 @@ class Loan extends Model
                 'interest' => $row['interest'],
                 'fee_amount' => $loanFee,
                 'penalty_amount' => $penaltyAmount,
+                'accrued_interest' => $seedAccruedInterest ? (float) $row['interest'] : 0,
             ]);
         }
     }

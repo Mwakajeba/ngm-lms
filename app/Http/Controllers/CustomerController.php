@@ -15,6 +15,9 @@ use App\Models\User;
 use App\Models\CashCollateralType;
 use App\Models\Filetype;
 use App\Services\LoanPenaltyService;
+use App\Exports\CustomerBulkUploadSampleExport;
+use App\Exports\CustomerBulkUploadFailedExport;
+use App\Jobs\BulkCustomerUploadJob;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +25,8 @@ use Spatie\Permission\Models\Role;
 use Illuminate\Support\Facades\DB;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
+use Maatwebsite\Excel\Facades\Excel;
+use PhpOffice\PhpSpreadsheet\IOFactory;
 
 set_time_limit(0);              // no limit for this request
 ini_set('max_execution_time', 0);
@@ -29,10 +34,10 @@ ini_set('max_execution_time', 0);
 class CustomerController extends Controller
 {
     /**
-     * Format phone number to standard format
+     * Format phone number to standard format - always starts with 255
      * - If starts with 0, remove 0 and add 255
      * - If starts with +255, remove +
-     * - Otherwise return as is
+     * - If doesn't start with 255, add 255
      */
     private function formatPhoneNumber($phoneNumber)
     {
@@ -53,8 +58,61 @@ class CustomerController extends Controller
             return substr($phoneNumber, 1);
         }
 
+        // If doesn't start with 255, add 255
+        if (substr($phoneNumber, 0, 3) !== "255") {
+            return "255" . $phoneNumber;
+        }
+
         // Return as is if already in correct format
         return $phoneNumber;
+    }
+    
+    /**
+     * Validate National ID and extract information
+     */
+    private function validateNationalId($nationalId, $dob, $sex)
+    {
+        // Format: YYYYMMDD-XXXXX-XXXXX-XX
+        if (!preg_match('/^(\d{4})(\d{2})(\d{2})-(\d{5})-(\d{5})-(\d{2})$/', $nationalId, $matches)) {
+            return ['valid' => false, 'message' => 'Invalid National ID format'];
+        }
+        
+        $year = (int)$matches[1];
+        $month = (int)$matches[2];
+        $day = (int)$matches[3];
+        $lastTwoDigits = $matches[6];
+        
+        // Validate date
+        if (!checkdate($month, $day, $year)) {
+            return ['valid' => false, 'message' => 'Invalid date in National ID'];
+        }
+        
+        // Extract date from National ID
+        $idDate = \Carbon\Carbon::create($year, $month, $day);
+        
+        // Compare with entered DOB
+        $enteredDob = \Carbon\Carbon::parse($dob);
+        if (!$idDate->isSameDay($enteredDob)) {
+            return ['valid' => false, 'message' => 'Date of Birth does not match National ID date'];
+        }
+        
+        // Validate age (must be 18 or older)
+        $age = $idDate->age;
+        if ($age < 18) {
+            return ['valid' => false, 'message' => 'Age from National ID must be 18 years or older'];
+        }
+        
+        // Validate sex - second digit from last (first digit of last two digits)
+        $secondFromLast = (int)substr($lastTwoDigits, 0, 1);
+        $expectedSexCode = $sex === 'M' ? 2 : 1;
+        
+        if ($secondFromLast !== $expectedSexCode) {
+            $expectedSex = $sex === 'M' ? 'Male' : 'Female';
+            $actualSex = $secondFromLast === 2 ? 'Male' : 'Female';
+            return ['valid' => false, 'message' => "Sex does not match National ID. National ID indicates {$actualSex}, but you selected {$expectedSex}"];
+        }
+        
+        return ['valid' => true];
     }
 
     // Display all customers
@@ -166,14 +224,27 @@ class CustomerController extends Controller
             'description' => 'nullable|string|max:1000',
             'phone1' => 'required|string|max:20',
             'phone2' => 'nullable|string|max:20',
-            'dob' => 'required|date',
+            'dob' => ['required', 'date', function ($attribute, $value, $fail) {
+                $dob = \Carbon\Carbon::parse($value);
+                $age = $dob->age;
+                if ($age < 18) {
+                    $fail('Age must be 18 years or older.');
+                }
+            }],
             'sex' => 'required|in:M,F',
             'region_id' => 'required|exists:regions,id',
             'district_id' => 'required|exists:districts,id',
             'work' => 'nullable|string|max:255',
             'workAddress' => 'nullable|string|max:500',
             'idType' => 'nullable|string|max:100',
-            'idNumber' => 'nullable|string|max:100',
+            'idNumber' => ['nullable', 'string', 'max:100', function ($attribute, $value, $fail) use ($request) {
+                if ($request->idType === 'National ID' && $value) {
+                    $validation = $this->validateNationalId($value, $request->dob, $request->sex);
+                    if (!$validation['valid']) {
+                        $fail($validation['message']);
+                    }
+                }
+            }],
             'relation' => 'nullable|string|max:255',
             'category' => 'required|in:Guarantor,Borrower',
             'group_id' => 'nullable|exists:groups,id',
@@ -346,14 +417,27 @@ class CustomerController extends Controller
             'description' => 'nullable|string|max:1000', // Added description validation
             'phone1' => 'required|string|max:20',
             'phone2' => 'nullable|string|max:20',
-            'dob' => 'required|date',
+            'dob' => ['required', 'date', function ($attribute, $value, $fail) {
+                $dob = \Carbon\Carbon::parse($value);
+                $age = $dob->age;
+                if ($age < 18) {
+                    $fail('Age must be 18 years or older.');
+                }
+            }],
             'sex' => 'required|in:M,F',
             'region_id' => 'required|exists:regions,id',
             'district_id' => 'required|exists:districts,id',
             'work' => 'nullable|string|max:255',
             'workAddress' => 'nullable|string|max:500',
             'idType' => 'nullable|string|max:100',
-            'idNumber' => 'nullable|string|max:100',
+            'idNumber' => ['nullable', 'string', 'max:100', function ($attribute, $value, $fail) use ($request) {
+                if ($request->idType === 'National ID' && $value) {
+                    $validation = $this->validateNationalId($value, $request->dob, $request->sex);
+                    if (!$validation['valid']) {
+                        $fail($validation['message']);
+                    }
+                }
+            }],
             'relation' => 'nullable|string|max:255',
             'category' => 'required|in:Guarantor,Borrower',
             'photo' => 'nullable|image|mimes:jpeg,png,jpg,gif|max:2048',
@@ -554,7 +638,7 @@ class CustomerController extends Controller
     public function bulkUploadStore(Request $request)
     {
         $request->validate([
-            'csv_file' => 'required|file|mimes:csv,txt|max:5120', // 5MB max
+            'csv_file' => 'required|file|mimes:csv,txt,xlsx,xls|max:10240', // 10MB max, includes Excel
             'has_cash_collateral' => 'nullable|boolean',
             'collateral_type_id' => 'nullable|exists:cash_collateral_types,id',
         ]);
@@ -565,127 +649,380 @@ class CustomerController extends Controller
 
         try {
             $file = $request->file('csv_file');
+            $extension = $file->getClientOriginalExtension();
             $path = $file->getRealPath();
+            $data = [];
+            $header = [];
 
-            $data = array_map('str_getcsv', file($path));
-            $header = array_shift($data); // Remove header row
-
-            // Validate CSV structure
-            $requiredColumns = ['name', 'phone1', 'dob', 'sex'];
-            $missingColumns = array_diff($requiredColumns, array_map('strtolower', $header));
-
-            if (!empty($missingColumns)) {
-                return back()->withErrors(['csv_file' => 'Missing required columns: ' . implode(', ', $missingColumns)]);
-            }
-
-            $successCount = 0;
-            $errorCount = 0;
-            $errors = [];
-
-            DB::beginTransaction();
-
-            foreach ($data as $rowIndex => $row) {
-                try {
-                    $rowData = array_combine(array_map('strtolower', $header), $row);
-
-                    // Validate required fields
-                    if (
-                        empty($rowData['name']) || empty($rowData['phone1']) || empty($rowData['dob']) ||
-                        empty($rowData['sex'])
-                    ) {
-                        $errors[] = "Row " . ($rowIndex + 2) . ": Missing required fields";
-                        $errorCount++;
-                        continue;
+            // Read file based on extension
+            if (in_array(strtolower($extension), ['xlsx', 'xls'])) {
+                // Read Excel file
+                $spreadsheet = IOFactory::load($path);
+                $worksheet = $spreadsheet->getActiveSheet();
+                $rows = $worksheet->toArray();
+                
+                if (empty($rows)) {
+                    return back()->withErrors(['csv_file' => 'Excel file is empty.']);
+                }
+                
+                // Find header row (skip instruction rows)
+                $headerRowIndex = 0;
+                $header = [];
+                
+                // Look for header row - it should contain at least 'name' and 'phone1'
+                // Check more rows to handle instruction rows
+                for ($i = 0; $i < min(20, count($rows)); $i++) {
+                    $potentialHeader = array_map(function($cell) {
+                        $value = is_null($cell) ? '' : (string)$cell;
+                        return strtolower(trim($value));
+                    }, $rows[$i]);
+                    
+                    // Skip rows that are clearly not headers (empty, instructions, etc.)
+                    $nonEmptyCells = array_filter($potentialHeader, function($val) {
+                        return !empty($val) && 
+                               !preg_match('/^(instruction|note|delete|fill|use|template|customer bulk)/i', $val);
+                    });
+                    
+                    if (count($nonEmptyCells) < 4) {
+                        continue; // Skip rows with too few columns
                     }
-
-                    // Validate sex
-                    if (!in_array(strtoupper($rowData['sex']), ['M', 'F'])) {
-                        $errors[] = "Row " . ($rowIndex + 2) . ": Sex must be M or F";
-                        $errorCount++;
-                        continue;
+                    
+                    // Normalize column names (remove spaces, handle variations)
+                    $normalizedHeader = array_map(function($col) {
+                        $col = strtolower(trim($col));
+                        $col = preg_replace('/\s+/', '', $col); // Remove spaces
+                        $col = preg_replace('/[^a-z0-9_]/', '', $col); // Remove special chars
+                        
+                        // Handle common variations
+                        $variations = [
+                            'name' => ['name', 'fullname', 'full_name', 'customername', 'customer_name', 'fullname'],
+                            'phone1' => ['phone1', 'phone', 'phone_1', 'phonenumber', 'phone_number', 'mobile', 'mobile1', 'phonenumber1'],
+                            'phone2' => ['phone2', 'phone_2', 'mobile2', 'alternatephone', 'alternate_phone', 'phonenumber2'],
+                            'dob' => ['dob', 'dateofbirth', 'date_of_birth', 'birthdate', 'birth_date', 'dateofbirth'],
+                            'sex' => ['sex', 'gender'],
+                            'region_id' => ['region_id', 'regionid', 'region', 'regionname', 'regionname'],
+                            'district_id' => ['district_id', 'districtid', 'district', 'districtname', 'districtname'],
+                            'work' => ['work', 'occupation', 'job'],
+                            'workaddress' => ['workaddress', 'work_address', 'workaddress'],
+                            'idtype' => ['idtype', 'id_type', 'identificationtype'],
+                            'idnumber' => ['idnumber', 'id_number', 'identificationnumber'],
+                            'relation' => ['relation', 'relationship'],
+                            'description' => ['description', 'desc', 'notes'],
+                        ];
+                        
+                        foreach ($variations as $standard => $aliases) {
+                            if (in_array($col, $aliases)) {
+                                return $standard;
+                            }
+                        }
+                        return $col;
+                    }, $potentialHeader);
+                    
+                    // Check if this row contains required columns (name and phone1)
+                    $hasName = in_array('name', $normalizedHeader);
+                    $hasPhone1 = in_array('phone1', $normalizedHeader);
+                    
+                    if ($hasName && $hasPhone1) {
+                        $header = $normalizedHeader;
+                        $headerRowIndex = $i;
+                        break;
                     }
-
-                    // Create customer data
-                    $customerData = [
-                        // Format phone numbers
-                        "phone1" => $this->formatPhoneNumber(trim($rowData["phone1"])),
-                        "phone2" => !empty($rowData["phone2"]) ? $this->formatPhoneNumber(trim($rowData["phone2"])) : "",
-                        'name' => trim($rowData['name']),
-                        'phone1' => trim($rowData['phone1']),
-                        'phone2' => trim($rowData['phone2'] ?? ''),
-                        'dob' => $rowData['dob'],
-                        'sex' => strtoupper($rowData['sex']),
-                        'region_id' => $rowData['region_id'] ?? null,
-                        'district_id' => $rowData['district_id'] ?? null,
-                        'work' => trim($rowData['work'] ?? ''),
-                        'workAddress' => trim($rowData['workaddress'] ?? ''),
-                        'idType' => trim($rowData['idtype'] ?? ''),
-                        'idNumber' => trim($rowData['idnumber'] ?? ''),
-                        'relation' => trim($rowData['relation'] ?? ''),
-                        'description' => trim($rowData['description'] ?? ''),
-                        'customerNo' => 100000 + (Customer::max('id') ?? 0) + 1,
-                        'password' => Hash::make('1234567890'),
-                        'branch_id' => auth()->user()->branch_id,
-                        'company_id' => auth()->user()->company_id,
-                        'registrar' => auth()->id(),
-                        'dateRegistered' => now()->toDateString(),
-                        'has_cash_collateral' => $request->has('has_cash_collateral'),
-                        'category' => 'Borrower', // Always assign Borrower in bulk upload
-                    ];
-
-                    $customer = Customer::create($customerData);
-
-                    // Add cash collateral if selected
-                    if ($request->has('has_cash_collateral') && $request->collateral_type_id) {
-                        \App\Models\CashCollateral::create([
-                            'customer_id' => $customer->id,
-                            'type_id' => $request->collateral_type_id,
-                            'amount' => 0,
-                            'branch_id' => auth()->user()->branch_id,
-                            'company_id' => auth()->user()->company_id,
-                        ]);
+                }
+                
+                if (empty($header)) {
+                    return back()->withErrors(['csv_file' => 'Could not find header row. Please ensure the file has columns: name, phone1, dob, sex']);
+                }
+                
+                // Remove rows before header and the header row itself
+                $rows = array_slice($rows, $headerRowIndex + 1);
+                
+                // Convert rows to associative arrays
+                foreach ($rows as $row) {
+                    $rowData = [];
+                    foreach ($header as $index => $headerName) {
+                        $rowData[$headerName] = trim($row[$index] ?? '');
                     }
-                    //assign all member to the individual group - check if customer is already in a group first
-                    $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
-                    if (!$existingMembership) {
-                        DB::table('group_members')->insert([
-                            'group_id' => 1,
-                            'customer_id' => $customer->id,
-                            'status' => 'active',
-                            'joined_date' => now()->toDateString(),
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]);
+                    if (!empty(array_filter($rowData, function($val) { return $val !== ''; }))) { // Skip empty rows
+                        $data[] = $rowData;
                     }
-
-                    $successCount++;
-                } catch (\Exception $e) {
-                    $errors[] = "Row " . ($rowIndex + 2) . ": " . $e->getMessage();
-                    $errorCount++;
+                }
+            } else {
+                // Read CSV file
+                $csvData = array_map('str_getcsv', file($path));
+                
+                // Find header row
+                $headerRowIndex = 0;
+                $header = [];
+                
+                for ($i = 0; $i < min(10, count($csvData)); $i++) {
+                    $potentialHeader = array_map(function($cell) {
+                        return strtolower(trim($cell ?? ''));
+                    }, $csvData[$i]);
+                    
+                    // Normalize column names
+                    $normalizedHeader = array_map(function($col) {
+                        $col = strtolower(trim($col));
+                        $col = preg_replace('/\s+/', '', $col);
+                        $variations = [
+                            'name' => ['name', 'fullname', 'full_name', 'customername', 'customer_name'],
+                            'phone1' => ['phone1', 'phone', 'phone_1', 'phonenumber', 'phone_number', 'mobile', 'mobile1'],
+                            'phone2' => ['phone2', 'phone_2', 'mobile2', 'alternatephone', 'alternate_phone'],
+                            'dob' => ['dob', 'dateofbirth', 'date_of_birth', 'birthdate', 'birth_date'],
+                            'sex' => ['sex', 'gender'],
+                            'region_id' => ['region_id', 'regionid', 'region', 'regionname'],
+                            'district_id' => ['district_id', 'districtid', 'district', 'districtname'],
+                            'work' => ['work', 'occupation', 'job'],
+                            'workaddress' => ['workaddress', 'work_address', 'workaddress'],
+                            'idtype' => ['idtype', 'id_type', 'identificationtype'],
+                            'idnumber' => ['idnumber', 'id_number', 'identificationnumber'],
+                            'relation' => ['relation', 'relationship'],
+                            'description' => ['description', 'desc', 'notes'],
+                        ];
+                        
+                        foreach ($variations as $standard => $aliases) {
+                            if (in_array($col, $aliases)) {
+                                return $standard;
+                            }
+                        }
+                        return $col;
+                    }, $potentialHeader);
+                    
+                    if (in_array('name', $normalizedHeader) && in_array('phone1', $normalizedHeader)) {
+                        $header = $normalizedHeader;
+                        $headerRowIndex = $i;
+                        break;
+                    }
+                }
+                
+                if (empty($header)) {
+                    return back()->withErrors(['csv_file' => 'Could not find header row. Please ensure the file has columns: name, phone1, dob, sex']);
+                }
+                
+                // Remove rows before header and the header row itself
+                $csvData = array_slice($csvData, $headerRowIndex + 1);
+                
+                // Convert rows to associative arrays
+                foreach ($csvData as $row) {
+                    if (count($row) >= count($header)) {
+                        $rowData = [];
+                        foreach ($header as $index => $headerName) {
+                            $rowData[$headerName] = trim($row[$index] ?? '');
+                        }
+                        if (!empty(array_filter($rowData, function($val) { return $val !== ''; }))) {
+                            $data[] = $rowData;
+                        }
+                    }
                 }
             }
 
-            if ($errorCount > 0) {
+            // Validate file structure
+            $requiredColumns = ['name', 'phone1', 'dob', 'sex'];
+            $missingColumns = array_diff($requiredColumns, $header);
+
+            if (!empty($missingColumns)) {
+                $foundColumns = implode(', ', array_keys(array_intersect_key($header, array_flip($requiredColumns))));
+                $allFoundColumns = implode(', ', array_keys($header));
+                return back()->withErrors([
+                    'csv_file' => 'Missing required columns: ' . implode(', ', $missingColumns) . 
+                    '. Found columns: ' . ($allFoundColumns ?: 'none') . 
+                    '. Please ensure your file has the correct header row with: name, phone1, dob, sex'
+                ]);
+            }
+
+            if (empty($data)) {
+                return back()->withErrors(['csv_file' => 'No data rows found in the file.']);
+            }
+
+            // Process data in chunks of 20
+            $chunkSize = 20;
+            $chunks = array_chunk($data, $chunkSize);
+            $totalChunks = count($chunks);
+            $totalRows = count($data);
+
+            // Process synchronously in chunks for immediate results
+            // This ensures data is saved immediately without requiring queue worker
+            $successCount = 0;
+            $errorCount = 0;
+            $errors = [];
+            $failedRecords = [];
+
+            DB::beginTransaction();
+            
+            try {
+                foreach ($chunks as $chunkIndex => $chunk) {
+                    Log::info("Processing chunk {$chunkIndex} of {$totalChunks}", [
+                        'chunk_size' => count($chunk),
+                        'user_id' => auth()->id()
+                    ]);
+                    
+                    foreach ($chunk as $rowIndex => $rowData) {
+                        try {
+                            // Validate required fields
+                            if (
+                                empty($rowData['name']) || empty($rowData['phone1']) || empty($rowData['dob']) ||
+                                empty($rowData['sex'])
+                            ) {
+                                throw new \Exception("Missing required fields");
+                            }
+
+                            // Validate sex
+                            if (!in_array(strtoupper($rowData['sex']), ['M', 'F'])) {
+                                throw new \Exception("Sex must be M or F");
+                            }
+
+                            // Handle region and district - convert names to IDs if provided
+                            $regionId = null;
+                            $districtId = null;
+
+                            if (!empty($rowData['region_id'])) {
+                                if (is_numeric($rowData['region_id'])) {
+                                    $regionId = $rowData['region_id'];
+                                } else {
+                                    $region = Region::where('name', trim($rowData['region_id']))->first();
+                                    $regionId = $region ? $region->id : null;
+                                }
+                            }
+
+                            if (!empty($rowData['district_id'])) {
+                                if (is_numeric($rowData['district_id'])) {
+                                    $districtId = $rowData['district_id'];
+                                } else {
+                                    $district = District::where('name', trim($rowData['district_id']))->first();
+                                    $districtId = $district ? $district->id : null;
+                                }
+                            }
+
+                            // Format phone number
+                            $phone1 = $this->formatPhoneNumber(trim($rowData['phone1']));
+                            $phone2 = !empty($rowData['phone2']) ? $this->formatPhoneNumber(trim($rowData['phone2'])) : null;
+
+                            // Create customer data
+                            $customerData = [
+                                'name' => trim($rowData['name']),
+                                'phone1' => $phone1,
+                                'phone2' => $phone2,
+                                'dob' => $rowData['dob'],
+                                'sex' => strtoupper($rowData['sex']),
+                                'region_id' => $regionId,
+                                'district_id' => $districtId,
+                                'work' => trim($rowData['work'] ?? ''),
+                                'workAddress' => trim($rowData['workaddress'] ?? $rowData['workAddress'] ?? ''),
+                                'idType' => trim($rowData['idtype'] ?? $rowData['idType'] ?? ''),
+                                'idNumber' => trim($rowData['idnumber'] ?? $rowData['idNumber'] ?? ''),
+                                'relation' => trim($rowData['relation'] ?? ''),
+                                'description' => trim($rowData['description'] ?? ''),
+                                'customerNo' => 100000 + (Customer::max('id') ?? 0) + 1,
+                                'password' => Hash::make('1234567890'),
+                                'branch_id' => auth()->user()->branch_id,
+                                'company_id' => auth()->user()->company_id,
+                                'registrar' => auth()->id(),
+                                'dateRegistered' => now()->toDateString(),
+                                'has_cash_collateral' => $request->has('has_cash_collateral'),
+                                'category' => 'Borrower',
+                            ];
+
+                            $customer = Customer::create($customerData);
+
+                            // Add cash collateral if selected
+                            if ($request->has('has_cash_collateral') && $request->collateral_type_id) {
+                                \App\Models\CashCollateral::create([
+                                    'customer_id' => $customer->id,
+                                    'type_id' => $request->collateral_type_id,
+                                    'amount' => 0,
+                                    'branch_id' => auth()->user()->branch_id,
+                                    'company_id' => auth()->user()->company_id,
+                                ]);
+                            }
+
+                            // Assign to individual group if not already in a group
+                            $existingMembership = DB::table('group_members')->where('customer_id', $customer->id)->first();
+                            if (!$existingMembership) {
+                                DB::table('group_members')->insert([
+                                    'group_id' => 1,
+                                    'customer_id' => $customer->id,
+                                    'status' => 'active',
+                                    'joined_date' => now()->toDateString(),
+                                    'created_at' => now(),
+                                    'updated_at' => now(),
+                                ]);
+                            }
+
+                            $successCount++;
+                        } catch (\Exception $e) {
+                            $errorMsg = "Row " . (($chunkIndex * $chunkSize) + $rowIndex + 2) . ": " . $e->getMessage();
+                            $errors[] = $errorMsg;
+                            $failedRecords[] = array_merge($rowData, [
+                                'row_number' => ($chunkIndex * $chunkSize) + $rowIndex + 2,
+                                'error_reason' => $errorMsg
+                            ]);
+                            $errorCount++;
+                            Log::error('Failed to create customer in bulk upload', [
+                                'row_data' => $rowData,
+                                'error' => $e->getMessage()
+                            ]);
+                        }
+                    }
+                }
+
+                if ($errorCount > 0) {
+                    DB::rollBack();
+                    
+                    // Store failed records in session for export
+                    $failedExportKey = 'failed_customer_upload_' . time();
+                    session([$failedExportKey => $failedRecords]);
+                    
+                    return back()
+                        ->withErrors(['csv_file' => "Upload completed with errors. {$errorCount} rows failed, {$successCount} rows succeeded."])
+                        ->with('upload_errors', $errors)
+                        ->with('failed_export_key', $failedExportKey)
+                        ->with('failed_count', $errorCount);
+                }
+
+                DB::commit();
+
+                $message = "Successfully uploaded {$successCount} customers.";
+                if ($request->has('has_cash_collateral')) {
+                    $message .= " Cash collateral applied to all customers.";
+                }
+
+                return redirect()->route('customers.index')->with('success', $message);
+            } catch (\Exception $e) {
                 DB::rollBack();
-                return back()->withErrors(['csv_file' => 'Upload completed with errors. ' . $errorCount . ' rows failed.'])->with('upload_errors', $errors);
+                Log::error('Bulk customer upload failed', [
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
+                return back()->withErrors(['csv_file' => 'Failed to process file: ' . $e->getMessage()]);
             }
-
-            DB::commit();
-
-            $message = "Successfully uploaded {$successCount} customers.";
-            if ($request->has('has_cash_collateral')) {
-                $message .= " Cash collateral applied to all customers.";
-            }
-
-            return redirect()->route('customers.index')->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors(['csv_file' => 'Failed to process CSV file: ' . $e->getMessage()]);
+            return back()->withErrors(['csv_file' => 'Failed to process file: ' . $e->getMessage()]);
         }
     }
+    
+    // Download failed records export
+    public function downloadFailedRecords(Request $request)
+    {
+        $exportKey = $request->get('key');
+        $failedRecords = session($exportKey, []);
+        
+        if (empty($failedRecords)) {
+            return back()->withErrors(['error' => 'Failed records not found.']);
+        }
+        
+        $filename = 'failed_customer_upload_' . date('Y-m-d_His') . '.xlsx';
+        return Excel::download(new CustomerBulkUploadFailedExport($failedRecords), $filename);
+    }
 
-    // Download sample CSV
+    // Download sample Excel
     public function downloadSample()
+    {
+        $filename = 'customer_bulk_upload_sample_' . date('Y-m-d') . '.xlsx';
+        return Excel::download(new CustomerBulkUploadSampleExport(), $filename);
+    }
+    
+    // Old CSV download method (kept for backward compatibility)
+    public function downloadSampleCSV()
     {
         $filename = 'customer_bulk_upload_sample.csv';
         $headers = [

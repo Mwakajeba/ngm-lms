@@ -158,6 +158,9 @@ class UserController extends Controller
                 'user_name' => $user->name
             ]);
 
+            // Attach selected branch to branch_user pivot as default branch assignment
+            $user->branches()->syncWithoutDetaching([$request->branch_id]);
+
             // Assign the role
             $user->assignRole($role);
 
@@ -212,8 +215,18 @@ class UserController extends Controller
             abort(403, 'Unauthorized access.');
         }
 
-        // Load user relationships
-        $user->load(['branch', 'company', 'roles', 'permissions']);
+        // Load user relationships including all assigned branches and loans where this user is loan officer
+        $user->load([
+            'branch',
+            'company',
+            'roles',
+            'permissions',
+            'branches',
+            'loans' => function ($q) {
+                $q->with(['customer', 'product', 'branch'])
+                  ->latest();
+            },
+        ]);
 
         return view('users.show', compact('user'));
     }
@@ -354,6 +367,9 @@ class UserController extends Controller
                 'user_id' => $user->id,
                 'user_name' => $user->name
             ]);
+
+            // Ensure selected branch is also present in branch_user pivot (keep others)
+            $user->branches()->syncWithoutDetaching([$request->branch_id]);
 
             // Sync roles (remove all existing and assign the new one)
             $user->syncRoles([$role]);

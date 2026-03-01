@@ -171,10 +171,11 @@ class CollectMatureInterestJob implements ShouldQueue
         $penaltyConfig = $product->penalty;
 
         $graceDays = $product->grace_period ?? 0;
-        // frequency from penalty config; fallback to product setting ('daily_bases'|'full_amount')
+        // frequency from penalty config; fallback to product setting
         $frequency = $penaltyConfig->charge_frequency ?? null;
         if (!$frequency) {
-            $frequency = ($product->penalt_deduction_criteria === 'daily_bases') ? 'daily' : 'one_time';
+            $criteria = $product->penalt_deduction_criteria;
+            $frequency = in_array($criteria, ['daily', 'daily_bases'], true) ? 'daily' : 'one_time';
         }
         $penaltyRateType = $penaltyConfig->penalty_type ?? 'percentage'; // 'percentage' or 'fixed amount'
         $penaltyAmountSetting = $penaltyConfig->amount ?? 0;

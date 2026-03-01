@@ -22,14 +22,13 @@
                                 <div class="col-md-6 mb-4">
                                     <div class="card border-primary">
                                         <div class="card-header bg-primary text-white">
-                                            <h6 class="mb-0"><i class="bx bx-download me-2"></i>Download Sample CSV</h6>
+                                            <h6 class="mb-0"><i class="bx bx-download me-2"></i>Download Sample Excel</h6>
                                         </div>
                                         <div class="card-body">
-                                            <p class="text-muted mb-3">Download the sample CSV file to understand the
-                                                required format for bulk upload.</p>
+                                            <p class="text-muted mb-3">Download the sample Excel file with 100 sample customers. The file includes dropdowns for Sex, Region, and District.</p>
                                             <a href="{{ route('customers.download-sample') }}"
                                                 class="btn btn-outline-primary">
-                                                <i class="bx bx-download me-2"></i>Download Sample CSV
+                                                <i class="bx bx-download me-2"></i>Download Sample Excel (100 Customers)
                                             </a>
                                         </div>
                                     </div>
@@ -43,10 +42,10 @@
                                         </div>
                                         <div class="card-body">
                                             <ul class="mb-0">
-                                                <li>Download the sample CSV file first</li>
-                                                <li>Fill in the customer data following the format</li>
-                                                <li>Save as CSV format</li>
-                                                <li>Upload the file below</li>
+                                                <li>Download the sample Excel file first (includes 100 sample customers)</li>
+                                                <li>Use dropdowns for Sex (M/F), Region, and District</li>
+                                                <li>Delete instruction rows and sample data before uploading</li>
+                                                <li>Upload Excel (.xlsx, .xls) or CSV (.csv) format</li>
                                                 <li>Select cash deposit options if needed</li>
                                             </ul>
                                         </div>
@@ -70,7 +69,15 @@
                             @if(session('upload_errors'))
                                 <div class="alert alert-warning alert-dismissible fade show" role="alert">
                                     <i class="bx bx-warning me-2"></i>
-                                    <strong>Upload completed with warnings!</strong> Some rows had issues:
+                                    <strong>Upload completed with warnings!</strong> {{ session('failed_count', 0) }} row(s) had issues.
+                                    @if(session('failed_export_key'))
+                                        <div class="mt-3">
+                                            <a href="{{ route('customers.download-failed-records', ['key' => session('failed_export_key')]) }}" 
+                                               class="btn btn-sm btn-danger">
+                                                <i class="bx bx-download me-1"></i>Download Failed Records (Excel)
+                                            </a>
+                                        </div>
+                                    @endif
                                     <ul class="mb-0 mt-2">
                                         @foreach(session('upload_errors') as $error)
                                             <li>{{ $error }}</li>
@@ -94,24 +101,39 @@
                                 @csrf
 
                                 <div class="row">
-                                    <!-- CSV File Upload -->
+                                    <!-- File Upload -->
                                     <div class="col-md-12 mb-4">
                                         <div class="card">
                                             <div class="card-header">
-                                                <h6 class="mb-0"><i class="bx bx-file me-2"></i>Upload CSV File</h6>
+                                                <h6 class="mb-0"><i class="bx bx-file me-2"></i>Upload Excel/CSV File</h6>
                                             </div>
                                             <div class="card-body">
                                                 <div class="mb-3">
-                                                    <label for="csv_file" class="form-label">Select CSV File <span
+                                                    <label for="csv_file" class="form-label">Select Excel or CSV File <span
                                                             class="text-danger">*</span></label>
                                                     <input type="file" name="csv_file" id="csv_file"
                                                         class="form-control @error('csv_file') is-invalid @enderror"
-                                                        accept=".csv" required>
-                                                    <div class="form-text">Only CSV files are allowed. Maximum size: 5MB
+                                                        accept=".xlsx,.xls,.csv" required>
+                                                    <div class="form-text">Excel (.xlsx, .xls) or CSV (.csv) files are allowed. Maximum size: 10MB
                                                     </div>
                                                     @error('csv_file')
                                                         <div class="invalid-feedback">{{ $message }}</div>
                                                     @enderror
+                                                </div>
+                                                
+                                                <!-- Progress Bar -->
+                                                <div id="progressContainer" class="mt-3" style="display: none;">
+                                                    <div class="d-flex justify-content-between mb-2">
+                                                        <span id="progressText">Uploading...</span>
+                                                        <span id="progressPercent">0%</span>
+                                                    </div>
+                                                    <div class="progress" style="height: 25px;">
+                                                        <div id="progressBar" class="progress-bar progress-bar-striped progress-bar-animated" 
+                                                             role="progressbar" style="width: 0%" aria-valuenow="0" 
+                                                             aria-valuemin="0" aria-valuemax="100">
+                                                            <span id="progressBarText">0%</span>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
@@ -192,12 +214,46 @@
             // Initialize the state on page load
             toggleCollateralField();
 
-            // Handle form submission
-            form.addEventListener('submit', function () {
+            // Handle form submission with progress bar
+            form.addEventListener('submit', function (e) {
+                const fileInput = document.getElementById('csv_file');
+                const file = fileInput.files[0];
+                
+                if (!file) {
+                    return;
+                }
+                
+                // Show progress bar
+                document.getElementById('progressContainer').style.display = 'block';
                 submitBtn.disabled = true;
                 submitText.textContent = 'Uploading...';
                 submitBtn.innerHTML = '<i class="bx bx-loader-alt bx-spin me-1"></i>Uploading...';
+                
+                // Simulate progress (actual progress would come from server via AJAX)
+                let progress = 0;
+                const progressInterval = setInterval(function() {
+                    progress += 5;
+                    if (progress > 90) {
+                        clearInterval(progressInterval);
+                        progress = 90; // Don't go to 100% until server responds
+                    }
+                    updateProgress(progress);
+                }, 200);
+                
+                // Store interval to clear on form submit completion
+                form.dataset.progressInterval = progressInterval;
             });
+            
+            function updateProgress(percent) {
+                const progressBar = document.getElementById('progressBar');
+                const progressBarText = document.getElementById('progressBarText');
+                const progressPercent = document.getElementById('progressPercent');
+                
+                progressBar.style.width = percent + '%';
+                progressBar.setAttribute('aria-valuenow', percent);
+                progressBarText.textContent = Math.round(percent) + '%';
+                progressPercent.textContent = Math.round(percent) + '%';
+            }
         });
     </script>
 @endpush

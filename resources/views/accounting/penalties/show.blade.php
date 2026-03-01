@@ -33,24 +33,13 @@
             <hr />
 
             <!-- Prominent Header Card -->
-            <div class="card radius-10 bg-gradient-danger text-white mb-4">
+            <div class="card radius-10 bg-secondary text-white mb-4">
                 <div class="card-body">
                     <div class="d-flex align-items-center">
-                        <div
-                            class="avatar-lg bg-white text-danger rounded-circle me-3 d-flex align-items-center justify-content-center">
                             <i class="bx bx-error-circle font-size-32"></i>
-                        </div>
                         <div class="flex-grow-1">
                             <h3 class="mb-1">{{ $penalty->name }}</h3>
                             <p class="mb-0 opacity-75">{{ $penalty->description ?: 'No description provided' }}</p>
-                        </div>
-                        <div class="d-flex gap-2">
-                            {!! $penalty->status_badge !!}
-                            {!! $penalty->penalty_type_badge !!}
-                            <span class="badge bg-light text-dark">
-                                <i class="bx bx-calendar me-1"></i>
-                                {{ $penalty->created_at->format('M d, Y') }}
-                            </span>
                         </div>
                     </div>
                 </div>
@@ -61,8 +50,8 @@
                 <div class="col-lg-8">
                     <!-- Basic Information -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-primary text-white">
-                            <h5 class="mb-0"><i class="bx bx-info-circle me-2"></i>Basic Information</h5>
+                        <div class="card-header bg-secondary text-light">
+                            <h5 class="mb-0"><i class="bx bx-info-circle me-2"></i> Basic Information</h5>
                         </div>
                         <div class="card-body">
                             <div class="row">
@@ -71,9 +60,8 @@
                                     <p class="form-control-plaintext">{{ $penalty->name }}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Chart Account</label>
-                                    <p class="form-control-plaintext">{{ $penalty->chartAccount->account_name ?? 'N/A' }}
-                                        ({{ $penalty->chartAccount->account_code ?? 'N/A' }})</p>
+                                    <label class="form-label fw-bold">Status</label>
+                                    <p class="form-control-plaintext">{!! $penalty->status_badge !!}</p>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Penalty Type</label>
@@ -86,12 +74,83 @@
                                     </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
-                                    <label class="form-label fw-bold">Status</label>
-                                    <p class="form-control-plaintext">{!! $penalty->status_badge !!}</p>
+                                    <label class="form-label fw-bold">Charge Frequency</label>
+                                    <p class="form-control-plaintext">
+                                        @php
+                                            $chargeFrequencyOptions = App\Models\Penalty::getChargeFrequencyOptions();
+                                            $chargeFrequencyLabel = $chargeFrequencyOptions[$penalty->charge_frequency] ?? 'Unknown';
+                                        @endphp
+                                        <span class="badge bg-info">{{ ucfirst($chargeFrequencyLabel) }}</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Frequency Cycle</label>
+                                    <p class="form-control-plaintext">
+                                        @php
+                                            $frequencyCycleOptions = App\Models\Penalty::getFrequencyCycleOptions();
+                                            $frequencyCycleLabel = $frequencyCycleOptions[$penalty->frequency_cycle ?? 'monthly'] ?? 'Monthly';
+                                        @endphp
+                                        <span class="badge bg-primary">{{ ucfirst($frequencyCycleLabel) }}</span>
+                                        <br>
+                                        <small class="text-muted">The period for which the penalty rate applies</small>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Penalty Limit Days</label>
+                                    <p class="form-control-plaintext">
+                                        @if($penalty->penalty_limit_days)
+                                            <span class="badge bg-warning text-dark">{{ $penalty->penalty_limit_days }} days</span>
+                                            <br>
+                                            <small class="text-muted">Maximum days in arrears before stopping daily penalty accrual</small>
+                                        @else
+                                            <span class="badge bg-secondary">No Limit</span>
+                                        @endif
+                                    </p>
                                 </div>
                                 <div class="col-md-6 mb-3">
                                     <label class="form-label fw-bold">Deduction Type</label>
                                     <p class="form-control-plaintext">{!! $penalty->deduction_type_badge !!}</p>
+                                </div>
+                                <div class="col-12 mb-3">
+                                    <label class="form-label fw-bold">Description</label>
+                                    <p class="form-control-plaintext">
+                                        {{ $penalty->description ?: 'No description provided' }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Chart Accounts Information -->
+                    <div class="card radius-10 mb-4">
+                        <div class="card-header bg-secondary text-white">
+                            <h5 class="mb-0"><i class="bx bx-book-open me-2"></i>Chart Accounts</h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Penalty Income Account</label>
+                                    <p class="form-control-plaintext">
+                                        @if($penalty->penaltyIncomeAccount)
+                                            <strong>{{ $penalty->penaltyIncomeAccount->account_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">Code: {{ $penalty->penaltyIncomeAccount->account_code }}</small>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Penalty Receivables Account</label>
+                                    <p class="form-control-plaintext">
+                                        @if($penalty->penaltyReceivablesAccount)
+                                            <strong>{{ $penalty->penaltyReceivablesAccount->account_name }}</strong>
+                                            <br>
+                                            <small class="text-muted">Code: {{ $penalty->penaltyReceivablesAccount->account_code }}</small>
+                                        @else
+                                            <span class="text-muted">N/A</span>
+                                        @endif
+                                    </p>
                                 </div>
                             </div>
                         </div>
@@ -99,7 +158,7 @@
 
                     <!-- Penalty Configuration Details -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-success text-white">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-cog me-2"></i>Penalty Configuration</h5>
                         </div>
                         <div class="card-body">
@@ -108,9 +167,13 @@
                                     <label class="form-label fw-bold">Calculation Method</label>
                                     <p class="form-control-plaintext">
                                         @if($penalty->isFixed())
-                                            Fixed amount of {{ number_format($penalty->amount, 2) }}
+                                            <span class="badge bg-primary">Fixed Amount</span>
+                                            <br>
+                                            <strong class="text-primary">{{ number_format($penalty->amount, 2) }}</strong>
                                         @else
-                                            {{ number_format($penalty->amount, 2) }}% of the base amount
+                                            <span class="badge bg-info">Percentage</span>
+                                            <br>
+                                            <strong class="text-primary">{{ number_format($penalty->amount, 2) }}%</strong> of the base amount
                                         @endif
                                     </p>
                                 </div>
@@ -126,10 +189,40 @@
                                         <small class="text-muted">{{ $deductionLabel }}</small>
                                     </p>
                                 </div>
-                                <div class="col-12 mb-3">
-                                    <label class="form-label fw-bold">Description</label>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Charge Frequency</label>
                                     <p class="form-control-plaintext">
-                                        {{ $penalty->description ?: 'No description provided' }}
+                                        @php
+                                            $chargeFrequencyOptions = App\Models\Penalty::getChargeFrequencyOptions();
+                                            $chargeFrequencyLabel = $chargeFrequencyOptions[$penalty->charge_frequency] ?? 'Unknown';
+                                        @endphp
+                                        <span class="badge bg-info">{{ ucfirst($chargeFrequencyLabel) }}</span>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Frequency Cycle</label>
+                                    <p class="form-control-plaintext">
+                                        @php
+                                            $frequencyCycleOptions = App\Models\Penalty::getFrequencyCycleOptions();
+                                            $frequencyCycleLabel = $frequencyCycleOptions[$penalty->frequency_cycle ?? 'monthly'] ?? 'Monthly';
+                                        @endphp
+                                        <span class="badge bg-primary">{{ ucfirst($frequencyCycleLabel) }}</span>
+                                        <br>
+                                        <small class="text-muted">The period for which the penalty rate applies</small>
+                                    </p>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label class="form-label fw-bold">Penalty Limit Days</label>
+                                    <p class="form-control-plaintext">
+                                        @if($penalty->penalty_limit_days)
+                                            <span class="badge bg-warning text-dark">{{ $penalty->penalty_limit_days }} days</span>
+                                            <br>
+                                            <small class="text-muted">Maximum days in arrears before stopping daily penalty accrual</small>
+                                        @else
+                                            <span class="badge bg-secondary">No Limit</span>
+                                            <br>
+                                            <small class="text-muted">Penalty will continue to accrue indefinitely</small>
+                                        @endif
                                     </p>
                                 </div>
                             </div>
@@ -141,7 +234,7 @@
                 <div class="col-lg-4">
                     <!-- Organization Information -->
                     <div class="card radius-10 mb-4">
-                        <div class="card-header bg-warning text-dark">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-building me-2"></i>Organization</h5>
                         </div>
                         <div class="card-body">
@@ -197,7 +290,7 @@
 
                     <!-- Quick Actions -->
                     <div class="card radius-10">
-                        <div class="card-header bg-light">
+                        <div class="card-header bg-secondary text-white">
                             <h5 class="mb-0"><i class="bx bx-cog me-2"></i>Quick Actions</h5>
                         </div>
                         <div class="card-body">
