@@ -67,6 +67,7 @@ Route::get('/api/bank-accounts', [\App\Http\Controllers\Api\BankAccountControlle
 Route::post('/api/customer/login', [\App\Http\Controllers\Api\CustomerAuthController::class, 'login']);
 Route::post('/api/customer/profile', [\App\Http\Controllers\Api\CustomerAuthController::class, 'profile']);
 Route::post('/api/customer/loans', [\App\Http\Controllers\Api\CustomerAuthController::class, 'loans']);
+Route::post('/api/customer/loan-detail', [\App\Http\Controllers\Api\CustomerAuthController::class, 'loanDetail']);
 Route::post('/api/customer/group-members', [\App\Http\Controllers\Api\CustomerAuthController::class, 'groupMembers']);
 Route::get('/api/customer/loan-products', [\App\Http\Controllers\Api\CustomerAuthController::class, 'loanProducts']);
 Route::post('/api/customer/update-photo', [\App\Http\Controllers\Api\CustomerAuthController::class, 'updatePhoto']);
