@@ -653,6 +653,7 @@ class CustomerAuthController extends Controller
     {
         try {
             $products = LoanProduct::where('is_active', true)
+                ->with('filetypes')
                 ->orderBy('name', 'asc')
                 ->get()
                 ->map(function ($product) {
@@ -675,6 +676,13 @@ class CustomerAuthController extends Controller
                         'cash_collateral_value_type' => $product->cash_collateral_value_type,
                         'cash_collateral_value' => $product->cash_collateral_value ?? 0,
                         'allowed_in_app' => $product->allowed_in_app ?? false,
+                        'filetypes' => $product->filetypes->map(function ($filetype) {
+                            return [
+                                'id' => $filetype->id,
+                                'name' => $filetype->name,
+                                'description' => $filetype->description,
+                            ];
+                        }),
                     ];
                 });
 
