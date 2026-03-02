@@ -1246,7 +1246,8 @@ class CustomerAuthController extends Controller
             }
 
             // Get group_id from customer if not provided
-            $groupId = $validated['group_id'];
+            // NOTE: nullable fields may be omitted from $validated entirely
+            $groupId = $validated['group_id'] ?? null;
             if (!$groupId) {
                 $groupMembership = DB::table('group_members')
                     ->where('customer_id', $validated['customer_id'])
