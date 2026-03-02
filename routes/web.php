@@ -11,6 +11,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\FiletypeController;
+use App\Http\Controllers\ComplainCategoryController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -247,6 +248,9 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
     //Filetypes settings
     Route::resource('filetypes', FiletypeController::class);
+
+    // Complain Categories
+    Route::resource('complain-categories', ComplainCategoryController::class);
 
     Route::get('/', [SettingsController::class, 'index'])->name('index');
 
