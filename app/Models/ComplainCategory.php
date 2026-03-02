@@ -42,11 +42,9 @@ class ComplainCategory extends Model
 
     /**
      * Get the complains for this category.
-     * Note: This relationship assumes a Complain model exists with complain_category_id foreign key.
      */
     public function complains(): HasMany
     {
-        // Note: If Complain model doesn't exist, create it or comment out this relationship
-        return $this->hasMany(\App\Models\Complain::class, 'complain_category_id');
+        return $this->hasMany(Complain::class, 'complain_category_id');
     }
 }

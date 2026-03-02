@@ -12,6 +12,7 @@ use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\ComplainCategoryController;
+use App\Http\Controllers\ComplaintsController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -123,6 +124,13 @@ Route::post('/reset-password', [AuthController::class, 'storeNewPassword']);
 Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('resend.otp');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// Complaints Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/complaints', [ComplaintsController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/{complaint}/edit', [ComplaintsController::class, 'edit'])->name('complaints.edit');
+    Route::put('/complaints/{complaint}', [ComplaintsController::class, 'update'])->name('complaints.update');
+});
 
 // Laravel Logs Route
 Route::get('/log', [LaravelLogsController::class, 'index'])->name('laravel-logs.index')->middleware('auth');

@@ -12,6 +12,7 @@ use App\Models\Journal;
 use App\Models\Payment;
 use App\Models\Penalty;
 use App\Models\Receipt;
+use App\Models\Complain;
 use App\Services\LoanPenaltyService;
 
 class DashboardController extends Controller
@@ -365,6 +366,20 @@ class DashboardController extends Controller
         // Get previous year comparative data
         $previousYearData = $this->getPreviousYearData($selectedBranchId, $userBranchIds);
 
+        // Get complaints count (pending complaints for current branch/company)
+        $complaintsQuery = Complain::whereHas('branch', function($q) use ($company) {
+            $q->where('company_id', $company->id);
+        });
+        
+        if ($selectedBranchId) {
+            $complaintsQuery->where('branch_id', $selectedBranchId);
+        } elseif (!empty($userBranchIds)) {
+            $complaintsQuery->whereIn('branch_id', $userBranchIds);
+        }
+        
+        $pendingComplaintsCount = (clone $complaintsQuery)->where('status', 'pending')->count();
+        $totalComplaintsCount = $complaintsQuery->count();
+
         return view('dashboard', compact(
             'balanceSheetData',
             'financialReportData',
@@ -387,7 +402,9 @@ class DashboardController extends Controller
             'officerTotalPortfolio',
             'officerTotalArrears',
             'branches',
-            'selectedBranchId'
+            'selectedBranchId',
+            'pendingComplaintsCount',
+            'totalComplaintsCount'
         ));
     }
     

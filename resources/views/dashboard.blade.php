@@ -277,6 +277,29 @@ use Vinkla\Hashids\Facades\Hashids;
                 </div>
             </div>
             @endcan
+
+            <!-- Complaints Card -->
+            <div class="col">
+                <a href="{{ route('complaints.index') }}" class="text-decoration-none">
+                    <div class="card radius-10">
+                        <div class="card-body position-relative">
+                            <div class="d-flex align-items-center">
+                                <div class="flex-grow-1">
+                                    <p class="mb-0 text-muted">Complaints</p>
+                                    <h4 class="font-weight-bold text-dark">
+                                        {{ $pendingComplaintsCount ?? 0 }}
+                                    </h4>
+                                    <p class="text-warning mb-0 font-13">Pending ({{ $totalComplaintsCount ?? 0 }} total)</p>
+                                </div>
+                                <div class="widgets-icons bg-gradient-danger text-white">
+                                    <i class='bx bx-message-square-error'></i>
+                                </div>
+                            </div>
+                            <span class="stretched-link"></span>
+                        </div>
+                    </div>
+                </a>
+            </div>
         </div>
         <!--end row-->
 
