@@ -475,6 +475,45 @@
                 </div>
             </div>
 
+            <!-- KYC Configuration Card -->
+            <div class="row mb-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-secondary text-white d-flex justify-content-between align-items-center">
+                            <h5 class="card-title mb-0">
+                                <i class="bx bx-file me-2"></i>KYC Required Documents
+                            </h5>
+                            @can('edit loan product')
+                            <a href="{{ route('loan-products.kyc-config', Hashids::encode($loanProduct->id)) }}" class="btn btn-sm btn-light">
+                                <i class="bx bx-cog"></i> Configure
+                            </a>
+                            @endcan
+                        </div>
+                        <div class="card-body">
+                            @if($loanProduct->filetypes && $loanProduct->filetypes->count() > 0)
+                                <div class="row">
+                                    @foreach($loanProduct->filetypes as $filetype)
+                                        <div class="col-md-6 col-lg-4 mb-2">
+                                            <div class="d-flex align-items-center">
+                                                <i class="bx bx-file-blank text-primary me-2"></i>
+                                                <span>{{ $filetype->name }}</span>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            @else
+                                <p class="text-muted mb-0">
+                                    <i class="bx bx-info-circle"></i> No KYC documents configured for this product.
+                                    @can('edit loan product')
+                                    <a href="{{ route('loan-products.kyc-config', Hashids::encode($loanProduct->id)) }}" class="text-primary">Configure now</a>
+                                    @endcan
+                                </p>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+            </div>
+
         </div>
     </div>
 @endsection

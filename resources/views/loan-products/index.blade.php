@@ -118,6 +118,10 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 @endcanany
 
                                                 @can('edit loan product')
+                                                <a href="{{ route('loan-products.kyc-config', Hashids::encode($product->id)) }}"
+                                                    class="btn btn-sm btn-outline-warning" title="KYC Configuration">
+                                                    <i class="bx bx-file"></i> KYC
+                                                </a>
                                                 <a href="{{ route('loan-products.edit', Hashids::encode($product->id)) }}"
                                                     class="btn btn-sm btn-outline-primary" title="Edit Product">
                                                     edit
