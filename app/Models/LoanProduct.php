@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Traits\LogsActivity;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class LoanProduct extends Model
 {
@@ -395,5 +396,14 @@ class LoanProduct extends Model
         } else {
             $this->attributes['repayment_order'] = $value;
         }
+    }
+
+    /**
+     * Get the filetypes (KYC documents) required for this loan product
+     */
+    public function filetypes(): BelongsToMany
+    {
+        return $this->belongsToMany(Filetype::class, 'filetype_loan_product')
+            ->withTimestamps();
     }
 }

@@ -7,6 +7,7 @@ use App\Models\ChartAccount;
 use App\Models\Fee;
 use App\Models\Penalty;
 use App\Models\CashCollateralType;
+use App\Models\Filetype;
 use App\Models\Role;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -268,7 +269,8 @@ class LoanProductController extends Controller
             'principalReceivableAccount',
             'interestReceivableAccount',
             'interestRevenueAccount',
-            'cashCollateralType'
+            'cashCollateralType',
+            'filetypes'
             // TODO: Add loan_product_id to loans table and uncomment this
             // 'loans'
         ]);
@@ -569,6 +571,54 @@ class LoanProductController extends Controller
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error updating loan product status: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show KYC configuration form for a loan product
+     */
+    public function showKycConfig($encodedId)
+    {
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+        $loanProduct->load('filetypes');
+        
+        $allFiletypes = Filetype::orderBy('name')->get();
+        $selectedFiletypeIds = $loanProduct->filetypes->pluck('id')->toArray();
+
+        return view('loan-products.kyc-config', compact('loanProduct', 'allFiletypes', 'selectedFiletypeIds'));
+    }
+
+    /**
+     * Update KYC configuration for a loan product
+     */
+    public function updateKycConfig(Request $request, $encodedId)
+    {
+        $decoded = Hashids::decode($encodedId);
+        if (empty($decoded)) {
+            return redirect()->route('loan-products.index')->withErrors(['Loan product not found.']);
+        }
+
+        $loanProduct = LoanProduct::findOrFail($decoded[0]);
+
+        $request->validate([
+            'filetype_ids' => 'nullable|array',
+            'filetype_ids.*' => 'exists:filetypes,id',
+        ]);
+
+        try {
+            $filetypeIds = $request->input('filetype_ids', []);
+            $loanProduct->filetypes()->sync($filetypeIds);
+
+            return redirect()->route('loan-products.show', $encodedId)
+                ->with('success', 'KYC configuration updated successfully.');
+        } catch (\Exception $e) {
+            return redirect()->back()
+                ->with('error', 'Error updating KYC configuration: ' . $e->getMessage());
         }
     }
 }

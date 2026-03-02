@@ -866,6 +866,8 @@ Route::middleware(['auth'])->group(function () {
     Route::put('loan-products/{encodedId}', [LoanProductController::class, 'update'])->name('loan-products.update');
     Route::delete('loan-products/{encodedId}', [LoanProductController::class, 'destroy'])->name('loan-products.destroy');
     Route::patch('loan-products/{encodedId}/toggle-status', [LoanProductController::class, 'toggleStatus'])->name('loan-products.toggle-status');
+    Route::get('loan-products/{encodedId}/kyc-config', [LoanProductController::class, 'showKycConfig'])->name('loan-products.kyc-config');
+    Route::put('loan-products/{encodedId}/kyc-config', [LoanProductController::class, 'updateKycConfig'])->name('loan-products.kyc-config.update');
 });
 
 ////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////

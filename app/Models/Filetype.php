@@ -22,4 +22,13 @@ class Filetype extends Model
     {
         return $this->hasMany(LoanFile::class, 'file_type_id');
     }
+
+    /**
+     * Get the loan products that require this filetype
+     */
+    public function loanProducts()
+    {
+        return $this->belongsToMany(LoanProduct::class, 'filetype_loan_product')
+            ->withTimestamps();
+    }
 }
