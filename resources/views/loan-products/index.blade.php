@@ -113,7 +113,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 @canany(['view product details', 'admin'])
                                                 <a href="{{ route('loan-products.show', Hashids::encode($product->id)) }}"
                                                     class="btn btn-sm btn-outline-info" title="View Details">
-                                                    view
+                                                    <i class="bx bx-show"></i> Show
                                                 </a>
                                                 @endcanany
 
@@ -124,7 +124,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                                 </a>
                                                 <a href="{{ route('loan-products.edit', Hashids::encode($product->id)) }}"
                                                     class="btn btn-sm btn-outline-primary" title="Edit Product">
-                                                    edit
+                                                    <i class="bx bx-edit"></i> Edit
                                                 </a>
                                                 @endcan
 
