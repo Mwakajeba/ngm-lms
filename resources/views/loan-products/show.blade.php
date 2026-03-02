@@ -365,7 +365,15 @@
                                         <label class="form-label text-muted small">Repayment Order</label>
                                         <div class="mb-2">
                                             @php
-                                                $orderArray = explode(',', $loanProduct->repayment_order);
+                                                // Handle both string and array formats
+                                                $repaymentOrder = $loanProduct->repayment_order;
+                                                if (is_string($repaymentOrder)) {
+                                                    $orderArray = !empty($repaymentOrder) ? explode(',', $repaymentOrder) : [];
+                                                } elseif (is_array($repaymentOrder)) {
+                                                    $orderArray = $repaymentOrder;
+                                                } else {
+                                                    $orderArray = [];
+                                                }
                                                 $componentLabels = [
                                                     'principal' => 'Principal',
                                                     'interest' => 'Interest',
@@ -379,14 +387,18 @@
                                                     'penalties' => 'danger'
                                                 ];
                                             @endphp
-                                            @foreach($orderArray as $index => $component)
-                                                @php
-                                                    $component = trim($component);
-                                                    $label = $componentLabels[$component] ?? ucfirst($component);
-                                                    $color = $componentColors[$component] ?? 'secondary';
-                                                @endphp
-                                                <span class="badge bg-{{ $color }} me-2 mb-1">{{ $index + 1 }}. {{ $label }}</span>
-                                            @endforeach
+                                            @if(empty($orderArray))
+                                                <p class="text-muted mb-0">No repayment order configured</p>
+                                            @else
+                                                @foreach($orderArray as $index => $component)
+                                                    @php
+                                                        $component = is_string($component) ? trim($component) : $component;
+                                                        $label = $componentLabels[$component] ?? ucfirst($component);
+                                                        $color = $componentColors[$component] ?? 'secondary';
+                                                    @endphp
+                                                    <span class="badge bg-{{ $color }} me-2 mb-1">{{ $index + 1 }}. {{ $label }}</span>
+                                                @endforeach
+                                            @endif
                                         </div>
                                         <small class="text-muted">
                                             <i class="bx bx-info-circle"></i>
