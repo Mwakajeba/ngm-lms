@@ -77,6 +77,7 @@ Route::post('/api/customer/update-photo', [\App\Http\Controllers\Api\CustomerAut
 Route::get('/api/customer/complain-categories', [\App\Http\Controllers\Api\CustomerAuthController::class, 'getComplainCategories']);
 Route::post('/api/customer/submit-complain', [\App\Http\Controllers\Api\CustomerAuthController::class, 'submitComplain']);
 Route::post('/api/customer/customer-complains', [\App\Http\Controllers\Api\CustomerAuthController::class, 'getCustomerComplains']);
+Route::post('/api/customer/submit-loan-application', [\App\Http\Controllers\Api\CustomerAuthController::class, 'submitLoanApplication']);
 
 Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');
 
