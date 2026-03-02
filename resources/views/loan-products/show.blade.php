@@ -243,10 +243,7 @@
                                 @if($loanProduct->has_cash_collateral)
                                     <div class="col-sm-6 mb-3">
                                         <label class="form-label text-muted small">Collateral Type</label>
-                                        <p class="mb-0 fw-bold">{{ $loanProduct->cash_collateral_type }}</p>
-                                        @if($loanProduct->cashCollateralType)
-                                            <small class="text-muted">{{ $loanProduct->cashCollateralType->description ?? '' }}</small>
-                                        @endif
+                                        <p class="mb-0 fw-bold">{{ $loanProduct->cash_collateral_type ?? 'N/A' }}</p>
                                     </div>
                                     <div class="col-sm-6 mb-3">
                                         <label class="form-label text-muted small">Value Type</label>

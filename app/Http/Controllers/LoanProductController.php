@@ -269,7 +269,6 @@ class LoanProductController extends Controller
             'principalReceivableAccount',
             'interestReceivableAccount',
             'interestRevenueAccount',
-            'cashCollateralType',
             'filetypes'
             // TODO: Add loan_product_id to loans table and uncomment this
             // 'loans'
