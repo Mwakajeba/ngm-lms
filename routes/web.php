@@ -11,6 +11,8 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\FiletypeController;
+use App\Http\Controllers\ComplainCategoryController;
+use App\Http\Controllers\ComplaintsController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -72,6 +74,9 @@ Route::post('/api/customer/transactions', [\App\Http\Controllers\Api\CustomerAut
 Route::post('/api/customer/group-members', [\App\Http\Controllers\Api\CustomerAuthController::class, 'groupMembers']);
 Route::get('/api/customer/loan-products', [\App\Http\Controllers\Api\CustomerAuthController::class, 'loanProducts']);
 Route::post('/api/customer/update-photo', [\App\Http\Controllers\Api\CustomerAuthController::class, 'updatePhoto']);
+Route::get('/api/customer/complain-categories', [\App\Http\Controllers\Api\CustomerAuthController::class, 'getComplainCategories']);
+Route::post('/api/customer/submit-complain', [\App\Http\Controllers\Api\CustomerAuthController::class, 'submitComplain']);
+Route::post('/api/customer/customer-complains', [\App\Http\Controllers\Api\CustomerAuthController::class, 'getCustomerComplains']);
 
 Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');
 
@@ -122,6 +127,13 @@ Route::post('/reset-password', [AuthController::class, 'storeNewPassword']);
 Route::get('/resend-otp/{phone}', [AuthController::class, 'resendOtp'])->name('resend.otp');
 
 Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+// Complaints Routes
+Route::middleware(['auth'])->group(function () {
+    Route::get('/complaints', [ComplaintsController::class, 'index'])->name('complaints.index');
+    Route::get('/complaints/{complaint}/edit', [ComplaintsController::class, 'edit'])->name('complaints.edit');
+    Route::put('/complaints/{complaint}', [ComplaintsController::class, 'update'])->name('complaints.update');
+});
 
 // Laravel Logs Route
 Route::get('/log', [LaravelLogsController::class, 'index'])->name('laravel-logs.index')->middleware('auth');
@@ -247,6 +259,9 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
     //Filetypes settings
     Route::resource('filetypes', FiletypeController::class);
+
+    // Complain Categories
+    Route::resource('complain-categories', ComplainCategoryController::class);
 
     Route::get('/', [SettingsController::class, 'index'])->name('index');
 

@@ -276,6 +276,23 @@
                                 </div>
                             </div>
                             @endcan
+
+                            <!-- Complain Categories Settings -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-info">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-message-square-detail fs-1 text-info"></i>
+                                        </div>
+                                        <h5 class="card-title">Complain Categories</h5>
+                                        <p class="card-text">Manage complaint categories and their priorities for organizing customer complaints.</p>
+                                        <a href="{{ route('settings.complain-categories.index') }}" class="btn btn-info">
+                                            <i class="bx bx-list-ul me-1"></i> Manage Categories
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- activity logs Settings -->
                             @can('view logs activity')
                             <div class="col-md-6 col-lg-4 mb-4">

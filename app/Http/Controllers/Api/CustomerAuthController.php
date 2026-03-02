@@ -1355,7 +1355,6 @@ class CustomerAuthController extends Controller
 
             $customer = Customer::findOrFail($validated['customer_id']);
             $branchId = $customer->branch_id;
-            $companyId = $customer->company_id ?? current_company_id();
 
             $complain = \App\Models\Complain::create([
                 'customer_id' => $validated['customer_id'],
@@ -1363,7 +1362,6 @@ class CustomerAuthController extends Controller
                 'description' => $validated['description'],
                 'status' => 'pending',
                 'branch_id' => $branchId,
-                'company_id' => $companyId,
             ]);
 
             return response()->json([
