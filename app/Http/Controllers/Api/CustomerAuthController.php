@@ -89,6 +89,9 @@ class CustomerAuthController extends Controller
                         'id' => $lf->id,
                         'file_type_id' => $lf->file_type_id,
                         'file_type' => $lf->fileType?->name,
+                        'status' => $lf->status ?? 'pending',
+                        'reviewed_at' => optional($lf->reviewed_at)->toDateTimeString(),
+                        'review_notes' => $lf->review_notes,
                         'file_path' => $lf->file_path,
                         'url' => $lf->file_path ? Storage::disk($disk)->url($lf->file_path) : null,
                         'created_at' => optional($lf->created_at)->toDateTimeString(),
@@ -117,30 +120,44 @@ class CustomerAuthController extends Controller
 
     /**
      * Upload a single loan document (KYC) for a given loan.
-     * Note: mobile uses image_picker so we accept images + pdf/doc/docx.
+     * Mobile requirement: PDF only.
      */
     public function uploadLoanDocument(Request $request)
     {
         try {
             $maxFileSize = (int) config('upload.max_file_size', 5120); // KB
-            $allowedMimes = (array) config('upload.allowed_mimes', ['pdf', 'jpg', 'jpeg', 'png', 'doc', 'docx']);
 
             $request->validate([
                 'customer_id' => 'required|integer|exists:customers,id',
                 'loan_id' => 'required|integer|exists:loans,id',
                 'file_type_id' => 'required|integer|exists:filetypes,id',
-                'file' => 'required|file|max:' . $maxFileSize . '|mimes:' . implode(',', $allowedMimes),
+                'file' => 'required|file|max:' . $maxFileSize . '|mimes:pdf',
             ]);
 
             $customerId = (int) $request->input('customer_id');
             $loanId = (int) $request->input('loan_id');
 
-            $loan = Loan::where('id', $loanId)->where('customer_id', $customerId)->first();
+            $loan = Loan::where('id', $loanId)->where('customer_id', $customerId)
+                ->with('product.filetypes')
+                ->first();
             if (!$loan) {
                 return response()->json([
                     'status' => 403,
                     'message' => 'Unauthorized loan access',
                 ], 403);
+            }
+
+            // Ensure uploaded document type is required by this product (KYC config)
+            $requiredFiletypeIds = ($loan->product?->filetypes ?? collect())->pluck('id')->map(fn($v) => (int) $v)->values()->all();
+            $fileTypeId = (int) $request->input('file_type_id');
+            if (!empty($requiredFiletypeIds) && !in_array($fileTypeId, $requiredFiletypeIds, true)) {
+                return response()->json([
+                    'status' => 422,
+                    'message' => 'Selected document type is not required for this loan product.',
+                    'errors' => [
+                        'file_type_id' => ['Selected document type is not required for this loan product.'],
+                    ],
+                ], 422);
             }
 
             $disk = config('upload.storage_disk', 'public');
@@ -151,8 +168,9 @@ class CustomerAuthController extends Controller
 
             $loanFile = LoanFile::create([
                 'loan_id' => $loanId,
-                'file_type_id' => (int) $request->input('file_type_id'),
+                'file_type_id' => $fileTypeId,
                 'file_path' => $filePath,
+                'status' => 'pending',
             ]);
 
             return response()->json([
@@ -162,6 +180,7 @@ class CustomerAuthController extends Controller
                     'id' => $loanFile->id,
                     'file_type_id' => $loanFile->file_type_id,
                     'file_path' => $loanFile->file_path,
+                    'status' => $loanFile->status ?? 'pending',
                     'url' => Storage::disk($disk)->url($loanFile->file_path),
                 ],
             ], 200);
@@ -470,7 +489,7 @@ class CustomerAuthController extends Controller
             $loanId = (int) $request->input('loan_id');
 
             $loan = Loan::where('id', $loanId)->where('customer_id', $customerId)
-                ->with(['product', 'loanOfficer', 'schedule'])
+                ->with(['product.filetypes', 'loanOfficer', 'schedule'])
                 ->first();
 
             if (!$loan) {
@@ -544,11 +563,39 @@ class CustomerAuthController extends Controller
             $loanTotal = (float) ($loan->amount_total ?? 0);
             $progressPercent = $loanTotal > 0 ? min(100, round(($totalRepaid / $loanTotal) * 100, 1)) : 0;
 
+            // KYC requirements for this product + uploaded documents for this loan
+            $kycRequired = ($loan->product?->filetypes ?? collect())->map(function ($ft) {
+                return [
+                    'id' => $ft->id,
+                    'name' => $ft->name,
+                    'description' => $ft->description,
+                ];
+            })->values();
+
+            $disk = config('upload.storage_disk', 'public');
+            $kycDocuments = LoanFile::with('fileType')
+                ->where('loan_id', $loan->id)
+                ->latest()
+                ->get()
+                ->map(function ($lf) use ($disk) {
+                    return [
+                        'id' => $lf->id,
+                        'file_type_id' => $lf->file_type_id,
+                        'file_type' => $lf->fileType?->name,
+                        'status' => $lf->status ?? 'pending',
+                        'reviewed_at' => optional($lf->reviewed_at)->toDateTimeString(),
+                        'review_notes' => $lf->review_notes,
+                        'url' => $lf->file_path ? Storage::disk($disk)->url($lf->file_path) : null,
+                        'created_at' => optional($lf->created_at)->toDateTimeString(),
+                    ];
+                })->values();
+
             return response()->json([
                 'status' => 200,
                 'loan' => [
                     'loanid' => $loan->id,
                     'loan_no' => $loan->loanNo,
+                    'product_id' => $loan->product_id,
                     'amount' => $loan->amount,
                     'interest' => $loan->interest,
                     'interest_amount' => $loan->interest_amount,
@@ -559,6 +606,8 @@ class CustomerAuthController extends Controller
                     'last_repayment_date' => $loan->last_repayment_date,
                     'status' => $loan->status,
                     'product_name' => $loan->product->name ?? '',
+                    'kyc_required' => $kycRequired,
+                    'kyc_documents' => $kycDocuments,
                     'schedules' => $scheduleList,
                     'repayments' => $repayments,
                     'total_repaid' => round($totalRepaid, 2),
