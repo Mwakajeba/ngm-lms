@@ -43,6 +43,7 @@ class LoanProduct extends Model
         'is_active',
         'penalt_deduction_criteria',
         'allow_push_to_ess',
+        'allowed_in_app',
     ];
 
     public function incomeProvisionAccount(): BelongsTo
@@ -75,6 +76,7 @@ class LoanProduct extends Model
         'penalty_ids' => 'array',
         'is_active' => 'boolean',
         'allow_push_to_ess' => 'boolean',
+        'allowed_in_app' => 'boolean',
     ];
 
 
