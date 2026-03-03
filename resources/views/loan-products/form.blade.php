@@ -228,6 +228,19 @@
             </div>
         </div>
 
+        <!-- Allow Online Application -->
+        <div class="col-12">
+            <h5 class="mb-3 text-primary mt-4">Mobile Application Configuration</h5>
+        </div>
+        <div class="col-md-6 mb-3">
+            <div class="form-check">
+                <input type="checkbox" name="allowed_in_app" id="allowed_in_app" class="form-check-input"
+                    value="1" {{ old('allowed_in_app', $loanProduct->allowed_in_app ?? false) ? 'checked' : '' }}>
+                <label class="form-check-label" for="allowed_in_app">Allow Online Application</label>
+            </div>
+            <small class="text-muted">If checked, customers can apply for this loan product through the mobile application.</small>
+        </div>
+
         <!-- Cash Deposit Configuration -->
         <div class="col-12">
             <h5 class="mb-3 text-primary mt-4">Cash Deposit Configuration</h5>

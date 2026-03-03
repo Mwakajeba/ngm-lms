@@ -268,18 +268,20 @@ class CustomerAuthController extends Controller
             // Get customer's loans with repayments
             $customerLoans = $this->getLoansWithRepayments($customer->id);
 
-            // Calculate total balance for all customer loans
-            $totalLoanBalance = collect($customerLoans)->sum('total_due');
+            // Calculate total balance for active loans only (exclude applied)
+            $activeLoans = collect($customerLoans)->where('status', 'active');
+            $totalLoanBalance = $activeLoans->sum('total_due');
             $totalLoanAmount = collect($customerLoans)->sum('total_amount');
             $totalRepaid = collect($customerLoans)->sum('total_repaid');
 
             // Next due: soonest future due date, or most recent overdue (for dashboard "days" and amount display)
+            // Only consider active loans (exclude applied)
             $nextDueDays = null;
             $nextDueAmount = null;
             $today = now()->startOfDay();
             $futureCandidates = []; // [days => amount]
             $overdueCandidates = [];
-            foreach ($customerLoans as $loan) {
+            foreach ($activeLoans as $loan) {
                 $next = $loan['next_schedule'] ?? null;
                 if (!$next || empty($next['due_date'])) {
                     continue;
@@ -452,8 +454,9 @@ class CustomerAuthController extends Controller
 
             $loans = $this->getLoansWithRepayments($customerId);
 
-            // Calculate totals
-            $totalLoanBalance = collect($loans)->sum('total_due');
+            // Calculate totals - only active loans for balance (exclude applied)
+            $activeLoans = collect($loans)->where('status', 'active');
+            $totalLoanBalance = $activeLoans->sum('total_due');
             $totalLoanAmount = collect($loans)->sum('total_amount');
             $totalRepaid = collect($loans)->sum('total_repaid');
 
