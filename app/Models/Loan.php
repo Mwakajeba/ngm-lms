@@ -57,6 +57,7 @@ class Loan extends Model
     const STATUS_REJECTED = 'rejected';
     const STATUS_DEFAULTED = 'defaulted';
     const STATUS_COMPLETE = 'completed';
+    const STATUS_RESTRUCTURED = 'restructured';
 
 
 
@@ -571,8 +572,13 @@ class Loan extends Model
         $startDate = Carbon::parse($this->first_repayment_date);
         $gracePeriod = $product->grace_period ?? 0;
 
-        $fees = $product->getFeesAttribute();
-        \Log::info('[LoanSchedule] Fees: ' . json_encode($fees));
+        // For opening balance/imported loans, do not charge product fees at all
+        $isOpeningBalance = $this->created_at && $this->created_at->diffInSeconds($this->disbursed_on ?? $this->date_applied ?? $this->created_at) < 5
+            && $this->status === self::STATUS_ACTIVE
+            && $this->loanNo && str_starts_with((string) $this->loanNo, 'SF-') === false;
+
+        $fees = $isOpeningBalance ? [] : $product->getFeesAttribute();
+        \Log::info('[LoanSchedule] Fees: ' . json_encode($fees) . ' | is_opening_balance=' . ($isOpeningBalance ? 'true' : 'false'));
         $penalty = $product->penalty;
 
         $isReducing = in_array($method, [
@@ -589,87 +595,90 @@ class Loan extends Model
 
 
         // === Fees on release date ===
-        $product = $this->product;
-        $bankAccountId = $this->bank_account_id;
-        $bankAccount = $bankAccountId ? \App\Models\BankAccount::find($bankAccountId) : null;
-        $bankChartAccountId = $bankAccount ? $bankAccount->chart_account_id : null;
+        // For opening balance/imported loans we skip creating any release-date fee journals/GL
+        if (!$isOpeningBalance) {
+            $product = $this->product;
+            $bankAccountId = $this->bank_account_id;
+            $bankAccount = $bankAccountId ? \App\Models\BankAccount::find($bankAccountId) : null;
+            $bankChartAccountId = $bankAccount ? $bankAccount->chart_account_id : null;
 
-        $releaseFeeIds = [];
-        if ($product && $product->fees_ids) {
-            $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
-            if (is_array($feeIds)) {
-                $releaseFeeIds = \DB::table('fees')
-                    ->whereIn('id', $feeIds)
-                    ->where('deduction_criteria', 'charge_fee_on_release_date')
-                    ->where('status', 'active')
-                    ->pluck('id')
-                    ->toArray();
+            $releaseFeeIds = [];
+            if ($product && $product->fees_ids) {
+                $feeIds = is_array($product->fees_ids) ? $product->fees_ids : json_decode($product->fees_ids, true);
+                if (is_array($feeIds)) {
+                    $releaseFeeIds = \DB::table('fees')
+                        ->whereIn('id', $feeIds)
+                        ->where('deduction_criteria', 'charge_fee_on_release_date')
+                        ->where('status', 'active')
+                        ->pluck('id')
+                        ->toArray();
+                }
+                Log::info('fee ids >>>>>>>>>>>>>: ' . json_encode($releaseFeeIds));
             }
-            Log::info('fee ids >>>>>>>>>>>>>: ' . json_encode($releaseFeeIds));
-        }
 
-        if (!empty($releaseFeeIds)) {
-            $releaseFees = \DB::table('fees')->whereIn('id', $releaseFeeIds)->get();
-            foreach ($releaseFees as $releaseFee) {
-                $feeAmount = (float) $releaseFee->amount;
-                $feeType = $releaseFee->fee_type;
-                $feeName = $releaseFee->name;
-                $chartAccountId = $releaseFee->chart_account_id;
+            if (!empty($releaseFeeIds) && $bankChartAccountId) {
+                $releaseFees = \DB::table('fees')->whereIn('id', $releaseFeeIds)->get();
+                foreach ($releaseFees as $releaseFee) {
+                    $feeAmount = (float) $releaseFee->amount;
+                    $feeType = $releaseFee->fee_type;
+                    $feeName = $releaseFee->name;
+                    $chartAccountId = $releaseFee->chart_account_id;
 
-                if ($chartAccountId && $bankChartAccountId) {
-                    $totalFee = 0;
-                    if ($feeType === 'percentage') {
-                        $totalFee = ((float) $principal * (float) $feeAmount / 100);
-                    } elseif ($feeType === 'range') {
-                        $feeModel = \App\Models\Fee::find($releaseFee->id);
-                        if ($feeModel) {
-                            $totalFee = (float) $feeModel->calculateRangeFee($principal);
+                    if ($chartAccountId) {
+                        $totalFee = 0;
+                        if ($feeType === 'percentage') {
+                            $totalFee = ((float) $principal * (float) $feeAmount / 100);
+                        } elseif ($feeType === 'range') {
+                            $feeModel = \App\Models\Fee::find($releaseFee->id);
+                            if ($feeModel) {
+                                $totalFee = (float) $feeModel->calculateRangeFee($principal);
+                            }
+                        } else {
+                            $totalFee = (float) $feeAmount;
                         }
-                    } else {
-                        $totalFee = (float) $feeAmount;
+                        $totalFeeFloat = (float) $totalFee;
+
+                        // Create journal and GL transaction for release fee
+                        $journal = \App\Models\Journal::create([
+                            'reference' => $this->id,
+                            'reference_type' => 'Loan Disbursement',
+                            'customer_id' => $this->customer_id,
+                            'description' => "{$feeName}  Fee for loan #{$this->id}",
+                            'branch_id' => $this->branch_id,
+                            'user_id' => auth()->id() ?? 1,
+                            'date' => $this->disbursed_on,
+                        ]);
+
+                        // Credit fee income account
+                        \App\Models\JournalItem::create([
+                            'journal_id' => $journal->id,
+                            'chart_account_id' => $chartAccountId,
+                            'amount' => $totalFeeFloat,
+                            'description' => "{$feeName}  for loan #{$this->id}",
+                            'nature' => 'credit',
+                        ]);
+                        // Debit bank account chart account
+                        \App\Models\JournalItem::create([
+                            'journal_id' => $journal->id,
+                            'chart_account_id' => $bankChartAccountId,
+                            'amount' => $totalFeeFloat,
+                            'description' => "{$feeName} for loan #{$this->id}",
+                            'nature' => 'debit',
+                        ]);
+
+                        \App\Models\GlTransaction::create([
+                            'chart_account_id' => $chartAccountId,
+                            'customer_id' => $this->customer_id,
+                            'amount' => $totalFeeFloat,
+                            'nature' => 'credit',
+                            'transaction_id' => $this->id,
+                            'transaction_type' => 'Loan Disbursement',
+                            'date' => $this->disbursed_on,
+                            'description' => "{$feeName}  for loan #{$this->id}",
+                            'branch_id' => $this->branch_id,
+                            'user_id' => auth()->id() ?? 1,
+                        ]);
                     }
-                    $totalFeeFloat = (float) $totalFee;
-
-                    // Create journal and GL transaction for release fee
-                    $journal = \App\Models\Journal::create([
-                        'reference' => $this->id,
-                        'reference_type' => 'Loan Disbursement',
-                        'customer_id' => $this->customer_id,
-                        'description' => "{$feeName}  Fee for loan #{$this->id}",
-                        'branch_id' => $this->branch_id,
-                        'user_id' => auth()->id() ?? 1,
-                        'date' => $this->disbursed_on,
-                    ]);
-
-                    // Credit fee income account
-                    \App\Models\JournalItem::create([
-                        'journal_id' => $journal->id,
-                        'chart_account_id' => $chartAccountId,
-                        'amount' => $totalFeeFloat,
-                        'description' => "{$feeName}  for loan #{$this->id}",
-                        'nature' => 'credit',
-                    ]);
-                    // Debit bank account chart account
-                    \App\Models\JournalItem::create([
-                        'journal_id' => $journal->id,
-                        'chart_account_id' => $bankChartAccountId,
-                        'amount' => $totalFeeFloat,
-                        'description' => "{$feeName} for loan #{$this->id}",
-                        'nature' => 'debit',
-                    ]);
-
-                    \App\Models\GlTransaction::create([
-                        'chart_account_id' => $chartAccountId,
-                        'customer_id' => $this->customer_id,
-                        'amount' => $totalFeeFloat,
-                        'nature' => 'credit',
-                        'transaction_id' => $this->id,
-                        'transaction_type' => 'Loan Disbursement',
-                        'date' => $this->disbursed_on,
-                        'description' => "{$feeName}  for loan #{$this->id}",
-                        'branch_id' => $this->branch_id,
-                        'user_id' => auth()->id() ?? 1,
-                    ]);
                 }
             }
         }
@@ -899,23 +908,6 @@ class Loan extends Model
             info('Top-up eligibility check failed: Loan has arrears', [
                 'loan_id' => $this->id,
                 'arrears_amount' => $this->arrears_amount
-            ]);
-            return false;
-        }
-
-        // Check if loan already has top-up children
-        if ($this->topUpChildren()->exists()) {
-            info('Top-up eligibility check failed: Loan already has top-up children', [
-                'loan_id' => $this->id
-            ]);
-            return false;
-        }
-
-        // Check if this loan is itself a top-up loan
-        if ($this->top_up_id) {
-            info('Top-up eligibility check failed: Loan is itself a top-up loan', [
-                'loan_id' => $this->id,
-                'top_up_id' => $this->top_up_id
             ]);
             return false;
         }
@@ -1411,7 +1403,8 @@ class Loan extends Model
             $currentScheduleInterest = max(0, $currentSchedule->interest - $interestPaid);
         }
 
-        return $outstandingPrincipal + $currentScheduleInterest;
+        // Always round to 2 decimal places to avoid floating point precision issues
+        return round($outstandingPrincipal + $currentScheduleInterest, 2);
     }
 
     /**

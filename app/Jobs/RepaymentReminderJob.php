@@ -106,7 +106,7 @@ class RepaymentReminderJob implements ShouldQueue
             $message = "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
 
             $phone = normalize_phone_number($customer->phone1);
-            SmsHelper::send($phone, $message);
+            SmsHelper::send($phone, $message, 'loan_arrears_reminder');
             Log::info("Reminder SMS sent to customer {$customer->id} for loan {$loan->loanNo}, schedule {$schedule->id}: TZS {$amount} ({$reminderType})");
         } catch (\Throwable $e) {
             Log::error("Failed to send repayment reminder SMS for loan {$loan->loanNo}: " . $e->getMessage());

@@ -25,15 +25,14 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => [],
             ],
-
-            'Customers' => [
-                'icon' => 'bx bx-group',
+            'Analytics' => [
+                'icon' => 'bx bx-line-chart',
                 'visibleRoutes' => [
-                    ['name' => 'Customer List', 'route' => 'customers.index'],
-                    ['name' => 'Add New Customer', 'route' => 'customers.create'],
+                    ['name' => 'Loan Analytics Dashboard', 'route' => 'analytics.loans.index'],
                 ],
-                'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
+                'hiddenRoutes' => [],
             ],
+           
             'Accounting' => [
                 'icon' => 'bx bx-calculator',
                 'visibleRoutes' => [
@@ -60,6 +59,14 @@ class MenuSeeder extends Seeder
                     'accounting.journals.show'
                 ],
             ],
+            'Customers' => [
+                'icon' => 'bx bx-group',
+                'visibleRoutes' => [
+                    ['name' => 'Customer List', 'route' => 'customers.index'],
+                    ['name' => 'Add New Customer', 'route' => 'customers.create'],
+                ],
+                'hiddenRoutes' => ['customers.edit', 'customers.destroy', 'customers.show'],
+            ],
             'Deposit Accounts' => [
                 'icon' => 'bx bx-outline',
                 'visibleRoutes' => [
@@ -77,13 +84,7 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
-            'Analytics' => [
-                'icon' => 'bx bx-line-chart',
-                'visibleRoutes' => [
-                    ['name' => 'Loan Analytics Dashboard', 'route' => 'analytics.loans.index'],
-                ],
-                'hiddenRoutes' => [],
-            ],
+           
             'Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [

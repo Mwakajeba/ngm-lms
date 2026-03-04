@@ -277,6 +277,7 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
     // Branch Settings
     Route::get('/branches', [SettingsController::class, 'branchSettings'])->name('branches');
+    Route::get('/branches/data', [SettingsController::class, 'branchSettingsData'])->name('branches.data');
     Route::get('/branches/create', [SettingsController::class, 'createBranch'])->name('branches.create');
     Route::post('/branches', [SettingsController::class, 'storeBranch'])->name('branches.store');
     Route::get('/branches/{branch}/edit', [SettingsController::class, 'editBranch'])->name('branches.edit');
@@ -296,6 +297,9 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
     // Backup Settings
     Route::get('/backup', [SettingsController::class, 'backupSettings'])->name('backup');
     Route::post('/backup/create', [SettingsController::class, 'createBackup'])->name('backup.create');
+    Route::get('/backup/status/{jobLogId}', [SettingsController::class, 'backupJobStatus'])->name('backup.status');
+    Route::get('/backup/history/data', [SettingsController::class, 'backupHistoryData'])->name('backup.history.data');
+    Route::get('/backup/jobs/data', [SettingsController::class, 'backupJobsData'])->name('backup.jobs.data');
     Route::post('/backup/restore', [SettingsController::class, 'restoreBackup'])->name('backup.restore');
     Route::get('/backup/{hash_id}/download', [SettingsController::class, 'downloadBackup'])->name('backup.download');
     Route::delete('/backup/{hash_id}', [SettingsController::class, 'deleteBackup'])->name('backup.delete');
@@ -545,6 +549,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 
     // Bank Accounts
     Route::get('/bank-accounts', [BankAccountController::class, 'index'])->name('bank-accounts');
+    Route::get('/bank-accounts/data', [BankAccountController::class, 'data'])->name('bank-accounts.data');
     Route::get('/bank-accounts/create', [BankAccountController::class, 'create'])->name('bank-accounts.create');
     Route::post('/bank-accounts', [BankAccountController::class, 'store'])->name('bank-accounts.store');
     Route::get('/bank-accounts/{encodedId}', [BankAccountController::class, 'show'])->name('bank-accounts.show');
@@ -1057,6 +1062,10 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/repayments/receipt/{id}/restore', [LoanRepaymentController::class, 'restoreReceipt'])->name('repayments.receipt.restore');
     Route::delete('/repayments/receipt/{id}/permanent', [LoanRepaymentController::class, 'permanentlyDeleteReceipt'])->name('repayments.receipt.permanent-delete');
     Route::post('/repayments/receipts/bulk-permanent-delete', [LoanRepaymentController::class, 'bulkPermanentlyDeleteReceipts'])->name('repayments.receipts.bulk-permanent-delete');
+
+    // Printable receipt view for vouchers (by numeric ID)
+    Route::get('/accounting/receipt-vouchers/{id}/print', [\App\Http\Controllers\Accounting\ReceiptVoucherController::class, 'print'])
+        ->name('accounting.receipt-vouchers.print');
 });
 
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////

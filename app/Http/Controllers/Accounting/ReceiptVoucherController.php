@@ -841,6 +841,26 @@ class ReceiptVoucherController extends Controller
     }
 
     /**
+     * Printable receipt for vouchers (simple layout: who paid, bank, amount, date, thanks)
+     */
+    public function print($id)
+    {
+        $receipt = Receipt::with(['customer', 'bankAccount.chartAccount', 'user.company', 'branch.company'])->findOrFail($id);
+
+        // Resolve company (branch company first, then user company, then current_company helper)
+        $company = $receipt->branch && $receipt->branch->company
+            ? $receipt->branch->company
+            : ($receipt->user && $receipt->user->company
+                ? $receipt->user->company
+                : (function_exists('current_company') ? current_company() : null));
+
+        return view('accounting.receipt-vouchers.print', [
+            'receipt' => $receipt,
+            'company' => $company,
+        ]);
+    }
+
+    /**
      * Store a receipt created from a loan.
      */
     public function storeFromLoan(Request $request, $encodedLoanId)

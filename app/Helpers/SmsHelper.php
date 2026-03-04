@@ -13,8 +13,21 @@ class SmsHelper
      * @param string $message Message content
      * @return array Response data
      */
-    public static function send($phone, $message)
+    public static function send($phone, $message, string $event = null)
     {
+        if ($event && !self::isEventEnabled($event)) {
+            Log::info('SMS sending skipped - event disabled', [
+                'event' => $event,
+                'phone' => $phone,
+            ]);
+
+            return [
+                'success' => true,
+                'skipped' => true,
+                'event' => $event,
+            ];
+        }
+
         $provider = config('services.sms.provider', 'kilakona');
         
         if ($provider === 'kilakona') {
@@ -22,6 +35,20 @@ class SmsHelper
         } else {
             return self::sendViaBeem($phone, $message);
         }
+    }
+
+    /**
+     * Check if a given SMS event is enabled in configuration.
+     *
+     * @param string $event
+     * @return bool
+     */
+    protected static function isEventEnabled(string $event): bool
+    {
+        $value = config("services.sms.events.$event", true);
+
+        // Use FILTER_VALIDATE_BOOLEAN to correctly parse "true"/"false", "1"/"0", etc.
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) !== false;
     }
 
     /**

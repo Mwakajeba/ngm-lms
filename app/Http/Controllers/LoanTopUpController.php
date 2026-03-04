@@ -86,15 +86,55 @@ class LoanTopUpController extends Controller
                 'new_loan_amount' => ['required', 'numeric', 'min:1'],
                 'purpose' => 'required|string|max:500',
                 'period' => 'required|integer|min:1|max:60',
-                'topup_type' => 'required|in:restructure,additional',
+                'interest' => ['required', 'numeric', 'min:0'],
                 'bank_account_id' => 'nullable|exists:bank_accounts,id',
             ];
             $request->validate($rules);
 
             $newLoanAmount = (float) $request->new_loan_amount;
-            $topupType = $request->topup_type;
+            $topupType = 'restructure';
+            $newPeriod = (int) $request->period; // total period like create-loan
+            $newInterest = (float) $request->interest;
 
-            if ($topupType === 'restructure' && $newLoanAmount < $totalBalance) {
+            // Enforce product limits for interest and total period
+            $product = $loan->product;
+            if ($product) {
+                // Check new total period within product min/max
+                if (!$product->isPeriodWithinLimits($newPeriod)) {
+                    $message = 'Total period must be within product limits (' .
+                        $product->minimum_period . ' - ' . $product->maximum_period . ' months).';
+
+                    if ($request->ajax()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => $message,
+                        ]);
+                    }
+
+                    return redirect()->back()
+                        ->withErrors(['period' => $message])
+                        ->withInput();
+                }
+
+                // Check interest within product min/max range
+                if ($newInterest < (float) $product->minimum_interest_rate || $newInterest > (float) $product->maximum_interest_rate) {
+                    $message = 'Interest rate must be within product limits (' .
+                        $product->minimum_interest_rate . '% - ' . $product->maximum_interest_rate . '%).';
+
+                    if ($request->ajax()) {
+                        return response()->json([
+                            'success' => false,
+                            'message' => $message,
+                        ]);
+                    }
+
+                    return redirect()->back()
+                        ->withErrors(['interest' => $message])
+                        ->withInput();
+                }
+            }
+
+            if ($newLoanAmount < $totalBalance) {
                 if ($request->ajax()) {
                     return response()->json([
                         'success' => false,
@@ -103,15 +143,6 @@ class LoanTopUpController extends Controller
                 }
                 return redirect()->back()->withErrors(['new_loan_amount' => 'New loan amount must be at least the total balance.']);
             }
-            if ($topupType === 'additional' && $newLoanAmount <= $currentBalance) {
-                if ($request->ajax()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'New loan amount must be greater than current balance.',
-                    ]);
-                }
-                return redirect()->back()->withErrors(['new_loan_amount' => 'New loan amount must be greater than current balance.']);
-            }
 
             $bankAccountId = $request->filled('bank_account_id')
                 ? (int) $request->bank_account_id
@@ -119,70 +150,17 @@ class LoanTopUpController extends Controller
 
             DB::beginTransaction();
 
-            if ($topupType === 'restructure') {
-                // RESTRUCTURE: Close old loan, create new larger loan
-                $customerReceives = max(0, $newLoanAmount - $totalBalance);
-                
-                // Create new loan (replaces old loan)
-            $newLoan = Loan::create([
-                    'customer_id'      => $loan->customer_id,
-                    'group_id'         => $loan->group_id,
-                    'product_id'       => $loan->product_id,
-                    'amount'           => $newLoanAmount,
-                    'interest'         => $loan->interest,
-                    'period'           => $loan->period + $request->period,
-                    'bank_account_id'  => $bankAccountId,
-                'date_applied'     => now(),
-                'disbursed_on'     => now(),
-                'status'           => 'active',
-                    'sector'           => $loan->sector,
-                    'interest_cycle'   => $loan->interest_cycle,
-                    'loan_officer_id'  => $loan->loan_officer_id,
-                    'branch_id'        => $loan->branch_id,
-                    'top_up_id'        => $loan->id,
-                    'description'      => $request->purpose,
-                ]);
+            // RESTRUCTURE: Close old loan, create new larger loan
+            $customerReceives = max(0, $newLoanAmount - $totalBalance);
 
-                // Calculate interest and update loan
-            $interestAmount = $newLoan->calculateInterestAmount($newLoan->interest);
-            $repaymentDates = $newLoan->getRepaymentDates();
-            $newLoan->update([
-                'interest_amount' => $interestAmount,
-                'amount_total' => $newLoan->amount + $interestAmount,
-                'first_repayment_date' => $repaymentDates['first_repayment_date'],
-                'last_repayment_date' => $repaymentDates['last_repayment_date'],
-            ]);
-
-                // Generate repayment schedule
-            $newLoan->generateRepaymentSchedule($newLoan->interest);
-
-                // Create GL Transactions for Restructure Top-Up (use totalBalance for amount being capitalized)
-                $this->createRestructureTopUpGlTransactions($loan, $newLoan, $totalBalance, $customerReceives);
-
-                // Close the old loan
-                $loan->update(['status' => 'restructured']);
-
-                // Create top-up record
-            LoanTopup::create([
-                    'old_loan_id'   => $loan->id,
-                'new_loan_id'   => $newLoan->id,
-                    'old_balance'   => $totalBalance,
-                    'topup_amount'  => $customerReceives,
-                'topup_type'    => 'restructure',
-            ]);
-
-            } else {
-                // ADDITIONAL: Keep old loan active, create separate new loan
-                $customerReceives = $newLoanAmount; // Customer receives full amount
-                
-                // Create new loan (separate from old loan)
+            // Create new loan (replaces old loan)
             $newLoan = Loan::create([
                 'customer_id'      => $loan->customer_id,
                 'group_id'         => $loan->group_id,
                 'product_id'       => $loan->product_id,
-                    'amount'           => $newLoanAmount,
-                'interest'         => $loan->interest,
-                    'period'           => $request->period, // Only the additional period
+                'amount'           => $newLoanAmount,
+                'interest'         => $newInterest,
+                'period'           => $newPeriod,
                 'bank_account_id'  => $bankAccountId,
                 'date_applied'     => now(),
                 'disbursed_on'     => now(),
@@ -192,10 +170,10 @@ class LoanTopUpController extends Controller
                 'loan_officer_id'  => $loan->loan_officer_id,
                 'branch_id'        => $loan->branch_id,
                 'top_up_id'        => $loan->id,
-                    'description'      => $request->purpose,
+                'description'      => $request->purpose,
             ]);
 
-                // Calculate interest and update loan
+            // Calculate interest and update loan
             $interestAmount = $newLoan->calculateInterestAmount($newLoan->interest);
             $repaymentDates = $newLoan->getRepaymentDates();
             $newLoan->update([
@@ -205,23 +183,23 @@ class LoanTopUpController extends Controller
                 'last_repayment_date' => $repaymentDates['last_repayment_date'],
             ]);
 
-                // Generate repayment schedule
+            // Generate repayment schedule
             $newLoan->generateRepaymentSchedule($newLoan->interest);
 
-                // Create GL Transactions for Additional Top-Up
-                $this->createAdditionalTopUpGlTransactions($loan, $newLoan, $customerReceives);
+            // Create GL Transactions for Restructure Top-Up (use totalBalance for amount being capitalized)
+            $this->createRestructureTopUpGlTransactions($loan, $newLoan, $totalBalance, $customerReceives);
 
-                // Old loan remains active (no status change)
+            // Close the old loan
+            $loan->update(['status' => 'restructured']);
 
-                // Create top-up record
+            // Create top-up record
             LoanTopup::create([
                 'old_loan_id'   => $loan->id,
                 'new_loan_id'   => $newLoan->id,
-                    'old_balance'   => $currentBalance,
-                    'topup_amount'  => $customerReceives,
-                'topup_type'    => 'additional',
-                ]);
-            }
+                'old_balance'   => $totalBalance,
+                'topup_amount'  => $customerReceives,
+                'topup_type'    => 'restructure',
+            ]);
 
             DB::commit();
 
@@ -229,15 +207,11 @@ class LoanTopUpController extends Controller
                 'new_loan_amount' => (float) $newLoan->amount,
                 'customer_receives' => (float) $customerReceives,
                 'topup_type' => $topupType,
+                'capitalized_amount' => (float) $totalBalance,
+                'outstanding_principal' => (float) ($balanceBreakdown['outstanding_principal'] ?? 0),
+                'outstanding_interest' => (float) ($balanceBreakdown['outstanding_interest'] ?? 0),
+                'outstanding_penalty' => (float) ($balanceBreakdown['outstanding_penalty'] ?? 0),
             ];
-            if ($topupType === 'restructure') {
-                $loanTopupPayload['capitalized_amount'] = (float) $totalBalance;
-                $loanTopupPayload['outstanding_principal'] = (float) ($balanceBreakdown['outstanding_principal'] ?? 0);
-                $loanTopupPayload['outstanding_interest'] = (float) ($balanceBreakdown['outstanding_interest'] ?? 0);
-                $loanTopupPayload['outstanding_penalty'] = (float) ($balanceBreakdown['outstanding_penalty'] ?? 0);
-            } else {
-                $loanTopupPayload['old_balance'] = (float) $currentBalance;
-            }
 
             if ($request->ajax()) {
                 return response()->json([
@@ -274,16 +248,20 @@ class LoanTopUpController extends Controller
         $product = $oldLoan->product;
         $bankAccount = $newLoan->bankAccount ?? $oldLoan->bankAccount;
 
+        // Use a single transaction id/type for the whole top-up so debits/credits are grouped together
+        $transactionId = $newLoan->id;
+        $transactionType = 'Loan Top-Up - Restructure';
+
         // 1. Close old loan receivable (Credit the old loan receivable)
         GlTransaction::create([
             'chart_account_id' => $product->principal_receivable_account_id,
             'customer_id' => $oldLoan->customer_id,
             'amount' => $currentBalance,
             'nature' => 'credit',
-            'transaction_id' => $oldLoan->id,
-            'transaction_type' => 'Loan Top-Up - Restructure - Old Loan Closure',
+            'transaction_id' => $transactionId,
+            'transaction_type' => $transactionType,
             'date' => now(),
-            'description' => "Restructure Top-up: Close old loan receivable (Loan #{$oldLoan->id})",
+            'description' => "Restructure Top-up: Close old loan receivable (Old Loan #{$oldLoan->id})",
             'branch_id' => $branchId,
             'user_id' => $userId,
         ]);
@@ -294,25 +272,25 @@ class LoanTopUpController extends Controller
             'customer_id' => $newLoan->customer_id,
             'amount' => $newLoan->amount,
             'nature' => 'debit',
-            'transaction_id' => $newLoan->id,
-            'transaction_type' => 'Loan Top-Up - Restructure - New Loan',
+            'transaction_id' => $transactionId,
+            'transaction_type' => $transactionType,
             'date' => now(),
-            'description' => "Restructure Top-up: Create new loan receivable (Loan #{$newLoan->id})",
+            'description' => "Restructure Top-up: Create new loan receivable (New Loan #{$newLoan->id})",
             'branch_id' => $branchId,
             'user_id' => $userId,
         ]);
 
         // 3. Disburse cash to customer (Credit bank account for amount customer receives)
-        if ($customerReceives > 0) {
+        if ($customerReceives > 0 && $bankAccount) {
             GlTransaction::create([
                 'chart_account_id' => $bankAccount->chart_account_id,
                 'customer_id' => $newLoan->customer_id,
                 'amount' => $customerReceives,
                 'nature' => 'credit',
-                'transaction_id' => $newLoan->id,
-                'transaction_type' => 'Loan Top-Up - Restructure - Cash Disbursement',
+                'transaction_id' => $transactionId,
+                'transaction_type' => $transactionType,
                 'date' => now(),
-                'description' => "Restructure Top-up: Cash disbursement to customer (Loan #{$newLoan->id})",
+                'description' => "Restructure Top-up: Cash disbursement to customer (New Loan #{$newLoan->id})",
                 'branch_id' => $branchId,
                 'user_id' => $userId,
             ]);
@@ -337,14 +315,18 @@ class LoanTopUpController extends Controller
         $product = $oldLoan->product;
         $bankAccount = $newLoan->bankAccount ?? $oldLoan->bankAccount;
 
+        // Use a single transaction id/type for the whole additional top-up
+        $transactionId = $newLoan->id;
+        $transactionType = 'Loan Top-Up - Additional';
+
         // 1. Create new loan receivable (Debit the new loan receivable)
         GlTransaction::create([
             'chart_account_id' => $product->principal_receivable_account_id,
             'customer_id' => $newLoan->customer_id,
             'amount' => $newLoan->amount,
             'nature' => 'debit',
-            'transaction_id' => $newLoan->id,
-            'transaction_type' => 'Loan Top-Up - Additional - New Loan',
+            'transaction_id' => $transactionId,
+            'transaction_type' => $transactionType,
             'date' => now(),
             'description' => "Additional Top-up: Create new loan receivable (Loan #{$newLoan->id})",
             'branch_id' => $branchId,
@@ -352,18 +334,20 @@ class LoanTopUpController extends Controller
         ]);
 
         // 2. Disburse cash to customer (Credit bank account for full amount)
-        GlTransaction::create([
-            'chart_account_id' => $bankAccount->chart_account_id,
-            'customer_id' => $newLoan->customer_id,
-            'amount' => $customerReceives,
-            'nature' => 'credit',
-            'transaction_id' => $newLoan->id,
-            'transaction_type' => 'Loan Top-Up - Additional - Cash Disbursement',
-            'date' => now(),
-            'description' => "Additional Top-up: Cash disbursement to customer (Loan #{$newLoan->id})",
-            'branch_id' => $branchId,
-            'user_id' => $userId,
-        ]);
+        if ($bankAccount) {
+            GlTransaction::create([
+                'chart_account_id' => $bankAccount->chart_account_id,
+                'customer_id' => $newLoan->customer_id,
+                'amount' => $customerReceives,
+                'nature' => 'credit',
+                'transaction_id' => $transactionId,
+                'transaction_type' => $transactionType,
+                'date' => now(),
+                'description' => "Additional Top-up: Cash disbursement to customer (Loan #{$newLoan->id})",
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
+        }
 
         Log::info('Additional Top-up GL transactions created', [
             'old_loan_id' => $oldLoan->id,

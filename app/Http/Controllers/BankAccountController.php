@@ -11,6 +11,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\View\View;
 use Vinkla\Hashids\Facades\Hashids;
+use Yajra\DataTables\Facades\DataTables;
 
 class BankAccountController extends Controller
 {
@@ -19,27 +20,30 @@ class BankAccountController extends Controller
      */
     public function index()
     {
-        $bankAccounts = BankAccount::with('chartAccount.accountClassGroup.accountClass')
-            ->orderBy('created_at', 'desc')
-            ->paginate(10);
+        // Determine current branch context:
+        // 1) Use helper if available (set by middleware)
+        // 2) Fallback to authenticated user's branch_id
+        $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+        if (!$currentBranchId && Auth::check()) {
+            $currentBranchId = Auth::user()->branch_id;
+        }
 
-        // Calculate balance for each bank account in the paginated result
-        $bankAccounts->getCollection()->transform(function ($bankAccount) {
-            $debits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
-                ->where('nature', 'debit')
-                ->sum('amount');
-            $credits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
-                ->where('nature', 'credit')
-                ->sum('amount');
-            $bankAccount->balance = $debits - $credits;
-            return $bankAccount;
-        });
+        // Base query with branch scoping:
+        // - include accounts available to all branches
+        // - plus accounts tied to the current branch (if any)
+        $bankAccountsQuery = BankAccount::with('chartAccount.accountClassGroup.accountClass')
+            ->when($currentBranchId, function ($query) use ($currentBranchId) {
+                $query->where(function ($q) use ($currentBranchId) {
+                    $q->where('is_all_branches', true)
+                      ->orWhere('branch_id', $currentBranchId);
+                });
+            })
+            ->orderBy('created_at', 'desc');
 
-        // Calculate statistics
-        $totalAccounts = BankAccount::count();
+        // Calculate statistics based on the same branch‑scoped query
+        $totalAccounts = (clone $bankAccountsQuery)->count();
 
-        // Calculate balances from GL transactions for statistics
-        $allBankAccounts = BankAccount::with('chartAccount')->get()->map(function ($bankAccount) {
+        $allBankAccounts = (clone $bankAccountsQuery)->with('chartAccount')->get()->map(function ($bankAccount) {
             $debits = GlTransaction::where('chart_account_id', $bankAccount->chart_account_id)
                 ->where('nature', 'debit')
                 ->sum('amount');
@@ -54,7 +58,56 @@ class BankAccountController extends Controller
         $positiveBalanceAccounts = $allBankAccounts->where('balance', '>', 0)->count();
         $negativeBalanceAccounts = $allBankAccounts->where('balance', '<', 0)->count();
 
-        return view('bank-accounts.index', compact('bankAccounts', 'totalAccounts', 'totalBalance', 'positiveBalanceAccounts', 'negativeBalanceAccounts'));
+        return view('bank-accounts.index', compact('totalAccounts', 'totalBalance', 'positiveBalanceAccounts', 'negativeBalanceAccounts'));
+    }
+
+    /**
+     * DataTables AJAX source for bank accounts.
+     */
+    public function data(Request $request)
+    {
+        $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+        if (!$currentBranchId && Auth::check()) {
+            $currentBranchId = Auth::user()->branch_id;
+        }
+
+        $query = BankAccount::with('chartAccount.accountClassGroup.accountClass')
+            ->when($currentBranchId, function ($q) use ($currentBranchId) {
+                $q->where(function ($sub) use ($currentBranchId) {
+                    $sub->where('is_all_branches', true)
+                        ->orWhere('branch_id', $currentBranchId);
+                });
+            })
+            ->orderBy('created_at', 'desc');
+
+        return DataTables::of($query)
+            ->addIndexColumn()
+            ->addColumn('chart_account', function (BankAccount $bankAccount) {
+                return $bankAccount->chartAccount->account_name ?? 'N/A';
+            })
+            ->addColumn('account_class', function (BankAccount $bankAccount) {
+                return $bankAccount->chartAccount->accountClassGroup->accountClass->name ?? 'N/A';
+            })
+            ->addColumn('account_group', function (BankAccount $bankAccount) {
+                return $bankAccount->chartAccount->accountClassGroup->name ?? 'N/A';
+            })
+            ->addColumn('balance_display', function (BankAccount $bankAccount) {
+                $balance = $bankAccount->balance;
+                $formatted = number_format($balance, 2);
+                if ($balance >= 0) {
+                    return '<span class="text-success fw-bold">' . $formatted . '</span>';
+                }
+                return '<span class="text-danger fw-bold">' . $formatted . '</span>';
+            })
+            ->editColumn('created_at', function (BankAccount $bankAccount) {
+                return optional($bankAccount->created_at)->format('M d, Y');
+            })
+            ->addColumn('actions', function (BankAccount $bankAccount) {
+                $encodedId = Hashids::encode($bankAccount->id);
+                return view('bank-accounts._actions', compact('bankAccount', 'encodedId'))->render();
+            })
+            ->rawColumns(['balance_display', 'actions'])
+            ->make(true);
     }
 
     /**
@@ -81,15 +134,25 @@ class BankAccountController extends Controller
      */
     public function store(Request $request): RedirectResponse
     {
-        $request->validate([
+        $data = $request->validate([
             'chart_account_id' => 'required|exists:chart_accounts,id',
             'name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255|unique:bank_accounts,account_number',
-            'branches' => 'nullable|array',
-            'branches.*' => 'exists:branches,id',
+            'branch_scope' => 'required|in:all,specific',
+            'branch_id' => 'nullable|required_if:branch_scope,specific|exists:branches,id',
         ]);
 
-        $bankAccount = BankAccount::create($request->only(['chart_account_id', 'name', 'account_number']));
+        // Branch scoping
+        $data['is_all_branches'] = $data['branch_scope'] === 'all';
+        $data['branch_id'] = $data['is_all_branches'] ? null : $data['branch_id'];
+
+        $bankAccount = BankAccount::create([
+            'chart_account_id' => $data['chart_account_id'],
+            'name' => $data['name'],
+            'account_number' => $data['account_number'],
+            'branch_id' => $data['branch_id'],
+            'is_all_branches' => $data['is_all_branches'],
+        ]);
 
         // Sync branches
         if ($request->has('branches')) {
@@ -156,15 +219,25 @@ class BankAccountController extends Controller
 
         $bankAccount = BankAccount::findOrFail($decoded[0]);
 
-        $request->validate([
+        $data = $request->validate([
             'chart_account_id' => 'required|exists:chart_accounts,id',
             'name' => 'required|string|max:255',
             'account_number' => 'required|string|max:255|unique:bank_accounts,account_number,' . $bankAccount->id,
-            'branches' => 'nullable|array',
-            'branches.*' => 'exists:branches,id',
+            'branch_scope' => 'required|in:all,specific',
+            'branch_id' => 'nullable|required_if:branch_scope,specific|exists:branches,id',
         ]);
 
-        $bankAccount->update($request->only(['chart_account_id', 'name', 'account_number']));
+        // Branch scoping
+        $data['is_all_branches'] = $data['branch_scope'] === 'all';
+        $data['branch_id'] = $data['is_all_branches'] ? null : $data['branch_id'];
+
+        $bankAccount->update([
+            'chart_account_id' => $data['chart_account_id'],
+            'name' => $data['name'],
+            'account_number' => $data['account_number'],
+            'branch_id' => $data['branch_id'],
+            'is_all_branches' => $data['is_all_branches'],
+        ]);
 
         // Sync branches
         if ($request->has('branches')) {

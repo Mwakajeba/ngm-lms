@@ -60,7 +60,7 @@
                                                     <span class="fw-semibold">{{ $parentMenu->name }}</span>
                                                 </div>
                                                 <button class="btn btn-sm btn-outline-danger"
-                                                    onclick="removeMenu({{ $parentMenu->id }})">
+                                                    onclick="removeMenu({{ $parentMenu->id }}, '{{ addslashes($parentMenu->name) }}')">
                                                     <i class="bx bx-trash"></i>
                                                 </button>
                                             </div>
@@ -68,20 +68,22 @@
                                             @if($parentMenu->children->count() > 0)
                                                 <div class="ms-4 mt-2">
                                                     @foreach($parentMenu->children as $childMenu)
-                                                        <div
-                                                            class="d-flex align-items-center justify-content-between p-2 border-start border-2 border-primary ms-3 mb-2">
-                                                            <div class="d-flex align-items-center">
-                                                                <i class="bx bx-right-arrow-alt me-2 text-muted"></i>
-                                                                <span>{{ $childMenu->name }}</span>
-                                                                @if($childMenu->route)
-                                                                    <small class="text-muted ms-2">({{ $childMenu->route }})</small>
-                                                                @endif
+                                                        @if($role->menus->contains('id', $childMenu->id))
+                                                            <div
+                                                                class="d-flex align-items-center justify-content-between p-2 border-start border-2 border-primary ms-3 mb-2">
+                                                                <div class="d-flex align-items-center">
+                                                                    <i class="bx bx-right-arrow-alt me-2 text-muted"></i>
+                                                                    <span>{{ $childMenu->name }}</span>
+                                                                    @if($childMenu->route)
+                                                                        <small class="text-muted ms-2">({{ $childMenu->route }})</small>
+                                                                    @endif
+                                                                </div>
+                                                                <button class="btn btn-sm btn-outline-danger"
+                                                                    onclick="removeMenu({{ $childMenu->id }}, '{{ addslashes($childMenu->name) }}')">
+                                                                    <i class="bx bx-trash"></i>
+                                                                </button>
                                                             </div>
-                                                            <button class="btn btn-sm btn-outline-danger"
-                                                                onclick="removeMenu({{ $childMenu->id }})">
-                                                                <i class="bx bx-trash"></i>
-                                                            </button>
-                                                        </div>
+                                                        @endif
                                                     @endforeach
                                                 </div>
                                             @endif
@@ -202,9 +204,9 @@
 @endpush
 
 @push('scripts')
-    <script>
+        <script>
         $(document).ready(function () {
-            // Handle parent menu selection
+            // Handle parent menu selection (toggle all its children)
             $('.parent-menu').on('change', function () {
                 const parentId = $(this).val();
                 const isChecked = $(this).is(':checked');
@@ -215,7 +217,7 @@
                 }
             });
 
-            // Handle child menu selection
+            // Handle child menu selection (keep parent checkbox in sync)
             $('.child-menu').on('change', function () {
                 const parentId = $(this).data('parent');
                 const parentCheckbox = $(`#menu_${parentId}`);
@@ -234,8 +236,24 @@
                 e.preventDefault();
 
                 const selectedMenus = [];
+                const selectedMenuSet = new Set();
+
                 $('input[type="checkbox"]:checked').each(function () {
-                    selectedMenus.push($(this).val());
+                    const menuId = String($(this).val());
+
+                    if (!selectedMenuSet.has(menuId)) {
+                        selectedMenus.push(menuId);
+                        selectedMenuSet.add(menuId);
+                    }
+
+                    const parentId = $(this).data('parent');
+                    if (parentId) {
+                        const parentIdStr = String(parentId);
+                        if (!selectedMenuSet.has(parentIdStr)) {
+                            selectedMenus.push(parentIdStr);
+                            selectedMenuSet.add(parentIdStr);
+                        }
+                    }
                 });
 
                 if (selectedMenus.length === 0) {
@@ -306,10 +324,10 @@
             });
         });
 
-        function removeMenu(menuId) {
+        function removeMenu(menuId, menuName) {
             Swal.fire({
                 title: 'Confirm Removal',
-                text: 'Are you sure you want to remove this menu from the role?',
+                text: `Are you sure you want to remove the "${menuName}" menu/submenu from this role?`,
                 icon: 'warning',
                 showCancelButton: true,
                 confirmButtonColor: '#d33',

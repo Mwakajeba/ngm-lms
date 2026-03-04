@@ -53,11 +53,12 @@ class BankReconciliationController extends Controller
     {
         $user = Auth::user();
 
-        // Get bank accounts for the current company
+        // Get bank accounts for the current company and user's branch scope
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
+            ->forUserBranches($user)
             ->orderBy('name')
             ->get();
 
@@ -209,11 +210,12 @@ class BankReconciliationController extends Controller
         $bankReconciliation = BankReconciliation::findOrFail($id);
         $user = Auth::user();
 
-        // Get bank accounts for the current company
+        // Get bank accounts for the current company and user's branch scope
         $bankAccounts = BankAccount::with('chartAccount')
             ->whereHas('chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
             })
+            ->forUserBranches($user)
             ->orderBy('name')
             ->get();
 

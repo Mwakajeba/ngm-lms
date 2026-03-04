@@ -106,6 +106,33 @@
                                 </div>
                             </div>
 
+                            <!-- When to send SMS -->
+                            <div class="mt-4">
+                                <h5 class="mb-2">When do you want to send SMS?</h5>
+                                <p class="text-muted mb-2">
+                                    Select all system events where SMS should be sent automatically after the action is completed.
+                                </p>
+                                <div class="row">
+                                    @foreach(($smsEvents ?? []) as $key => $label)
+                                        <div class="col-md-6 mb-2">
+                                            <div class="form-check">
+                                                <input
+                                                    class="form-check-input"
+                                                    type="checkbox"
+                                                    id="sms_event_{{ $key }}"
+                                                    name="sms_events[]"
+                                                    value="{{ $key }}"
+                                                    @if(($enabledEvents[$key] ?? true)) checked @endif
+                                                >
+                                                <label class="form-check-label" for="sms_event_{{ $key }}">
+                                                    {{ $label }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </div>
+
                             <div class="alert alert-info mt-3" role="alert">
                                 <i class="bx bx-info-circle me-2"></i>
                                 <strong>Note:</strong> These settings will be saved to your <code>.env</code> file. 

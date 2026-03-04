@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Accounting\Reports;
 
 use App\Http\Controllers\Controller;
+use App\Models\BankAccount;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -28,12 +29,13 @@ class CashBookReportController extends Controller
         $bankAccountId = $request->get('bank_account_id', 'all');
         $branchId = $request->get('branch_id', 'all');
 
-        // Get bank accounts for filter
-        $bankAccounts = DB::table('bank_accounts')
-            ->join('chart_accounts', 'bank_accounts.chart_account_id', '=', 'chart_accounts.id')
-            ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
-            ->where('account_class_groups.company_id', $company->id)
-            ->select('bank_accounts.*', 'chart_accounts.account_name')
+        // Get bank accounts for filter (respect branch scoping: all branches or specific branch)
+        $bankAccounts = BankAccount::with('chartAccount.accountClassGroup')
+            ->forUserBranches($user)
+            ->whereHas('chartAccount.accountClassGroup', function ($q) use ($company) {
+                $q->where('company_id', $company->id);
+            })
+            ->orderBy('name')
             ->get();
 
         // Get branches for filter: only user's assigned branches

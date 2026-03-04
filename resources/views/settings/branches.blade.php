@@ -46,7 +46,7 @@
                         @endif
 
                         <div class="table-responsive">
-                            <table class="table table-striped table-bordered">
+                            <table class="table table-striped table-bordered" id="branches-table">
                                 <thead>
                                     <tr>
                                         <th>Branch Name</th>
@@ -58,42 +58,6 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    @forelse($branches ?? [] as $branch)
-                                    <tr>
-                                        <td>{{ $branch->branch_name }}</td>
-                                        <td>{{ $branch->location }}</td>
-                                        <td>{{ $branch->phone }}</td>
-                                        <td>{{ $branch->email }}</td>
-                                        <td>{{ $branch->manager_name }}</td>
-                                        <td>
-                                            @if($branch->status === 'active')
-                                                <span class="badge bg-success">Active</span>
-                                            @elseif($branch->status === 'inactive')
-                                                <span class="badge bg-warning">Inactive</span>
-                                            @else
-                                                <span class="badge bg-danger">Suspended</span>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            <a href="{{ route('settings.branches.edit', $branch) }}" class="btn btn-sm btn-primary">
-                                                <i class="bx bx-edit"></i>
-                                            </a>
-                                            <form action="{{ route('settings.branches.destroy', $branch) }}" method="POST" style="display:inline-block;" class="delete-form">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="btn btn-sm btn-danger" data-name="{{ $branch->branch_name }}">
-                                                    <i class="bx bx-trash"></i>
-                                                </button>
-                                            </form>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center">No branches found.</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
                             </table>
                         </div>
 
@@ -118,4 +82,51 @@
     <p class="mb-0">Copyright © {{ date('Y') }}. All right reserved. -- By SAFCO FINTECH</p>
 </footer>
 
-@endsection 
+@endsection
+
+@push('scripts')
+<script>
+    $(document).ready(function () {
+        const table = $('#branches-table').DataTable({
+            processing: true,
+            serverSide: true,
+            ajax: '{{ route('settings.branches.data') }}',
+            order: [[0, 'asc']],
+            columns: [
+                { data: 'name', name: 'name' },
+                { data: 'location', name: 'location' },
+                { data: 'phone', name: 'phone' },
+                { data: 'email', name: 'email' },
+                { data: 'manager_name', name: 'manager_name' },
+                { data: 'status_badge', name: 'status', orderable: false, searchable: false },
+                { data: 'actions', name: 'actions', orderable: false, searchable: false },
+            ],
+            language: {
+                emptyTable: 'No branches found.',
+            }
+        });
+
+        // Handle delete confirmation
+        $(document).on('submit', '.delete-form', function (e) {
+            e.preventDefault();
+            const form = this;
+            const name = $(form).find('button[type="submit"]').data('name') || 'this branch';
+
+            Swal.fire({
+                title: 'Are you sure?',
+                text: `You are about to delete ${name}. This action cannot be undone.`,
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonColor: '#d33',
+                cancelButtonColor: '#3085d6',
+                confirmButtonText: 'Yes, delete it!',
+                cancelButtonText: 'Cancel'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    form.submit();
+                }
+            });
+        });
+    });
+</script>
+@endpush

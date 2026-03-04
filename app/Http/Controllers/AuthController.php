@@ -479,7 +479,7 @@ class AuthController extends Controller
     protected function sendSmsVerification($phone, $code)
     {
         $message = 'OTP Code is ' . $code;
-        SmsHelper::send($phone, $message);
+        SmsHelper::send($phone, $message, 'otp_verification');
     }
 
     public function showVerificationForm(Request $request)
