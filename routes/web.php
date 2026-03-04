@@ -13,6 +13,7 @@ use App\Http\Controllers\ActivityLogsController;
 use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\ComplainCategoryController;
 use App\Http\Controllers\ComplaintsController;
+use App\Http\Controllers\AnnouncementController;
 use App\Http\Controllers\BranchController;
 use App\Http\Controllers\CompanyController;
 use App\Http\Controllers\CashCollateralTypeController;
@@ -78,6 +79,7 @@ Route::get('/api/customer/complain-categories', [\App\Http\Controllers\Api\Custo
 Route::post('/api/customer/submit-complain', [\App\Http\Controllers\Api\CustomerAuthController::class, 'submitComplain']);
 Route::post('/api/customer/customer-complains', [\App\Http\Controllers\Api\CustomerAuthController::class, 'getCustomerComplains']);
 Route::post('/api/customer/submit-loan-application', [\App\Http\Controllers\Api\CustomerAuthController::class, 'submitLoanApplication']);
+Route::get('/api/customer/announcements', [\App\Http\Controllers\Api\CustomerAuthController::class, 'announcements']);
 
 Route::post('/receipts/store', [\App\Http\Controllers\ReceiptController::class, 'store'])->name('receipts.store');
 
@@ -263,6 +265,9 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
     // Complain Categories
     Route::resource('complain-categories', ComplainCategoryController::class);
+
+    // Announcements (for mobile Matangazo)
+    Route::resource('announcements', AnnouncementController::class)->except(['show']);
 
     Route::get('/', [SettingsController::class, 'index'])->name('index');
 
