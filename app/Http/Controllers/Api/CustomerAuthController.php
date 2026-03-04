@@ -17,6 +17,7 @@ use App\Models\Filetype;
 use App\Models\LoanFile;
 use App\Models\Receipt;
 use App\Models\Company;
+use App\Models\Announcement;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -492,7 +493,7 @@ class CustomerAuthController extends Controller
             $loanId = (int) $request->input('loan_id');
 
             $loan = Loan::where('id', $loanId)->where('customer_id', $customerId)
-                ->with(['product.filetypes', 'loanOfficer', 'schedule'])
+                ->with(['product.filetypes', 'loanOfficer', 'schedule', 'topUpLoan'])
                 ->first();
 
             if (!$loan) {
@@ -500,6 +501,14 @@ class CustomerAuthController extends Controller
                     'message' => 'Loan not found or access denied',
                     'status' => 404,
                 ], 404);
+            }
+
+            // Get original loan if this loan was restructured from another loan
+            $originalLoan = null;
+            if ($loan->top_up_id) {
+                $originalLoan = Loan::where('id', $loan->top_up_id)
+                    ->where('customer_id', $customerId)
+                    ->first();
             }
 
             // All schedules for this loan (loan_schedules)
@@ -593,6 +602,29 @@ class CustomerAuthController extends Controller
                     ];
                 })->values();
 
+            // Calculate original loan totals if it exists
+            $originalLoanData = null;
+            if ($originalLoan) {
+                $originalRepayments = DB::table('repayments')
+                    ->where('loan_id', $originalLoan->id)
+                    ->get()
+                    ->map(function ($r) {
+                        return ($r->principal ?? 0) + ($r->interest ?? 0) + ($r->penalt_amount ?? 0) + ($r->fee_amount ?? 0);
+                    });
+                $originalTotalRepaid = $originalRepayments->sum();
+                $originalLoanTotal = (float) ($originalLoan->amount_total ?? 0);
+                $originalTotalDue = round(max(0, $originalLoanTotal - $originalTotalRepaid), 2);
+
+                $originalLoanData = [
+                    'loanid' => $originalLoan->id,
+                    'loan_no' => $originalLoan->loanNo,
+                    'amount' => $originalLoan->amount,
+                    'total_amount' => $originalLoanTotal,
+                    'total_due' => $originalTotalDue,
+                    'status' => $originalLoan->status,
+                ];
+            }
+
             return response()->json([
                 'status' => 200,
                 'loan' => [
@@ -616,6 +648,7 @@ class CustomerAuthController extends Controller
                     'total_repaid' => round($totalRepaid, 2),
                     'total_due' => round(max(0, $loanTotal - $totalRepaid), 2),
                     'progress_percent' => $progressPercent,
+                    'original_loan' => $originalLoanData,
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
@@ -624,6 +657,68 @@ class CustomerAuthController extends Controller
                 'status' => 422,
                 'errors' => $e->errors(),
             ], 422);
+        } catch (\Exception $e) {
+            return response()->json([
+                'message' => 'Server error',
+                'status' => 500,
+                'error' => $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get active announcements for the mobile dashboard (Matangazo).
+     */
+    public function announcements(Request $request)
+    {
+        try {
+            $customerId = $request->input('customer_id');
+
+            if (!$customerId) {
+                return response()->json([
+                    'message' => 'Customer ID is required',
+                    'status' => 400
+                ], 400);
+            }
+
+            $customer = Customer::with('branch.company')->find($customerId);
+            if (!$customer || !$customer->branch || !$customer->branch->company) {
+                return response()->json([
+                    'status' => 200,
+                    'announcements' => [],
+                ], 200);
+            }
+
+            $companyId = $customer->branch->company->id;
+            $today = now()->toDateString();
+
+            $disk = config('upload.storage_disk', 'public');
+
+            $announcements = Announcement::where('company_id', $companyId)
+                ->where('is_active', true)
+                ->whereDate('publish_date', '<=', $today)
+                ->where(function ($q) use ($today) {
+                    $q->whereNull('end_date')
+                        ->orWhereDate('end_date', '>=', $today);
+                })
+                ->orderBy('publish_date', 'desc')
+                ->orderBy('created_at', 'desc')
+                ->get()
+                ->map(function (Announcement $a) use ($disk) {
+                    return [
+                        'id' => $a->id,
+                        'title' => $a->title,
+                        'description' => $a->description,
+                        'image_url' => $a->image_path ? Storage::disk($disk)->url($a->image_path) : null,
+                        'publish_date' => optional($a->publish_date)->toDateString(),
+                        'end_date' => optional($a->end_date)->toDateString(),
+                    ];
+                })->values();
+
+            return response()->json([
+                'status' => 200,
+                'announcements' => $announcements,
+            ], 200);
         } catch (\Exception $e) {
             return response()->json([
                 'message' => 'Server error',
