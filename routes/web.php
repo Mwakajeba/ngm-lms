@@ -1000,6 +1000,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
     Route::post('loans/calculate-summary', [LoanController::class, 'calculateLoanSummary'])->name('loans.calculate-summary');
     Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
+    Route::get('loans/{encodedId}/schedule/pdf', [LoanController::class, 'exportSchedulePdf'])->name('loans.schedule.pdf');
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
     Route::get('loans/{encodedId}/edit', [LoanController::class, 'edit'])->name('loans.edit');
     Route::put('loans/{encodedId}', [LoanController::class, 'update'])->name('loans.update');
