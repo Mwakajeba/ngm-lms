@@ -594,6 +594,8 @@ $isEdit = isset($loan);
                 interest: formData.get('interest'),
                 amount: document.getElementById('amountInputHidden')?.value || formData.get('amount'),
                 interest_cycle: formData.get('interest_cycle'),
+                // Include selected bank account so GL summary can balance debits/credits
+                account_id: formData.get('account_id'),
             };
             
             // Validate required fields

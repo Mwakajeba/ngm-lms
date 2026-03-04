@@ -318,6 +318,10 @@
                                             </td>
                                         </tr>
                                         <tr>
+                                            <td class="fw-bold text-muted ps-4">Loan No</td>
+                                            <td class="text-dark fw-bold">{{ $loan->loanNo ?? 'N/A' }}</td>
+                                        </tr>
+                                        <tr>
                                             <td class="fw-bold text-muted ps-4">Product</td>
                                             <td class="text-dark">{{ $loan->product->name }}</td>
                                         </tr>
@@ -380,17 +384,15 @@
                                         <!-- Payment Information -->
                                         <tr class="table-secondary">
                                             <td colspan="2" class="fw-bold text-dark py-3 ps-4">
-                                                <i class="bx bx-credit-card me-2 text-primary"></i>PAYMENT INFORMATION
+                                                <i class="bx bx-credit-card me-2 text-success"></i>PAYMENT INFORMATION
                                             </td>
                                         </tr>
                                         <tr>
                                             <td class="fw-bold text-muted ps-4">Total Repayments</td>
                                             <td class="text-info fw-bold">TZS
-                                                {{ number_format($loan->repayments?->sum(function ($r) {
-        return ($r->principal + $r->interest); }) ?? 0, 2) }}
+                                                {{ number_format($loan->getTotalPaidAmount(), 2) }}
                                             </td>
                                         </tr>
-
                                         <tr>
                                             <td class="fw-bold text-muted ps-4">Principal Paid</td>
                                             <td class="text-success fw-bold">TZS
@@ -403,19 +405,41 @@
                                                 {{ number_format($loan->total_interest_paid, 2) }}
                                             </td>
                                         </tr>
+                                        @php
+                                            $outstandingBreakdown = $loan->getTopUpBalanceBreakdown();
+                                            $outstandingTotal = $outstandingBreakdown['total_balance'] ?? ($loan->amount_total - ($loan->repayments?->sum(fn($r) => $r->principal + $r->interest) ?? 0));
+                                        @endphp
                                         <tr>
                                             <td class="fw-bold text-muted ps-4">Outstanding Balance</td>
                                             <td class="text-danger fw-bold">TZS
-                                                {{ number_format($loan->amount_total - ($loan->repayments?->sum(function ($r) {
-        return ($r->principal + $r->interest); }) ?? 0), 2) }}
+                                                {{ number_format($outstandingTotal, 2) }}
                                             </td>
                                         </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted ps-5 small">Outstanding Principal</td>
+                                            <td class="text-warning">TZS
+                                                {{ number_format($outstandingBreakdown['outstanding_principal'] ?? 0, 2) }}
+                                            </td>
+                                        </tr>
+                                        <tr>
+                                            <td class="fw-bold text-muted ps-5 small">Outstanding Accrued Interest</td>
+                                            <td class="text-info">TZS
+                                                {{ number_format($outstandingBreakdown['outstanding_interest'] ?? 0, 2) }}
+                                            </td>
+                                        </tr>
+                                        @if (($outstandingBreakdown['outstanding_penalty'] ?? 0) > 0)
+                                        <tr>
+                                            <td class="fw-bold text-muted ps-5 small">Outstanding Penalty</td>
+                                            <td class="text-secondary">TZS
+                                                {{ number_format($outstandingBreakdown['outstanding_penalty'], 2) }}
+                                            </td>
+                                        </tr>
+                                        @endif
                                         <tr>
                                             <td class="fw-bold text-muted ps-4">Settle Amount</td>
                                             <td class="text-warning fw-bold">TZS
                                                 {{ number_format($loan->total_amount_to_settle, 2) }}
-                                                <br><small class="text-muted">Pays current interest + all remaining
-                                                    principal</small>
+                                                <br><small class="text-muted">Pays current interest + all remaining principal</small>
                                             </td>
                                         </tr>
 
@@ -633,8 +657,11 @@
                 <div class="tab-pane fade" id="schedule" role="tabpanel">
                     @if($loan->schedule->count())
                         <div class="card radius-10">
-                            <div class="card-header bg-primary text-white">
+                            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center flex-wrap gap-2">
                                 <h6 class="mb-0"><i class="bx bx-history me-2"></i>LOAN SCHEDULE LIST</h6>
+                                <a href="{{ route('loans.schedule.pdf', $loan->encodedId) }}" target="_blank" class="btn btn-light btn-sm">
+                                    <i class="bx bx-printer me-1"></i> Print Schedule (PDF)
+                                </a>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive w-100" style="overflow-x: auto;">
@@ -4092,48 +4119,96 @@
         function showTopUpModal() {
             const loan = @json($loan);
             const currentBalance = @json($loan->getCalculatedTopUpAmount());
+            const balanceBreakdown = @json($loan->getTopUpBalanceBreakdown());
+
+            // Parse amount from input: strip commas/spaces so "2,500,000" or "2 500 000" => 2500000
+            function parseTopUpAmount(value) {
+                const cleaned = String(value || '').replace(/,/g, '').replace(/\s/g, '');
+                return parseFloat(cleaned) || 0;
+            }
 
             Swal.fire({
                 title: 'Apply for Top-Up Loan',
                 html: `
-                                                                                                                                                <div class="text-start">
-                                                                                                                                                                                                    <div class="alert alert-info">
-                                                                                                                                    <i class="bx bx-info-circle me-2"></i>
-                                                                                                                                    <strong>Customer:</strong> ${loan.customer.name}
-                                                                                                                                </div>
+                    <div class="text-start">
+                        <div class="alert alert-info">
+                            <i class="bx bx-info-circle me-2"></i>
+                            <strong>Customer:</strong> ${loan.customer.name}
+                        </div>
 
-                                                                                                                                                    <div class="mb-3">
-                                                                                                                                                        <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
-                                                                                                                                                        <input type="number" class="form-control" id="topup_amount"
-                                                                                                                                                                placeholder="Enter amount greater than current balance" min="${currentBalance + 1}" step="1000" required>
-                                                                                                                                                        <small class="text-muted">Must be greater than current balance (TZS ${parseFloat(currentBalance).toLocaleString()})</small>
-                                                                                                                                                    </div>
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Current Balance Breakdown</label>
+                            <div class="card bg-light p-3">
+                                <div class="row g-2">
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Outstanding Principal</small>
+                                        <strong>TZS ${parseFloat(balanceBreakdown.outstanding_principal || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Outstanding Interest</small>
+                                        <strong>TZS ${parseFloat(balanceBreakdown.outstanding_interest || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Outstanding Penalty</small>
+                                        <strong>TZS ${parseFloat(balanceBreakdown.outstanding_penalty || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted d-block">Total Balance</small>
+                                        <strong class="text-primary">TZS ${parseFloat(balanceBreakdown.total_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <small class="text-muted mt-2 d-block">Balance = Principal - Paid + Accrued Interest - Paid + Penalty - Paid</small>
+                        </div>
 
-                                                                                                                                                    <div class="mb-3">
-                                                                                                                                                        <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
-                                                                                                                                                        <textarea class="form-control" id="topup_purpose" rows="3"
-                                                                                                                                                                    placeholder="Please describe the purpose of this top-up loan..."></textarea>
-                                                                                                                                                    </div>
+                        <div class="mb-3">
+                            <label for="topup_amount" class="form-label">New Loan Amount (TZS)</label>
+                            <input type="number" class="form-control" id="topup_amount"
+                                placeholder="Enter amount greater than current balance" min="${Math.max(1, balanceBreakdown.total_balance || 0)}" step="1000" required>
+                            <small class="text-muted">Must be greater than or equal to total balance (TZS ${parseFloat(balanceBreakdown.total_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})</small>
+                        </div>
 
-                                                                                                                                                    <div class="mb-3">
-                                                                                                                                                        <label for="topup_type" class="form-label">Top-Up Type</label>
-                                                                                                                                                        <select class="form-control" id="topup_type" required>
-                                                                                                                                                            <option value="restructure">Restructure (Replace old loan with new larger loan)</option>
-                                                                                                                                                            <option value="additional">Additional (Create separate new loan alongside old loan)</option>
-                                                                                                                                                        </select>
-                                                                                                                                                        <small class="text-muted">Choose how you want to handle the top-up</small>
-                                                                                                                                                    </div>
+                        <div class="mb-3" id="topup_live_calculation">
+                            <div class="card bg-light p-2 small">
+                                <span class="text-muted">New loan amount: </span><span id="new_loan_amount_display">TZS 0.00</span><br>
+                                <span class="text-muted">Customer receives: </span><span id="customer_receives_display">TZS 0.00</span>
+                            </div>
+                        </div>
 
-                                                                                                                                                    <div class="mb-3">
-                                                                                                                                                        <label for="topup_period" class="form-label">Additional Period</label>
-                                                                                                                                                        <input type="number" class="form-control" id="topup_period"
-                                                                                                                                                                value="12" min="1" max="60" required>
-                                                                                                                                                        <small class="text-muted">How many additional periods do you need?</small>
-                                                                                                                                                    </div>
+                        <div class="mb-3">
+                            <label for="topup_purpose" class="form-label">Purpose of Top-Up</label>
+                            <textarea class="form-control" id="topup_purpose" rows="3"
+                                placeholder="Please describe the purpose of this top-up loan..."></textarea>
+                        </div>
 
+                        <div class="mb-3">
+                            <label for="topup_type" class="form-label">Top-Up Type</label>
+                            <select class="form-control" id="topup_type" required>
+                                <option value="restructure">Restructure (Capitalize accrued interest/penalty, replace old loan)</option>
+                                <option value="additional">Additional (Create separate new loan alongside old loan)</option>
+                            </select>
+                            <small class="text-muted">Restructure: Accrued interest and penalty will be capitalized into principal. Customer receives balance after capitalization.</small>
+                        </div>
 
-                                                                                                                                                </div>
-                                                                                                                                            `,
+                        <div class="mb-3">
+                            <label for="topup_period" class="form-label">Additional Period</label>
+                            <input type="number" class="form-control" id="topup_period"
+                                value="12" min="1" max="60" required>
+                            <small class="text-muted">How many additional periods do you need?</small>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="topup_bank_account" class="form-label">Bank Account for Disbursement</label>
+                            <select class="form-control" id="topup_bank_account" required>
+                                <option value="">Select Bank Account</option>
+                                @foreach($bankAccounts ?? [] as $bankAccount)
+                                    <option value="{{ $bankAccount->id }}">{{ $bankAccount->name }} - {{ $bankAccount->account_number }}</option>
+                                @endforeach
+                            </select>
+                            <small class="text-muted">Select the bank account where the customer balance will be credited</small>
+                        </div>
+                    </div>
+                `,
                 showCancelButton: true,
                 confirmButtonText: 'Apply for Top-Up',
                 cancelButtonText: 'Cancel',
@@ -4141,17 +4216,22 @@
                 cancelButtonColor: '#6c757d',
                 width: '600px',
                 preConfirm: () => {
-                    const amount = parseFloat(document.getElementById('topup_amount').value);
+                    const amount = parseTopUpAmount(document.getElementById('topup_amount').value);
                     const purpose = document.getElementById('topup_purpose').value;
                     const period = parseInt(document.getElementById('topup_period').value);
                     const topupType = document.getElementById('topup_type').value;
+                    const totalBalance = parseFloat(balanceBreakdown.total_balance || 0);
 
                     if (!amount || amount <= 0) {
                         Swal.showValidationMessage('Please enter a valid amount');
                         return false;
                     }
 
-                    if (amount <= currentBalance) {
+                    if (topupType === 'restructure' && amount < totalBalance) {
+                        Swal.showValidationMessage(`New loan amount must be greater than or equal to the capitalized amount (TZS ${totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`);
+                        return false;
+                    }
+                    if (topupType === 'additional' && amount <= currentBalance) {
                         Swal.showValidationMessage('New loan amount must be greater than current balance');
                         return false;
                     }
@@ -4171,7 +4251,19 @@
                         return false;
                     }
 
-                    return { amount, purpose, period, topup_type: topupType };
+                    const bankAccount = document.getElementById('topup_bank_account').value;
+                    if (!bankAccount) {
+                        Swal.showValidationMessage('Please select a bank account for disbursement');
+                        return false;
+                    }
+
+                    return {
+                        amount,
+                        purpose,
+                        period,
+                        topup_type: topupType,
+                        bank_account_id: bankAccount
+                    };
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
@@ -4194,14 +4286,16 @@
             setTimeout(() => {
                 const amountInput = document.getElementById('topup_amount');
                 const typeSelect = document.getElementById('topup_type');
+                const totalBalance = parseFloat(balanceBreakdown.total_balance || 0);
 
                 function updateCalculations() {
-                    const newAmount = parseFloat(amountInput.value) || 0;
+                    const newAmount = parseTopUpAmount(amountInput.value);
                     const topupType = typeSelect.value;
 
                     let customerReceives;
                     if (topupType === 'restructure') {
-                        customerReceives = Math.max(0, newAmount - currentBalance);
+                        // Customer receives: new loan amount - capitalized amount (principal + interest + penalty)
+                        customerReceives = Math.max(0, newAmount - totalBalance);
                     } else {
                         customerReceives = newAmount; // Customer receives full amount in additional
                     }
@@ -4211,10 +4305,10 @@
                     const customerReceivesDisplay = document.getElementById('customer_receives_display');
 
                     if (newLoanDisplay) {
-                        newLoanDisplay.textContent = `TZS ${newAmount.toLocaleString()}`;
+                        newLoanDisplay.textContent = `TZS ${newAmount.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                     }
                     if (customerReceivesDisplay) {
-                        customerReceivesDisplay.textContent = `TZS ${customerReceives.toLocaleString()}`;
+                        customerReceivesDisplay.textContent = `TZS ${customerReceives.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`;
                     }
                 }
 
@@ -4224,14 +4318,17 @@
                 if (typeSelect) {
                     typeSelect.addEventListener('change', updateCalculations);
                 }
+                updateCalculations();
             }, 100);
         }
 
         function submitTopUpApplication(data) {
-            const currentBalance = @json($loan->getCalculatedTopUpAmount());
+            const balanceBreakdown = @json($loan->getTopUpBalanceBreakdown());
+            const totalBalance = parseFloat(balanceBreakdown.total_balance || 0);
             let customerReceives;
             if (data.topup_type === 'restructure') {
-                customerReceives = data.amount - currentBalance;
+                // Customer receives: new loan amount - capitalized amount (principal + interest + penalty)
+                customerReceives = Math.max(0, data.amount - totalBalance);
             } else {
                 customerReceives = data.amount; // Customer receives full amount in additional
             }
@@ -4239,24 +4336,58 @@
             $.ajax({
                 url: `/loans/${@json($loan->encodedId)}/top-up`,
                 method: 'POST',
+                timeout: 120000, // 2 minutes timeout
                 data: {
                     new_loan_amount: data.amount,
-                    current_balance: currentBalance,
                     customer_receives: customerReceives,
                     purpose: data.purpose,
                     period: data.period,
                     topup_type: data.topup_type,
+                    bank_account_id: data.bank_account_id,
                     _token: $('meta[name="csrf-token"]').attr('content')
                 },
-                success: function (response) {
+                success: function(response) {
                     Swal.close();
 
                     if (response.success) {
+                        // Build detailed message with LoanTopup data
+                        let message = response.message || 'Your top-up loan has been created successfully.';
+                        let detailsHtml = '<div class="text-start mt-3">';
+
+                        if (response.loan_topup) {
+                            const topup = response.loan_topup;
+                            detailsHtml += '<h6 class="mb-2">Top-Up Details:</h6>';
+                            detailsHtml += '<table class="table table-sm table-bordered">';
+                            detailsHtml += `<tr><td><strong>New Loan Amount:</strong></td><td>TZS ${parseFloat(topup.new_loan_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+
+                            if (topup.capitalized_amount) {
+                                detailsHtml += `<tr><td><strong>Capitalized Amount:</strong></td><td>TZS ${parseFloat(topup.capitalized_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+                                if (topup.outstanding_principal) {
+                                    detailsHtml += `<tr><td><strong>Outstanding Principal:</strong></td><td>TZS ${parseFloat(topup.outstanding_principal).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+                                }
+                                if (topup.outstanding_interest) {
+                                    detailsHtml += `<tr><td><strong>Outstanding Interest:</strong></td><td>TZS ${parseFloat(topup.outstanding_interest).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+                                }
+                                if (topup.outstanding_penalty) {
+                                    detailsHtml += `<tr><td><strong>Outstanding Penalty:</strong></td><td>TZS ${parseFloat(topup.outstanding_penalty).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+                                }
+                            } else {
+                                detailsHtml += `<tr><td><strong>Old Balance:</strong></td><td>TZS ${parseFloat(topup.old_balance).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</td></tr>`;
+                            }
+
+                            detailsHtml += `<tr class="table-success"><td><strong>Customer Receives:</strong></td><td><strong>TZS ${parseFloat(topup.customer_receives).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})}</strong></td></tr>`;
+                            detailsHtml += `<tr><td><strong>Top-Up Type:</strong></td><td>${topup.topup_type.charAt(0).toUpperCase() + topup.topup_type.slice(1)}</td></tr>`;
+                            detailsHtml += '</table>';
+                        }
+
+                        detailsHtml += '</div>';
+
                         Swal.fire({
                             title: 'Top-Up Loan Created!',
-                            text: response.message || 'Your top-up loan has been created successfully.',
+                            html: message + detailsHtml,
                             icon: 'success',
-                            confirmButtonText: 'View New Loan'
+                            confirmButtonText: 'View New Loan',
+                            width: '600px'
                         }).then(() => {
                             // Redirect to the new loan
                             if (response.new_loan_encoded_id) {
@@ -4274,15 +4405,22 @@
                         });
                     }
                 },
-                error: function (xhr) {
+                error: function(xhr, status, error) {
                     Swal.close();
 
                     let errorMessage = 'Failed to submit top-up application.';
-                    if (xhr.responseJSON && xhr.responseJSON.message) {
+
+                    if (status === 'timeout') {
+                        errorMessage = 'Request timed out. Please try again.';
+                    } else if (xhr.responseJSON && xhr.responseJSON.message) {
                         errorMessage = xhr.responseJSON.message;
                     } else if (xhr.responseJSON && xhr.responseJSON.errors) {
                         const errors = Object.values(xhr.responseJSON.errors).flat();
                         errorMessage = errors.join(', ');
+                    } else if (xhr.status === 0) {
+                        errorMessage = 'Network error. Please check your connection and try again.';
+                    } else if (xhr.status >= 500) {
+                        errorMessage = 'Server error. Please try again later or contact support.';
                     }
 
                     Swal.fire({
