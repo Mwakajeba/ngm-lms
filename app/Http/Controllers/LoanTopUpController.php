@@ -274,16 +274,20 @@ class LoanTopUpController extends Controller
         $product = $oldLoan->product;
         $bankAccount = $newLoan->bankAccount ?? $oldLoan->bankAccount;
 
+        // Use a single transaction id/type for the whole top-up so debits/credits are grouped together
+        $transactionId = $newLoan->id;
+        $transactionType = 'Loan Top-Up - Restructure';
+
         // 1. Close old loan receivable (Credit the old loan receivable)
         GlTransaction::create([
             'chart_account_id' => $product->principal_receivable_account_id,
             'customer_id' => $oldLoan->customer_id,
             'amount' => $currentBalance,
             'nature' => 'credit',
-            'transaction_id' => $oldLoan->id,
-            'transaction_type' => 'Loan Top-Up - Restructure - Old Loan Closure',
+            'transaction_id' => $transactionId,
+            'transaction_type' => $transactionType,
             'date' => now(),
-            'description' => "Restructure Top-up: Close old loan receivable (Loan #{$oldLoan->id})",
+            'description' => "Restructure Top-up: Close old loan receivable (Old Loan #{$oldLoan->id})",
             'branch_id' => $branchId,
             'user_id' => $userId,
         ]);
@@ -294,25 +298,25 @@ class LoanTopUpController extends Controller
             'customer_id' => $newLoan->customer_id,
             'amount' => $newLoan->amount,
             'nature' => 'debit',
-            'transaction_id' => $newLoan->id,
-            'transaction_type' => 'Loan Top-Up - Restructure - New Loan',
+            'transaction_id' => $transactionId,
+            'transaction_type' => $transactionType,
             'date' => now(),
-            'description' => "Restructure Top-up: Create new loan receivable (Loan #{$newLoan->id})",
+            'description' => "Restructure Top-up: Create new loan receivable (New Loan #{$newLoan->id})",
             'branch_id' => $branchId,
             'user_id' => $userId,
         ]);
 
         // 3. Disburse cash to customer (Credit bank account for amount customer receives)
-        if ($customerReceives > 0) {
+        if ($customerReceives > 0 && $bankAccount) {
             GlTransaction::create([
                 'chart_account_id' => $bankAccount->chart_account_id,
                 'customer_id' => $newLoan->customer_id,
                 'amount' => $customerReceives,
                 'nature' => 'credit',
-                'transaction_id' => $newLoan->id,
-                'transaction_type' => 'Loan Top-Up - Restructure - Cash Disbursement',
+                'transaction_id' => $transactionId,
+                'transaction_type' => $transactionType,
                 'date' => now(),
-                'description' => "Restructure Top-up: Cash disbursement to customer (Loan #{$newLoan->id})",
+                'description' => "Restructure Top-up: Cash disbursement to customer (New Loan #{$newLoan->id})",
                 'branch_id' => $branchId,
                 'user_id' => $userId,
             ]);
@@ -337,14 +341,18 @@ class LoanTopUpController extends Controller
         $product = $oldLoan->product;
         $bankAccount = $newLoan->bankAccount ?? $oldLoan->bankAccount;
 
+        // Use a single transaction id/type for the whole additional top-up
+        $transactionId = $newLoan->id;
+        $transactionType = 'Loan Top-Up - Additional';
+
         // 1. Create new loan receivable (Debit the new loan receivable)
         GlTransaction::create([
             'chart_account_id' => $product->principal_receivable_account_id,
             'customer_id' => $newLoan->customer_id,
             'amount' => $newLoan->amount,
             'nature' => 'debit',
-            'transaction_id' => $newLoan->id,
-            'transaction_type' => 'Loan Top-Up - Additional - New Loan',
+            'transaction_id' => $transactionId,
+            'transaction_type' => $transactionType,
             'date' => now(),
             'description' => "Additional Top-up: Create new loan receivable (Loan #{$newLoan->id})",
             'branch_id' => $branchId,
@@ -352,18 +360,20 @@ class LoanTopUpController extends Controller
         ]);
 
         // 2. Disburse cash to customer (Credit bank account for full amount)
-        GlTransaction::create([
-            'chart_account_id' => $bankAccount->chart_account_id,
-            'customer_id' => $newLoan->customer_id,
-            'amount' => $customerReceives,
-            'nature' => 'credit',
-            'transaction_id' => $newLoan->id,
-            'transaction_type' => 'Loan Top-Up - Additional - Cash Disbursement',
-            'date' => now(),
-            'description' => "Additional Top-up: Cash disbursement to customer (Loan #{$newLoan->id})",
-            'branch_id' => $branchId,
-            'user_id' => $userId,
-        ]);
+        if ($bankAccount) {
+            GlTransaction::create([
+                'chart_account_id' => $bankAccount->chart_account_id,
+                'customer_id' => $newLoan->customer_id,
+                'amount' => $customerReceives,
+                'nature' => 'credit',
+                'transaction_id' => $transactionId,
+                'transaction_type' => $transactionType,
+                'date' => now(),
+                'description' => "Additional Top-up: Cash disbursement to customer (Loan #{$newLoan->id})",
+                'branch_id' => $branchId,
+                'user_id' => $userId,
+            ]);
+        }
 
         Log::info('Additional Top-up GL transactions created', [
             'old_loan_id' => $oldLoan->id,
