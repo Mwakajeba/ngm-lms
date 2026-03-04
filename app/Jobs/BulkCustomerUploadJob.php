@@ -100,6 +100,13 @@ class BulkCustomerUploadJob implements ShouldQueue
                 $phone1 = $this->formatPhoneNumber(trim($rowData['phone1']));
                 $phone2 = !empty($rowData['phone2']) ? $this->formatPhoneNumber(trim($rowData['phone2'])) : null;
 
+                // Determine category (Borrower/Guarantor) from file, default to Borrower
+                $rawCategory = trim($rowData['category'] ?? '');
+                $normalizedCategory = strtolower($rawCategory);
+                $category = in_array($normalizedCategory, ['borrower', 'guarantor'], true)
+                    ? ucfirst($normalizedCategory)
+                    : 'Borrower';
+
                 // Create customer data
                 $customerData = [
                     'name' => trim($rowData['name']),
@@ -122,7 +129,7 @@ class BulkCustomerUploadJob implements ShouldQueue
                     'registrar' => $this->userId,
                     'dateRegistered' => now()->toDateString(),
                     'has_cash_collateral' => $this->hasCashCollateral,
-                    'category' => 'Borrower',
+                    'category' => $category,
                 ];
 
                 $customer = Customer::create($customerData);

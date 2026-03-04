@@ -688,6 +688,12 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 });
 
 //route
+// Analytics Routes
+Route::get('/analytics/loans', [App\Http\Controllers\LoanAnalyticsController::class, 'index'])->middleware('auth')->name('analytics.loans.index');
+Route::get('/api/analytics/kpis', [App\Http\Controllers\LoanAnalyticsController::class, 'getKPIs'])->middleware('auth')->name('api.analytics.kpis');
+Route::get('/api/analytics/charts', [App\Http\Controllers\LoanAnalyticsController::class, 'getChartData'])->middleware('auth')->name('api.analytics.charts');
+Route::get('/api/analytics/insights', [App\Http\Controllers\LoanAnalyticsController::class, 'getAIInsights'])->middleware('auth')->name('api.analytics.insights');
+
 
 Route::name('loans.reports.')->group(function () {
     //////LOANS REPORT ROUTE////////
