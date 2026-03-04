@@ -610,7 +610,7 @@ class GroupController extends Controller
                             // Format message with remaining amount
                             $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amountPaid, 0) . '. Salio: Tsh ' . number_format($remainingAmount, 0) . '. ' . $companyName;
                             
-                            \App\Helpers\SmsHelper::send($phone, $message);
+                            \App\Helpers\SmsHelper::send($phone, $message, 'group_notifications');
                         }
                     } catch (\Exception $e) {
                         // Log error but don't break the repayment process

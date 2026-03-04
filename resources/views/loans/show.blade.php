@@ -17,8 +17,10 @@
                     <h4 class="fw-bold text-dark mb-0">Loan Details for {{ $loan->customer->name }}</h4>
                     <div class="d-flex gap-2" style="margin-left: 16px;">
                         @if($loan->status !== 'restructured')
-                            <a href="{{ route('loans.writeoff', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
-                                class="btn btn-danger">Write Off Loans</a>
+                            <button type="button" class="btn btn-danger" data-bs-toggle="modal"
+                                data-bs-target="#writeOffLoanModal">
+                                Write Off Loan
+                            </button>
 
                             @if($loan->isEligibleForTopUp())
                                 <button type="button" class="btn btn-success" onclick="showTopUpModal()">
@@ -2109,6 +2111,93 @@
         </div>
     </div>
 
+    <!-- Write Off Loan Modal -->
+    <div class="modal fade" id="writeOffLoanModal" tabindex="-1" aria-labelledby="writeOffLoanModalLabel"
+        aria-hidden="true">
+        <div class="modal-dialog modal-lg">
+            <form action="{{ route('loans.writeoff.confirm', Vinkla\Hashids\Facades\Hashids::encode($loan->id)) }}"
+                method="POST" class="modal-content">
+                @csrf
+                <div class="modal-header bg-danger text-white">
+                    <h5 class="modal-title" id="writeOffLoanModalLabel">
+                        <i class="bx bx-block me-2"></i>Write Off Loan
+                    </h5>
+                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"
+                        aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="alert alert-warning d-flex align-items-center mb-4">
+                        <i class="bx bx-error-circle me-2 fs-4"></i>
+                        <div>
+                            <strong>Important:</strong> This action will permanently mark this loan as
+                            <span class="badge bg-danger">Written Off</span> and create the relevant GL entries.
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Loan No</label>
+                            <p class="form-control bg-light mb-0">{{ $loan->loanNo ?? $loan->id }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Borrower</label>
+                            <p class="form-control bg-light mb-0">{{ $loan->customer->name ?? 'N/A' }}</p>
+                        </div>
+                    </div>
+
+                    @php
+                        // Use same outstanding logic as payment info
+                        $outstandingBreakdownModal = $loan->getTopUpBalanceBreakdown();
+                        $outstandingTotalModal =
+                            $outstandingBreakdownModal['total_balance'] ??
+                            ($loan->amount_total - ($loan->repayments?->sum(fn($r) => $r->principal + $r->interest) ?? 0));
+                    @endphp
+
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Outstanding Balance</label>
+                            <p class="form-control bg-light text-danger fw-bold mb-0">
+                                TZS {{ number_format($outstandingTotalModal, 2) }}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label fw-bold text-muted small">Current Status</label>
+                            <p class="form-control bg-light mb-0 text-capitalize">{{ $loan->status }}</p>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-bold">Write-Off Type</label>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="writeoff_type" id="direct_writeoff_modal"
+                                value="direct" checked>
+                            <label class="form-check-label" for="direct_writeoff_modal">Direct Write Off</label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="writeoff_type"
+                                id="provision_writeoff_modal" value="provision">
+                            <label class="form-check-label" for="provision_writeoff_modal">Using Provision</label>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="writeoff_reason_modal" class="form-label fw-bold">Reason for Write-Off</label>
+                        <textarea name="reason" id="writeoff_reason_modal" class="form-control" rows="3"
+                            placeholder="Describe why this loan is being written off..." required></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                        <i class="bx bx-x me-1"></i>Cancel
+                    </button>
+                    <button type="submit" class="btn btn-danger">
+                        <i class="bx bx-check me-1"></i>Confirm Write Off
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
 @endsection
 
 
@@ -4120,6 +4209,12 @@
             const loan = @json($loan);
             const currentBalance = @json($loan->getCalculatedTopUpAmount());
             const balanceBreakdown = @json($loan->getTopUpBalanceBreakdown());
+            const product = loan.product || {};
+            const minInterest = product.minimum_interest_rate ?? null;
+            const maxInterest = product.maximum_interest_rate ?? null;
+            const minPeriod = product.minimum_period ?? null;
+            const maxPeriod = product.maximum_period ?? null;
+            const currentPeriod = loan.period ?? 0;
 
             // Parse amount from input: strip commas/spaces so "2,500,000" or "2 500 000" => 2500000
             function parseTopUpAmount(value) {
@@ -4182,19 +4277,29 @@
                         </div>
 
                         <div class="mb-3">
-                            <label for="topup_type" class="form-label">Top-Up Type</label>
-                            <select class="form-control" id="topup_type" required>
-                                <option value="restructure">Restructure (Capitalize accrued interest/penalty, replace old loan)</option>
-                                <option value="additional">Additional (Create separate new loan alongside old loan)</option>
-                            </select>
-                            <small class="text-muted">Restructure: Accrued interest and penalty will be capitalized into principal. Customer receives balance after capitalization.</small>
+                            <label for="topup_interest" class="form-label">Interest Rate (%)</label>
+                            <input type="number" class="form-control" id="topup_interest"
+                                value="${loan.interest || 0}" min="0" step="0.01" required>
+                            <small class="text-muted">
+                                ${
+                                    minInterest !== null && maxInterest !== null
+                                        ? `Allowed: ${minInterest}% – ${maxInterest}%`
+                                        : 'Set the interest rate for the new restructured loan.'
+                                }
+                            </small>
                         </div>
 
                         <div class="mb-3">
-                            <label for="topup_period" class="form-label">Additional Period</label>
+                            <label for="topup_period" class="form-label">New Total Period (Months)</label>
                             <input type="number" class="form-control" id="topup_period"
-                                value="12" min="1" max="60" required>
-                            <small class="text-muted">How many additional periods do you need?</small>
+                                value="${currentPeriod || 12}" min="1" max="60" required>
+                            <small class="text-muted">
+                                ${
+                                    minPeriod !== null && maxPeriod !== null
+                                        ? `Allowed total period: ${minPeriod} – ${maxPeriod} months. Current: ${currentPeriod} months.`
+                                        : 'Enter the new total loan period in months.'
+                                }
+                            </small>
                         </div>
 
                         <div class="mb-3">
@@ -4219,7 +4324,7 @@
                     const amount = parseTopUpAmount(document.getElementById('topup_amount').value);
                     const purpose = document.getElementById('topup_purpose').value;
                     const period = parseInt(document.getElementById('topup_period').value);
-                    const topupType = document.getElementById('topup_type').value;
+                    const interest = parseFloat(document.getElementById('topup_interest').value);
                     const totalBalance = parseFloat(balanceBreakdown.total_balance || 0);
 
                     if (!amount || amount <= 0) {
@@ -4227,12 +4332,8 @@
                         return false;
                     }
 
-                    if (topupType === 'restructure' && amount < totalBalance) {
+                    if (amount < totalBalance) {
                         Swal.showValidationMessage(`New loan amount must be greater than or equal to the capitalized amount (TZS ${totalBalance.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})})`);
-                        return false;
-                    }
-                    if (topupType === 'additional' && amount <= currentBalance) {
-                        Swal.showValidationMessage('New loan amount must be greater than current balance');
                         return false;
                     }
 
@@ -4242,12 +4343,12 @@
                     }
 
                     if (!period || period < 1 || period > 60) {
-                        Swal.showValidationMessage('Please enter a valid period (1-60 months)');
+                        Swal.showValidationMessage('Please enter a valid total period (1-60 months)');
                         return false;
                     }
 
-                    if (!topupType) {
-                        Swal.showValidationMessage('Please select a top-up type');
+                    if (isNaN(interest) || interest < 0) {
+                        Swal.showValidationMessage('Please enter a valid interest rate');
                         return false;
                     }
 
@@ -4261,7 +4362,7 @@
                         amount,
                         purpose,
                         period,
-                        topup_type: topupType,
+                        interest,
                         bank_account_id: bankAccount
                     };
                 }
@@ -4285,20 +4386,15 @@
             // Add real-time calculation updates
             setTimeout(() => {
                 const amountInput = document.getElementById('topup_amount');
-                const typeSelect = document.getElementById('topup_type');
                 const totalBalance = parseFloat(balanceBreakdown.total_balance || 0);
 
                 function updateCalculations() {
-                    const newAmount = parseTopUpAmount(amountInput.value);
-                    const topupType = typeSelect.value;
+                    if (!amountInput) return;
 
-                    let customerReceives;
-                    if (topupType === 'restructure') {
-                        // Customer receives: new loan amount - capitalized amount (principal + interest + penalty)
-                        customerReceives = Math.max(0, newAmount - totalBalance);
-                    } else {
-                        customerReceives = newAmount; // Customer receives full amount in additional
-                    }
+                    const newAmount = parseTopUpAmount(amountInput.value);
+
+                    // Always restructure: customer receives = new amount - capitalized balance
+                    const customerReceives = Math.max(0, newAmount - totalBalance);
 
                     // Update displays
                     const newLoanDisplay = document.getElementById('new_loan_amount_display');
@@ -4314,24 +4410,16 @@
 
                 if (amountInput) {
                     amountInput.addEventListener('input', updateCalculations);
+                    updateCalculations();
                 }
-                if (typeSelect) {
-                    typeSelect.addEventListener('change', updateCalculations);
-                }
-                updateCalculations();
             }, 100);
         }
 
         function submitTopUpApplication(data) {
             const balanceBreakdown = @json($loan->getTopUpBalanceBreakdown());
             const totalBalance = parseFloat(balanceBreakdown.total_balance || 0);
-            let customerReceives;
-            if (data.topup_type === 'restructure') {
-                // Customer receives: new loan amount - capitalized amount (principal + interest + penalty)
-                customerReceives = Math.max(0, data.amount - totalBalance);
-            } else {
-                customerReceives = data.amount; // Customer receives full amount in additional
-            }
+            // Customer receives: new loan amount - capitalized amount (principal + interest + penalty)
+            const customerReceives = Math.max(0, data.amount - totalBalance);
 
             $.ajax({
                 url: `/loans/${@json($loan->encodedId)}/top-up`,
@@ -4342,7 +4430,7 @@
                     customer_receives: customerReceives,
                     purpose: data.purpose,
                     period: data.period,
-                    topup_type: data.topup_type,
+                        interest: data.interest,
                     bank_account_id: data.bank_account_id,
                     _token: $('meta[name="csrf-token"]').attr('content')
                 },
@@ -4434,10 +4522,11 @@
         }
 
         (function () {
-            function getCsrfToken() {
+            // Expose CSRF helper globally so other functions (like reverseReceipt) can use it
+            window.getCsrfToken = function () {
                 var m = document.querySelector('meta[name="csrf-token"]');
                 return m ? m.getAttribute('content') : '';
-            }
+            };
 
             function updateBulkControls() {
                 var checkboxes = Array.from(document.querySelectorAll('.repayment-select'));
@@ -4744,9 +4833,8 @@
         }
 
         function printReceiptDocument(receiptId) {
-            // Note: This may need to be adjusted based on your actual receipt print route
-            // For now, using the repayment print route as receipts are linked to repayments
-            window.open(`/repayments/${receiptId}/print`, '_blank');
+            // Open dedicated printable receipt view
+            window.open(`/accounting/receipt-vouchers/${receiptId}/print`, '_blank');
         }
 
         // Bulk Receipt Operations

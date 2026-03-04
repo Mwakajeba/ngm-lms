@@ -8,6 +8,7 @@ use App\Models\Branch;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Schema;
 use Carbon\Carbon;
 
 class LoanAnalyticsController extends Controller
@@ -2012,8 +2013,7 @@ class LoanAnalyticsController extends Controller
             ->pluck('principal_paid', 'loan_id')
             ->toArray();
 
-        $sectorRiskData = DB::table('loans')
-            ->leftJoin('sectors', 'loans.sector_id', '=', 'sectors.id')
+        $sectorRiskQuery = DB::table('loans')
             ->leftJoin(DB::raw('(
                 SELECT loan_id, MIN(due_date) as first_overdue_date
                 FROM loan_schedules
@@ -2022,14 +2022,27 @@ class LoanAnalyticsController extends Controller
             ) as overdue_schedules'), 'loans.id', '=', 'overdue_schedules.loan_id')
             ->where('loans.status', Loan::STATUS_ACTIVE)
             ->when($selectedBranchId, fn($q) => $q->where('loans.branch_id', $selectedBranchId))
-            ->when(!$selectedBranchId, fn($q) => $q->whereIn('loans.branch_id', $userBranchIds))
-            ->selectRaw('
+            ->when(!$selectedBranchId, fn($q) => $q->whereIn('loans.branch_id', $userBranchIds));
+
+        if (Schema::hasTable('sectors')) {
+            $sectorRiskQuery->leftJoin('sectors', 'loans.sector_id', '=', 'sectors.id')
+                ->selectRaw('
+                    loans.id,
+                    loans.amount,
+                    COALESCE(sectors.name, "Other") as sector_name,
+                    overdue_schedules.first_overdue_date
+                ');
+        } else {
+            // Fallback when sectors table is not present
+            $sectorRiskQuery->selectRaw('
                 loans.id,
                 loans.amount,
-                COALESCE(sectors.name, "Other") as sector_name,
+                "Other" as sector_name,
                 overdue_schedules.first_overdue_date
-            ')
-            ->get();
+            ');
+        }
+
+        $sectorRiskData = $sectorRiskQuery->get();
 
         $sectorRisk = [];
         foreach ($sectorRiskData as $row) {

@@ -374,7 +374,7 @@ class CashCollateralController extends Controller
 
     protected function sendSms($phone, $message)
     {
-        SmsHelper::send($phone, $message);
+        SmsHelper::send($phone, $message, 'cash_collateral');
     }
 
     /**

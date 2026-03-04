@@ -18,7 +18,7 @@
             <div class="col-12">
                 <div class="row">
                     <div class="col-md-3">
-                        <div class="card bg-primary text-white">
+                        <div class="card text-white" style="background-color: #fcd105;">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
@@ -33,7 +33,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-success text-white">
+                        <div class="card text-white" style="background-color: #23A036;">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
@@ -48,7 +48,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-danger text-white">
+                        <div class="card text-white" style="background-color: #006400;">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
@@ -63,7 +63,7 @@
                         </div>
                     </div>
                     <div class="col-md-3">
-                        <div class="card bg-info text-white">
+                        <div class="card text-white" style="background-color: #fcd105;">
                             <div class="card-body">
                                 <div class="d-flex align-items-center">
                                     <div class="me-3">
@@ -85,6 +85,21 @@
                 <div class="card">
                     <div class="card-body">
                         <h5 class="card-title">Create New Backup</h5>
+                        <p class="text-muted small mb-3">
+                            <i class="bx bx-info-circle me-1"></i>
+                            Backups run in the background with full data (database includes all data). After clicking Create, refresh the page to see the backup appear as "In Progress" and then "Completed".
+                        </p>
+
+                        {{-- Job status (when just dispatched, like reminder SMS) --}}
+                        <div id="backupJobStatusCard" class="card mb-3 border-primary" style="display: none;">
+                            <div class="card-header bg-primary text-white">
+                                <h6 class="mb-0"><i class="bx bx-loader-alt bx-spin me-2"></i> Backup job in progress</h6>
+                            </div>
+                            <div class="card-body">
+                                <p class="mb-1"><strong>Status:</strong> <span id="backupJobStatus">—</span></p>
+                                <p class="mb-0 small text-muted" id="backupJobSummary"></p>
+                            </div>
+                        </div>
                         
                         @if(session('success'))
                             <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -111,7 +126,6 @@
                                         <select class="form-select" id="type" name="type" required>
                                             <option value="">Select backup type</option>
                                             <option value="database">Database Only</option>
-                                            <option value="files">Files Only</option>
                                             <option value="full">Full Backup (Database + Files)</option>
                                         </select>
                                     </div>
@@ -126,7 +140,7 @@
                                 <div class="col-md-2">
                                     <div class="mb-3">
                                         <label class="form-label">&nbsp;</label>
-                                        <button type="submit" class="btn btn-primary w-100">
+                                        <button type="submit" class="btn w-100" style="background-color: #006400; border-color: #006400; color: white;">
                                             <i class="bx bx-plus me-1"></i> Create Backup
                                         </button>
                                     </div>
@@ -149,7 +163,7 @@
                         </div>
 
                         <div class="table-responsive">
-                            <table class="table table-striped table-bordered">
+                            <table class="table table-striped table-bordered" id="backupHistoryTable">
                                 <thead>
                                     <tr>
                                         <th>Name</th>
@@ -161,73 +175,9 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    @forelse($backups ?? [] as $backup)
-                                    <tr>
-                                        <td>
-                                            <div class="fw-bold">{{ $backup->name }}</div>
-                                            @if($backup->description)
-                                                <small class="text-muted">{{ $backup->description }}</small>
-                                            @endif
-                                        </td>
-                                        <td>
-                                            @if($backup->type === 'database')
-                                                <span class="badge bg-primary">Database</span>
-                                            @elseif($backup->type === 'files')
-                                                <span class="badge bg-success">Files</span>
-                                            @else
-                                                <span class="badge bg-info">Full</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $backup->formatted_size }}</td>
-                                        <td>
-                                            @if($backup->status === 'completed')
-                                                <span class="badge bg-success">Completed</span>
-                                            @elseif($backup->status === 'failed')
-                                                <span class="badge bg-danger">Failed</span>
-                                            @else
-                                                <span class="badge bg-warning">In Progress</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $backup->creator->name ?? 'Unknown' }}</td>
-                                        <td>{{ $backup->created_at->format('Y-m-d H:i:s') }}</td>
-                                        <td>
-                                            @if($backup->status === 'completed')
-                                                <div class="btn-group" role="group">
-                                                    <a href="{{ route('settings.backup.download', $backup->hash_id) }}" 
-                                                       class="btn btn-sm btn-info" title="Download">
-                                                        <i class="bx bx-download"></i>
-                                                    </a>
-                                                    <button type="button" class="btn btn-sm btn-warning" 
-                                                            onclick="confirmRestore({{ $backup->id }}, '{{ $backup->name }}')" 
-                                                            title="Restore">
-                                                        <i class="bx bx-reset"></i>
-                                                    </button>
-                                                    <button type="button" class="btn btn-sm btn-danger" 
-                                                            onclick="confirmDelete('{{ $backup->hash_id }}', '{{ $backup->name }}')" 
-                                                            title="Delete">
-                                                        <i class="bx bx-trash"></i>
-                                                    </button>
-                                                </div>
-                                            @else
-                                                <span class="text-muted">No actions available</span>
-                                            @endif
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="7" class="text-center">No backups found.</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
+                                <tbody></tbody>
                             </table>
                         </div>
-
-                        @if(isset($backups) && $backups->hasPages())
-                            <div class="d-flex justify-content-center mt-3">
-                                {{ $backups->links() }}
-                            </div>
-                        @endif
                     </div>
                 </div>
             </div>
@@ -282,6 +232,50 @@
 
 @push('scripts')
 <script>
+$(document).ready(function() {
+    $('#backupHistoryTable').DataTable({
+        processing: true,
+        serverSide: true,
+        ajax: {
+            url: '{{ route("settings.backup.history.data") }}',
+            type: 'GET',
+            headers: { 'X-Requested-With': 'XMLHttpRequest' }
+        },
+        columns: [
+            { data: 'name_cell', name: 'name', orderable: true, searchable: true },
+            { data: 'type_badge', name: 'type', orderable: true, searchable: false },
+            { data: 'formatted_size', name: 'size', orderable: true, searchable: false },
+            { data: 'status_badge', name: 'status', orderable: true, searchable: false },
+            { data: 'creator_name', name: 'creator.name', orderable: false, searchable: true },
+            { data: 'created_at_fmt', name: 'created_at', orderable: true, searchable: false },
+            { data: 'actions', name: 'actions', orderable: false, searchable: false }
+        ],
+        order: [[5, 'desc']],
+        pageLength: 10,
+        lengthMenu: [[10, 25, 50], [10, 25, 50]],
+        language: {
+            processing: '<div class="spinner-border text-primary" role="status"></div>',
+            emptyTable: 'No backups found.',
+            zeroRecords: 'No matching backups found.'
+        }
+    });
+
+    $(document).on('click', '.backup-restore-btn', function() {
+        var id = $(this).data('backup-id');
+        var name = $(this).data('name') || '';
+        if (typeof window.confirmRestore === 'function') {
+            window.confirmRestore(id, name);
+        }
+    });
+    $(document).on('click', '.backup-delete-btn', function() {
+        var hashId = $(this).data('hash-id');
+        var name = $(this).data('name') || '';
+        if (typeof window.confirmDelete === 'function') {
+            window.confirmDelete(hashId, name);
+        }
+    });
+});
+
 document.addEventListener('DOMContentLoaded', function() {
     // Make functions globally available
     window.confirmRestore = function(backupId, backupName) {
@@ -338,4 +332,40 @@ document.addEventListener('DOMContentLoaded', function() {
     };
 });
 </script>
+
+@if(session('job_log_id'))
+<script>
+(function() {
+    var jobLogId = {{ (int) session('job_log_id') }};
+    if (!jobLogId) return;
+    var statusUrl = "{{ url('settings/backup/status') }}/" + jobLogId;
+    var card = document.getElementById('backupJobStatusCard');
+    var statusEl = document.getElementById('backupJobStatus');
+    var summaryEl = document.getElementById('backupJobSummary');
+    if (!card || !statusEl || !summaryEl) return;
+    card.style.display = 'block';
+    function poll() {
+        fetch(statusUrl, { headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' } })
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                if (data.error) return;
+                statusEl.textContent = data.status || '—';
+                summaryEl.textContent = data.summary || data.error_message || '';
+                if (data.status === 'running') {
+                    setTimeout(poll, 3000);
+                } else {
+                    card.querySelector('.card-header').classList.remove('bg-primary');
+                    card.querySelector('.card-header').classList.add(data.status === 'completed' ? 'bg-success' : 'bg-danger');
+                    card.querySelector('.card-header h6').innerHTML = '<i class="bx bx-check me-2"></i> Job finished';
+                    if (typeof $ !== 'undefined' && $.fn.DataTable && $.fn.DataTable.isDataTable('#backupHistoryTable')) {
+                        $('#backupHistoryTable').DataTable().ajax.reload(null, false);
+                    }
+                }
+            })
+            .catch(function() {});
+    }
+    poll();
+})();
+</script>
+@endif
 @endpush 

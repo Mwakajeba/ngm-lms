@@ -65,6 +65,19 @@ class LoanRepaymentService
             $processedRepayments[] = $schedulePayment;
         }
 
+        // If no amount was actually allocated to any schedule, abort the transaction
+        if ($totalPaidAmount <= 0) {
+            Log::warning('Repayment processing resulted in zero allocated amount. Aborting.', [
+                'loan_id' => $loanId,
+                'requested_amount' => $amount,
+                'unpaid_schedules_count' => $unpaidSchedules->count(),
+                'all_schedule_payments' => $allSchedulePayments,
+            ]);
+
+            DB::rollBack();
+            throw new \Exception('Failed to record repayment because no amount could be allocated to any unpaid schedule. Please verify that the loan has outstanding installments.');
+        }
+
         // Step 2: Create ONE receipt for the total payment amount (only for bank/cash payments)
         $receipt = null;
         if (isset($paymentData['bank_account_id']) && $paymentData['bank_account_id']) {
@@ -260,7 +273,7 @@ class LoanRepaymentService
             }
 
             // Send SMS
-            $smsResult = SmsHelper::send($phone, $smsMessage);
+            $smsResult = SmsHelper::send($phone, $smsMessage, 'loan_repayment');
 
             if (is_array($smsResult) && ($smsResult['success'] ?? false)) {
                 Log::info('Repayment SMS sent successfully', [
@@ -440,9 +453,11 @@ class LoanRepaymentService
             'description' => "Loan repayment for {$loan->customer->name} - Loan #{$loan->id}",
             'user_id' => auth()->id(),
             'bank_account_id' => $paymentData['bank_account_id'] ?? $loan->bank_account_id,
+            // Ensure receipt is linked to the customer model as well as payee fields
             'payee_type' => 'customer',
             'payee_id' => $loan->customer_id,
             'payee_name' => $loan->customer->name,
+            'customer_id' => $loan->customer_id,
             'branch_id' => auth()->user()->branch_id ?? 1,
             'approved' => true,
             'approved_by' => auth()->id(),
@@ -489,6 +504,7 @@ class LoanRepaymentService
             'loan_id' => $loan->id,
             'loan_schedule_id' => $schedule->id,
             'receipt_id' => $receipt ? $receipt->id : null,
+            // Store the bank GL (chart account) as designed by the schema
             'bank_account_id' => $paymentData['bank_chart_account_id'] ?? null,
             'payment_date' => $paymentData['payment_date'] ?? now(),
             'due_date' => $schedule->due_date,
@@ -1390,8 +1406,8 @@ class LoanRepaymentService
             });
             $outstandingPrincipal = $totalPrincipal - $totalPaidPrincipal;
 
-            // Validate settle amount
-            $expectedSettleAmount = $currentInterest + $outstandingPrincipal;
+            // Validate settle amount (rounded to 2 decimals to avoid float precision issues)
+            $expectedSettleAmount = round($currentInterest + $outstandingPrincipal, 2);
             if (abs($amount - $expectedSettleAmount) > 0.01) {
                 throw new \Exception("Settle amount mismatch. Expected: {$expectedSettleAmount}, Provided: {$amount}");
             }

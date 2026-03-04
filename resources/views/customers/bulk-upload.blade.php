@@ -149,9 +149,9 @@
                                             <div class="card-body">
                                                 <div class="row">
                                                     <div class="col-md-6 mb-3">
-                                                        <div class="form-check">
+                                                    <div class="form-check">
                                                             <input type="checkbox" class="form-check-input" value="1"
-                                                                name="has_cash_collateral" id="has_cash_collateral" checked>
+                                                                name="has_cash_collateral" id="has_cash_collateral">
                                                             <label class="form-check-label" for="has_cash_collateral">
                                                                 Apply Cash Deposit to All Customers
                                                             </label>

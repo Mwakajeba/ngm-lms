@@ -14,10 +14,18 @@ class BankAccount extends Model
     use HasFactory,LogsActivity;
 
     protected $table = 'bank_accounts';
-    protected $fillable = ['chart_account_id', 'name', 'account_number'];
+    protected $fillable = [
+        'chart_account_id', 
+        'name', 
+        'account_number',
+        'branch_id',
+        'is_all_branches'
+    ];
     protected $casts = [
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'branch_id' => 'integer',
+        'is_all_branches' => 'boolean',
     ];
 
     /**
@@ -76,15 +84,6 @@ class BankAccount extends Model
     }
 
     /**
-     * Get the branches that have access to this bank account.
-     */
-    public function branches(): BelongsToMany
-    {
-        return $this->belongsToMany(Branch::class, 'bank_branches', 'bank_account_id', 'branch_id')
-            ->withTimestamps();
-    }
-
-    /**
      * Scope to filter bank accounts by user's assigned branches
      */
     public function scopeForUserBranches($query, $user = null)
@@ -93,16 +92,24 @@ class BankAccount extends Model
         if (!$user) {
             return $query->whereRaw('1 = 0'); // Return empty if no user
         }
-        
-        $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-        
-        if (empty($userBranchIds)) {
-            // If user has no branches, return empty
+
+        // Determine the active branch context (current branch or user's primary branch)
+        $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+        if (!$currentBranchId) {
+            $currentBranchId = $user->branch_id;
+        }
+
+        if (!$currentBranchId) {
+            // If we don't know which branch is active, return no accounts
             return $query->whereRaw('1 = 0');
         }
-        
-        return $query->whereHas('branches', function($q) use ($userBranchIds) {
-            $q->whereIn('branches.id', $userBranchIds);
+
+        return $query->where(function ($q) use ($currentBranchId) {
+            // 1) Accounts available to all branches
+            $q->where('is_all_branches', true);
+
+            // 2) Accounts explicitly scoped to the active branch via `branch_id`
+            $q->orWhere('branch_id', $currentBranchId);
         });
     }
 }

@@ -83,11 +83,23 @@ class LoanRepaymentController extends Controller
             // Use normal repayment process
             $bankAccount = BankAccount::findOrFail($request->bank_account_id);
             
-            // Validate bank account is accessible by user's branches
+            // Validate bank account is accessible by user's branches or global scope
             $user = Auth::user();
-            $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-            if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
-                return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.']);
+            $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+            if (!$currentBranchId) {
+                $currentBranchId = $user->branch_id;
+            }
+
+            // Bank account is accessible when:
+            // - it is available to all branches, OR
+            // - it is explicitly scoped to the current branch
+            $hasDirectScope = $bankAccount->is_all_branches
+                || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
+
+            if (!$hasDirectScope) {
+                return redirect()->back()->withErrors([
+                    'bank_account_id' => 'You do not have access to this bank account for the current branch.'
+                ]);
             }
             
             $bankChartAccount = $bankAccount->chart_account_id;
@@ -181,10 +193,21 @@ class LoanRepaymentController extends Controller
             $repayment = Repayment::with(['loan', 'bankAccount'])->findOrFail($id);
             $bankAccount = BankAccount::findOrFail($request->bank_account_id);
             
-            // Validate bank account is accessible by user's branches
+            // Validate bank account is accessible by user's branches or global scope
             $user = Auth::user();
             $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-            if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+            $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+            if (!$currentBranchId) {
+                $currentBranchId = $user->branch_id;
+            }
+
+            $hasPivotAccess = !empty($userBranchIds)
+                ? $bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()
+                : false;
+            $hasDirectScope = $bankAccount->is_all_branches
+                || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
+
+            if (!empty($userBranchIds) && !$hasPivotAccess && !$hasDirectScope) {
                 return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.']);
             }
             
@@ -420,10 +443,21 @@ class LoanRepaymentController extends Controller
             ]);
             $bankAccount = BankAccount::findOrFail($request->repayments[0]['bank_account_id']);
             
-            // Validate bank account is accessible by user's branches
+            // Validate bank account is accessible by user's branches or global scope
             $user = Auth::user();
             $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-            if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+            $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+            if (!$currentBranchId) {
+                $currentBranchId = $user->branch_id;
+            }
+
+            $hasPivotAccess = !empty($userBranchIds)
+                ? $bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()
+                : false;
+            $hasDirectScope = $bankAccount->is_all_branches
+                || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
+
+            if (!empty($userBranchIds) && !$hasPivotAccess && !$hasDirectScope) {
                 return redirect()->back()->withErrors(['repayments.0.bank_account_id' => 'You do not have access to this bank account.']);
             }
             
@@ -674,7 +708,7 @@ class LoanRepaymentController extends Controller
     /**
      * Print receipt for repayment
      */
-    public function printReceipt($id)
+    public function printReceipt(Request $request, $id)
     {
         try {
             $repayment = Repayment::with([
@@ -707,10 +741,16 @@ class LoanRepaymentController extends Controller
                 'branch' => Auth::check() && Auth::user()->branch ? Auth::user()->branch->name : 'N/A',
             ];
 
-            return response()->json([
-                'success' => true,
-                'receipt_data' => $receiptData
-            ]);
+            // If this is an AJAX call (used by the loan details page), return JSON
+            if ($request->ajax() || $request->wantsJson()) {
+                return response()->json([
+                    'success' => true,
+                    'receipt_data' => $receiptData
+                ]);
+            }
+
+            // Otherwise, render a printable HTML receipt (for direct browser access)
+            return view('repayments.print', compact('receiptData'));
         } catch (\Exception $e) {
             Log::error('Receipt print error: ' . $e->getMessage());
 

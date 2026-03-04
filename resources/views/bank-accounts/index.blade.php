@@ -16,7 +16,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Total Accounts</p>
-                                    <h4 class="font-weight-bold">{{ $bankAccounts->total() }}</h4>
+                                    <h4 class="font-weight-bold">{{ $totalAccounts }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-dollar'></i>
                                 </div>
@@ -30,7 +30,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Total Balance</p>
-                                    <h4 class="font-weight-bold">{{ number_format($bankAccounts->sum('balance') ?? 0, 2) }}</h4>
+                                    <h4 class="font-weight-bold">{{ number_format($totalBalance ?? 0, 2) }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-wallet'></i>
                                 </div>
@@ -44,7 +44,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Positive Balance</p>
-                                    <h4 class="font-weight-bold text-success">{{ $bankAccounts->filter(function($account) { return $account->balance > 0; })->count() }}</h4>
+                                    <h4 class="font-weight-bold text-success">{{ $positiveBalanceAccounts }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-success text-white"><i class='bx bx-trending-up'></i>
                                 </div>
@@ -58,7 +58,7 @@
                             <div class="d-flex align-items-center">
                                 <div class="flex-grow-1">
                                     <p class="mb-0">Negative Balance</p>
-                                    <h4 class="font-weight-bold text-danger">{{ $bankAccounts->filter(function($account) { return $account->balance < 0; })->count() }}</h4>
+                                    <h4 class="font-weight-bold text-danger">{{ $negativeBalanceAccounts }}</h4>
                                 </div>
                                 <div class="widgets-icons bg-gradient-danger text-white"><i class='bx bx-trending-down'></i>
                                 </div>
@@ -96,63 +96,7 @@
                                         <th>Actions</th>
                                     </tr>
                                 </thead>
-                                <tbody>
-                                    @foreach($bankAccounts as $index => $bankAccount)
-                                        <tr>
-                                            <td>{{ $index + 1 }}</td>
-                                            <td>{{ $bankAccount->name }}</td>
-                                            <td>{{ $bankAccount->account_number }}</td>
-                                            <td>{{ $bankAccount->chartAccount->account_name ?? 'N/A' }}</td>
-                                            <td>{{ $bankAccount->chartAccount->accountClassGroup->accountClass->name ?? 'N/A' }}
-                                            </td>
-                                            <td>{{ $bankAccount->chartAccount->accountClassGroup->name ?? 'N/A' }}</td>
-                                            <td class="text-end fw-bold">
-                                                @if($bankAccount->balance >= 0)
-                                                    <span class="text-success">{{ number_format($bankAccount->balance, 2) }}</span>
-                                                @else
-                                                    <span class="text-danger">{{ number_format($bankAccount->balance, 2) }}</span>
-                                                @endif
-                                            </td>
-                                            <td>{{ $bankAccount->created_at->format('M d, Y') }}</td>
-                                            <td>
-                                                @can('view bank  account details')
-                                                <a href="{{ route('accounting.bank-accounts.show', Hashids::encode($bankAccount->id)) }}"
-                                                    class="btn btn-sm btn-info">View</a>
-                                                @endcan
-
-                                                @can('edit bank account')
-                                                <a href="{{ route('accounting.bank-accounts.edit', Hashids::encode($bankAccount->id)) }}"
-                                                    class="btn btn-sm btn-primary">Edit</a>
-                                                @endcan
-
-                                                @can('delete bank account')
-                                                    @php
-                                                        $isLocked = $bankAccount->glTransactions()->exists();
-                                                    @endphp
-                                                    @if($isLocked)
-                                                        <button class="btn btn-sm btn-outline-secondary" title="Bank account's chart account is used in GL Transactions and cannot be deleted" disabled>
-                                                            <i class="bx bx-lock"></i> Locked
-                                                        </button>
-                                                    @else
-                                                        <form action="{{ route('accounting.bank-accounts.destroy', Hashids::encode($bankAccount->id)) }}"
-                                                            method="POST" class="d-inline delete-form">
-                                                            @csrf
-                                                            @method('DELETE')
-                                                            <button type="submit" class="btn btn-sm btn-danger"
-                                                                data-name="{{ $bankAccount->name }}">Delete</button>
-                                                        </form>
-                                                    @endif
-                                                @endcan
-                                            </td>
-                                        </tr>
-                                    @endforeach
-                                </tbody>
                             </table>
-                        </div>
-
-                        <!-- Pagination -->
-                        <div class="d-flex justify-content-center mt-3">
-                            {{ $bankAccounts->links() }}
                         </div>
                     </div>
                 </div>
@@ -172,19 +116,32 @@
 @push('scripts')
     <script>
         $(document).ready(function () {
-            // Check if DataTable is already initialized
-            if (!$.fn.DataTable.isDataTable('#bankAccountsTable')) {
-                $('#bankAccountsTable').DataTable({
-                    responsive: true,
-                    order: [[0, 'asc']]
-                });
-            }
+            const table = $('#bankAccountsTable').DataTable({
+                processing: true,
+                serverSide: true,
+                ajax: '{{ route('accounting.bank-accounts.data') }}',
+                order: [[0, 'asc']],
+                columns: [
+                    { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false },
+                    { data: 'name', name: 'name' },
+                    { data: 'account_number', name: 'account_number' },
+                    { data: 'chart_account', name: 'chart_account', orderable: false },
+                    { data: 'account_class', name: 'account_class', orderable: false },
+                    { data: 'account_group', name: 'account_group', orderable: false },
+                    { data: 'balance_display', name: 'balance', orderable: false, searchable: false },
+                    { data: 'created_at', name: 'created_at' },
+                    { data: 'actions', name: 'actions', orderable: false, searchable: false },
+                ],
+                language: {
+                    emptyTable: 'No bank accounts found.',
+                }
+            });
 
-            // Delete confirmation
-            $('.delete-form').on('submit', function (e) {
+            // Delete confirmation (delegated for dynamically loaded rows)
+            $(document).on('submit', '.delete-form', function (e) {
                 e.preventDefault();
-                const form = $(this);
-                const name = form.find('button[type="submit"]').data('name');
+                const form = this;
+                const name = $(form).find('button[type="submit"]').data('name');
 
                 Swal.fire({
                     title: 'Are you sure?',
@@ -196,7 +153,7 @@
                     confirmButtonText: 'Yes, delete it!'
                 }).then((result) => {
                     if (result.isConfirmed) {
-                        form[0].submit();
+                        form.submit();
                     }
                 });
             });

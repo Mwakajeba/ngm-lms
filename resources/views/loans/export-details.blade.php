@@ -500,6 +500,11 @@
                         @if($fee->isPercentage())
                             {{ number_format($fee->amount ?? 0, 2) }}% 
                             (TZS {{ number_format(($loan->amount * ($fee->amount ?? 0)) / 100, 2) }})
+                        @elseif($fee->isRange())
+                            @php
+                                $calculatedRangeFee = $fee->calculateRangeFee($loan->amount);
+                            @endphp
+                            TZS {{ number_format($calculatedRangeFee, 2) }}
                         @else
                             TZS {{ number_format($fee->amount ?? 0, 2) }}
                         @endif

@@ -47,6 +47,17 @@ return [
         'api_key' => env('KILAKONA_API_KEY', env('SMS_API_KEY')),
         'api_secret' => env('KILAKONA_API_SECRET', env('SMS_API_SECRET')),
         'callback_url' => env('KILAKONA_CALLBACK_URL', env('SMS_CALLBACK_URL')),
+        // When to send automatic SMS messages (feature toggles)
+        'events' => [
+            'otp_verification' => env('SMS_EVENT_OTP_VERIFICATION', true),
+            'loan_disbursement' => env('SMS_EVENT_LOAN_DISBURSEMENT', true),
+            'loan_repayment' => env('SMS_EVENT_LOAN_REPAYMENT', true),
+            'loan_arrears_reminder' => env('SMS_EVENT_LOAN_ARREARS_REMINDER', true),
+            'customer_notifications' => env('SMS_EVENT_CUSTOMER_NOTIFICATIONS', true),
+            'group_notifications' => env('SMS_EVENT_GROUP_NOTIFICATIONS', true),
+            'cash_collateral' => env('SMS_EVENT_CASH_COLLATERAL', true),
+            'mature_interest' => env('SMS_EVENT_MATURE_INTEREST', true),
+        ],
     ],
 
 ];

@@ -30,19 +30,20 @@
                             <input type="hidden" name="outstanding_balance" value="{{ $outstandingBalance }}">
                         </div>
                         <div class="mb-3">
-                            <label for="amount" class="form-label">Top-Up Amount</label>
-                            <input type="number" step="0.01" min="0" name="amount" id="amount" class="form-control" required>
+                            <label for="new_loan_amount" class="form-label">New Loan Amount</label>
+                            <input type="number" step="0.01" min="0" name="new_loan_amount" id="new_loan_amount" class="form-control" required>
                         </div>
                         <div class="mb-3">
-                            <label for="topup_type" class="form-label">Top-Up Type</label>
-                            <select name="topup_type" class="form-control">
-                                <option value="restructure">Restructure (replace old loan)</option>
-                                <option value="additional">Additional (new loan on top)</option>
-                            </select>
+                            <label for="interest" class="form-label">Interest Rate (%)</label>
+                            <input type="number" step="0.01" min="0" name="interest" id="interest" class="form-control" value="{{ old('interest', $loan->interest) }}" required>
                         </div>
                         <div class="mb-3">
-                            <label for="description" class="form-label">Description</label>
-                            <textarea name="description" id="description" class="form-control" rows="2"></textarea>
+                            <label for="period" class="form-label">Additional Period (Months)</label>
+                            <input type="number" step="1" min="1" max="60" name="period" id="period" class="form-control" value="{{ old('period', 12) }}" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="purpose" class="form-label">Purpose of Top-Up</label>
+                            <textarea name="purpose" id="purpose" class="form-control" rows="2" required>{{ old('purpose') }}</textarea>
                         </div>
                         <button type="submit" class="btn btn-success">Submit Top-Up</button>
                         <a href="{{ route('loans.show', $loan->encodedId) }}" class="btn btn-secondary ms-2">Cancel</a>

@@ -85,8 +85,16 @@
                         <div class="mb-3">
                             <label for="interest_rate" class="form-label">Interest Rate <span class="text-danger">*</span></label>
                             <div class="input-group">
-                                <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
-                                       placeholder="Enter interest rate" required min="0" step="0.01">
+                                <input
+                                    type="number"
+                                    class="form-control"
+                                    id="interest_rate"
+                                    name="interest_rate"
+                                    placeholder="Enter interest rate"
+                                    required
+                                    min="0"
+                                    step="0.000000000000001"
+                                    inputmode="decimal">
                                 <span class="input-group-text">%</span>
                             </div>
                             <div class="invalid-feedback"></div>

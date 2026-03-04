@@ -5,10 +5,14 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Company;
 use App\Models\Branch;
+use App\Models\JobLog;
 use App\Models\Backup;
 use App\Services\BackupService;
 use App\Services\AiAssistantService;
+use App\Jobs\BackupJob;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Auth;
 use Vinkla\Hashids\Facades\Hashids;
@@ -88,9 +92,38 @@ class SettingsController extends Controller
 
     public function branchSettings()
     {
-        $branches = Branch::forCompany()->paginate(10);
+        return view('settings.branches');
+    }
 
-        return view('settings.branches', compact('branches'));
+    /**
+     * Branch list for DataTables (AJAX)
+     */
+    public function branchSettingsData(Request $request)
+    {
+        $query = Branch::forCompany();
+
+        return \Yajra\DataTables\Facades\DataTables::of($query)
+            ->editColumn('branch_name', function (Branch $branch) {
+                // Fallback to 'name' for older records where branch_name is null
+                return $branch->branch_name ?: $branch->name;
+            })
+            ->addColumn('status_badge', function (Branch $branch) {
+                if ($branch->status === 'active') {
+                    return '<span class="badge bg-success">Active</span>';
+                }
+                if ($branch->status === 'inactive') {
+                    return '<span class="badge bg-warning">Inactive</span>';
+                }
+                return '<span class="badge bg-danger">Suspended</span>';
+            })
+            ->addColumn('actions', function (Branch $branch) {
+                $editUrl = route('settings.branches.edit', $branch);
+                $deleteUrl = route('settings.branches.destroy', $branch);
+
+                return view('settings.branches._actions', compact('branch', 'editUrl', 'deleteUrl'))->render();
+            })
+            ->rawColumns(['status_badge', 'actions'])
+            ->make(true);
     }
 
     public function createBranch()
@@ -102,7 +135,6 @@ class SettingsController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'branch_name' => 'required|string|max:255',
             'email' => 'nullable|email|unique:branches,email,NULL,id,company_id,' . current_company_id(),
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
@@ -114,7 +146,7 @@ class SettingsController extends Controller
         $branch = Branch::create([
             'company_id' => current_company_id(),
             'name' => $request->name,
-            'branch_name' => $request->branch_name,
+            'branch_name' => $request->name,
             'email' => $request->email,
             'phone' => $request->phone,
             'address' => $request->address,
@@ -152,7 +184,6 @@ class SettingsController extends Controller
 
         $request->validate([
             'name' => 'required|string|max:255',
-            'branch_name' => 'required|string|max:255',
             'email' => $emailRules,
             'phone' => 'required|string|max:20',
             'address' => 'required|string',
@@ -161,7 +192,11 @@ class SettingsController extends Controller
             'status' => 'required|in:active,inactive',
         ]);
 
-        $branch->update($request->all());
+        $data = $request->all();
+        // Keep branch_name in sync with name now that Display Name is removed from the form
+        $data['branch_name'] = $request->input('name');
+
+        $branch->update($data);
 
         return redirect()->route('settings.branches')->with('success', 'Branch updated successfully!');
     }
@@ -384,6 +419,7 @@ class SettingsController extends Controller
         }
     }
 
+
     public function backupSettings()
     {
         // Check permissions for backup settings
@@ -394,10 +430,69 @@ class SettingsController extends Controller
         }
 
         $backupService = new BackupService();
-        $backups = Backup::forCompany()->orderBy('created_at', 'desc')->paginate(10);
         $stats = $backupService->getBackupStats();
 
-        return view('settings.backup', compact('backups', 'stats'));
+        return view('settings.backup', compact('stats'));
+    }
+
+    /**
+     * DataTables AJAX: Backup history (server-side).
+     */
+    public function backupHistoryData(Request $request)
+    {
+        if (!$request->ajax()) {
+            return response()->json([], 400);
+        }
+        $query = Backup::forCompany()->with('creator')->orderBy('created_at', 'desc');
+        return DataTables::eloquent($query)
+            ->addColumn('name_cell', function ($backup) {
+                $html = '<div class="fw-bold">' . e($backup->name) . '</div>';
+                if ($backup->description) {
+                    $html .= '<small class="text-muted">' . e($backup->description) . '</small>';
+                }
+                return $html;
+            })
+            ->addColumn('type_badge', function ($backup) {
+                if ($backup->type === 'database') {
+                    return '<span class="badge bg-primary">Database</span>';
+                }
+                if ($backup->type === 'files') {
+                    return '<span class="badge bg-success">Files</span>';
+                }
+                return '<span class="badge bg-info">Full</span>';
+            })
+            ->addColumn('formatted_size', function ($backup) {
+                return $backup->formatted_size;
+            })
+            ->addColumn('status_badge', function ($backup) {
+                if ($backup->status === 'completed') {
+                    return '<span class="badge bg-success">Completed</span>';
+                }
+                if ($backup->status === 'failed') {
+                    return '<span class="badge bg-danger">Failed</span>';
+                }
+                return '<span class="badge bg-warning">In Progress</span>';
+            })
+            ->addColumn('creator_name', function ($backup) {
+                return $backup->creator ? e($backup->creator->name) : 'Unknown';
+            })
+            ->addColumn('created_at_fmt', function ($backup) {
+                return $backup->created_at->format('Y-m-d H:i:s');
+            })
+            ->addColumn('actions', function ($backup) {
+                if ($backup->status !== 'completed') {
+                    return '<span class="text-muted">No actions available</span>';
+                }
+                $downloadUrl = route('settings.backup.download', $backup->hash_id);
+                $actions = '<div class="btn-group" role="group">';
+                $actions .= '<a href="' . e($downloadUrl) . '" class="btn btn-sm btn-info" title="Download"><i class="bx bx-download"></i></a>';
+                $actions .= '<button type="button" class="btn btn-sm btn-warning backup-restore-btn" data-backup-id="' . (int) $backup->id . '" data-name="' . e($backup->name) . '" title="Restore"><i class="bx bx-reset"></i></button>';
+                $actions .= '<button type="button" class="btn btn-sm btn-danger backup-delete-btn" data-hash-id="' . e($backup->hash_id) . '" data-name="' . e($backup->name) . '" title="Delete"><i class="bx bx-trash"></i></button>';
+                $actions .= '</div>';
+                return $actions;
+            })
+            ->rawColumns(['name_cell', 'type_badge', 'status_badge', 'actions'])
+            ->make(true);
     }
 
     public function createBackup(Request $request)
@@ -410,32 +505,175 @@ class SettingsController extends Controller
         }
 
         $request->validate([
-            'type' => 'required|in:database,files,full',
+            'type' => 'required|in:database,full',
             'description' => 'nullable|string|max:500',
         ]);
 
-        try {
-            $backupService = new BackupService();
+        $jobLog = JobLog::create([
+            'job_name' => 'BackupJob',
+            'status' => 'running',
+            'processed' => 0,
+            'successful' => 0,
+            'failed' => 0,
+            'started_at' => now(),
+            'result_details' => ['type' => $request->type],
+        ]);
 
-            switch ($request->type) {
-                case 'database':
-                    $backup = $backupService->createDatabaseBackup($request->description);
-                    break;
-                case 'files':
-                    $backup = $backupService->createFilesBackup($request->description);
-                    break;
-                case 'full':
-                    $backup = $backupService->createFullBackup($request->description);
-                    break;
-                default:
-                    throw new \Exception('Invalid backup type');
-            }
+        $this->ensureQueueWorkerRunning();
 
-            return redirect()->route('settings.backup')->with('success', ucfirst($request->type) . ' backup created successfully!');
+        BackupJob::dispatch(
+            $request->type,
+            auth()->id(),
+            current_company_id(),
+            $request->description,
+            $jobLog->id
+        );
 
-        } catch (\Exception $e) {
-            return redirect()->route('settings.backup')->with('error', 'Backup failed: ' . $e->getMessage());
+        Log::info('Backup job dispatched', ['job_log_id' => $jobLog->id, 'user_id' => auth()->id()]);
+
+        return redirect()->route('settings.backup')
+            ->with('success', ucfirst($request->type) . ' backup has been queued and will run in the background.')
+            ->with('job_log_id', $jobLog->id);
+    }
+
+    /**
+     * Backup job status (JSON for polling), like loans reminder-sms.
+     */
+    public function backupJobStatus($jobLogId)
+    {
+        $jobLog = JobLog::findOrFail($jobLogId);
+        if ($jobLog->job_name !== 'BackupJob') {
+            return response()->json(['error' => 'Invalid job'], 404);
         }
+        return response()->json([
+            'status' => $jobLog->status,
+            'processed' => $jobLog->processed,
+            'successful' => $jobLog->successful,
+            'failed' => $jobLog->failed,
+            'summary' => $jobLog->summary,
+            'error_message' => $jobLog->error_message,
+            'started_at' => $jobLog->started_at?->format('Y-m-d H:i:s'),
+            'completed_at' => $jobLog->completed_at?->format('Y-m-d H:i:s'),
+            'duration' => $jobLog->duration_seconds ? (floor($jobLog->duration_seconds / 60) . 'm ' . ($jobLog->duration_seconds % 60) . 's') : null,
+        ]);
+    }
+
+    /**
+     * DataTables AJAX: Backup job logs (like reminder SMS jobs table).
+     */
+    public function backupJobsData(Request $request)
+    {
+        if (!$request->ajax()) {
+            return response()->json([], 400);
+        }
+        $query = JobLog::where('job_name', 'BackupJob')->orderBy('id', 'desc');
+        return DataTables::eloquent($query)
+            ->addColumn('status_badge', function ($log) {
+                $displayStatus = $log->status;
+                if ($log->status === 'running') {
+                    $details = is_array($log->result_details ?? null) ? $log->result_details : [];
+                    $backup = null;
+                    if (!empty($details['backup_id'])) {
+                        $backup = Backup::forCompany()->find($details['backup_id']);
+                    }
+                    if (!$backup && !empty($details['type'])) {
+                        $started = $log->started_at ?? $log->created_at;
+                        $backup = Backup::forCompany()
+                            ->where('type', $details['type'])
+                            ->where('status', 'completed')
+                            ->where('created_at', '>=', $started->copy()->subMinutes(2))
+                            ->where('created_at', '<=', $started->copy()->addMinutes(30))
+                            ->orderByDesc('id')
+                            ->first();
+                    }
+                    if ($backup && $backup->status === 'completed') {
+                        $displayStatus = 'completed';
+                    }
+                }
+                if ($displayStatus === 'running') {
+                    return '<span class="badge bg-primary">Running</span>';
+                }
+                if ($displayStatus === 'completed') {
+                    return '<span class="badge bg-success">Completed</span>';
+                }
+                if ($displayStatus === 'failed') {
+                    return '<span class="badge bg-danger">Failed</span>';
+                }
+                return '<span class="badge bg-secondary">' . e($displayStatus) . '</span>';
+            })
+            ->addColumn('type_badge', function ($log) {
+                $details = $log->result_details;
+                $type = is_array($details) && isset($details['type']) ? $details['type'] : '—';
+                return '<span class="badge bg-info">' . e(ucfirst($type)) . '</span>';
+            })
+            ->addColumn('started_at_fmt', function ($log) {
+                return $log->started_at ? $log->started_at->format('d/m/Y H:i') : '—';
+            })
+            ->addColumn('duration_fmt', function ($log) {
+                if (!$log->duration_seconds) {
+                    return 'N/A';
+                }
+                $m = floor($log->duration_seconds / 60);
+                $s = $log->duration_seconds % 60;
+                return $m > 0 ? "{$m}m {$s}s" : "{$s}s";
+            })
+            ->rawColumns(['status_badge', 'type_badge'])
+            ->make(true);
+    }
+
+    /**
+     * Ensure queue worker is running in the background (same pattern as LoanController reminder SMS).
+     */
+    private function ensureQueueWorkerRunning(): void
+    {
+        if (config('queue.default') === 'sync') {
+            return;
+        }
+        if (!$this->isQueueWorkerRunning()) {
+            $this->startQueueWorker();
+        }
+    }
+
+    private function isQueueWorkerRunning(): bool
+    {
+        $command = "ps aux | grep '[a]rtisan queue:work' | grep -v grep";
+        exec($command, $output, $returnCode);
+        if (config('queue.default') === 'database') {
+            $pendingJobs = DB::table('jobs')->count();
+            if ($pendingJobs > 0 && empty($output)) {
+                return false;
+            }
+        }
+        return !empty($output) && $returnCode === 0;
+    }
+
+    private function startQueueWorker(): void
+    {
+        $artisanPath = base_path('artisan');
+        $logPath = storage_path('logs/queue-worker.log');
+        $pidFile = storage_path('logs/queue-worker.pid');
+
+        if (file_exists($pidFile)) {
+            $pid = trim(file_get_contents($pidFile));
+            if ($pid) {
+                exec("ps -p " . escapeshellarg($pid) . " > /dev/null 2>&1", $output, $returnCode);
+                if ($returnCode === 0) {
+                    Log::info('Queue worker already running', ['pid' => $pid]);
+                    return;
+                }
+            }
+        }
+
+        $command = sprintf(
+            'cd %s && nohup php %s queue:work --tries=3 --timeout=3600 --max-time=3600 >> %s 2>&1 & echo $! > %s',
+            escapeshellarg(base_path()),
+            escapeshellarg($artisanPath),
+            escapeshellarg($logPath),
+            escapeshellarg($pidFile)
+        );
+        exec($command);
+        usleep(1000000);
+        Log::info('Queue worker started for backup', ['user_id' => auth()->id(), 'pid_file' => $pidFile]);
     }
 
     public function restoreBackup(Request $request)
@@ -540,6 +778,7 @@ class SettingsController extends Controller
         }
     }
 
+
     /**
      * AI Assistant Settings
      */
@@ -641,7 +880,27 @@ class SettingsController extends Controller
      */
     public function smsSettings()
     {
-        return view('settings.sms');
+        $smsEvents = [
+            'otp_verification' => 'User login / OTP verification',
+            'loan_disbursement' => 'On loan disbursement / approval',
+            'loan_repayment' => 'On loan repayment posting',
+            'loan_arrears_reminder' => 'Loan arrears / reminder messages',
+            'customer_notifications' => 'Customer automatic notifications',
+            'group_notifications' => 'Group automatic notifications',
+            'cash_collateral' => 'Cash collateral notifications',
+            'mature_interest' => 'Mature interest collection notifications',
+        ];
+
+        $enabledEvents = [];
+        foreach ($smsEvents as $key => $label) {
+            $enabledEvents[$key] = filter_var(
+                config("services.sms.events.$key", true),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            ) !== false;
+        }
+
+        return view('settings.sms', compact('smsEvents', 'enabledEvents'));
     }
 
     /**
@@ -655,6 +914,8 @@ class SettingsController extends Controller
             'sms_key' => 'required|string|max:255',
             'sms_token' => 'required|string|max:255',
             'test_phone' => 'nullable|string|max:20',
+            'sms_events' => 'nullable|array',
+            'sms_events.*' => 'string',
         ]);
 
         try {
@@ -671,6 +932,25 @@ class SettingsController extends Controller
             $envKeys['SMS_SENDERID'] = $request->sms_senderid;
             $envKeys['SMS_KEY'] = $request->sms_key;
             $envKeys['SMS_TOKEN'] = $request->sms_token;
+
+            // SMS event toggles
+            $smsEvents = [
+                'otp_verification',
+                'loan_disbursement',
+                'loan_repayment',
+                'loan_arrears_reminder',
+                'customer_notifications',
+                'group_notifications',
+                'cash_collateral',
+                'mature_interest',
+            ];
+
+            $selectedEvents = $request->input('sms_events', []);
+
+            foreach ($smsEvents as $eventKey) {
+                $envKey = 'SMS_EVENT_' . strtoupper($eventKey);
+                $envKeys[$envKey] = in_array($eventKey, $selectedEvents, true) ? 'true' : 'false';
+            }
 
             foreach ($envKeys as $key => $value) {
                 if (!update_env_file($key, $value)) {

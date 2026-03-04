@@ -252,8 +252,15 @@
                                         <!-- Interest Rate -->
                                         <div class="col-md-6 mb-3">
                                             <label for="interest_rate" class="form-label">Interest Rate (%) <span class="text-danger">*</span></label>
-                                            <input type="number" class="form-control" id="interest_rate" name="interest_rate" 
-                                                   min="0" step="0.01" required>
+                                            <input
+                                                type="number"
+                                                class="form-control"
+                                                id="interest_rate"
+                                                name="interest_rate"
+                                                min="0"
+                                                step="0.000000000000001"
+                                                inputmode="decimal"
+                                                required>
                                             <div class="invalid-feedback">Please enter a valid interest rate.</div>
                                             <small id="interestRangeLabel" class="text-muted"></small>
                                         </div>

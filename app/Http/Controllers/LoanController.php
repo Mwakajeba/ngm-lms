@@ -81,7 +81,7 @@ class LoanController extends Controller
         }
 
         // Fetch required data for the receipt form
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $customers = Customer::all();
         // Get fees with deduction_criteria = 'do_not_include_in_loan_schedule'
         $excludedFees = \DB::table('fees')
@@ -254,7 +254,16 @@ class LoanController extends Controller
                 ->addColumn('date_applied', function ($loan) {
                     return $loan->date_applied;
                 })
-                ->rawColumns(['customer_name'])
+                ->addColumn('actions', function ($loan) {
+                    $encodedId = \Vinkla\Hashids\Facades\Hashids::encode($loan->id);
+
+                    if (auth()->user()->can('create receipt voucher')) {
+                        return '<a href="' . route('accounting.loans.create-receipt', $encodedId) . '" class="btn btn-sm btn-outline-success" title="Add Receipt"><i class="bx bx-receipt"></i></a>';
+                    }
+
+                    return '<span class="text-muted">-</span>';
+                })
+                ->rawColumns(['customer_name', 'actions'])
                 ->make(true);
         }
     }
@@ -301,7 +310,7 @@ class LoanController extends Controller
         // Get data for import modal
         $branches = Branch::all();
         $loanProducts = LoanProduct::all();
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
         return view('loans.list', compact('loans', 'branches', 'loanProducts', 'bankAccounts'));
     }
@@ -1373,7 +1382,7 @@ class LoanController extends Controller
         // Get data for import modal
         $branches = \App\Models\Branch::all();
         $loanProducts = \App\Models\LoanProduct::all();
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
         return view('loans.list', compact('loans', 'pageTitle', 'status', 'branches', 'loanProducts', 'bankAccounts'));
     }
@@ -1399,7 +1408,7 @@ class LoanController extends Controller
             'semi_annually' => 'Semi Annually',
             'annually' => 'Annually'
         ];
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other']; // Example sectors
         return view('loans.create', compact('customers', 'products', 'sectors', 'bankAccounts', 'loanOfficers', 'interestCycles'));
     }
@@ -1851,11 +1860,22 @@ class LoanController extends Controller
 
                 // Step 5: Record Payment
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
-                
-                // Validate bank account is accessible by user's branches
+
+                // Validate bank account is accessible by user's branches or global scope
                 $user = auth()->user();
                 $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+                if (!$currentBranchId) {
+                    $currentBranchId = $user->branch_id;
+                }
+
+                $hasPivotAccess = !empty($userBranchIds)
+                    ? $bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()
+                    : false;
+                $hasDirectScope = $bankAccount->is_all_branches
+                    || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
+
+                if (!empty($userBranchIds) && !$hasPivotAccess && !$hasDirectScope) {
                     throw new \Exception('You do not have access to this bank account.');
                 }
                 
@@ -2089,7 +2109,7 @@ class LoanController extends Controller
                         }
                         
                         // Send SMS
-                        \App\Helpers\SmsHelper::send($customer->phone1, $smsMessage);
+                        \App\Helpers\SmsHelper::send($customer->phone1, $smsMessage, 'loan_disbursement');
                         
                         \Log::info('Loan creation SMS sent', [
                             'loan_id' => $loan->id,
@@ -2299,11 +2319,22 @@ class LoanController extends Controller
 
                 // Create payment record
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
-                
-                // Validate bank account is accessible by user's branches
+
+                // Validate bank account is accessible by user's branches or global scope
                 $user = auth()->user();
                 $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
+                if (!$currentBranchId) {
+                    $currentBranchId = $user->branch_id;
+                }
+
+                $hasPivotAccess = !empty($userBranchIds)
+                    ? $bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()
+                    : false;
+                $hasDirectScope = $bankAccount->is_all_branches
+                    || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
+
+                if (!empty($userBranchIds) && !$hasPivotAccess && !$hasDirectScope) {
                     throw new \Exception('You do not have access to this bank account.');
                 }
                 
@@ -2608,8 +2639,8 @@ class LoanController extends Controller
 
         $filetypes = Filetype::all();
 
-        // Get bank accounts for repayment modal
-        $bankAccounts = BankAccount::all();
+        // Get bank accounts for repayment modal (branch-scoped)
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
         // Load active receipts (loan repayment receipts only)
         $activeReceipts = Receipt::where('reference', $loan->id)
@@ -2985,7 +3016,8 @@ class LoanController extends Controller
 
         $filetypes = Filetype::all();
 
-        $bankAccounts = BankAccount::all();
+        // Branch-scoped bank accounts for repayment modal
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
 
         // Set the encoded ID for the loan object
         $loan->encodedId = $encodedId;
@@ -3014,7 +3046,7 @@ class LoanController extends Controller
             ->get();
         $groups = Group::where('branch_id', $branchId)->get();
         $products = LoanProduct::all();
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other'];
 
         return view('loans.application.edit', compact('loanApplication', 'customers', 'groups', 'products', 'sectors', 'bankAccounts'));
@@ -3830,20 +3862,49 @@ class LoanController extends Controller
         if (!$loanId) {
             abort(404, 'Invalid loan ID');
         }
-        $loan = Loan::findOrFail($loanId);
 
-        if (request()->isMethod('post')) {
-            $validated = request()->validate([
-                'outstanding' => 'required|numeric|min:0',
-                'reason' => 'required|string|max:255',
-                'writeoff_type' => 'required|string|max:50',
-            ]);
+        $loan = Loan::with(['customer', 'product', 'branch'])->findOrFail($loanId);
 
-            $userId = auth()->id();
+        return view('loans.writeoff', compact('loan', 'hashid'));
+    }
+
+    /**
+     * Confirm and process loan write-off (POST handler)
+     */
+    public function confirmWriteoff(Request $request, $hashid)
+    {
+        $loanId = Hashids::decode($hashid)[0] ?? null;
+        if (!$loanId) {
+            abort(404, 'Invalid loan ID');
+        }
+
+        $loan = Loan::with(['product', 'repayments'])->findOrFail($loanId);
+
+        // Basic validation – outstanding is computed on server
+        $validated = $request->validate([
+            'reason' => 'required|string|max:255',
+            'writeoff_type' => 'required|in:direct,provision',
+        ]);
+
+        $userId = auth()->id();
+
+        // Compute outstanding balance to write off: total repayable - total paid
+        $totalToPay = $loan->getTotalAmountToPay();
+        $totalPaid = $loan->getTotalPaidAmount();
+        $amount = max(0, round($totalToPay - $totalPaid, 2));
+
+        if ($amount <= 0) {
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'This loan has no outstanding balance to write off.']);
+        }
+
+        DB::beginTransaction();
+        try {
             $writeoff = \App\Models\LoanWriteoff::create([
                 'loan_id' => $loan->id,
                 'customer_id' => $loan->customer_id,
-                'outstanding' => $validated['outstanding'],
+                'outstanding' => $amount,
                 'reason' => $validated['reason'],
                 'writeoff_type' => $validated['writeoff_type'],
                 'createdby' => $userId,
@@ -3851,7 +3912,6 @@ class LoanController extends Controller
 
             // Get loan product accounts
             $product = $loan->product;
-            $amount = $validated['outstanding'];
             $branchId = auth()->user()->branch_id;
 
             if ($validated['writeoff_type'] === 'direct') {
@@ -3874,6 +3934,7 @@ class LoanController extends Controller
                 'branch_id' => $branchId,
                 'user_id' => $userId,
             ]);
+
             \App\Models\GlTransaction::create([
                 'chart_account_id' => $creditAccount,
                 'customer_id' => $loan->customer_id,
@@ -3889,10 +3950,22 @@ class LoanController extends Controller
 
             $loan->update(['status' => 'written_off']);
 
-            return redirect()->route('loans.list')->with('success', 'Loan written off successfully.');
-        }
+            DB::commit();
 
-        return view('loans.writeoff', compact('loan', 'hashid'));
+            return redirect()
+                ->route('loans.show', $hashid)
+                ->with('success', 'Loan written off successfully.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Loan write-off failed', [
+                'loan_id' => $loan->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return redirect()
+                ->back()
+                ->withErrors(['error' => 'Failed to write off loan: ' . $e->getMessage()]);
+        }
     }
 
     /**

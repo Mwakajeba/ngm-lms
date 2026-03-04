@@ -71,8 +71,12 @@ class ViewServiceProvider extends ServiceProvider
             // Get role IDs
             $roleIds = $userRoles->pluck('id')->toArray();
 
-            // Get menus for all user roles
-            $menus = Menu::with('children')
+            // Get menus for all user roles, and only children that are also assigned
+            $menus = Menu::with(['children' => function ($query) use ($roleIds) {
+                    $query->whereHas('roles', function ($q) use ($roleIds) {
+                        $q->whereIn('roles.id', $roleIds);
+                    });
+                }])
                 ->whereNull('parent_id')
                 ->whereHas('roles', function ($query) use ($roleIds) {
                     $query->whereIn('roles.id', $roleIds);

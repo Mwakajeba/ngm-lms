@@ -29,60 +29,95 @@ class BackupService
     }
 
     /**
-     * Create a database backup
+     * Run backup for an existing in-progress backup record (used by background job).
+     * Updates the backup with file path, size, and status when done.
+     */
+    public function runBackupFor(Backup $backup): void
+    {
+        if ($backup->status !== 'in_progress') {
+            return;
+        }
+
+        try {
+            $result = match ($backup->type) {
+                'database' => $this->executeDatabaseBackup(),
+                'files' => $this->executeFilesBackup(),
+                'full' => $this->executeFullBackup(),
+                default => throw new \Exception('Invalid backup type'),
+            };
+
+            $backup->update([
+                'name' => $result['name'],
+                'filename' => $result['filename'],
+                'file_path' => $result['file_path'],
+                'size' => $result['size'],
+                'status' => 'completed',
+            ]);
+        } catch (\Exception $e) {
+            $backup->update([
+                'status' => 'failed',
+                'name' => ($backup->type === 'database' ? 'Database' : ($backup->type === 'files' ? 'Files' : 'Full')) . ' Backup - ' . date('Y-m-d H:i:s'),
+            ]);
+            throw $e;
+        }
+    }
+
+    /**
+     * Execute database backup (with data). Returns result array for creating/updating record.
+     */
+    protected function executeDatabaseBackup(): array
+    {
+        $filename = 'database_backup_' . date('Y-m-d_H-i-s') . '.sql';
+        $filePath = $this->backupPath . '/' . $filename;
+        $fullPath = storage_path("app/{$filePath}");
+
+        $database = config('database.connections.mysql.database');
+        $username = config('database.connections.mysql.username');
+        $password = config('database.connections.mysql.password');
+        $host = config('database.connections.mysql.host');
+        $port = config('database.connections.mysql.port');
+
+        $command = "mysqldump -h {$host} -P {$port} -u {$username}";
+        if ($password) {
+            $command .= " -p{$password}";
+        }
+        $command .= " {$database} > {$fullPath}";
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            throw new \Exception('Database backup failed');
+        }
+
+        $size = file_exists($fullPath) ? filesize($fullPath) : 0;
+
+        return [
+            'name' => 'Database Backup - ' . date('Y-m-d H:i:s'),
+            'filename' => $filename,
+            'file_path' => $filePath,
+            'size' => $size,
+        ];
+    }
+
+    /**
+     * Create a database backup (synchronous; for backwards compatibility).
      */
     public function createDatabaseBackup($description = null)
     {
         try {
-            $filename = 'database_backup_' . date('Y-m-d_H-i-s') . '.sql';
-            $filePath = $this->backupPath . '/' . $filename;
-            $fullPath = storage_path("app/{$filePath}");
-            
-            // Get database configuration
-            $database = config('database.connections.mysql.database');
-            $username = config('database.connections.mysql.username');
-            $password = config('database.connections.mysql.password');
-            $host = config('database.connections.mysql.host');
-            $port = config('database.connections.mysql.port');
-
-            // Create mysqldump command
-            $command = "mysqldump -h {$host} -P {$port} -u {$username}";
-            if ($password) {
-                $command .= " -p{$password}";
-            }
-            $command .= " {$database} > {$fullPath}";
-
-            // Execute the command
-            exec($command, $output, $returnCode);
-
-            if ($returnCode !== 0) {
-                throw new \Exception('Database backup failed');
-            }
-
-            // Get file size
-            $size = file_exists($fullPath) ? filesize($fullPath) : 0;
-
-            // Create backup record
-            $backup = Backup::create([
-                'name' => 'Database Backup - ' . date('Y-m-d H:i:s'),
-                'filename' => $filename,
-                'file_path' => $filePath,
+            $result = $this->executeDatabaseBackup();
+            return Backup::create(array_merge($result, [
                 'type' => 'database',
-                'size' => $size,
                 'description' => $description,
                 'status' => 'completed',
                 'created_by' => auth()->id(),
                 'company_id' => current_company_id(),
-            ]);
-
-            return $backup;
-
+            ]));
         } catch (\Exception $e) {
-            // Create failed backup record
-            $backup = Backup::create([
+            Backup::create([
                 'name' => 'Database Backup - ' . date('Y-m-d H:i:s'),
-                'filename' => $filename ?? 'failed_backup.sql',
-                'file_path' => $filePath ?? 'failed_backup.sql',
+                'filename' => 'failed_backup.sql',
+                'file_path' => $this->backupPath . '/failed_backup.sql',
                 'type' => 'database',
                 'size' => 0,
                 'description' => $description,
@@ -90,65 +125,64 @@ class BackupService
                 'created_by' => auth()->id(),
                 'company_id' => current_company_id(),
             ]);
-
             throw $e;
         }
     }
 
     /**
-     * Create a files backup
+     * Execute files backup. Returns result array for creating/updating record.
+     */
+    protected function executeFilesBackup(): array
+    {
+        $filename = 'files_backup_' . date('Y-m-d_H-i-s') . '.zip';
+        $filePath = $this->backupPath . '/' . $filename;
+        $fullPath = storage_path("app/{$filePath}");
+        $tempZipPath = storage_path("app/{$this->tempPath}/temp_files.zip");
+
+        $zip = new ZipArchive();
+        if ($zip->open($tempZipPath, ZipArchive::CREATE) !== true) {
+            throw new \Exception('Could not create ZIP file');
+        }
+
+        $this->addDirectoryToZip($zip, storage_path('app/public'), 'storage/app/public');
+        $this->addDirectoryToZip($zip, public_path('uploads'), 'public/uploads');
+
+        $zip->close();
+
+        if (!Storage::move($this->tempPath . '/temp_files.zip', $filePath)) {
+            Storage::copy($this->tempPath . '/temp_files.zip', $filePath);
+            Storage::delete($this->tempPath . '/temp_files.zip');
+        }
+
+        $size = file_exists($fullPath) ? filesize($fullPath) : 0;
+
+        return [
+            'name' => 'Files Backup - ' . date('Y-m-d H:i:s'),
+            'filename' => $filename,
+            'file_path' => $filePath,
+            'size' => $size,
+        ];
+    }
+
+    /**
+     * Create a files backup (synchronous; for backwards compatibility).
      */
     public function createFilesBackup($description = null)
     {
         try {
-            $filename = 'files_backup_' . date('Y-m-d_H-i-s') . '.zip';
-            $filePath = $this->backupPath . '/' . $filename;
-            $fullPath = storage_path("app/{$filePath}");
-            $tempZipPath = storage_path("app/{$this->tempPath}/temp_files.zip");
-
-            // Create ZIP archive
-            $zip = new ZipArchive();
-            if ($zip->open($tempZipPath, ZipArchive::CREATE) !== TRUE) {
-                throw new \Exception('Could not create ZIP file');
-            }
-
-            // Add files to ZIP
-            $this->addDirectoryToZip($zip, storage_path('app/public'), 'storage/app/public');
-            $this->addDirectoryToZip($zip, public_path('uploads'), 'public/uploads');
-
-            $zip->close();
-
-            // Move to final location
-            if (!Storage::move($this->tempPath . '/temp_files.zip', $filePath)) {
-                // Fallback to copy and delete
-                Storage::copy($this->tempPath . '/temp_files.zip', $filePath);
-                Storage::delete($this->tempPath . '/temp_files.zip');
-            }
-
-            // Get file size
-            $size = file_exists($fullPath) ? filesize($fullPath) : 0;
-
-            // Create backup record
-            $backup = Backup::create([
-                'name' => 'Files Backup - ' . date('Y-m-d H:i:s'),
-                'filename' => $filename,
-                'file_path' => $filePath,
+            $result = $this->executeFilesBackup();
+            return Backup::create(array_merge($result, [
                 'type' => 'files',
-                'size' => $size,
                 'description' => $description,
                 'status' => 'completed',
                 'created_by' => auth()->id(),
                 'company_id' => current_company_id(),
-            ]);
-
-            return $backup;
-
+            ]));
         } catch (\Exception $e) {
-            // Create failed backup record
-            $backup = Backup::create([
+            Backup::create([
                 'name' => 'Files Backup - ' . date('Y-m-d H:i:s'),
-                'filename' => $filename ?? 'failed_backup.zip',
-                'file_path' => $filePath ?? 'failed_backup.zip',
+                'filename' => 'failed_backup.zip',
+                'file_path' => $this->backupPath . '/failed_backup.zip',
                 'type' => 'files',
                 'size' => 0,
                 'description' => $description,
@@ -156,100 +190,93 @@ class BackupService
                 'created_by' => auth()->id(),
                 'company_id' => current_company_id(),
             ]);
-
             throw $e;
         }
     }
 
     /**
-     * Create a full backup (database + files)
+     * Execute full backup (database with data + files). Returns result array for creating/updating record.
+     */
+    protected function executeFullBackup(): array
+    {
+        $filename = 'full_backup_' . date('Y-m-d_H-i-s') . '.zip';
+        $filePath = $this->backupPath . '/' . $filename;
+        $fullPath = storage_path("app/{$filePath}");
+        $tempZipPath = storage_path("app/{$this->tempPath}/temp_full.zip");
+
+        $dbFilename = 'database_backup_' . date('Y-m-d_H-i-s') . '.sql';
+        $dbFilePath = storage_path("app/{$this->backupPath}/{$dbFilename}");
+
+        $database = config('database.connections.mysql.database');
+        $username = config('database.connections.mysql.username');
+        $password = config('database.connections.mysql.password');
+        $host = config('database.connections.mysql.host');
+        $port = config('database.connections.mysql.port');
+
+        $command = "mysqldump -h {$host} -P {$port} -u {$username}";
+        if ($password) {
+            $command .= " -p{$password}";
+        }
+        $command .= " {$database} > {$dbFilePath}";
+
+        exec($command, $output, $returnCode);
+
+        if ($returnCode !== 0) {
+            throw new \Exception('Database backup failed');
+        }
+
+        $zip = new ZipArchive();
+        if ($zip->open($tempZipPath, ZipArchive::CREATE) !== true) {
+            throw new \Exception('Could not create ZIP file');
+        }
+
+        if (File::exists($dbFilePath)) {
+            $zip->addFile($dbFilePath, 'database/' . $dbFilename);
+        }
+
+        $this->addDirectoryToZip($zip, storage_path('app/public'), 'storage/app/public');
+        $this->addDirectoryToZip($zip, public_path('uploads'), 'public/uploads');
+
+        $zip->close();
+
+        if (!Storage::move($this->tempPath . '/temp_full.zip', $filePath)) {
+            Storage::copy($this->tempPath . '/temp_full.zip', $filePath);
+            Storage::delete($this->tempPath . '/temp_full.zip');
+        }
+
+        if (file_exists($dbFilePath)) {
+            unlink($dbFilePath);
+        }
+
+        $size = file_exists($fullPath) ? filesize($fullPath) : 0;
+
+        return [
+            'name' => 'Full Backup - ' . date('Y-m-d H:i:s'),
+            'filename' => $filename,
+            'file_path' => $filePath,
+            'size' => $size,
+        ];
+    }
+
+    /**
+     * Create a full backup (synchronous; for backwards compatibility).
      */
     public function createFullBackup($description = null)
     {
         try {
-            $filename = 'full_backup_' . date('Y-m-d_H-i-s') . '.zip';
-            $filePath = $this->backupPath . '/' . $filename;
-            $fullPath = storage_path("app/{$filePath}");
-            $tempZipPath = storage_path("app/{$this->tempPath}/temp_full.zip");
-
-            // Create database backup first (but don't save to database yet)
-            $dbFilename = 'database_backup_' . date('Y-m-d_H-i-s') . '.sql';
-            $dbFilePath = storage_path("app/{$this->backupPath}/{$dbFilename}");
-            
-            // Get database configuration
-            $database = config('database.connections.mysql.database');
-            $username = config('database.connections.mysql.username');
-            $password = config('database.connections.mysql.password');
-            $host = config('database.connections.mysql.host');
-            $port = config('database.connections.mysql.port');
-
-            // Create mysqldump command
-            $command = "mysqldump -h {$host} -P {$port} -u {$username}";
-            if ($password) {
-                $command .= " -p{$password}";
-            }
-            $command .= " {$database} > {$dbFilePath}";
-
-            // Execute the command
-            exec($command, $output, $returnCode);
-
-            if ($returnCode !== 0) {
-                throw new \Exception('Database backup failed');
-            }
-
-            // Create ZIP archive
-            $zip = new ZipArchive();
-            if ($zip->open($tempZipPath, ZipArchive::CREATE) !== TRUE) {
-                throw new \Exception('Could not create ZIP file');
-            }
-
-            // Add database backup to ZIP
-            if (File::exists($dbFilePath)) {
-                $zip->addFile($dbFilePath, 'database/' . $dbFilename);
-            }
-
-            // Add files to ZIP
-            $this->addDirectoryToZip($zip, storage_path('app/public'), 'storage/app/public');
-            $this->addDirectoryToZip($zip, public_path('uploads'), 'public/uploads');
-
-            $zip->close();
-
-            // Move to final location
-            if (!Storage::move($this->tempPath . '/temp_full.zip', $filePath)) {
-                // Fallback to copy and delete
-                Storage::copy($this->tempPath . '/temp_full.zip', $filePath);
-                Storage::delete($this->tempPath . '/temp_full.zip');
-            }
-
-            // Delete temporary database backup file
-            if (file_exists($dbFilePath)) {
-                unlink($dbFilePath);
-            }
-
-            // Get file size
-            $size = file_exists($fullPath) ? filesize($fullPath) : 0;
-
-            // Create backup record
-            $backup = Backup::create([
-                'name' => 'Full Backup - ' . date('Y-m-d H:i:s'),
-                'filename' => $filename,
-                'file_path' => $filePath,
+            $result = $this->executeFullBackup();
+            return Backup::create(array_merge($result, [
                 'type' => 'full',
-                'size' => $size,
                 'description' => $description,
                 'status' => 'completed',
                 'created_by' => auth()->id(),
                 'company_id' => current_company_id(),
-            ]);
-
-            return $backup;
-
+            ]));
         } catch (\Exception $e) {
-            // Create failed backup record
-            $backup = Backup::create([
+            Backup::create([
                 'name' => 'Full Backup - ' . date('Y-m-d H:i:s'),
-                'filename' => $filename ?? 'failed_backup.zip',
-                'file_path' => $filePath ?? 'failed_backup.zip',
+                'filename' => 'failed_backup.zip',
+                'file_path' => $this->backupPath . '/failed_backup.zip',
                 'type' => 'full',
                 'size' => 0,
                 'description' => $description,
@@ -257,7 +284,6 @@ class BackupService
                 'created_by' => auth()->id(),
                 'company_id' => current_company_id(),
             ]);
-
             throw $e;
         }
     }

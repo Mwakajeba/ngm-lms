@@ -16,7 +16,6 @@ class BranchSeeder extends Seeder
             Branch::create([
                 'company_id' => $company->id,
                 'name' => 'Main Branch',
-                'display_name' => 'Main Branch',
                 'email' => 'main@safco.com',
                 'phone' => '255754111111',
                 'address' => 'City Center, Dar es Salaam',
@@ -25,7 +24,6 @@ class BranchSeeder extends Seeder
             Branch::create([
                 'company_id' => $company->id,
                 'name' => 'Mwanza Branch',
-                'display_name' => 'Mwanza Branch',
                 'email' => 'mwanza@safco.com',
                 'phone' => '255754222222',
                 'address' => 'Rock City Mall, Mwanza',

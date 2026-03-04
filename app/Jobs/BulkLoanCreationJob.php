@@ -147,14 +147,10 @@ class BulkLoanCreationJob implements ShouldQueue
             throw new \Exception("Loan period {$data['period']} is outside product limits");
         }
 
-        // Check if customer already has active loan for this product
-        $existingLoan = Loan::where('customer_id', $customer->id)
-            ->where('product_id', $product->id)
-            ->where('status', 'active')
-            ->first();
-
-        if ($existingLoan) {
-            throw new \Exception("Customer already has active loan for this product");
+        // Check maximum number of active loans allowed for this product
+        if ($product->hasReachedMaxLoans($customer->id)) {
+            $maxLoans = $product->maximum_number_of_loans ?? 'the configured maximum';
+            throw new \Exception("Customer has reached the maximum number of active loans ({$maxLoans}) for this product");
         }
 
         // Check collateral if required

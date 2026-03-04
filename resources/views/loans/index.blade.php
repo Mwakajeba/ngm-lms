@@ -178,7 +178,7 @@
                                         </div>
                                     </div>
                                 @endcan
-                                @can('view writeoff loans')
+                                @can('view loans')
                                     <!-- Written Off Loans -->
                                     <div class="col-md-6 col-lg-4 mb-4">
                                         <div class="card border-danger position-relative">

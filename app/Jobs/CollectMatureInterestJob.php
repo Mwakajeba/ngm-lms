@@ -325,7 +325,7 @@ class CollectMatureInterestJob implements ShouldQueue
             $message = "Habari {$customer->name}. Mkopo namba {$loan->loanNo} una deni la faini ya TZS {$formattedAmount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.";
 
             $phone = normalize_phone_number($customer->phone1);
-            SmsHelper::send($phone, $message);
+            SmsHelper::send($phone, $message, 'mature_interest');
             Log::info("Penalty SMS sent to customer {$customer->id} for loan {$loan->loanNo}: TZS {$formattedAmount}");
         } catch (\Exception $e) {
             Log::error("Failed to send penalty SMS for loan {$loan->loanNo}: " . $e->getMessage());

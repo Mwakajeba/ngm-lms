@@ -409,7 +409,7 @@ class LoanMessagesController extends Controller
                     }
 
                     // Send SMS
-                    $smsResult = \App\Helpers\SmsHelper::send($phone, $smsMessage);
+                    $smsResult = \App\Helpers\SmsHelper::send($phone, $smsMessage, 'loan_arrears_reminder');
 
                     if (is_array($smsResult) && ($smsResult['success'] ?? false)) {
                         $results['sent']++;

@@ -52,18 +52,6 @@
 
                                 <div class="col-md-6">
                                     <div class="mb-3">
-                                        <label for="branch_name" class="form-label">Display Name <span class="text-danger">*</span></label>
-                                        <input type="text" class="form-control {{ isset($errors) && $errors->has('branch_name') ? 'is-invalid' : '' }}" 
-                                               id="branch_name" name="branch_name" value="{{ old('branch_name', $branch->branch_name) }}" 
-                                               placeholder="Enter display name" required>
-                                        @if(isset($errors) && $errors->has('branch_name'))
-                                            <div class="invalid-feedback">{{ $errors->first('branch_name') }}</div>
-                                        @endif
-                                    </div>
-                                </div>
-
-                                <div class="col-md-6">
-                                    <div class="mb-3">
                                         <label for="phone" class="form-label">Phone Number <span class="text-danger">*</span></label>
                                         <input type="tel" class="form-control {{ isset($errors) && $errors->has('phone') ? 'is-invalid' : '' }}" 
                                                id="phone" name="phone" value="{{ old('phone', $branch->phone) }}" 
