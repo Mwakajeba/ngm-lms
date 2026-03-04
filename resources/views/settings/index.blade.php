@@ -293,6 +293,22 @@
                                 </div>
                             </div>
 
+                            <!-- Announcements Settings -->
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-warning">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-bullhorn fs-1 text-warning"></i>
+                                        </div>
+                                        <h5 class="card-title">Announcements</h5>
+                                        <p class="card-text">Manage announcements displayed to customers in the mobile app. Upload images and set publish dates.</p>
+                                        <a href="{{ route('settings.announcements.index') }}" class="btn btn-warning">
+                                            <i class="bx bx-list-ul me-1"></i> Manage Announcements
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+
                             <!-- activity logs Settings -->
                             @can('view logs activity')
                             <div class="col-md-6 col-lg-4 mb-4">
