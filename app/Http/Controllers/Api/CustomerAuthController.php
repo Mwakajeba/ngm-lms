@@ -492,7 +492,7 @@ class CustomerAuthController extends Controller
             $loanId = (int) $request->input('loan_id');
 
             $loan = Loan::where('id', $loanId)->where('customer_id', $customerId)
-                ->with(['product.filetypes', 'loanOfficer', 'schedule'])
+                ->with(['product.filetypes', 'loanOfficer', 'schedule', 'topUpLoan'])
                 ->first();
 
             if (!$loan) {
@@ -500,6 +500,14 @@ class CustomerAuthController extends Controller
                     'message' => 'Loan not found or access denied',
                     'status' => 404,
                 ], 404);
+            }
+
+            // Get original loan if this loan was restructured from another loan
+            $originalLoan = null;
+            if ($loan->top_up_id) {
+                $originalLoan = Loan::where('id', $loan->top_up_id)
+                    ->where('customer_id', $customerId)
+                    ->first();
             }
 
             // All schedules for this loan (loan_schedules)
@@ -593,6 +601,29 @@ class CustomerAuthController extends Controller
                     ];
                 })->values();
 
+            // Calculate original loan totals if it exists
+            $originalLoanData = null;
+            if ($originalLoan) {
+                $originalRepayments = DB::table('repayments')
+                    ->where('loan_id', $originalLoan->id)
+                    ->get()
+                    ->map(function ($r) {
+                        return ($r->principal ?? 0) + ($r->interest ?? 0) + ($r->penalt_amount ?? 0) + ($r->fee_amount ?? 0);
+                    });
+                $originalTotalRepaid = $originalRepayments->sum();
+                $originalLoanTotal = (float) ($originalLoan->amount_total ?? 0);
+                $originalTotalDue = round(max(0, $originalLoanTotal - $originalTotalRepaid), 2);
+
+                $originalLoanData = [
+                    'loanid' => $originalLoan->id,
+                    'loan_no' => $originalLoan->loanNo,
+                    'amount' => $originalLoan->amount,
+                    'total_amount' => $originalLoanTotal,
+                    'total_due' => $originalTotalDue,
+                    'status' => $originalLoan->status,
+                ];
+            }
+
             return response()->json([
                 'status' => 200,
                 'loan' => [
@@ -616,6 +647,7 @@ class CustomerAuthController extends Controller
                     'total_repaid' => round($totalRepaid, 2),
                     'total_due' => round(max(0, $loanTotal - $totalRepaid), 2),
                     'progress_percent' => $progressPercent,
+                    'original_loan' => $originalLoanData,
                 ],
             ], 200);
         } catch (\Illuminate\Validation\ValidationException $e) {
