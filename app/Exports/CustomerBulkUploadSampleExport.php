@@ -49,6 +49,7 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 'ID' . str_pad($i, 8, '0', STR_PAD_LEFT), // idnumber
                 ['Spouse', 'Parent', 'Sibling', ''][array_rand(['Spouse', 'Parent', 'Sibling', ''])], // relation
                 'Sample customer ' . $i,       // description
+                'Borrower',                    // category (will have dropdown)
             ];
         }
 
@@ -70,7 +71,8 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
             'idtype',
             'idnumber',
             'relation',
-            'description'
+            'description',
+            'category',
         ];
     }
 
@@ -105,6 +107,7 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
             'K' => 15,  // idnumber
             'L' => 15,  // relation
             'M' => 30,  // description
+            'N' => 18,  // category
         ];
     }
 
@@ -149,7 +152,7 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 
                 // Instructions (rows 2-5, after header row 1)
                 $sheet->setCellValue('A2', 'CUSTOMER BULK UPLOAD TEMPLATE');
-                $sheet->mergeCells('A2:M2');
+                $sheet->mergeCells('A2:N2');
                 $sheet->getStyle('A2')->getFont()->setBold(true)->setSize(14);
                 $sheet->getStyle('A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
                 $sheet->getStyle('A2')->getFill()
@@ -160,11 +163,11 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 $sheet->setCellValue('A3', 'Instructions:');
                 $sheet->getStyle('A3')->getFont()->setBold(true);
                 $sheet->setCellValue('A4', '1. Fill in all required fields (name, phone1, dob, sex)');
-                $sheet->setCellValue('A5', '2. Use dropdowns for Sex (M/F), Region, and District');
+                $sheet->setCellValue('A5', '2. Use dropdowns for Sex (M/F), Region, District, and Category (Borrower/Guarantor)');
                 $sheet->setCellValue('A6', '3. Keep the header row (row 1) - DO NOT DELETE IT. You can delete instruction rows (2-6) and sample data.');
-                $sheet->mergeCells('A4:M4');
-                $sheet->mergeCells('A5:M5');
-                $sheet->mergeCells('A6:M6');
+                $sheet->mergeCells('A4:N4');
+                $sheet->mergeCells('A5:N5');
+                $sheet->mergeCells('A6:N6');
                 
                 // Header row is at row 1, data starts at row 7 (after 1 header + 5 instruction rows)
                 $dataStartRow = 7;
@@ -199,6 +202,16 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 $districtValidation->setShowErrorMessage(true);
                 $districtValidation->setShowDropDown(true);
                 $districtValidation->setFormula1('Data!$B$2:$B$' . (count($districtNames) + 1));
+
+                // Add category dropdown (Column N)
+                $categoryValidation = new DataValidation();
+                $categoryValidation->setType(DataValidation::TYPE_LIST);
+                $categoryValidation->setErrorStyle(DataValidation::STYLE_STOP);
+                $categoryValidation->setAllowBlank(false);
+                $categoryValidation->setShowInputMessage(true);
+                $categoryValidation->setShowErrorMessage(true);
+                $categoryValidation->setShowDropDown(true);
+                $categoryValidation->setFormula1('"Borrower,Guarantor"');
                 
                 // Apply validations to all data rows
                 for ($row = $dataStartRow; $row <= $dataEndRow; $row++) {
@@ -208,10 +221,12 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                     $sheet->getCell('F' . $row)->setDataValidation(clone $regionValidation);
                     // District dropdown
                     $sheet->getCell('G' . $row)->setDataValidation(clone $districtValidation);
+                    // Category dropdown
+                    $sheet->getCell('N' . $row)->setDataValidation(clone $categoryValidation);
                 }
                 
                 // Add borders to header row
-                $sheet->getStyle('A6:M6')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
+                $sheet->getStyle('A6:N6')->getBorders()->getAllBorders()->setBorderStyle(Border::BORDER_THIN);
             },
         ];
     }

@@ -688,6 +688,12 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
 });
 
 //route
+// Analytics Routes
+Route::get('/analytics/loans', [App\Http\Controllers\LoanAnalyticsController::class, 'index'])->middleware('auth')->name('analytics.loans.index');
+Route::get('/api/analytics/kpis', [App\Http\Controllers\LoanAnalyticsController::class, 'getKPIs'])->middleware('auth')->name('api.analytics.kpis');
+Route::get('/api/analytics/charts', [App\Http\Controllers\LoanAnalyticsController::class, 'getChartData'])->middleware('auth')->name('api.analytics.charts');
+Route::get('/api/analytics/insights', [App\Http\Controllers\LoanAnalyticsController::class, 'getAIInsights'])->middleware('auth')->name('api.analytics.insights');
+
 
 Route::name('loans.reports.')->group(function () {
     //////LOANS REPORT ROUTE////////
@@ -994,6 +1000,7 @@ Route::middleware(['auth'])->group(function () {
     Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
     Route::post('loans/calculate-summary', [LoanController::class, 'calculateLoanSummary'])->name('loans.calculate-summary');
     Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
+    Route::get('loans/{encodedId}/schedule/pdf', [LoanController::class, 'exportSchedulePdf'])->name('loans.schedule.pdf');
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
     Route::get('loans/{encodedId}/edit', [LoanController::class, 'edit'])->name('loans.edit');
     Route::put('loans/{encodedId}', [LoanController::class, 'update'])->name('loans.update');

@@ -4171,4 +4171,46 @@ class LoanController extends Controller
             return redirect()->back()->withErrors(['error' => 'Failed to export loan details: ' . $e->getMessage()]);
         }
     }
+
+    /**
+     * Export loan repayment schedule as PDF (Loan Repayment Schedule document).
+     */
+    public function exportSchedulePdf($encodedId)
+    {
+        try {
+            $decoded = Hashids::decode($encodedId);
+            if (empty($decoded)) {
+                return redirect()->route('loans.index')->withErrors(['Loan not found.']);
+            }
+
+            $loan = Loan::with([
+                'customer',
+                'product',
+                'branch.company',
+                'schedule' => function ($query) {
+                    $query->orderBy('due_date', 'asc');
+                },
+                'loanOfficer'
+            ])->findOrFail($decoded[0]);
+
+            if (!$loan->schedule || $loan->schedule->isEmpty()) {
+                return redirect()->back()->withErrors(['error' => 'This loan has no schedule to export.']);
+            }
+
+            $branch = $loan->branch;
+            $company = ($branch && $branch->relationLoaded('company') && $branch->company)
+                ? $branch->company
+                : (auth()->check() ? auth()->user()->company : null);
+
+            $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadView('loans.schedule-pdf', compact('loan', 'company', 'branch'));
+            $pdf->setPaper('A4', 'portrait');
+
+            $filename = 'Loan_Repayment_Schedule_' . ($loan->loanNo ?? $loan->id) . '_' . now()->format('Y-m-d') . '.pdf';
+
+            return $pdf->download($filename);
+        } catch (\Exception $e) {
+            Log::error('Export schedule PDF failed: ' . $e->getMessage());
+            return redirect()->back()->withErrors(['error' => 'Failed to export schedule: ' . $e->getMessage()]);
+        }
+    }
 }

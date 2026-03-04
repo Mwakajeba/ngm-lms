@@ -708,6 +708,7 @@ class CustomerController extends Controller
                             'idnumber' => ['idnumber', 'id_number', 'identificationnumber'],
                             'relation' => ['relation', 'relationship'],
                             'description' => ['description', 'desc', 'notes'],
+                            'category' => ['category', 'role', 'borrower_guarantor', 'customer_type', 'customertype'],
                         ];
                         
                         foreach ($variations as $standard => $aliases) {
@@ -777,6 +778,7 @@ class CustomerController extends Controller
                             'idnumber' => ['idnumber', 'id_number', 'identificationnumber'],
                             'relation' => ['relation', 'relationship'],
                             'description' => ['description', 'desc', 'notes'],
+                            'category' => ['category', 'role', 'borrower_guarantor', 'customer_type', 'customertype'],
                         ];
                         
                         foreach ($variations as $standard => $aliases) {
@@ -896,6 +898,13 @@ class CustomerController extends Controller
                             $phone1 = $this->formatPhoneNumber(trim($rowData['phone1']));
                             $phone2 = !empty($rowData['phone2']) ? $this->formatPhoneNumber(trim($rowData['phone2'])) : null;
 
+                            // Determine category (Borrower/Guarantor) from file, default to Borrower
+                            $rawCategory = trim($rowData['category'] ?? '');
+                            $normalizedCategory = strtolower($rawCategory);
+                            $category = in_array($normalizedCategory, ['borrower', 'guarantor'], true)
+                                ? ucfirst($normalizedCategory)
+                                : 'Borrower';
+
                             // Create customer data
                             $customerData = [
                                 'name' => trim($rowData['name']),
@@ -918,7 +927,7 @@ class CustomerController extends Controller
                                 'registrar' => auth()->id(),
                                 'dateRegistered' => now()->toDateString(),
                                 'has_cash_collateral' => $request->has('has_cash_collateral'),
-                                'category' => 'Borrower',
+                                'category' => $category,
                             ];
 
                             $customer = Customer::create($customerData);

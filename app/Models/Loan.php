@@ -1046,6 +1046,59 @@ class Loan extends Model
     }
 
     /**
+     * Get top-up balance breakdown: outstanding principal, interest, penalty and total.
+     * Used for top-up form display and validation.
+     *
+     * @return array{outstanding_principal: float, outstanding_interest: float, outstanding_penalty: float, total_balance: float}
+     */
+    public function getTopUpBalanceBreakdown(): array
+    {
+        if (!$this->isEligibleForTopUp()) {
+            return [
+                'outstanding_principal' => 0,
+                'outstanding_interest' => 0,
+                'outstanding_penalty' => 0,
+                'total_balance' => 0,
+            ];
+        }
+
+        $schedules = $this->schedule;
+        if (!$schedules) {
+            $schedules = $this->schedule()->with('repayments')->get();
+        } else {
+            $schedules = $schedules instanceof \Illuminate\Database\Eloquent\Collection
+                ? $schedules->load('repayments')
+                : $this->schedule()->with('repayments')->get();
+        }
+
+        $totalPaidPrincipal = $schedules->sum(function ($schedule) {
+            return $schedule->repayments ? $schedule->repayments->sum('principal') : 0;
+        });
+        $outstandingPrincipal = max(0, $this->amount - $totalPaidPrincipal);
+
+        $outstandingInterest = 0;
+        $outstandingPenalty = 0;
+        foreach ($schedules as $schedule) {
+            $paidInterest = $schedule->repayments ? $schedule->repayments->sum('interest') : 0;
+            $paidPenalty = $schedule->repayments ? $schedule->repayments->sum('penalt_amount') : 0;
+            $outstandingInterest += max(0, ($schedule->interest ?? 0) - $paidInterest);
+            $outstandingPenalty += max(0, ($schedule->penalty_amount ?? 0) - $paidPenalty);
+        }
+
+        $outstandingPrincipal = round($outstandingPrincipal, 2);
+        $outstandingInterest = round($outstandingInterest, 2);
+        $outstandingPenalty = round($outstandingPenalty, 2);
+        $totalBalance = round($outstandingPrincipal + $outstandingInterest + $outstandingPenalty, 2);
+
+        return [
+            'outstanding_principal' => $outstandingPrincipal,
+            'outstanding_interest' => $outstandingInterest,
+            'outstanding_penalty' => $outstandingPenalty,
+            'total_balance' => $totalBalance,
+        ];
+    }
+
+    /**
      * Get the total amount paid for this loan
      *
      * @return float

@@ -77,24 +77,51 @@ class LoanTopUpController extends Controller
                 return redirect()->route('loans.list')->withErrors(['Loan not found.']);
             }
 
+            $balanceBreakdown = $loan->getTopUpBalanceBreakdown();
+            $totalBalance = $balanceBreakdown['total_balance'] ?? $loan->getCalculatedTopUpAmount();
+            $currentBalance = $loan->getCalculatedTopUpAmount();
+
             // Validate the request
-            $request->validate([
-                'new_loan_amount' => 'required|numeric|min:' . ($loan->getCalculatedTopUpAmount() + 1),
+            $rules = [
+                'new_loan_amount' => ['required', 'numeric', 'min:1'],
                 'purpose' => 'required|string|max:500',
                 'period' => 'required|integer|min:1|max:60',
-                'topup_type' => 'required|in:restructure,additional'
-            ]);
+                'topup_type' => 'required|in:restructure,additional',
+                'bank_account_id' => 'nullable|exists:bank_accounts,id',
+            ];
+            $request->validate($rules);
+
+            $newLoanAmount = (float) $request->new_loan_amount;
+            $topupType = $request->topup_type;
+
+            if ($topupType === 'restructure' && $newLoanAmount < $totalBalance) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'New loan amount must be greater than or equal to the capitalized amount (TZS ' . number_format($totalBalance, 2) . ').',
+                    ]);
+                }
+                return redirect()->back()->withErrors(['new_loan_amount' => 'New loan amount must be at least the total balance.']);
+            }
+            if ($topupType === 'additional' && $newLoanAmount <= $currentBalance) {
+                if ($request->ajax()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'New loan amount must be greater than current balance.',
+                    ]);
+                }
+                return redirect()->back()->withErrors(['new_loan_amount' => 'New loan amount must be greater than current balance.']);
+            }
+
+            $bankAccountId = $request->filled('bank_account_id')
+                ? (int) $request->bank_account_id
+                : $loan->bank_account_id;
 
             DB::beginTransaction();
 
-            // Get current balance
-            $currentBalance = $loan->getCalculatedTopUpAmount();
-            $newLoanAmount = $request->new_loan_amount;
-            $topupType = $request->topup_type;
-
             if ($topupType === 'restructure') {
                 // RESTRUCTURE: Close old loan, create new larger loan
-                $customerReceives = $newLoanAmount - $currentBalance;
+                $customerReceives = max(0, $newLoanAmount - $totalBalance);
                 
                 // Create new loan (replaces old loan)
             $newLoan = Loan::create([
@@ -104,7 +131,7 @@ class LoanTopUpController extends Controller
                     'amount'           => $newLoanAmount,
                     'interest'         => $loan->interest,
                     'period'           => $loan->period + $request->period,
-                    'bank_account_id'  => $loan->bank_account_id,
+                    'bank_account_id'  => $bankAccountId,
                 'date_applied'     => now(),
                 'disbursed_on'     => now(),
                 'status'           => 'active',
@@ -129,8 +156,8 @@ class LoanTopUpController extends Controller
                 // Generate repayment schedule
             $newLoan->generateRepaymentSchedule($newLoan->interest);
 
-                // Create GL Transactions for Restructure Top-Up
-                $this->createRestructureTopUpGlTransactions($loan, $newLoan, $currentBalance, $customerReceives);
+                // Create GL Transactions for Restructure Top-Up (use totalBalance for amount being capitalized)
+                $this->createRestructureTopUpGlTransactions($loan, $newLoan, $totalBalance, $customerReceives);
 
                 // Close the old loan
                 $loan->update(['status' => 'restructured']);
@@ -139,7 +166,7 @@ class LoanTopUpController extends Controller
             LoanTopup::create([
                     'old_loan_id'   => $loan->id,
                 'new_loan_id'   => $newLoan->id,
-                    'old_balance'   => $currentBalance,
+                    'old_balance'   => $totalBalance,
                     'topup_amount'  => $customerReceives,
                 'topup_type'    => 'restructure',
             ]);
@@ -156,7 +183,7 @@ class LoanTopUpController extends Controller
                     'amount'           => $newLoanAmount,
                 'interest'         => $loan->interest,
                     'period'           => $request->period, // Only the additional period
-                'bank_account_id'  => $loan->bank_account_id,
+                'bank_account_id'  => $bankAccountId,
                 'date_applied'     => now(),
                 'disbursed_on'     => now(),
                 'status'           => 'active',
@@ -198,12 +225,27 @@ class LoanTopUpController extends Controller
 
             DB::commit();
 
+            $loanTopupPayload = [
+                'new_loan_amount' => (float) $newLoan->amount,
+                'customer_receives' => (float) $customerReceives,
+                'topup_type' => $topupType,
+            ];
+            if ($topupType === 'restructure') {
+                $loanTopupPayload['capitalized_amount'] = (float) $totalBalance;
+                $loanTopupPayload['outstanding_principal'] = (float) ($balanceBreakdown['outstanding_principal'] ?? 0);
+                $loanTopupPayload['outstanding_interest'] = (float) ($balanceBreakdown['outstanding_interest'] ?? 0);
+                $loanTopupPayload['outstanding_penalty'] = (float) ($balanceBreakdown['outstanding_penalty'] ?? 0);
+            } else {
+                $loanTopupPayload['old_balance'] = (float) $currentBalance;
+            }
+
             if ($request->ajax()) {
                 return response()->json([
-                    'success' => true, 
+                    'success' => true,
                     'message' => 'Top-up loan created successfully!',
                     'new_loan_id' => $newLoan->id,
-                    'new_loan_encoded_id' => Hashids::encode($newLoan->id)
+                    'new_loan_encoded_id' => Hashids::encode($newLoan->id),
+                    'loan_topup' => $loanTopupPayload,
                 ]);
             }
 
@@ -230,7 +272,7 @@ class LoanTopUpController extends Controller
         $userId = auth()->id() ?? 1;
         $branchId = auth()->user()->branch_id ?? 1;
         $product = $oldLoan->product;
-        $bankAccount = $oldLoan->bankAccount;
+        $bankAccount = $newLoan->bankAccount ?? $oldLoan->bankAccount;
 
         // 1. Close old loan receivable (Credit the old loan receivable)
         GlTransaction::create([
@@ -293,7 +335,7 @@ class LoanTopUpController extends Controller
         $userId = auth()->id() ?? 1;
         $branchId = auth()->user()->branch_id ?? 1;
         $product = $oldLoan->product;
-        $bankAccount = $oldLoan->bankAccount;
+        $bankAccount = $newLoan->bankAccount ?? $oldLoan->bankAccount;
 
         // 1. Create new loan receivable (Debit the new loan receivable)
         GlTransaction::create([

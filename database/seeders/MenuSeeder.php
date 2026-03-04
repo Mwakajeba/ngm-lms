@@ -77,7 +77,13 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
-
+            'Analytics' => [
+                'icon' => 'bx bx-line-chart',
+                'visibleRoutes' => [
+                    ['name' => 'Loan Analytics Dashboard', 'route' => 'analytics.loans.index'],
+                ],
+                'hiddenRoutes' => [],
+            ],
             'Reports' => [
                 'icon' => 'bx bx-file',
                 'visibleRoutes' => [
@@ -140,7 +146,7 @@ class MenuSeeder extends Seeder
             // These routes are for permissions only and should not be created as menu entries
             // They are handled by the permission system directly
             $superAdminRole = Role::where('name', 'super-admin')->first();
-            
+
             $superAdminRole->menus()->syncWithoutDetaching($menuIds);
 
             $adminRole->menus()->syncWithoutDetaching($menuIds);
