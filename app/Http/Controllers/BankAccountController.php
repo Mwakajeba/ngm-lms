@@ -146,18 +146,13 @@ class BankAccountController extends Controller
         $data['is_all_branches'] = $data['branch_scope'] === 'all';
         $data['branch_id'] = $data['is_all_branches'] ? null : $data['branch_id'];
 
-        $bankAccount = BankAccount::create([
+        BankAccount::create([
             'chart_account_id' => $data['chart_account_id'],
             'name' => $data['name'],
             'account_number' => $data['account_number'],
             'branch_id' => $data['branch_id'],
             'is_all_branches' => $data['is_all_branches'],
         ]);
-
-        // Sync branches
-        if ($request->has('branches')) {
-            $bankAccount->branches()->sync($request->branches);
-        }
 
         return redirect()->route('accounting.bank-accounts')
             ->with('success', 'Bank account created successfully!');
@@ -175,7 +170,7 @@ class BankAccountController extends Controller
         }
 
         $bankAccount = BankAccount::findOrFail($decoded[0]);
-        $bankAccount->load(['chartAccount.accountClassGroup.accountClass', 'branches']);
+        $bankAccount->load('chartAccount.accountClassGroup.accountClass');
 
         return view('bank-accounts.show', compact('bankAccount'));
     }
@@ -193,8 +188,7 @@ class BankAccountController extends Controller
 
         $user = Auth::user();
         $bankAccount = BankAccount::findOrFail($decoded[0]);
-        $bankAccount->load('branches');
-        
+
         $chartAccounts = ChartAccount::with('accountClassGroup.accountClass')
             ->orderBy('account_name')
             ->get();
@@ -238,14 +232,6 @@ class BankAccountController extends Controller
             'branch_id' => $data['branch_id'],
             'is_all_branches' => $data['is_all_branches'],
         ]);
-
-        // Sync branches
-        if ($request->has('branches')) {
-            $bankAccount->branches()->sync($request->branches);
-        } else {
-            // If no branches selected, remove all associations
-            $bankAccount->branches()->sync([]);
-        }
 
         return redirect()->route('accounting.bank-accounts')
             ->with('success', 'Bank account updated successfully!');

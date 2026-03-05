@@ -126,15 +126,13 @@
                                         <i class="bx bx-building text-info fs-5"></i>
                                     </div>
                                     <div class="flex-grow-1">
-                                        <small class="text-muted d-block mb-2">Assigned Branches</small>
-                                        @if($bankAccount->branches->count() > 0)
-                                            <div class="d-flex flex-wrap gap-2">
-                                                @foreach($bankAccount->branches as $branch)
-                                                    <span class="badge bg-primary fs-6">{{ $branch->name }}</span>
-                                                @endforeach
-                                            </div>
+                                        <small class="text-muted d-block mb-2">Branch scope</small>
+                                        @if($bankAccount->is_all_branches)
+                                            <span class="badge bg-primary fs-6">All branches</span>
+                                        @elseif($bankAccount->branch_id)
+                                            <span class="badge bg-primary fs-6">{{ $bankAccount->branch->name ?? 'Branch #' . $bankAccount->branch_id }}</span>
                                         @else
-                                            <span class="text-muted fst-italic">No branches assigned</span>
+                                            <span class="text-muted fst-italic">Not set</span>
                                         @endif
                                     </div>
                                 </div>
