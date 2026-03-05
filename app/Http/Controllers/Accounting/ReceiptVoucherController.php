@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Vinkla\Hashids\Facades\Hashids;
 use Yajra\DataTables\Facades\DataTables;
@@ -915,29 +916,42 @@ class ReceiptVoucherController extends Controller
      */
     public function exportPdf($encodedId)
     {
+        Log::info('ReceiptVoucher exportPdf invoked', [
+            'encoded_id' => $encodedId,
+            'user_id' => Auth::id(),
+        ]);
+
         try {
             // Decode the ID
             $decoded = Hashids::decode($encodedId);
             if (empty($decoded)) {
+                Log::warning('ReceiptVoucher exportPdf decode failed', [
+                    'encoded_id' => $encodedId,
+                    'reason' => 'empty decoded array',
+                ]);
                 return redirect()->route('accounting.receipt-vouchers.index')->withErrors(['Receipt voucher not found.']);
             }
 
-            $receiptVoucher = Receipt::findOrFail($decoded[0]);
-
-            // Check if user has access to this receipt voucher
-            $user = Auth::user();
-            if ($receiptVoucher->bankAccount->chartAccount->accountClassGroup->company_id !== $user->company_id) {
-                abort(403, 'Unauthorized access to this receipt voucher.');
-            }
-
-            // Load relationships
-            $receiptVoucher->load([
-                'bankAccount.chartAccount',
+            $receiptVoucher = Receipt::with([
+                'bankAccount.chartAccount.accountClassGroup',
                 'customer',
                 'user.company',
                 'branch',
-                'receiptItems.chartAccount'
+                'receiptItems.chartAccount',
+            ])->findOrFail($decoded[0]);
+
+            Log::info('ReceiptVoucher exportPdf loaded receipt', [
+                'receipt_id' => $receiptVoucher->id,
+                'reference' => $receiptVoucher->reference,
+                'reference_type' => $receiptVoucher->reference_type ?? null,
             ]);
+
+            // Check if user has access to this receipt voucher (when company context is available)
+            $user = Auth::user();
+            $companyId = optional(optional(optional($receiptVoucher->bankAccount)->chartAccount)->accountClassGroup)->company_id;
+            if ($companyId !== null && $companyId !== $user->company_id) {
+                abort(403, 'Unauthorized access to this receipt voucher.');
+            }
 
             // Generate PDF using DomPDF
             $pdf = \PDF::loadView('accounting.receipt-vouchers.pdf', compact('receiptVoucher'));
@@ -952,6 +966,12 @@ class ReceiptVoucherController extends Controller
             return $pdf->download($filename);
 
         } catch (\Exception $e) {
+            Log::error('ReceiptVoucher exportPdf failed', [
+                'encoded_id' => $encodedId,
+                'user_id' => Auth::id(),
+                'error' => $e->getMessage(),
+            ]);
+
             return redirect()->back()->withErrors(['error' => 'Failed to export PDF: ' . $e->getMessage()]);
         }
     }
