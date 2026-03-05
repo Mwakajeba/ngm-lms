@@ -328,14 +328,17 @@ class PaymentVoucherController extends Controller
                 $payment->refresh();
                 if ($payment->approved) {
                     $bankAccount = BankAccount::find($request->bank_account_id);
-                    
-                    // Validate bank account is accessible by user's branches
+
+                    // Validate bank account is accessible within current branch scope
                     if ($bankAccount) {
                         $user = Auth::user();
-                        $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                        if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                        $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : $user->branch_id;
+                        if ($currentBranchId && !$bankAccount->is_all_branches && $bankAccount->branch_id != $currentBranchId) {
                             DB::rollBack();
-                            return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                            return redirect()
+                                ->back()
+                                ->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])
+                                ->withInput();
                         }
                     }
 
@@ -579,14 +582,17 @@ class PaymentVoucherController extends Controller
 
                 // Create new GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
-                
-                // Validate bank account is accessible by user's branches
+
+                // Validate bank account is accessible within current branch scope
                 if ($bankAccount) {
                     $user = Auth::user();
-                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : $user->branch_id;
+                    if ($currentBranchId && !$bankAccount->is_all_branches && $bankAccount->branch_id != $currentBranchId) {
                         DB::rollBack();
-                        return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+                        return redirect()
+                            ->back()
+                            ->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])
+                            ->withInput();
                     }
                 }
 

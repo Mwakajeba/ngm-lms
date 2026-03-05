@@ -57,7 +57,7 @@ use Vinkla\Hashids\Facades\Hashids;
                                             </label>
                                             <input type="text"
                                                 class="form-control @error('reference') is-invalid @enderror"
-                                                id="reference" name="reference" value="{{ old('reference', $receiptVoucher->reference) }}"
+                                                id="reference" name="reference" value="{{ old('reference', $receiptVoucher->reference_number ?? $receiptVoucher->reference) }}"
                                                 placeholder="Enter reference number">
                                             @error('reference')
                                                 <div class="invalid-feedback">{{ $message }}</div>

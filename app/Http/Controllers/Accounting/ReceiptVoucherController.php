@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\BankAccount;
 use App\Models\Customer;
 use App\Models\ChartAccount;
+use App\Models\Loan;
 use App\Models\Receipt;
 use App\Models\ReceiptItem;
 use App\Models\GlTransaction;
+use App\Services\LoanRepaymentService;
 use App\Traits\TransactionHelper;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -216,14 +218,20 @@ class ReceiptVoucherController extends Controller
             ->orderBy('date_applied', 'desc')
             ->get()
             ->map(function ($loan) {
+                $dateApplied = $loan->date_applied
+                    ? (\Carbon\Carbon::parse($loan->date_applied)->format('M d, Y'))
+                    : 'N/A';
+                $disbursedOn = $loan->disbursed_on
+                    ? (\Carbon\Carbon::parse($loan->disbursed_on)->format('M d, Y'))
+                    : 'N/A';
                 return [
                     'id' => $loan->id,
                     'loanNo' => $loan->loanNo,
                     'product_name' => $loan->product->name ?? 'N/A',
                     'amount' => number_format($loan->amount, 2),
                     'status' => ucfirst($loan->status),
-                    'date_applied' => $loan->date_applied ? $loan->date_applied->format('M d, Y') : 'N/A',
-                    'disbursed_on' => $loan->disbursed_on ? $loan->disbursed_on->format('M d, Y') : 'N/A',
+                    'date_applied' => $dateApplied,
+                    'disbursed_on' => $disbursedOn,
                     'branch_name' => $loan->branch->name ?? 'N/A',
                 ];
             });
@@ -235,26 +243,87 @@ class ReceiptVoucherController extends Controller
     }
 
     /**
+     * Get unpaid schedules for a loan (AJAX endpoint for repayment line items).
+     */
+    public function getLoanSchedules(Request $request)
+    {
+        $request->validate([
+            'loan_id' => 'required|exists:loans,id'
+        ]);
+
+        $loan = \App\Models\Loan::findOrFail($request->loan_id);
+        $schedules = $loan->schedule()
+            ->with('repayments')
+            ->where('status', '!=', 'restructured')
+            ->orderBy('due_date')
+            ->get();
+
+        $unpaid = $schedules->filter(function ($schedule) {
+            $totalDue = $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0) + ($schedule->penalty_amount ?? 0);
+            $paid = $schedule->repayments->sum(function ($r) {
+                return $r->principal + $r->interest + ($r->fee_amount ?? 0) + ($r->penalt_amount ?? 0);
+            });
+            $remaining = max(0, $totalDue - $paid);
+            return $remaining > 0;
+        })->values()->map(function ($schedule) {
+            $totalDue = $schedule->principal + $schedule->interest + ($schedule->fee_amount ?? 0) + ($schedule->penalty_amount ?? 0);
+            $paid = $schedule->repayments->sum(function ($r) {
+                return $r->principal + $r->interest + ($r->fee_amount ?? 0) + ($r->penalt_amount ?? 0);
+            });
+            $remaining = round(max(0, $totalDue - $paid), 2);
+            $dueDate = $schedule->due_date;
+            if (is_string($dueDate)) {
+                $dueDate = \Carbon\Carbon::parse($dueDate)->format('M d, Y');
+            } else {
+                $dueDate = $dueDate ? $dueDate->format('M d, Y') : 'N/A';
+            }
+            $num = \App\Models\LoanSchedule::where('loan_id', $schedule->loan_id)->where('due_date', '<=', $schedule->due_date)->orderBy('due_date')->count();
+            return [
+                'id' => $schedule->id,
+                'due_date' => $dueDate,
+                'total_due' => round($totalDue, 2),
+                'remaining' => $remaining,
+                'schedule_number' => $num,
+            ];
+        });
+
+        return response()->json([
+            'success' => true,
+            'schedules' => $unpaid,
+        ]);
+    }
+
+    /**
      * Store a newly created resource in storage.
      */
     public function store(Request $request)
     {
         \Log::info('Receipt voucher store method called');
 
-        $validator = Validator::make($request->all(), [
+        $rules = [
             'date' => 'required|date',
             'reference' => 'nullable|string|max:255',
             'bank_account_id' => 'required|exists:bank_accounts,id',
             'payee_type' => 'required|in:customer,other',
-            'customer_id' => 'nullable|required_if:payee_type,customer|exists:customers,id',
-            'payee_name' => 'nullable|string|max:255|required_if:payee_type,other',
             'description' => 'nullable|string',
             'attachment' => 'nullable|file|mimes:pdf|max:2048',
-            'line_items' => 'required|array|min:1',
-            'line_items.*.chart_account_id' => 'required|exists:chart_accounts,id',
-            'line_items.*.amount' => 'required|numeric|min:0.01',
-            'line_items.*.description' => 'nullable|string',
-        ]);
+        ];
+
+        if ($request->filled('loan_id')) {
+            $rules['loan_id'] = 'required|exists:loans,id';
+            $rules['repayment_lines'] = 'required|array|min:1';
+            $rules['repayment_lines.*.schedule_id'] = 'required|exists:loan_schedules,id';
+            $rules['repayment_lines.*.amount'] = 'required|numeric|min:0.01';
+        } else {
+            $rules['customer_id'] = 'nullable|required_if:payee_type,customer|exists:customers,id';
+            $rules['payee_name'] = 'nullable|string|max:255|required_if:payee_type,other';
+            $rules['line_items'] = 'required|array|min:1';
+            $rules['line_items.*.chart_account_id'] = 'required|exists:chart_accounts,id';
+            $rules['line_items.*.amount'] = 'required|numeric|min:0.01';
+            $rules['line_items.*.description'] = 'nullable|string';
+        }
+
+        $validator = Validator::make($request->all(), $rules);
 
         if ($validator->fails()) {
             \Log::error('Receipt voucher validation failed:', $validator->errors()->toArray());
@@ -270,6 +339,12 @@ class ReceiptVoucherController extends Controller
         try {
             return $this->runTransaction(function () use ($request) {
                 $user = Auth::user();
+                $isLoanRepayment = $request->filled('loan_id');
+
+                if ($isLoanRepayment) {
+                    return $this->storeLoanRepaymentReceipt($request, $user);
+                }
+
                 $totalAmount = collect($request->line_items)->sum('amount');
 
                 \Log::info('Creating receipt voucher with total amount:', ['total' => $totalAmount]);
@@ -351,12 +426,11 @@ class ReceiptVoucherController extends Controller
 
                 // Create GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
-                
-                // Validate bank account is accessible by user's branches
+
+                // Validate bank account is accessible (branch scope)
                 if ($bankAccount) {
-                    $user = Auth::user();
-                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : $user->branch_id;
+                    if ($currentBranchId && !$bankAccount->is_all_branches && $bankAccount->branch_id != $currentBranchId) {
                         DB::rollBack();
                         return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
                     }
@@ -389,7 +463,7 @@ class ReceiptVoucherController extends Controller
                     if ($payeeType === 'other' && $payeeName) {
                         $lineItemDescription = $payeeName . ' - ' . $lineItemDescription;
                     }
-                    
+
                     GlTransaction::create([
                         'chart_account_id' => $lineItem['chart_account_id'],
                         'customer_id' => $customerId,
@@ -419,6 +493,78 @@ class ReceiptVoucherController extends Controller
                 ->withErrors(['error' => 'Failed to create receipt voucher: ' . $e->getMessage()])
                 ->withInput();
         }
+    }
+
+    /**
+     * Store receipt voucher for loan repayment (schedule-based line items).
+     */
+    private function storeLoanRepaymentReceipt(Request $request, $user)
+    {
+        $loan = Loan::with('customer')->findOrFail($request->loan_id);
+        $totalAmount = collect($request->repayment_lines)->sum('amount');
+
+        $attachmentPath = null;
+        if ($request->hasFile('attachment')) {
+            $file = $request->file('attachment');
+            $fileName = time() . '_' . Str::random(10) . '.' . $file->getClientOriginalExtension();
+            $attachmentPath = $file->storeAs('receipt-attachments', $fileName, 'public');
+        }
+
+        // For loan repayments, keep reference pointing to loan ID so it appears under the loan's Receipts tab
+        $receipt = Receipt::create([
+            'reference' => $loan->id,
+            'reference_type' => 'loan_repayment',
+            // Use reference_number to store any manual/voucher number typed by the user
+            'reference_number' => $request->reference ?: null,
+            'amount' => $totalAmount,
+            'date' => $request->date,
+            'description' => $request->description ?: "Loan repayment - {$loan->customer->name}",
+            'attachment' => $attachmentPath,
+            'user_id' => $user->id,
+            'bank_account_id' => $request->bank_account_id,
+            'payee_type' => 'customer',
+            'payee_id' => $loan->customer_id,
+            'payee_name' => $loan->customer->name ?? null,
+            'customer_id' => $loan->customer_id,
+            'supplier_id' => null,
+            'branch_id' => $user->branch_id,
+            'approved' => true,
+            'approved_by' => $user->id,
+            'approved_at' => now(),
+        ]);
+
+        $bankAccount = BankAccount::find($request->bank_account_id);
+        $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : $user->branch_id;
+        if ($bankAccount && $currentBranchId && !$bankAccount->is_all_branches && $bankAccount->branch_id != $currentBranchId) {
+            DB::rollBack();
+            return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
+        }
+
+        GlTransaction::create([
+            'chart_account_id' => $bankAccount->chart_account_id,
+            'customer_id' => $loan->customer_id,
+            'supplier_id' => null,
+            'amount' => $totalAmount,
+            'nature' => 'debit',
+            'transaction_id' => $receipt->id,
+            'transaction_type' => 'receipt',
+            'date' => $request->date,
+            'description' => $request->description ?: "Loan repayment - {$loan->customer->name}",
+            'branch_id' => $user->branch_id,
+            'user_id' => $user->id,
+        ]);
+
+        $paymentData = [
+            'payment_date' => $request->date,
+            'bank_account_id' => $request->bank_account_id,
+            'bank_chart_account_id' => $bankAccount->chart_account_id ?? null,
+        ];
+
+        $service = new LoanRepaymentService();
+        $service->processRepaymentLinesToReceipt($loan, $receipt, $request->repayment_lines, $paymentData);
+
+        return redirect()->route('accounting.receipt-vouchers.show', Hashids::encode($receipt->id))
+            ->with('success', 'Receipt voucher created and repayments applied successfully.');
     }
 
     /**
@@ -567,10 +713,8 @@ class ReceiptVoucherController extends Controller
                     $payeeName = $request->payee_name;
                 }
 
-                // Update receipt
-                $receiptVoucher->update([
-                    'reference' => $request->reference ?: $receiptVoucher->reference,
-                    'reference_number' => $request->reference,
+                // Prepare base update data
+                $updateData = [
                     'amount' => $totalAmount,
                     'date' => $request->date,
                     'description' => $request->description,
@@ -579,7 +723,19 @@ class ReceiptVoucherController extends Controller
                     'payee_type' => $payeeType,
                     'payee_id' => $payeeId,
                     'payee_name' => $payeeName,
-                ]);
+                ];
+
+                // For loan repayment receipts, keep reference pointing at the loan ID and only adjust reference_number.
+                // For manual/other receipts, allow editing the reference itself.
+                if ($receiptVoucher->reference_type === 'loan_repayment') {
+                    $updateData['reference_number'] = $request->reference ?: $receiptVoucher->reference_number;
+                } else {
+                    $updateData['reference'] = $request->reference ?: $receiptVoucher->reference;
+                    $updateData['reference_number'] = $request->reference;
+                }
+
+                // Update receipt
+                $receiptVoucher->update($updateData);
 
                 // Delete existing receipt items and GL transactions
                 $receiptVoucher->receiptItems()->delete();
@@ -606,8 +762,8 @@ class ReceiptVoucherController extends Controller
                 // Validate bank account is accessible by user's branches
                 if ($bankAccount) {
                     $user = Auth::user();
-                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : $user->branch_id;
+                    if ($currentBranchId && !$bankAccount->is_all_branches && $bankAccount->branch_id != $currentBranchId) {
                         DB::rollBack();
                         return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
                     }
@@ -969,11 +1125,11 @@ class ReceiptVoucherController extends Controller
                 // Create GL transactions
                 $bankAccount = BankAccount::find($request->bank_account_id);
                 
-                // Validate bank account is accessible by user's branches
+                // Validate bank account is accessible (branch scope)
                 if ($bankAccount) {
                     $user = Auth::user();
-                    $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
-                    if (!empty($userBranchIds) && !$bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()) {
+                    $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : $user->branch_id;
+                    if ($currentBranchId && !$bankAccount->is_all_branches && $bankAccount->branch_id != $currentBranchId) {
                         DB::rollBack();
                         return redirect()->back()->withErrors(['bank_account_id' => 'You do not have access to this bank account.'])->withInput();
                     }
