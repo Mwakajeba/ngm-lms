@@ -100,9 +100,9 @@ class ChartAccountSeeder extends Seeder
                 'account_name' => 'Retained Earnings',
                 'account_class_group_id' => 8,
                 'has_cash_flow' => 1,
-                'has_equity' => 1,
+                'has_equity' => 0,
                 'cash_flow_category_id' => 1,
-                'equity_category_id' => 1,
+                'equity_category_id' => null,
             ],
             // Interest Income (Group ID: 9)
             [
