@@ -7,7 +7,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 class BankAccount extends Model
 {
@@ -34,6 +33,14 @@ class BankAccount extends Model
     public function chartAccount(): BelongsTo
     {
         return $this->belongsTo(ChartAccount::class, 'chart_account_id');
+    }
+
+    /**
+     * Get the branch this account is scoped to (when not is_all_branches).
+     */
+    public function branch(): BelongsTo
+    {
+        return $this->belongsTo(Branch::class, 'branch_id');
     }
 
     /**
