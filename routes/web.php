@@ -534,6 +534,7 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/receipt-vouchers/create', [ReceiptVoucherController::class, 'create'])->name('receipt-vouchers.create');
     Route::post('/receipt-vouchers', [ReceiptVoucherController::class, 'store'])->name('receipt-vouchers.store');
     Route::get('/receipt-vouchers/customer-loans', [ReceiptVoucherController::class, 'getCustomerLoans'])->name('receipt-vouchers.customer-loans');
+    Route::get('/receipt-vouchers/loan-schedules', [ReceiptVoucherController::class, 'getLoanSchedules'])->name('receipt-vouchers.loan-schedules');
     Route::get('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'show'])->name('receipt-vouchers.show');
     Route::get('/receipt-vouchers/{encodedId}/edit', [ReceiptVoucherController::class, 'edit'])->name('receipt-vouchers.edit');
     Route::put('/receipt-vouchers/{encodedId}', [ReceiptVoucherController::class, 'update'])->name('receipt-vouchers.update');

@@ -95,7 +95,15 @@ class ChartAccountSeeder extends Seeder
                 'cash_flow_category_id' => 1,
                 'equity_category_id' => null,
             ],
-
+            [
+                'account_code' => '3004',
+                'account_name' => 'Retained Earnings',
+                'account_class_group_id' => 8,
+                'has_cash_flow' => 1,
+                'has_equity' => 1,
+                'cash_flow_category_id' => 1,
+                'equity_category_id' => 1,
+            ],
             // Interest Income (Group ID: 9)
             [
                 'account_code' => '4570',

@@ -38,6 +38,7 @@
                             <form id="receiptVoucherForm" action="{{ route('accounting.receipt-vouchers.store') }}"
                                 method="POST" enctype="multipart/form-data">
                                 @csrf
+                                <input type="hidden" name="loan_id" id="loan_id" value="">
 
                                 <!-- Header Section -->
                                 <div class="row mb-4">
@@ -188,12 +189,41 @@
                                                 <div id="loansContainer">
                                                     <!-- Loans will be displayed here -->
                                                 </div>
+                                                <div id="selectedLoanInfo" class="mt-3" style="display: none;">
+                                                    <div class="alert alert-success mb-0 d-flex align-items-center justify-content-between">
+                                                        <span><i class="bx bx-check-circle me-2"></i>Repaying loan: <strong id="selectedLoanNo"></strong></span>
+                                                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clearLoanBtn">Change loan</button>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Transaction Description and Attachment -->
+                                <!-- Repayment line items (when a loan is selected) -->
+                                <div class="row mb-4" id="repaymentLinesSection" style="display: none;">
+                                    <div class="col-12">
+                                        <div class="card border-success">
+                                            <div class="card-header bg-success text-white">
+                                                <h6 class="mb-0 fw-bold">
+                                                    <i class="bx bx-calendar-check me-2"></i>Repayment line items – select schedule and amount to pay
+                                                </h6>
+                                            </div>
+                                            <div class="card-body">
+                                                <p class="text-muted small mb-3">Add one or more lines: choose an unpaid schedule and enter the amount to pay for it.</p>
+                                                <div id="repaymentLinesContainer">
+                                                    <!-- Repayment lines added here -->
+                                                </div>
+                                                <div class="text-left mt-3">
+                                                    <button type="button" class="btn btn-success" id="addRepaymentLineBtn">
+                                                        <i class="bx bx-plus me-2"></i>Add line
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <div class="row mb-4">
                                     <div class="col-12">
                                         <div class="mb-3">
@@ -225,8 +255,8 @@
                                     </div>
                                 </div>
 
-                                <!-- Line Items Section -->
-                                <div class="row mb-4">
+                                <!-- Line Items Section (chart accounts – when no loan selected) -->
+                                <div class="row mb-4" id="lineItemsSection">
                                     <div class="col-12">
                                         <div class="card border-primary">
                                             <div class="card-header bg-light">
@@ -414,6 +444,7 @@
                             loansHtml += '<th>Date Applied</th>';
                             loansHtml += '<th>Disbursed On</th>';
                             loansHtml += '<th>Branch</th>';
+                            loansHtml += '<th>Action</th>';
                             loansHtml += '</tr></thead><tbody>';
 
                             response.loans.forEach(function (loan) {
@@ -425,6 +456,7 @@
                                 loansHtml += '<td>' + loan.date_applied + '</td>';
                                 loansHtml += '<td>' + loan.disbursed_on + '</td>';
                                 loansHtml += '<td>' + loan.branch_name + '</td>';
+                                loansHtml += '<td><button type="button" class="btn btn-sm btn-primary select-loan-btn" data-loan-id="' + loan.id + '" data-loan-no="' + (loan.loanNo || '') + '"><i class="bx bx-check me-1"></i>Select for repayment</button></td>';
                                 loansHtml += '</tr>';
                             });
 
@@ -450,6 +482,93 @@
             // Trigger change event on page load if value exists
             if ($('#payee_type').val()) {
                 $('#payee_type').trigger('change');
+            }
+
+            let loanSchedules = [];
+            let repaymentLineCount = 0;
+
+            // Select loan for repayment
+            $(document).on('click', '.select-loan-btn', function () {
+                const loanId = $(this).data('loan-id');
+                const loanNo = $(this).data('loan-no');
+
+                // Force payee type to customer when using loan repayment mode
+                $('#payee_type').val('customer').trigger('change');
+
+                // Disable required on normal line items so hidden fields don't block HTML5 validation
+                $('.chart-account-select, .amount-input').prop('required', false);
+
+                $('#loan_id').val(loanId);
+                $('#selectedLoanNo').text(loanNo || 'Loan #' + loanId);
+                $('#selectedLoanInfo').show();
+                $('#lineItemsSection').hide();
+                $('#repaymentLinesSection').show();
+                $('#repaymentLinesContainer').empty();
+                repaymentLineCount = 0;
+                calculateTotal();
+                $.get('{{ route("accounting.receipt-vouchers.loan-schedules") }}', { loan_id: loanId }, function (res) {
+                    if (res.success && res.schedules && res.schedules.length) {
+                        loanSchedules = res.schedules;
+                        addRepaymentLineRow();
+                    } else {
+                        $('#repaymentLinesContainer').html('<div class="alert alert-warning mb-0">No unpaid schedules for this loan.</div>');
+                    }
+                }).fail(function () {
+                    $('#repaymentLinesContainer').html('<div class="alert alert-danger mb-0">Failed to load schedules.</div>');
+                });
+            });
+
+            $('#clearLoanBtn').on('click', function () {
+                $('#loan_id').val('');
+                $('#selectedLoanInfo').hide();
+                $('#repaymentLinesSection').hide();
+                $('#repaymentLinesContainer').empty();
+                $('#lineItemsSection').show();
+
+                // Re-enable required on normal line items when leaving repayment mode
+                $('.chart-account-select, .amount-input').prop('required', true);
+
+                loanSchedules = [];
+                repaymentLineCount = 0;
+                calculateTotal();
+            });
+
+            function addRepaymentLineRow() {
+                repaymentLineCount++;
+                let options = '<option value="">-- Select schedule --</option>';
+                loanSchedules.forEach(function (s) {
+                    options += '<option value="' + s.id + '" data-remaining="' + s.remaining + '">#' + s.schedule_number + ' Due ' + s.due_date + ' (Remaining: ' + parseFloat(s.remaining).toFixed(2) + ')</option>';
+                });
+                const row = '<div class="line-item-row repayment-line-row" id="repaymentLine_' + repaymentLineCount + '">' +
+                    '<div class="row align-items-end">' +
+                    '<div class="col-lg-5"><label class="form-label fw-bold">Schedule <span class="text-danger">*</span></label>' +
+                    '<select class="form-select schedule-select" name="repayment_lines[' + (repaymentLineCount - 1) + '][schedule_id]" required>' + options + '</select></div>' +
+                    '<div class="col-lg-4"><label class="form-label fw-bold">Amount to pay <span class="text-danger">*</span></label>' +
+                    '<input type="number" class="form-control repayment-amount-input" name="repayment_lines[' + (repaymentLineCount - 1) + '][amount]" step="0.01" min="0.01" placeholder="0.00" required></div>' +
+                    '<div class="col-lg-2"><label class="form-label">&nbsp;</label><button type="button" class="btn btn-outline-danger d-block remove-repayment-line" data-row="' + repaymentLineCount + '"><i class="bx bx-trash"></i> Remove</button></div>' +
+                    '</div></div>';
+                $('#repaymentLinesContainer').append(row);
+                calculateTotal();
+            }
+
+            $('#addRepaymentLineBtn').on('click', function () {
+                if (loanSchedules.length) addRepaymentLineRow();
+            });
+
+            $(document).on('click', '.remove-repayment-line', function () {
+                const row = $(this).data('row');
+                $('#repaymentLine_' + row).remove();
+                recalcRepaymentLineNames();
+                calculateTotal();
+            });
+
+            function recalcRepaymentLineNames() {
+                let idx = 0;
+                $('.repayment-line-row').each(function () {
+                    $(this).find('.schedule-select').attr('name', 'repayment_lines[' + idx + '][schedule_id]');
+                    $(this).find('.repayment-amount-input').attr('name', 'repayment_lines[' + idx + '][amount]');
+                    idx++;
+                });
             }
 
             // Add line item
@@ -535,10 +654,15 @@
             // Calculate total
             function calculateTotal() {
                 let total = 0;
-                $('.amount-input').each(function () {
-                    const amount = parseFloat($(this).val()) || 0;
-                    total += amount;
-                });
+                if ($('#repaymentLinesSection').is(':visible')) {
+                    $('.repayment-amount-input').each(function () {
+                        total += parseFloat($(this).val()) || 0;
+                    });
+                } else {
+                    $('.amount-input').each(function () {
+                        total += parseFloat($(this).val()) || 0;
+                    });
+                }
                 $('#totalAmount').text(total.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
             }
 
@@ -546,86 +670,13 @@
             $(document).on('input', '.amount-input', function () {
                 calculateTotal();
             });
+            $(document).on('input', '.repayment-amount-input', function () {
+                calculateTotal();
+            });
 
-            // Form validation
-            $('#receiptVoucherForm').submit(function (e) {
-                console.log('Form submission started');
-                console.log('Form data:', $(this).serialize());
-
-                e.preventDefault();
-
-                const payeeType = $('#payee_type').val();
-                console.log('Payee type:', payeeType);
-
-                // Clear previous validation messages
-                $('.is-invalid').removeClass('is-invalid');
-                $('.invalid-feedback').remove();
-
-                let hasErrors = false;
-
-                if (payeeType === 'customer' && !$('#customer_id').val()) {
-                    $('#customer_id').addClass('is-invalid');
-                    $('#customer_id').after('<div class="invalid-feedback">Please select a customer.</div>');
-                    hasErrors = true;
-                }
-
-                if (payeeType === 'other' && !$('#payee_name').val()) {
-                    $('#payee_name').addClass('is-invalid');
-                    $('#payee_name').after('<div class="invalid-feedback">Please enter payee name.</div>');
-                    hasErrors = true;
-                }
-
-                if ($('.line-item-row').length === 0) {
-                    alert('At least one line item is required.');
-                    hasErrors = true;
-                }
-
-                const total = parseFloat($('#totalAmount').text());
-                if (total <= 0) {
-                    alert('Total amount must be greater than zero.');
-                    hasErrors = true;
-                }
-
-                // Check if all required fields are filled
-                const requiredFields = ['date', 'bank_account_id', 'payee_type'];
-                requiredFields.forEach(field => {
-                    if (!$(`#${field}`).val()) {
-                        $(`#${field}`).addClass('is-invalid');
-                        $(`#${field}`).after('<div class="invalid-feedback">This field is required.</div>');
-                        hasErrors = true;
-                    }
-                });
-
-                // Check line items
-                $('.line-item-row').each(function (index) {
-                    const accountSelect = $(this).find('.chart-account-select');
-                    const amountInput = $(this).find('.amount-input');
-
-                    if (!accountSelect.val()) {
-                        accountSelect.addClass('is-invalid');
-                        accountSelect.after('<div class="invalid-feedback">Please select an account.</div>');
-                        hasErrors = true;
-                    }
-
-                    if (!amountInput.val() || parseFloat(amountInput.val()) <= 0) {
-                        amountInput.addClass('is-invalid');
-                        amountInput.after('<div class="invalid-feedback">Please enter a valid amount.</div>');
-                        hasErrors = true;
-                    }
-                });
-
-                if (hasErrors) {
-                    console.log('Validation errors found');
-                    return false;
-                }
-
-                console.log('Form validation passed, submitting...');
-
-                // Show loading state
+            // On submit, just show loading state and let backend validation handle errors
+            $('#receiptVoucherForm').on('submit', function () {
                 $('#saveBtn').prop('disabled', true).html('<i class="bx bx-loader-alt bx-spin me-2"></i>Saving...');
-
-                // Submit the form
-                this.submit();
             });
         });
     </script>

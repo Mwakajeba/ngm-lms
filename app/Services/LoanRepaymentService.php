@@ -150,6 +150,56 @@ class LoanRepaymentService
     }
 
     /**
+     * Process repayment lines from a receipt voucher: apply each (schedule_id, amount) to the loan
+     * and create repayment records + GL transactions. Caller must have created the receipt and bank debit GL.
+     *
+     * @param \App\Models\Loan $loan
+     * @param \App\Models\Receipt $receipt
+     * @param array $scheduleAmounts Array of ['schedule_id' => int, 'amount' => float]
+     * @param array $paymentData ['payment_date', 'bank_account_id', 'bank_chart_account_id' optional]
+     * @return array ['success' => true, 'total_paid' => float]
+     */
+    public function processRepaymentLinesToReceipt($loan, $receipt, array $scheduleAmounts, array $paymentData = [])
+    {
+        $loan->load(['product', 'customer', 'schedule']);
+        $totalPaid = 0;
+
+        foreach ($scheduleAmounts as $line) {
+            $scheduleId = (int) ($line['schedule_id'] ?? 0);
+            $amount = (float) ($line['amount'] ?? 0);
+            if ($scheduleId <= 0 || $amount <= 0) {
+                continue;
+            }
+
+            $schedule = LoanSchedule::with('repayments')->find($scheduleId);
+            if (!$schedule || $schedule->loan_id != $loan->id) {
+                Log::warning('Invalid or mismatched schedule in receipt voucher', ['schedule_id' => $scheduleId, 'loan_id' => $loan->id]);
+                continue;
+            }
+
+            $schedulePayment = $this->processSchedulePayment($loan, $schedule, $amount, $paymentData);
+            if (empty($schedulePayment['amount']) || $schedulePayment['amount'] <= 0) {
+                continue;
+            }
+
+            $repayment = $this->createRepaymentRecord($loan, $schedule, $schedulePayment, $paymentData, $receipt);
+            if ($repayment) {
+                $this->createGLTransactions($loan, $repayment, $schedulePayment, $paymentData, $receipt);
+                $totalPaid += $schedulePayment['amount'];
+            }
+        }
+
+        if ($totalPaid > 0 && $this->isLoanFullyPaid($loan)) {
+            $loan->closeLoan();
+        }
+        if ($totalPaid > 0) {
+            $this->sendRepaymentSms($loan, $totalPaid, $paymentData['payment_date'] ?? now());
+        }
+
+        return ['success' => true, 'total_paid' => $totalPaid];
+    }
+
+    /**
      * Send SMS notification to customer after repayment
      */
     private function sendRepaymentSms($loan, $amount, $paymentDate = null)
