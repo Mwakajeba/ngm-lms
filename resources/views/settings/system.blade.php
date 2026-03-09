@@ -78,7 +78,20 @@
                                     <div class="tab-pane fade {{ $loop->first ? 'show active' : '' }}" 
                                          id="{{ $groupKey }}-content" 
                                          role="tabpanel">
-                                        
+
+                                        {{-- Backup tab: link to the full Backup & Restore page --}}
+                                        @if($groupKey === 'backup')
+                                            <div class="alert alert-info d-flex align-items-center justify-content-between mb-3" role="alert">
+                                                <div>
+                                                    <i class="bx bx-data me-2 fs-5"></i>
+                                                    <strong>Backup & Restore</strong> — create backups, view history, and restore data from the dedicated page.
+                                                </div>
+                                                <a href="{{ route('settings.backup') }}" class="btn btn-primary btn-sm ms-3 text-nowrap">
+                                                    <i class="bx bx-link-external me-1"></i> Open Backup Settings
+                                                </a>
+                                            </div>
+                                        @endif
+
                                         <div class="row">
                                             @foreach($settings[$groupKey] as $setting)
                                                 <div class="col-md-6 mb-3">
@@ -276,6 +289,60 @@ document.addEventListener('DOMContentLoaded', function() {
     var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
         return new bootstrap.Tooltip(tooltipTriggerEl);
     });
+
+    // If URL hash matches a tab (e.g. #backup-tab), activate that tab on load
+    var hash = window.location.hash;
+    if (hash) {
+        var tabTrigger = document.querySelector('[data-bs-target="' + hash.replace('-tab', '-content') + '"]');
+        if (tabTrigger) {
+            new bootstrap.Tab(tabTrigger).show();
+        }
+    }
+
+    // ── SMS Reminder master toggle ──────────────────────────────────────────
+    var masterToggle = document.getElementById('sms_reminder_enabled');
+    var reminderKeys = [
+        'sms_reminder_3_days_before',
+        'sms_reminder_2_days_before',
+        'sms_reminder_1_day_before',
+        'sms_reminder_on_due_date',
+    ];
+
+    function applyReminderState(enabled) {
+        reminderKeys.forEach(function (key) {
+            var input   = document.getElementById(key);
+            if (!input) return;
+            var wrapper = input.closest('.col-md-6');          // the whole grid column
+
+            if (enabled) {
+                if (wrapper) wrapper.style.display = '';
+                input.disabled = input.getAttribute('data-perm-disabled') === '1';
+            } else {
+                if (wrapper) wrapper.style.display = 'none';
+                input.checked  = false;                        // visually uncheck
+                input.disabled = true;                         // prevent form submission as '1'
+            }
+        });
+    }
+
+    if (masterToggle) {
+        // Remember which inputs were already permission-disabled (read-only users)
+        reminderKeys.forEach(function (key) {
+            var input = document.getElementById(key);
+            if (input && input.disabled) {
+                input.setAttribute('data-perm-disabled', '1');
+            }
+        });
+
+        // Apply initial state on page load
+        applyReminderState(masterToggle.checked);
+
+        // React to the master toggle changing
+        masterToggle.addEventListener('change', function () {
+            applyReminderState(this.checked);
+        });
+    }
+    // ── END SMS Reminder master toggle ──────────────────────────────────────
 
     // Show password requirements for security settings
     showPasswordRequirements();

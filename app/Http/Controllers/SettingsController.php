@@ -276,21 +276,21 @@ class SettingsController extends Controller
         }
 
         $groups = [
-            'general' => 'General Settings',
-            'email' => 'Email Configuration',
-            'security' => 'Security Settings',
-            'backup' => 'Backup Configuration',
-            'maintenance' => 'Maintenance Settings',
-            'microfinance' => 'Microfinance Settings'
+            'general'       => 'General Settings',
+            'email'         => 'Email Configuration',
+            'security'      => 'Security Settings',
+            'backup'        => 'Backup Configuration',
+            'maintenance'   => 'Maintenance Settings',
+            'notifications' => 'SMS Reminders',
         ];
 
         $groupIcons = [
-            'general' => 'bx-cog',
-            'email' => 'bx-envelope',
-            'security' => 'bx-shield',
-            'backup' => 'bx-data',
-            'maintenance' => 'bx-wrench',
-            'microfinance' => 'bx-money'
+            'general'       => 'bx-cog',
+            'email'         => 'bx-envelope',
+            'security'      => 'bx-shield',
+            'backup'        => 'bx-data',
+            'maintenance'   => 'bx-wrench',
+            'notifications' => 'bx-bell',
         ];
 
         $timezones = [
@@ -316,6 +316,12 @@ class SettingsController extends Controller
             'America/Sao_Paulo',
             'Pacific/Auckland'
         ];
+
+        // Auto-initialize defaults whenever core settings are missing.
+        // initializeDefaults() uses updateOrCreate so it is safe to call repeatedly.
+        if (\App\Models\SystemSetting::where('group', 'general')->doesntExist()) {
+            \App\Models\SystemSetting::initializeDefaults();
+        }
 
         $settings = [];
         foreach ($groups as $groupKey => $groupName) {
