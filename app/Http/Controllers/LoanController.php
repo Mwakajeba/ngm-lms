@@ -1861,21 +1861,17 @@ class LoanController extends Controller
                 // Step 5: Record Payment
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
 
-                // Validate bank account is accessible by user's branches or global scope
+                // Validate bank account is accessible within current branch scope
                 $user = auth()->user();
-                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
                 $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
                 if (!$currentBranchId) {
                     $currentBranchId = $user->branch_id;
                 }
 
-                $hasPivotAccess = !empty($userBranchIds)
-                    ? $bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()
-                    : false;
                 $hasDirectScope = $bankAccount->is_all_branches
                     || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
 
-                if (!empty($userBranchIds) && !$hasPivotAccess && !$hasDirectScope) {
+                if (!$hasDirectScope) {
                     throw new \Exception('You do not have access to this bank account.');
                 }
                 
@@ -2320,21 +2316,17 @@ class LoanController extends Controller
                 // Create payment record
                 $bankAccount = BankAccount::findOrFail($validated['account_id']);
 
-                // Validate bank account is accessible by user's branches or global scope
+                // Validate bank account is accessible within current branch scope
                 $user = auth()->user();
-                $userBranchIds = $user->branches()->pluck('branches.id')->toArray();
                 $currentBranchId = function_exists('current_branch_id') ? current_branch_id() : null;
                 if (!$currentBranchId) {
                     $currentBranchId = $user->branch_id;
                 }
 
-                $hasPivotAccess = !empty($userBranchIds)
-                    ? $bankAccount->branches()->whereIn('branches.id', $userBranchIds)->exists()
-                    : false;
                 $hasDirectScope = $bankAccount->is_all_branches
                     || ($currentBranchId && (int) $bankAccount->branch_id === (int) $currentBranchId);
 
-                if (!empty($userBranchIds) && !$hasPivotAccess && !$hasDirectScope) {
+                if (!$hasDirectScope) {
                     throw new \Exception('You do not have access to this bank account.');
                 }
                 
