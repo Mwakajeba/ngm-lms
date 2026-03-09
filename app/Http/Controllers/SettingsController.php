@@ -881,26 +881,52 @@ class SettingsController extends Controller
     public function smsSettings()
     {
         $smsEvents = [
-            'otp_verification' => 'User login / OTP verification',
-            'loan_disbursement' => 'On loan disbursement / approval',
-            'loan_repayment' => 'On loan repayment posting',
+            'otp_verification'      => 'User login / OTP verification',
+            'loan_disbursement'     => 'On loan disbursement / approval',
+            'loan_repayment'        => 'On loan repayment posting',
             'loan_arrears_reminder' => 'Loan arrears / reminder messages',
-            'customer_notifications' => 'Customer automatic notifications',
-            'group_notifications' => 'Group automatic notifications',
-            'cash_collateral' => 'Cash collateral notifications',
-            'mature_interest' => 'Mature interest collection notifications',
+            'customer_notifications'=> 'Customer automatic notifications',
+            'group_notifications'   => 'Group automatic notifications',
+            'cash_collateral'       => 'Cash collateral notifications',
+            'mature_interest'       => 'Mature interest collection notifications',
+        ];
+
+        // Available template variables per event (shown as hints in the UI)
+        $eventVariables = [
+            'otp_verification'      => ['{code}'],
+            'loan_disbursement'     => ['{customer_name}', '{amount}', '{loan_date}', '{repayment_start_date}', '{payment_amount}', '{cycle}', '{company_name}', '{company_phone}'],
+            'loan_repayment'        => ['{customer_name}', '{amount}', '{payment_date}', '{loan_no}', '{company_name}', '{company_phone}'],
+            'loan_arrears_reminder' => ['{customer_name}', '{amount}', '{days_overdue}', '{loan_no}', '{due_date}', '{reminder_type}', '{company_name}', '{company_phone}'],
+            'customer_notifications'=> ['{customer_name}', '{company_name}'],
+            'group_notifications'   => ['{customer_name}', '{amount_paid}', '{remaining_amount}', '{company_name}'],
+            'cash_collateral'       => ['{amount}', '{action}', '{company_name}'],
+            'mature_interest'       => ['{customer_name}', '{loan_no}', '{amount}', '{company_name}'],
+        ];
+
+        // System default message shown as placeholder when no custom template is set
+        $defaultMessages = [
+            'otp_verification'      => 'OTP Code is {code}',
+            'loan_disbursement'     => 'Umepokea mkopo wa Tsh {amount} tarehe {loan_date}, Marejesho yako yataanza {repayment_start_date} na utakuwa unalipa Tsh {payment_amount} {cycle}. Asante. Ujumbe umetoka {company_name}',
+            'loan_repayment'        => 'Habari! {customer_name}, Tumepokea marejesho ya Tsh {amount} tarehe {payment_date} kutoka kwenye mkopo namba {loan_no}. Asante. Ujumbe umetoka {company_name}',
+            'loan_arrears_reminder' => 'Habari! {customer_name}, Mkopo wako una deni la Tsh {amount} na umekwisha siku {days_overdue}. Tafadhali fanya malipo yako mapema. Asante. Ujumbe umetoka {company_name}',
+            'customer_notifications'=> '(No default — message is composed manually)',
+            'group_notifications'   => 'Habari! {customer_name}, umelipa rejesho kiasi cha Tsh {amount_paid}. Salio: Tsh {remaining_amount}. {company_name}',
+            'cash_collateral'       => 'Cash {action} processed successfully. Amount: TSHS{amount}',
+            'mature_interest'       => 'Habari {customer_name}. Mkopo namba {loan_no} una deni la faini ya TZS {amount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.',
         ];
 
         $enabledEvents = [];
+        $customTemplates = [];
         foreach ($smsEvents as $key => $label) {
             $enabledEvents[$key] = filter_var(
                 config("services.sms.events.$key", true),
                 FILTER_VALIDATE_BOOLEAN,
                 FILTER_NULL_ON_FAILURE
             ) !== false;
+            $customTemplates[$key] = config("services.sms.templates.$key", '');
         }
 
-        return view('settings.sms', compact('smsEvents', 'enabledEvents'));
+        return view('settings.sms', compact('smsEvents', 'enabledEvents', 'eventVariables', 'defaultMessages', 'customTemplates'));
     }
 
     /**
@@ -909,13 +935,15 @@ class SettingsController extends Controller
     public function updateSmsSettings(Request $request)
     {
         $request->validate([
-            'sms_url' => 'required|url',
-            'sms_senderid' => 'required|string|max:255',
-            'sms_key' => 'required|string|max:255',
-            'sms_token' => 'required|string|max:255',
-            'test_phone' => 'nullable|string|max:20',
-            'sms_events' => 'nullable|array',
-            'sms_events.*' => 'string',
+            'sms_url'          => 'required|url',
+            'sms_senderid'     => 'required|string|max:255',
+            'sms_key'          => 'required|string|max:255',
+            'sms_token'        => 'required|string|max:255',
+            'test_phone'       => 'nullable|string|max:20',
+            'sms_events'       => 'nullable|array',
+            'sms_events.*'     => 'string',
+            'sms_templates'    => 'nullable|array',
+            'sms_templates.*'  => 'nullable|string|max:500',
         ]);
 
         try {
@@ -950,6 +978,13 @@ class SettingsController extends Controller
             foreach ($smsEvents as $eventKey) {
                 $envKey = 'SMS_EVENT_' . strtoupper($eventKey);
                 $envKeys[$envKey] = in_array($eventKey, $selectedEvents, true) ? 'true' : 'false';
+            }
+
+            // Save custom message templates (empty string clears the template → fallback to default)
+            $submittedTemplates = $request->input('sms_templates', []);
+            foreach ($smsEvents as $eventKey) {
+                $templateEnvKey = 'SMS_TEMPLATE_' . strtoupper($eventKey);
+                $envKeys[$templateEnvKey] = trim($submittedTemplates[$eventKey] ?? '');
             }
 
             foreach ($envKeys as $key => $value) {

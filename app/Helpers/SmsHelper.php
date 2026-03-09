@@ -38,6 +38,30 @@ class SmsHelper
     }
 
     /**
+     * Resolve a custom message template for the given event.
+     * Returns the template with all {variable} placeholders replaced,
+     * or null if no custom template is configured (caller should use default).
+     *
+     * @param string $event
+     * @param array<string, mixed> $variables  Keys are variable names (without braces)
+     * @return string|null
+     */
+    public static function resolveTemplate(string $event, array $variables): ?string
+    {
+        $template = config("services.sms.templates.{$event}", '');
+
+        if (empty($template)) {
+            return null;
+        }
+
+        foreach ($variables as $key => $value) {
+            $template = str_replace('{' . $key . '}', (string) $value, $template);
+        }
+
+        return $template;
+    }
+
+    /**
      * Check if a given SMS event is enabled in configuration.
      *
      * @param string $event

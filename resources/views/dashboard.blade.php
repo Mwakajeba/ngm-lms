@@ -88,12 +88,16 @@ use Vinkla\Hashids\Facades\Hashids;
                                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#bulkSmsModal">
                                         <i class="bx bx-envelope"></i> SMS
                                     </button>
+                                    @can('create customer')
                                     <a href="{{ route('customers.create') }}" class="btn btn-sm btn-primary">
                                         <i class="bx bx-user-plus"></i> Create Customer
                                     </a>
+                                    @endcan
+                                    @can('create loan')
                                     <a href="{{ route('loans.create') }}" class="btn btn-sm btn-success">
                                         <i class="bx bx-money"></i> Create Loan
                                     </a>
+                                    @endcan
                                 </div>
                             </div>
                         </div>

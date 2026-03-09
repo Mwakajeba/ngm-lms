@@ -464,7 +464,9 @@ class CashCollateralController extends Controller
 
                 // Send SMS to customer after successful deposit
                 if ($collateral->customer && $collateral->customer->phone1) {
-                    $smsMessage = "Cash deposit processed successfully. Amount: TSHS" . number_format($request->amount, 2);
+                    $templateVars = ['amount' => number_format($request->amount, 2), 'action' => 'deposit', 'company_name' => ''];
+                    $smsMessage = \App\Helpers\SmsHelper::resolveTemplate('cash_collateral', $templateVars)
+                        ?? "Cash deposit processed successfully. Amount: TSHS" . number_format($request->amount, 2);
                     $this->sendSms($collateral->customer->phone1, $smsMessage);
                 }
 
@@ -612,7 +614,9 @@ class CashCollateralController extends Controller
 
                 // Send SMS to customer after successful withdrawal
                 if ($collateral->customer && $collateral->customer->phone1) {
-                    $smsMessage = "Cash collateral withdrawal processed successfully. Amount: TSHS" . number_format($request->amount, 2);
+                    $templateVars = ['amount' => number_format($request->amount, 2), 'action' => 'withdrawal', 'company_name' => ''];
+                    $smsMessage = \App\Helpers\SmsHelper::resolveTemplate('cash_collateral', $templateVars)
+                        ?? "Cash collateral withdrawal processed successfully. Amount: TSHS" . number_format($request->amount, 2);
                     $this->sendSms($collateral->customer->phone1, $smsMessage);
                 }
 

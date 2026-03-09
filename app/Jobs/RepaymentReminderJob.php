@@ -103,7 +103,18 @@ class RepaymentReminderJob implements ShouldQueue
                 $daysText = "siku {$daysUntil} zijazo";
             }
 
-            $message = "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
+            $templateVars = [
+                'customer_name' => $customer->name,
+                'amount'        => $amount,
+                'days_overdue'  => '',
+                'loan_no'       => $loan->loanNo,
+                'due_date'      => $dueDate,
+                'reminder_type' => $reminderType,
+                'company_name'  => '',
+                'company_phone' => '',
+            ];
+            $message = SmsHelper::resolveTemplate('loan_arrears_reminder', $templateVars)
+                ?? "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
 
             $phone = normalize_phone_number($customer->phone1);
             SmsHelper::send($phone, $message, 'loan_arrears_reminder');

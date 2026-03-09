@@ -5,7 +5,6 @@ namespace App\Http\Controllers;
 use App\Models\OtpCode;
 use App\Models\LoginAttempt;
 use App\Rules\PasswordValidation;
-use App\Services\SystemSettingService;
 use Illuminate\Support\Carbon;
 use App\Helpers\SmsHelper;
 use App\Models\ActivityLog;
@@ -53,8 +52,8 @@ class AuthController extends Controller
 
         $deviceString = $deviceInfo . ' - ' . $agent::browser();
 
-        if (LoginAttempt::isLockedOut($request->ip())) {
-            $remainingTime = LoginAttempt::getRemainingLockoutTime($request->ip());
+        if (LoginAttempt::isUserLockedOut($request->phone)) {
+            $remainingTime = LoginAttempt::getRemainingLockoutTimeByPhone($request->phone);
 
             ActivityLog::create([
                 'user_id' => null,
@@ -394,12 +393,11 @@ class AuthController extends Controller
             'activity_time' => now(),
         ]);
 
-        if (LoginAttempt::isLockedOut($request->ip())) {
-            $securityConfig = SystemSettingService::getSecurityConfig();
-            $duration = $securityConfig['lockout_duration'] ?? 15;
+        if (LoginAttempt::isUserLockedOut($request->phone)) {
+            $remainingTime = LoginAttempt::getRemainingLockoutTimeByPhone($request->phone);
 
             return back()->withErrors([
-                'phone' => "Too many failed attempts. Account is locked for {$duration} minutes.",
+                'phone' => "Too many failed attempts. Account is locked for {$remainingTime} minutes.",
             ])->withInput();
         }
 
@@ -478,7 +476,8 @@ class AuthController extends Controller
 
     protected function sendSmsVerification($phone, $code)
     {
-        $message = 'OTP Code is ' . $code;
+        $message = SmsHelper::resolveTemplate('otp_verification', ['code' => $code])
+            ?? 'OTP Code is ' . $code;
         SmsHelper::send($phone, $message, 'otp_verification');
     }
 

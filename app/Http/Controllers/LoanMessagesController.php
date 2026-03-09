@@ -398,14 +398,25 @@ class LoanMessagesController extends Controller
                         continue;
                     }
 
-                    // Build SMS message in Swahili
+                    // Build SMS message — use custom template if set, otherwise use default
                     $formattedAmount = number_format($customerData['total_arrears'], 0);
                     $daysOverdue = $customerData['max_days_overdue'];
-                    
-                    $smsMessage = "Habari! {$customerData['customer_name']}, Mkopo wako una deni la Tsh {$formattedAmount} na umekwisha siku {$daysOverdue}. Tafadhali fanya malipo yako mapema. Asante. Ujumbe umetoka {$companyName}";
-                    
-                    if (!empty($companyPhone)) {
-                        $smsMessage .= " kwa mawasiliano tupigie {$companyPhone}";
+                    $templateVars = [
+                        'customer_name' => $customerData['customer_name'],
+                        'amount'        => $formattedAmount,
+                        'days_overdue'  => $daysOverdue,
+                        'loan_no'       => $customerData['loan_no'] ?? '',
+                        'due_date'      => '',
+                        'reminder_type' => '',
+                        'company_name'  => $companyName,
+                        'company_phone' => $companyPhone ?? '',
+                    ];
+                    $smsMessage = \App\Helpers\SmsHelper::resolveTemplate('loan_arrears_reminder', $templateVars);
+                    if ($smsMessage === null) {
+                        $smsMessage = "Habari! {$customerData['customer_name']}, Mkopo wako una deni la Tsh {$formattedAmount} na umekwisha siku {$daysOverdue}. Tafadhali fanya malipo yako mapema. Asante. Ujumbe umetoka {$companyName}";
+                        if (!empty($companyPhone)) {
+                            $smsMessage .= " kwa mawasiliano tupigie {$companyPhone}";
+                        }
                     }
 
                     // Send SMS
