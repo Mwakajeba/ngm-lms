@@ -13,13 +13,14 @@ class SendRepaymentRemindersCommand extends Command
 
     public function handle(): int
     {
-        $this->info('Dispatching repayment reminder job...');
+        $this->info('Running repayment reminder job...');
 
         try {
-            RepaymentReminderJob::dispatch();
-            $this->info('Repayment reminder job dispatched successfully. Check the logs for details.');
+            // dispatchSync runs the job immediately — no queue worker needed
+            RepaymentReminderJob::dispatchSync();
+            $this->info('Repayment reminder job completed successfully. Check the logs for details.');
         } catch (\Exception $e) {
-            $this->error('Error dispatching repayment reminder job: ' . $e->getMessage());
+            $this->error('Error running repayment reminder job: ' . $e->getMessage());
             return self::FAILURE;
         }
 
