@@ -38,6 +38,26 @@ class SmsHelper
     }
 
     /**
+     * Send a test SMS to verify the current SMS configuration.
+     * Bypasses event-enable checks so it always attempts delivery.
+     *
+     * @param string $phone
+     * @return array
+     */
+    public static function test(string $phone): array
+    {
+        $message = 'SmartFinance SMS test — if you received this, your SMS configuration is working correctly.';
+
+        $provider = config('services.sms.provider', 'kilakona');
+
+        if ($provider === 'kilakona') {
+            return self::sendViaKilakona($phone, $message);
+        }
+
+        return self::sendViaBeem($phone, $message);
+    }
+
+    /**
      * Resolve a custom message template for the given event.
      * Returns the template with all {variable} placeholders replaced,
      * or null if no custom template is configured (caller should use default).
