@@ -322,11 +322,21 @@ class CollectMatureInterestJob implements ShouldQueue
             }
 
             $formattedAmount = number_format($penaltyAmount, 2);
+
+            // Resolve company name and phone from branch → company
+            $company      = $loan->branch->company ?? null;
+            if (!$company && $customer->company_id) {
+                $company  = \App\Models\Company::find($customer->company_id);
+            }
+            $companyName  = $company ? $company->name         : 'SMARTFINANCE';
+            $companyPhone = $company ? ($company->phone ?? '') : '';
+
             $templateVars = [
                 'customer_name' => $customer->name,
                 'loan_no'       => $loan->loanNo,
                 'amount'        => $formattedAmount,
-                'company_name'  => '',
+                'company_name'  => $companyName,
+                'company_phone' => $companyPhone,
             ];
             $message = SmsHelper::resolveTemplate('mature_interest', $templateVars)
                 ?? "Habari {$customer->name}. Mkopo namba {$loan->loanNo} una deni la faini ya TZS {$formattedAmount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.";
