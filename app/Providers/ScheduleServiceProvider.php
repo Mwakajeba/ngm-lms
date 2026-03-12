@@ -26,24 +26,21 @@ class ScheduleServiceProvider extends ServiceProvider
         $this->app->booted(function () {
             $schedule = $this->app->make(Schedule::class);
 
-            // Schedule mature interest collection to run daily at midnight
+            // Mature interest & penalty collection — daily at midnight
             $schedule->job(new CollectMatureInterestJob())
-                // ->dailyAt('08:00')
-                // ->everyMinute()
-                ->everySecond()
+                ->dailyAt('00:00')
                 ->withoutOverlapping()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/mature-interest-collection.log'));
 
-            // Schedule repayment reminders to run daily at 08:00 AM
+            // Repayment SMS reminders — daily at 08:00 AM
             $schedule->job(new RepaymentReminderJob())
                 ->dailyAt('08:00')
-                // ->everyMinute()
                 ->withoutOverlapping()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/repayment-reminder.log'));
 
-            // Schedule subscription expiry check to run every minute
+            // Subscription expiry check — daily at midnight
             $schedule->job(new CheckSubscriptionExpiryJob())
                 ->dailyAt('00:00')
                 ->withoutOverlapping()
