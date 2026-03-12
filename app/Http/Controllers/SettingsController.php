@@ -906,7 +906,7 @@ class SettingsController extends Controller
             'customer_notifications'=> ['{customer_name}', '{company_name}'],
             'group_notifications'   => ['{customer_name}', '{amount_paid}', '{remaining_amount}', '{company_name}'],
             'cash_collateral'       => ['{amount}', '{action}', '{company_name}'],
-            'mature_interest'       => ['{customer_name}', '{loan_no}', '{amount}', '{company_name}'],
+            'mature_interest'       => ['{customer_name}', '{loan_no}', '{amount}', '{company_name}', '{company_phone}'],
         ];
 
         // System default message shown as placeholder when no custom template is set

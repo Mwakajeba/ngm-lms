@@ -11,20 +11,29 @@ Artisan::command('inspire', function () {
 })->purpose('Display an inspiring quote');
 
 // Run repayment SMS reminders every day at 8:00 AM
-Schedule::command('loans:send-repayment-reminders')->dailyAt('08:00');
+// - withoutOverlapping: skip if previous run hasn't finished
+// - runInBackground: don't block the scheduler process
+Schedule::command('loans:send-repayment-reminders')
+    ->dailyAt('08:00')
+    ->withoutOverlapping()
+    ->runInBackground();
 
-// Run mature interest collection every day at midnight
-Schedule::command('loans:collect-mature-interest')->dailyAt('00:00');
+// Run mature interest & penalty collection every day at midnight
+Schedule::command('loans:collect-mature-interest')
+    ->dailyAt('00:00')
+    ->withoutOverlapping()
+    ->runInBackground();
 
+// Artisan command — runs job SYNCHRONOUSLY (no queue worker needed)
 Artisan::command('loans:collect-mature-interest', function () {
     $this->info('Starting mature interest collection...');
 
     try {
-        CollectMatureInterestJob::dispatch();
-        $this->info('Mature interest collection job has been dispatched successfully.');
-        $this->info('Check the logs for detailed information about the process.');
+        // dispatchSync runs the job immediately in the same process
+        CollectMatureInterestJob::dispatchSync();
+        $this->info('Mature interest collection completed successfully.');
     } catch (\Exception $e) {
-        $this->error('Error dispatching mature interest collection job: ' . $e->getMessage());
+        $this->error('Error: ' . $e->getMessage());
         return 1;
     }
 
