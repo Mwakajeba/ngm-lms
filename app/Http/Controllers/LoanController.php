@@ -3843,6 +3843,91 @@ class LoanController extends Controller
                 'penalty_waived' => $params['penalty_waived'],
             ]);
 
+            // Send SMS notification — same pattern as loan disbursement
+            try {
+                $restructuredLoan->loadMissing(['customer', 'schedule', 'product']);
+                $smsCustomer = $restructuredLoan->customer;
+
+                if ($smsCustomer && !empty($smsCustomer->phone1)) {
+                    $sortedSchedule = $restructuredLoan->schedule->sortBy('due_date');
+                    $firstSchedule  = $sortedSchedule->first();
+
+                    if ($firstSchedule) {
+                        $firstRepaymentDate = \Carbon\Carbon::parse($firstSchedule->due_date);
+                        $paymentAmount      = ($firstSchedule->principal ?? 0)
+                                           + ($firstSchedule->interest  ?? 0)
+                                           + ($firstSchedule->fee_amount ?? 0);
+
+                        $cycle = $restructuredLoan->product->repayment_cycle
+                              ?? $restructuredLoan->repayment_cycle
+                              ?? 'monthly';
+
+                        switch ($cycle) {
+                            case 'weekly':       $cycleSwahili = 'kila wiki';        break;
+                            case 'bi_weekly':    $cycleSwahili = 'kila wiki mbili';  break;
+                            case 'quarterly':    $cycleSwahili = 'kila robo mwaka';  break;
+                            case 'semi_annually':$cycleSwahili = 'kila nusu mwaka'; break;
+                            case 'annually':     $cycleSwahili = 'kila mwaka';       break;
+                            default:             $cycleSwahili = 'kila mwezi';
+                        }
+
+                        // Resolve company
+                        $smsCompany = null;
+                        if ($restructuredLoan->branch_id) {
+                            $smsBranch = \App\Models\Branch::with('company')->find($restructuredLoan->branch_id);
+                            if ($smsBranch && $smsBranch->company) {
+                                $smsCompany = $smsBranch->company;
+                            }
+                        }
+                        if (!$smsCompany && $smsCustomer->company_id) {
+                            $smsCompany = \App\Models\Company::find($smsCustomer->company_id);
+                        }
+                        if (!$smsCompany) {
+                            $smsCompany = auth()->user()->company;
+                        }
+
+                        $companyName  = $smsCompany ? $smsCompany->name         : 'SMARTFINANCE';
+                        $companyPhone = $smsCompany ? ($smsCompany->phone ?? '') : '';
+
+                        $loanDate             = \Carbon\Carbon::parse($restructuredLoan->date_applied)->format('d/m/Y');
+                        $repaymentStartDate   = $firstRepaymentDate->format('d/m/Y');
+                        $formattedAmount      = number_format($restructuredLoan->amount, 0);
+                        $formattedPaymentAmount = number_format($paymentAmount, 0);
+
+                        $templateVars = [
+                            'customer_name'        => $smsCustomer->name,
+                            'amount'               => $formattedAmount,
+                            'loan_date'            => $loanDate,
+                            'repayment_start_date' => $repaymentStartDate,
+                            'payment_amount'       => $formattedPaymentAmount,
+                            'cycle'                => $cycleSwahili,
+                            'company_name'         => $companyName,
+                            'company_phone'        => $companyPhone,
+                        ];
+
+                        $smsMessage = \App\Helpers\SmsHelper::resolveTemplate('loan_disbursement', $templateVars);
+                        if ($smsMessage === null) {
+                            $smsMessage = "Mkopo wako umefanyiwa muundo mpya. Umepewa mkopo wa Tsh {$formattedAmount} tarehe {$loanDate}, Marejesho yako yataanza {$repaymentStartDate} na utakuwa unalipa Tsh {$formattedPaymentAmount} {$cycleSwahili}. Asante. Ujumbe umetoka {$companyName}";
+                            if (!empty($companyPhone)) {
+                                $smsMessage .= " kwa mawasiliano piga {$companyPhone}";
+                            }
+                        }
+
+                        \App\Helpers\SmsHelper::send($smsCustomer->phone1, $smsMessage, 'loan_disbursement');
+
+                        Log::info('Loan restructuring SMS sent', [
+                            'restructured_loan_id' => $restructuredLoan->id,
+                            'customer_id'          => $smsCustomer->id,
+                            'phone'                => $smsCustomer->phone1,
+                        ]);
+                    }
+                }
+            } catch (\Exception $smsEx) {
+                Log::error('Failed to send restructuring SMS: ' . $smsEx->getMessage(), [
+                    'restructured_loan_id' => $restructuredLoan->id ?? null,
+                ]);
+            }
+
             return redirect()->route('loans.show', Hashids::encode($restructuredLoan->id))
                 ->with('success', 'Loan restructured successfully. A new loan has been created with the restructured terms.');
         } catch (\Exception $e) {
