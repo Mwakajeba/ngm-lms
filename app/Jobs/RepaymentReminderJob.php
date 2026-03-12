@@ -29,13 +29,43 @@ class RepaymentReminderJob implements ShouldQueue
     {
         Log::info('Starting repayment reminder job');
 
-        // Find schedules that need reminders today (3 days before, 2 days before, or due today)
+        // Check master enable toggle (default: enabled)
+        $enabled = filter_var(
+            \App\Models\SystemSetting::getValue('sms_reminder_enabled', true),
+            FILTER_VALIDATE_BOOLEAN,
+            FILTER_NULL_ON_FAILURE
+        );
+        if ($enabled === false) {
+            Log::info('Repayment reminder job skipped — disabled in system settings.');
+            return;
+        }
+
+        // Build target dates from per-day settings
         $today = Carbon::today();
-        $targetDates = [
-            $today->copy()->addDays(3)->toDateString(), // 3 days before due
-            $today->copy()->addDays(2)->toDateString(), // 2 days before due  
-            $today->toDateString() // due today
+        $targetDates = [];
+
+        $dayMap = [
+            'sms_reminder_3_days_before' => 3,
+            'sms_reminder_2_days_before' => 2,
+            'sms_reminder_1_day_before'  => 1,
+            'sms_reminder_on_due_date'   => 0,
         ];
+
+        foreach ($dayMap as $settingKey => $daysAhead) {
+            $active = filter_var(
+                \App\Models\SystemSetting::getValue($settingKey, $daysAhead !== 1),
+                FILTER_VALIDATE_BOOLEAN,
+                FILTER_NULL_ON_FAILURE
+            );
+            if ($active !== false) {
+                $targetDates[] = $today->copy()->addDays($daysAhead)->toDateString();
+            }
+        }
+
+        if (empty($targetDates)) {
+            Log::info('Repayment reminder job skipped — no reminder days are enabled.');
+            return;
+        }
 
         $schedules = LoanSchedule::with(['loan.product', 'loan.customer', 'repayments'])
             ->whereIn('due_date', $targetDates)
@@ -103,7 +133,18 @@ class RepaymentReminderJob implements ShouldQueue
                 $daysText = "siku {$daysUntil} zijazo";
             }
 
-            $message = "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
+            $templateVars = [
+                'customer_name' => $customer->name,
+                'amount'        => $amount,
+                'days_overdue'  => '',
+                'loan_no'       => $loan->loanNo,
+                'due_date'      => $dueDate,
+                'reminder_type' => $reminderType,
+                'company_name'  => '',
+                'company_phone' => '',
+            ];
+            $message = SmsHelper::resolveTemplate('loan_arrears_reminder', $templateVars)
+                ?? "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
 
             $phone = normalize_phone_number($customer->phone1);
             SmsHelper::send($phone, $message, 'loan_arrears_reminder');

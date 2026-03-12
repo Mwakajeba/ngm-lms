@@ -39,7 +39,49 @@ class LoginAttempt extends Model
     }
 
     /**
+     * Check if a user (by phone) is locked out due to too many failed attempts
+     */
+    public static function isUserLockedOut($phone)
+    {
+        $securityConfig = \App\Services\SystemSettingService::getSecurityConfig();
+        $limit = $securityConfig['login_attempts_limit'] ?? 5;
+        $duration = $securityConfig['lockout_duration'] ?? 15;
+
+        $failedAttempts = self::where('phone', $phone)
+            ->where('success', false)
+            ->where('attempted_at', '>=', now()->subMinutes($duration))
+            ->count();
+
+        return $failedAttempts >= $limit;
+    }
+
+    /**
+     * Get remaining lockout time in minutes for a user (by phone)
+     */
+    public static function getRemainingLockoutTimeByPhone($phone)
+    {
+        $securityConfig = \App\Services\SystemSettingService::getSecurityConfig();
+        $duration = $securityConfig['lockout_duration'] ?? 15;
+
+        $lastFailedAttempt = self::where('phone', $phone)
+            ->where('success', false)
+            ->orderBy('attempted_at', 'desc')
+            ->first();
+
+        if (!$lastFailedAttempt) {
+            return 0;
+        }
+
+        $lockoutEnd = $lastFailedAttempt->attempted_at->addMinutes($duration);
+        $remaining = now()->diffInMinutes($lockoutEnd, false);
+
+        return max(0, $remaining);
+    }
+
+    /**
      * Check if an IP address is locked out
+     *
+     * @deprecated Use isUserLockedOut() for per-user lockout instead.
      */
     public static function isLockedOut($ipAddress)
     {
@@ -57,6 +99,8 @@ class LoginAttempt extends Model
 
     /**
      * Get remaining lockout time in minutes
+     *
+     * @deprecated Use getRemainingLockoutTimeByPhone() for per-user lockout instead.
      */
     public static function getRemainingLockoutTime($ipAddress)
     {
@@ -91,14 +135,14 @@ class LoginAttempt extends Model
     }
 
     /**
-     * Get failed attempts count for an IP
+     * Get failed attempts count for a user (by phone)
      */
-    public static function getFailedAttemptsCount($ipAddress)
+    public static function getFailedAttemptsCount($phone)
     {
         $securityConfig = \App\Services\SystemSettingService::getSecurityConfig();
         $duration = $securityConfig['lockout_duration'] ?? 15;
 
-        return self::where('ip_address', $ipAddress)
+        return self::where('phone', $phone)
             ->where('success', false)
             ->where('attempted_at', '>=', now()->subMinutes($duration))
             ->count();

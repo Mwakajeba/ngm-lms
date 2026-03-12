@@ -10,7 +10,12 @@
             ['label' => 'Settings', 'url' => route('settings.index'), 'icon' => 'bx bx-cog'],
             ['label' => 'Backup Settings', 'url' => '#', 'icon' => 'bx bx-data']
         ]" />
-        <h6 class="mb-0 text-uppercase">BACKUP & RESTORE</h6>
+        <div class="d-flex justify-content-between align-items-center">
+            <h6 class="mb-0 text-uppercase">BACKUP & RESTORE</h6>
+            <a href="{{ route('settings.system') }}#backup-tab" class="btn btn-sm btn-outline-secondary">
+                <i class="bx bx-cog me-1"></i> Backup Configuration
+            </a>
+        </div>
         <hr/>
 
         <div class="row">

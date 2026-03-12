@@ -847,8 +847,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
     Route::get('customers/data', [CustomerController::class, 'getCustomersData'])->name('customers.data');
     Route::get('customers/penalty', [CustomerController::class, 'penaltList'])->name('customers.penalty');
-    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create');
-    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store');
+    Route::get('customers/create', [CustomerController::class, 'create'])->name('customers.create')->middleware('can:create customer');
+    Route::post('customers', [CustomerController::class, 'store'])->name('customers.store')->middleware('can:create customer');
 
     // Bulk upload routes (must come before parameterized routes)
     Route::get('customers/bulk-upload', [CustomerController::class, 'bulkUpload'])->name('customers.bulk-upload');
@@ -1008,9 +1008,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('loans/change-status', [LoanController::class, 'changeStatus'])->name('loans.change-status');
 
     // General loan routes (must come AFTER specific routes)
-    Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create');
+    Route::get('loans/create', [LoanController::class, 'create'])->name('loans.create')->middleware('can:create loan');
     Route::post('loans/calculate-summary', [LoanController::class, 'calculateLoanSummary'])->name('loans.calculate-summary');
-    Route::post('loans', [LoanController::class, 'store'])->name('loans.store');
+    Route::post('loans', [LoanController::class, 'store'])->name('loans.store')->middleware('can:create loan');
     Route::get('loans/{encodedId}/schedule/pdf', [LoanController::class, 'exportSchedulePdf'])->name('loans.schedule.pdf');
     Route::get('loans/{loan}', [LoanController::class, 'show'])->name('loans.show');
     Route::get('loans/{encodedId}/edit', [LoanController::class, 'edit'])->name('loans.edit');
@@ -1070,6 +1070,14 @@ Route::middleware(['auth'])->group(function () {
 });
 
 ////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
+
+// Temporary fallback route for asset work orders to fix missing route error.
+// Redirects back to dashboard with a success message. Replace with real controller later.
+Route::middleware(['auth'])->get('/assets/work-orders/{id}', function ($id) {
+    return redirect()
+        ->route('dashboard')
+        ->with('success', "Work order #{$id} created successfully (work-order detail page not yet implemented).");
+})->name('assets.work-orders.show');
 
 // Loan Approval Routes
 Route::middleware(['auth'])->group(function () {

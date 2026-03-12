@@ -2097,13 +2097,25 @@ class LoanController extends Controller
                         $formattedAmount = number_format($loan->amount, 0);
                         $formattedPaymentAmount = number_format($paymentAmount, 0);
                         
-                        // Build SMS message in Swahili
-                        $smsMessage = "Umepokea mkopo wa Tsh {$formattedAmount} tarehe {$loanDate}, Marejesho yako yataanza {$repaymentStartDate} na utakuwa unalipa Tsh {$formattedPaymentAmount} {$cycleSwahili}. Asante. Ujumbe umetoka {$companyName}";
-                        
-                        if (!empty($companyPhone)) {
-                            $smsMessage .= " kwa mawasiliano piga {$companyPhone}";
+                        // Build SMS message — use custom template if set, otherwise use default
+                        $templateVars = [
+                            'customer_name'        => $customer->name,
+                            'amount'               => $formattedAmount,
+                            'loan_date'            => $loanDate,
+                            'repayment_start_date' => $repaymentStartDate,
+                            'payment_amount'       => $formattedPaymentAmount,
+                            'cycle'                => $cycleSwahili,
+                            'company_name'         => $companyName,
+                            'company_phone'        => $companyPhone,
+                        ];
+                        $smsMessage = \App\Helpers\SmsHelper::resolveTemplate('loan_disbursement', $templateVars);
+                        if ($smsMessage === null) {
+                            $smsMessage = "Umepokea mkopo wa Tsh {$formattedAmount} tarehe {$loanDate}, Marejesho yako yataanza {$repaymentStartDate} na utakuwa unalipa Tsh {$formattedPaymentAmount} {$cycleSwahili}. Asante. Ujumbe umetoka {$companyName}";
+                            if (!empty($companyPhone)) {
+                                $smsMessage .= " kwa mawasiliano piga {$companyPhone}";
+                            }
                         }
-                        
+
                         // Send SMS
                         \App\Helpers\SmsHelper::send($customer->phone1, $smsMessage, 'loan_disbursement');
                         

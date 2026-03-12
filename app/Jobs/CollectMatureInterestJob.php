@@ -322,7 +322,14 @@ class CollectMatureInterestJob implements ShouldQueue
             }
 
             $formattedAmount = number_format($penaltyAmount, 2);
-            $message = "Habari {$customer->name}. Mkopo namba {$loan->loanNo} una deni la faini ya TZS {$formattedAmount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.";
+            $templateVars = [
+                'customer_name' => $customer->name,
+                'loan_no'       => $loan->loanNo,
+                'amount'        => $formattedAmount,
+                'company_name'  => '',
+            ];
+            $message = SmsHelper::resolveTemplate('mature_interest', $templateVars)
+                ?? "Habari {$customer->name}. Mkopo namba {$loan->loanNo} una deni la faini ya TZS {$formattedAmount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.";
 
             $phone = normalize_phone_number($customer->phone1);
             SmsHelper::send($phone, $message, 'mature_interest');

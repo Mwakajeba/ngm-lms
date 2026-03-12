@@ -607,9 +607,16 @@ class GroupController extends Controller
                             // Calculate remaining/outstanding amount
                             $remainingAmount = $loan->getTotalOutstandingAmount();
                             
-                            // Format message with remaining amount
-                            $message = 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amountPaid, 0) . '. Salio: Tsh ' . number_format($remainingAmount, 0) . '. ' . $companyName;
-                            
+                            // Format message with remaining amount — use custom template if set
+                            $templateVars = [
+                                'customer_name'    => $customerName,
+                                'amount_paid'      => number_format($amountPaid, 0),
+                                'remaining_amount' => number_format($remainingAmount, 0),
+                                'company_name'     => $companyName,
+                            ];
+                            $message = \App\Helpers\SmsHelper::resolveTemplate('group_notifications', $templateVars)
+                                ?? 'Habari! ' . $customerName . ', umelipa rejesho kiasi cha Tsh ' . number_format($amountPaid, 0) . '. Salio: Tsh ' . number_format($remainingAmount, 0) . '. ' . $companyName;
+
                             \App\Helpers\SmsHelper::send($phone, $message, 'group_notifications');
                         }
                     } catch (\Exception $e) {

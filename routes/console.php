@@ -2,11 +2,19 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\Schedule;
 use App\Jobs\CollectMatureInterestJob;
+use App\Jobs\RepaymentReminderJob;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+// Run repayment SMS reminders every day at 8:00 AM
+Schedule::command('loans:send-repayment-reminders')->dailyAt('08:00');
+
+// Run mature interest collection every day at midnight
+Schedule::command('loans:collect-mature-interest')->dailyAt('00:00');
 
 Artisan::command('loans:collect-mature-interest', function () {
     $this->info('Starting mature interest collection...');

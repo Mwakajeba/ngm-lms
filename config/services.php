@@ -58,6 +58,17 @@ return [
             'cash_collateral' => env('SMS_EVENT_CASH_COLLATERAL', true),
             'mature_interest' => env('SMS_EVENT_MATURE_INTEREST', true),
         ],
+        // Custom message templates per event (empty = use system default)
+        'templates' => [
+            'otp_verification'     => env('SMS_TEMPLATE_OTP_VERIFICATION', ''),
+            'loan_disbursement'    => env('SMS_TEMPLATE_LOAN_DISBURSEMENT', ''),
+            'loan_repayment'       => env('SMS_TEMPLATE_LOAN_REPAYMENT', ''),
+            'loan_arrears_reminder'=> env('SMS_TEMPLATE_LOAN_ARREARS_REMINDER', ''),
+            'customer_notifications' => env('SMS_TEMPLATE_CUSTOMER_NOTIFICATIONS', ''),
+            'group_notifications'  => env('SMS_TEMPLATE_GROUP_NOTIFICATIONS', ''),
+            'cash_collateral'      => env('SMS_TEMPLATE_CASH_COLLATERAL', ''),
+            'mature_interest'      => env('SMS_TEMPLATE_MATURE_INTEREST', ''),
+        ],
     ],
 
 ];

@@ -110,23 +110,75 @@
                             <div class="mt-4">
                                 <h5 class="mb-2">When do you want to send SMS?</h5>
                                 <p class="text-muted mb-2">
-                                    Select all system events where SMS should be sent automatically after the action is completed.
+                                    Enable events below. Optionally type a custom message — if left blank, the system default message is used.
                                 </p>
-                                <div class="row">
+                                <div class="row g-3">
                                     @foreach(($smsEvents ?? []) as $key => $label)
-                                        <div class="col-md-6 mb-2">
-                                            <div class="form-check">
-                                                <input
-                                                    class="form-check-input"
-                                                    type="checkbox"
-                                                    id="sms_event_{{ $key }}"
-                                                    name="sms_events[]"
-                                                    value="{{ $key }}"
-                                                    @if(($enabledEvents[$key] ?? true)) checked @endif
-                                                >
-                                                <label class="form-check-label" for="sms_event_{{ $key }}">
-                                                    {{ $label }}
-                                                </label>
+                                        @php
+                                            $hasCustom = !empty($customTemplates[$key] ?? '');
+                                        @endphp
+                                        <div class="col-12">
+                                            <div class="card border mb-0">
+                                                <div class="card-body py-3 px-3">
+                                                    <!-- Checkbox row -->
+                                                    <div class="form-check">
+                                                        <input
+                                                            class="form-check-input sms-event-toggle"
+                                                            type="checkbox"
+                                                            id="sms_event_{{ $key }}"
+                                                            name="sms_events[]"
+                                                            value="{{ $key }}"
+                                                            data-target="sms_template_box_{{ $key }}"
+                                                            @if(($enabledEvents[$key] ?? true)) checked @endif
+                                                        >
+                                                        <label class="form-check-label fw-semibold" for="sms_event_{{ $key }}">
+                                                            {{ $label }}
+                                                        </label>
+                                                        @if($hasCustom)
+                                                            <span class="badge bg-success ms-2" style="font-size:0.7rem;">Custom message set</span>
+                                                        @endif
+                                                    </div>
+
+                                                    <!-- Template box — shown when checkbox is checked -->
+                                                    <div id="sms_template_box_{{ $key }}"
+                                                         class="mt-3 sms-template-box"
+                                                         style="{{ ($enabledEvents[$key] ?? true) ? '' : 'display:none;' }}">
+
+                                                        {{-- Available variables --}}
+                                                        @if(!empty($eventVariables[$key] ?? []))
+                                                            <div class="mb-2">
+                                                                <small class="text-muted d-block mb-1">
+                                                                    <i class="bx bx-info-circle me-1"></i>
+                                                                    Available variables — click to insert:
+                                                                </small>
+                                                                @foreach($eventVariables[$key] as $var)
+                                                                    <span class="badge bg-secondary me-1 mb-1 sms-var-badge"
+                                                                          style="cursor:pointer; font-size:0.8rem;"
+                                                                          data-target="sms_template_{{ $key }}"
+                                                                          data-var="{{ $var }}"
+                                                                          title="Click to insert {{ $var }}">{{ $var }}</span>
+                                                                @endforeach
+                                                            </div>
+                                                        @endif
+
+                                                        <textarea
+                                                            class="form-control form-control-sm"
+                                                            id="sms_template_{{ $key }}"
+                                                            name="sms_templates[{{ $key }}]"
+                                                            rows="3"
+                                                            maxlength="500"
+                                                            placeholder="{{ $defaultMessages[$key] ?? 'Leave blank to use the system default message.' }}"
+                                                        >{{ old("sms_templates.$key", $customTemplates[$key] ?? '') }}</textarea>
+                                                        <div class="d-flex justify-content-between mt-1">
+                                                            <small class="text-muted">
+                                                                Leave blank to use the system default message.
+                                                            </small>
+                                                            <small class="text-muted sms-char-count" data-target="sms_template_{{ $key }}">
+                                                                {{ strlen($customTemplates[$key] ?? '') }}/500
+                                                            </small>
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     @endforeach
@@ -179,6 +231,48 @@
 
 @push('scripts')
 <script>
+    // Show/hide template box when event checkbox is toggled
+    document.querySelectorAll('.sms-event-toggle').forEach(function (checkbox) {
+        checkbox.addEventListener('change', function () {
+            var targetId = this.getAttribute('data-target');
+            var box = document.getElementById(targetId);
+            if (box) {
+                box.style.display = this.checked ? '' : 'none';
+            }
+        });
+    });
+
+    // Insert variable badge into linked textarea at cursor position
+    document.querySelectorAll('.sms-var-badge').forEach(function (badge) {
+        badge.addEventListener('click', function () {
+            var textareaId = this.getAttribute('data-target');
+            var variable = this.getAttribute('data-var');
+            var textarea = document.getElementById(textareaId);
+            if (!textarea) return;
+            var start = textarea.selectionStart;
+            var end = textarea.selectionEnd;
+            var before = textarea.value.substring(0, start);
+            var after  = textarea.value.substring(end);
+            textarea.value = before + variable + after;
+            // Move cursor to end of inserted variable
+            textarea.selectionStart = textarea.selectionEnd = start + variable.length;
+            textarea.focus();
+            updateCharCount(textarea);
+        });
+    });
+
+    // Live character counter on template textareas
+    document.querySelectorAll('textarea[name^="sms_templates"]').forEach(function (textarea) {
+        textarea.addEventListener('input', function () { updateCharCount(this); });
+    });
+
+    function updateCharCount(textarea) {
+        var countEl = document.querySelector('.sms-char-count[data-target="' + textarea.id + '"]');
+        if (countEl) {
+            countEl.textContent = textarea.value.length + '/500';
+        }
+    }
+
     function toggleTokenVisibility() {
         const tokenInput = document.getElementById('sms_token');
         const showTokenCheckbox = document.getElementById('show_token');

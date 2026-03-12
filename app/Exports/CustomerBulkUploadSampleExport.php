@@ -45,7 +45,7 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 '',                             // district_id (will have dropdown)
                 ['Teacher', 'Nurse', 'Farmer', 'Business Owner', 'Engineer', 'Doctor', 'Lawyer', 'Accountant', 'Driver', 'Mechanic'][array_rand(['Teacher', 'Nurse', 'Farmer', 'Business Owner', 'Engineer', 'Doctor', 'Lawyer', 'Accountant', 'Driver', 'Mechanic'])], // work
                 'Sample Work Address ' . $i,   // workaddress
-                ['National ID', 'License', 'Passport'][array_rand(['National ID', 'License', 'Passport'])], // idtype
+                ['National ID', 'License', 'Voter Registration', 'Other'][array_rand(['National ID', 'License', 'Voter Registration', 'Other'])], // idtype
                 'ID' . str_pad($i, 8, '0', STR_PAD_LEFT), // idnumber
                 ['Spouse', 'Parent', 'Sibling', ''][array_rand(['Spouse', 'Parent', 'Sibling', ''])], // relation
                 'Sample customer ' . $i,       // description
@@ -163,7 +163,7 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 $sheet->setCellValue('A3', 'Instructions:');
                 $sheet->getStyle('A3')->getFont()->setBold(true);
                 $sheet->setCellValue('A4', '1. Fill in all required fields (name, phone1, dob, sex)');
-                $sheet->setCellValue('A5', '2. Use dropdowns for Sex (M/F), Region, District, and Category (Borrower/Guarantor)');
+                $sheet->setCellValue('A5', '2. Use dropdowns for Sex (M/F), ID Type, Region, District, and Category (Borrower/Guarantor)');
                 $sheet->setCellValue('A6', '3. Keep the header row (row 1) - DO NOT DELETE IT. You can delete instruction rows (2-6) and sample data.');
                 $sheet->mergeCells('A4:N4');
                 $sheet->mergeCells('A5:N5');
@@ -203,6 +203,16 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                 $districtValidation->setShowDropDown(true);
                 $districtValidation->setFormula1('Data!$B$2:$B$' . (count($districtNames) + 1));
 
+                // Add idtype dropdown (Column J)
+                $idTypeValidation = new DataValidation();
+                $idTypeValidation->setType(DataValidation::TYPE_LIST);
+                $idTypeValidation->setErrorStyle(DataValidation::STYLE_STOP);
+                $idTypeValidation->setAllowBlank(true);
+                $idTypeValidation->setShowInputMessage(true);
+                $idTypeValidation->setShowErrorMessage(true);
+                $idTypeValidation->setShowDropDown(true);
+                $idTypeValidation->setFormula1('"National ID,License,Voter Registration,Other"');
+
                 // Add category dropdown (Column N)
                 $categoryValidation = new DataValidation();
                 $categoryValidation->setType(DataValidation::TYPE_LIST);
@@ -221,6 +231,8 @@ class CustomerBulkUploadSampleExport implements FromArray, WithHeadings, WithSty
                     $sheet->getCell('F' . $row)->setDataValidation(clone $regionValidation);
                     // District dropdown
                     $sheet->getCell('G' . $row)->setDataValidation(clone $districtValidation);
+                    // ID Type dropdown
+                    $sheet->getCell('J' . $row)->setDataValidation(clone $idTypeValidation);
                     // Category dropdown
                     $sheet->getCell('N' . $row)->setDataValidation(clone $categoryValidation);
                 }
