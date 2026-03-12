@@ -2,7 +2,6 @@
 
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\Facades\Schedule;
 use App\Jobs\CollectMatureInterestJob;
 use App\Jobs\RepaymentReminderJob;
 
@@ -10,21 +9,9 @@ Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
 
-// Run repayment SMS reminders every day at 8:00 AM
-// - withoutOverlapping: skip if previous run hasn't finished
-// - runInBackground: don't block the scheduler process
-Schedule::command('loans:send-repayment-reminders')
-    ->dailyAt('08:00')
-    ->withoutOverlapping()
-    ->runInBackground();
+// NOTE: Scheduling is handled in ScheduleServiceProvider — no duplicate entries here.
 
-// Run mature interest & penalty collection every day at midnight
-Schedule::command('loans:collect-mature-interest')
-    ->dailyAt('00:00')
-    ->withoutOverlapping()
-    ->runInBackground();
-
-// Artisan command — runs job SYNCHRONOUSLY (no queue worker needed)
+// Artisan command — runs job SYNCHRONOUSLY (no queue worker needed, useful for manual runs)
 Artisan::command('loans:collect-mature-interest', function () {
     $this->info('Starting mature interest collection...');
 
