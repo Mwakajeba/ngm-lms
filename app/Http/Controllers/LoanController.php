@@ -2825,10 +2825,30 @@ class LoanController extends Controller
             ->get();
         $groups = Group::where('branch_id', $branchId)->get();
         $products = LoanProduct::where('is_active', true)->get();
-        $bankAccounts = BankAccount::all();
+        $bankAccounts = BankAccount::forUserBranches()->orderBy('name')->get();
         $sectors = ['Agriculture', 'Business', 'Education', 'Health', 'Other'];
 
-        return view('loans.application.create', compact('customers', 'groups', 'products', 'sectors', 'bankAccounts'));
+        // Align supporting data with direct loan creation form
+        $loanOfficers = User::where('branch_id', auth()->user()->branch_id)->excludeSuperAdmin()->get();
+        $interestCycles = [
+            'daily' => 'Daily',
+            'weekly' => 'Weekly',
+            'bimonthly' => 'Bi-monthly',
+            'monthly' => 'Monthly',
+            'quarterly' => 'Quarterly',
+            'semi_annually' => 'Semi Annually',
+            'annually' => 'Annually'
+        ];
+
+        return view('loans.application.create', compact(
+            'customers',
+            'groups',
+            'products',
+            'sectors',
+            'bankAccounts',
+            'loanOfficers',
+            'interestCycles'
+        ));
     }
 
     public function applicationStore(Request $request)
