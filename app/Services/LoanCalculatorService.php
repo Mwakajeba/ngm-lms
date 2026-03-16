@@ -612,26 +612,33 @@ class LoanCalculatorService
     
     /**
      * Calculate due date for installment
+     *
+     * Business rule: first repayment is due ONE full period
+     * after the start date, not on the same date. So index 0
+     * always means "next period", index 1 = "two periods", etc.
      */
     private function calculateDueDate(Carbon $startDate, int $installmentIndex, string $cycle): Carbon
     {
+        // Shift by one period so the first installment is after start date
+        $offset = $installmentIndex + 1;
+
         switch (strtolower($cycle)) {
             case 'daily':
-                return $startDate->copy()->addDays($installmentIndex);
+                return $startDate->copy()->addDays($offset);
             case 'weekly':
-                return $startDate->copy()->addWeeks($installmentIndex);
+                return $startDate->copy()->addWeeks($offset);
             case 'bimonthly':
-                return $startDate->copy()->addMonths($installmentIndex * 2);
+                return $startDate->copy()->addMonths($offset * 2);
             case 'monthly':
-                return $startDate->copy()->addMonths($installmentIndex);
+                return $startDate->copy()->addMonths($offset);
             case 'quarterly':
-                return $startDate->copy()->addMonths($installmentIndex * 3);
+                return $startDate->copy()->addMonths($offset * 3);
             case 'semi_annually':
-                return $startDate->copy()->addMonths($installmentIndex * 6);
+                return $startDate->copy()->addMonths($offset * 6);
             case 'annually':
-                return $startDate->copy()->addYears($installmentIndex);
+                return $startDate->copy()->addYears($offset);
             default:
-                return $startDate->copy()->addMonths($installmentIndex);
+                return $startDate->copy()->addMonths($offset);
         }
     }
     
