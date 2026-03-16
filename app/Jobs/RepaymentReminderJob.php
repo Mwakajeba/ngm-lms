@@ -133,15 +133,23 @@ class RepaymentReminderJob implements ShouldQueue
                 $daysText = "siku {$daysUntil} zijazo";
             }
 
+            // Resolve company name and phone from branch → company, then customer company
+            $company = $loan->branch->company ?? null;
+            if (!$company && $customer->company_id) {
+                $company = \App\Models\Company::find($customer->company_id);
+            }
+            $companyName = $company ? $company->name : 'SMARTFINANCE';
+            $companyPhone = $company ? ($company->phone ?? '') : '';
+
             $templateVars = [
                 'customer_name' => $customer->name,
                 'amount'        => $amount,
-                'days_overdue'  => '',
+                'days_overdue'  => $daysUntil,
                 'loan_no'       => $loan->loanNo,
                 'due_date'      => $dueDate,
                 'reminder_type' => $reminderType,
-                'company_name'  => '',
-                'company_phone' => '',
+                'company_name'  => $companyName,
+                'company_phone' => $companyPhone,
             ];
             $message = SmsHelper::resolveTemplate('loan_arrears_reminder', $templateVars)
                 ?? "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
