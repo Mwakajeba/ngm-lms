@@ -67,7 +67,7 @@ class RepaymentReminderJob implements ShouldQueue
             return;
         }
 
-        $schedules = LoanSchedule::with(['loan.product', 'loan.customer', 'repayments'])
+        $schedules = LoanSchedule::with(['loan.product', 'loan.customer', 'loan.branch.company', 'repayments'])
             ->whereIn('due_date', $targetDates)
             ->get();
 
@@ -133,23 +133,27 @@ class RepaymentReminderJob implements ShouldQueue
                 $daysText = "siku {$daysUntil} zijazo";
             }
 
-            // Resolve company name and phone from branch → company, then customer company
-            $company = $loan->branch->company ?? null;
+            // Resolve company name and phone: branch → company, then customer company, then current_company()
+            $company = $loan->branch && $loan->branch->company ? $loan->branch->company : null;
             if (!$company && $customer->company_id) {
                 $company = \App\Models\Company::find($customer->company_id);
+            }
+            if (!$company && function_exists('current_company')) {
+                $company = current_company();
             }
             $companyName = $company ? $company->name : 'SMARTFINANCE';
             $companyPhone = $company ? ($company->phone ?? '') : '';
 
+            // Ensure placeholders always get a string (SmsHelper uses str_replace; empty or non-string can break)
             $templateVars = [
-                'customer_name' => $customer->name,
-                'amount'        => $amount,
-                'days_overdue'  => $daysUntil,
-                'loan_no'       => $loan->loanNo,
-                'due_date'      => $dueDate,
-                'reminder_type' => $reminderType,
-                'company_name'  => $companyName,
-                'company_phone' => $companyPhone,
+                'customer_name' => (string) ($customer->name ?? ''),
+                'amount'        => (string) $amount,
+                'days_overdue'  => (string) $daysUntil,
+                'loan_no'       => (string) ($loan->loanNo ?? ''),
+                'due_date'      => (string) $dueDate,
+                'reminder_type' => (string) $reminderType,
+                'company_name'  => (string) $companyName,
+                'company_phone' => (string) $companyPhone,
             ];
             $message = SmsHelper::resolveTemplate('loan_arrears_reminder', $templateVars)
                 ?? "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
