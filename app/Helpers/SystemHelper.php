@@ -121,34 +121,41 @@ if (!function_exists('update_env_file')) {
             $escapedValue = $value;
         }
         
-        // Check if key exists (handle both with and without quotes)
-        $pattern = '/^' . preg_quote($key, '/') . '=(.*)$/m';
-        
-        if (preg_match($pattern, $envContent)) {
-            // Update existing key
-            $envContent = preg_replace($pattern, $key . '=' . $escapedValue, $envContent);
-        } else {
-            // Add new key at the end (before any comments at the end)
-            // Find the last non-empty, non-comment line
-            $lines = explode("\n", $envContent);
+        // Use a line-by-line approach (avoids preg_replace corrupting values that
+        // contain {placeholders} which PCRE interprets as named backreferences)
+        $lines = explode("\n", $envContent);
+        $found = false;
+        $keyPrefix = $key . '=';
+
+        foreach ($lines as &$line) {
+            // Match the key exactly (handle optional existing quotes on the value)
+            if (str_starts_with($line, $keyPrefix)) {
+                $line = $key . '=' . $escapedValue;
+                $found = true;
+                break;
+            }
+        }
+        unset($line);
+
+        if (!$found) {
+            // Add new key after the last non-empty, non-comment line
             $lastNonEmptyIndex = -1;
             for ($i = count($lines) - 1; $i >= 0; $i--) {
-                $line = trim($lines[$i]);
-                if (!empty($line) && !str_starts_with($line, '#')) {
+                $trimmed = trim($lines[$i]);
+                if (!empty($trimmed) && !str_starts_with($trimmed, '#')) {
                     $lastNonEmptyIndex = $i;
                     break;
                 }
             }
-            
+
             if ($lastNonEmptyIndex >= 0) {
-                // Insert after the last non-empty line
                 array_splice($lines, $lastNonEmptyIndex + 1, 0, $key . '=' . $escapedValue);
-                $envContent = implode("\n", $lines);
             } else {
-                // Just append
-                $envContent .= "\n" . $key . '=' . $escapedValue;
+                $lines[] = $key . '=' . $escapedValue;
             }
         }
+
+        $envContent = implode("\n", $lines);
         
         // Write back to file
         return file_put_contents($envFile, $envContent) !== false;
