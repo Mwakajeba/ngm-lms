@@ -386,10 +386,8 @@ class AccruePenaltyJob implements ShouldQueue
             // Update loan_schedule penalty_amount
             $schedule->increment('penalty_amount', $penaltyAmount);
 
-            // Send Swahili SMS to customer
-            //$customerPhone = $loan->customer->phone1;
-            //$smsMsg = 'Ndugu mteja, adhabu ya TZS ' . number_format($penaltyAmount, 2) . ' imeongezwa kwenye mkopo wako tarehe ' . $this->accrualDate->format('d-m-Y') . 'Lipia mapema kuepuka adhabu zaidi. Asante.';
-            //\App\Helpers\SmsHelper::send($customerPhone, $smsMsg);
+            // Send SMS to customer about penalty
+            $this->sendPenaltySms($loan, $schedule, $penaltyAmount, $daysOverdue);
 
             DB::commit();
 
@@ -694,6 +692,51 @@ class AccruePenaltyJob implements ShouldQueue
     /**
      * Handle job failure
      */
+    private function sendPenaltySms(Loan $loan, LoanSchedule $schedule, float $penaltyAmount, int $daysOverdue): void
+    {
+        try {
+            $customer = $loan->customer;
+            if (!$customer || empty($customer->phone1)) {
+                Log::warning("Cannot send penalty SMS - phone missing for loan {$loan->loanNo}");
+                return;
+            }
+
+            $company = ($loan->branch && $loan->branch->company) ? $loan->branch->company : null;
+            if (!$company && $customer->company_id) {
+                $company = \App\Models\Company::find($customer->company_id);
+            }
+            if (!$company && function_exists('current_company')) {
+                $company = current_company();
+            }
+            $companyName  = $company ? $company->name         : 'SMARTFINANCE';
+            $companyPhone = $company ? ($company->phone ?? '') : '';
+
+            $daysText = $daysOverdue <= 0 ? 'leo' : "siku {$daysOverdue} zilizopita";
+
+            $templateVars = [
+                'customer_name' => (string) ($customer->name ?? ''),
+                'amount'        => number_format($penaltyAmount, 2),
+                'days_overdue'  => $daysText,
+                'loan_no'       => (string) ($loan->loanNo ?? ''),
+                'due_date'      => $schedule->due_date
+                                    ? \Carbon\Carbon::parse($schedule->due_date)->format('d/m/Y')
+                                    : '',
+                'reminder_type' => 'Adhabu',
+                'company_name'  => (string) $companyName,
+                'company_phone' => (string) $companyPhone,
+            ];
+
+            $message = SmsHelper::resolveTemplate('loan_penalty', $templateVars)
+                ?? "Habari ndugu mteja {$templateVars['customer_name']}. Adhabu ya TZS {$templateVars['amount']} imeongezwa kwenye mkopo namba {$templateVars['loan_no']} kwa kuchelewa {$templateVars['days_overdue']}. Tafadhali lipa haraka ili uepuke adhabu zaidi. Asante, kwa mawasiliano piga {$templateVars['company_phone']}.";
+
+            $phone = normalize_phone_number($customer->phone1);
+            SmsHelper::send($phone, $message, 'loan_penalty');
+            Log::info("Penalty SMS sent to customer {$customer->id} for loan {$loan->loanNo}: TZS {$templateVars['amount']} ({$daysOverdue} days overdue)");
+        } catch (\Throwable $e) {
+            Log::error("Failed to send penalty SMS for loan {$loan->loanNo}: " . $e->getMessage());
+        }
+    }
+
     public function failed(\Throwable $exception)
     {
         Log::error('Penalty Accrual Engine job failed: ' . $exception->getMessage(), [

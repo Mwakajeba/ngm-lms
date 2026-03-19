@@ -57,6 +57,7 @@ return [
             'group_notifications' => env('SMS_EVENT_GROUP_NOTIFICATIONS', true),
             'cash_collateral' => env('SMS_EVENT_CASH_COLLATERAL', true),
             'mature_interest' => env('SMS_EVENT_MATURE_INTEREST', true),
+            'loan_penalty'   => env('SMS_EVENT_LOAN_PENALTY', true),
         ],
         // Custom message templates per event (empty = use system default)
         'templates' => [
@@ -68,6 +69,7 @@ return [
             'group_notifications'  => env('SMS_TEMPLATE_GROUP_NOTIFICATIONS', ''),
             'cash_collateral'      => env('SMS_TEMPLATE_CASH_COLLATERAL', ''),
             'mature_interest'      => env('SMS_TEMPLATE_MATURE_INTEREST', ''),
+            'loan_penalty'        => env('SMS_TEMPLATE_LOAN_PENALTY', ''),
         ],
     ],
 

@@ -148,7 +148,7 @@ class RepaymentReminderJob implements ShouldQueue
             $templateVars = [
                 'customer_name' => (string) ($customer->name ?? ''),
                 'amount'        => (string) $amount,
-                'days_overdue'  => (string) $daysUntil,
+                'days_overdue'  => (string) $daysText,
                 'loan_no'       => (string) ($loan->loanNo ?? ''),
                 'due_date'      => (string) $dueDate,
                 'reminder_type' => (string) $reminderType,
