@@ -20,6 +20,7 @@ use App\Models\Payment;
 use App\Models\PaymentItem;
 use App\Models\Penalty;
 use App\Models\Receipt;
+use App\Models\Repayment;
 use App\Models\Role;
 use App\Models\User;
 use Illuminate\Http\Request;
@@ -2242,8 +2243,8 @@ class LoanController extends Controller
         try {
             DB::transaction(function () use ($loan, $validated, $product, $userId, $branchId) {
                 $loanId = $loan->id;
-                // Check for repayments
-                $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
+                // Only count non–soft-deleted repayments (reversed receipts soft-delete repayments)
+                $repaymentCount = Repayment::where('loan_id', $loanId)->count();
                 if ($repaymentCount > 0) {
                     throw new \Exception('This loan has repayments. Please delete repayments first before updating the loan.');
                 }
@@ -2489,8 +2490,8 @@ class LoanController extends Controller
 
             // If loan is active, perform full cleanup (receipts/journals/etc). Otherwise, delete loan directly
             if ($loan->status === Loan::STATUS_ACTIVE) {
-                // Check for repayments
-                $repaymentCount = \DB::table('repayments')->where('loan_id', $loanId)->count();
+                // Only count active repayments; reversed receipts soft-delete rows but leave them in DB
+                $repaymentCount = Repayment::where('loan_id', $loanId)->count();
                 if ($repaymentCount > 0) {
                     return redirect()->route('loans.list')->withErrors(['error' => 'This loan has repayments. Please delete repayments first before deleting the loan.']);
                 }
