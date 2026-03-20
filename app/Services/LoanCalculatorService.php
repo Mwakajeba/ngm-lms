@@ -164,24 +164,7 @@ class LoanCalculatorService
      */
     private function convertInterestRate(float $monthlyRate, string $selectedCycle): float
     {
-        switch (strtolower($selectedCycle)) {
-            case 'daily':
-                return $monthlyRate / 30;
-            case 'weekly':
-                return $monthlyRate / 4;
-            case 'bimonthly':
-                return $monthlyRate / 2;
-            case 'monthly':
-                return $monthlyRate; // Base rate
-            case 'quarterly':
-                return $monthlyRate * 4;
-            case 'semi_annually':
-                return $monthlyRate * 6;
-            case 'annually':
-                return $monthlyRate * 12;
-            default:
-                return $monthlyRate; // Default to monthly if unknown
-        }
+        return \App\Support\InterestRateConverter::fromMonthlyToCycle($monthlyRate, $selectedCycle);
     }
 
     /**

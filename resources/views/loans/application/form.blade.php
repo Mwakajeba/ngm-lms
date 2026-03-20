@@ -118,15 +118,27 @@
             @error('period') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>
 
-        <!-- Interest Rate -->
+        <!-- Interest Rate (enter as monthly %; system converts by Interest Cycle — same as direct loan / calculator) -->
         <div class="col-md-6 mb-3">
             <label class="form-label">
                 Interest Rate (%) <span class="text-danger">*</span>
                 <small id="interestRangeLabel" class="text-muted ms-2"></small>
             </label>
+            @php
+                $interestFormValue = old('interest');
+                if ($interestFormValue === null && isset($loanApplication) && $loanApplication->exists && $loanApplication->interest !== null) {
+                    $interestFormValue = round(
+                        \App\Support\InterestRateConverter::fromCycleToMonthly(
+                            (float) $loanApplication->interest,
+                            (string) ($loanApplication->interest_cycle ?? 'monthly')
+                        ),
+                        8
+                    );
+                }
+            @endphp
             <input type="number" id="interestInput" step="0.000000000000001" name="interest"
                 class="form-control @error('interest') is-invalid @enderror"
-                value="{{ old('interest', $loanApplication->interest ?? '') }}" placeholder="Enter interest rate in %"
+                value="{{ $interestFormValue ?? '' }}" placeholder="Monthly rate % (e.g. product range)"
                 required>
             @error('interest') <div class="invalid-feedback">{{ $message }}</div> @enderror
         </div>

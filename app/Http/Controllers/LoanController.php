@@ -1185,11 +1185,16 @@ class LoanController extends Controller
 
     private function createLoanFromImport($validated, $product, $accountId, $userId, $branchId)
     {
+        $convertedInterest = $this->convertInterestRate(
+            (float) $validated['interest'],
+            $validated['interest_cycle'] ?? 'monthly'
+        );
+
         // Create Loan
         $loan = Loan::create([
             'product_id' => $product->id,
             'period' => $validated['period'],
-            'interest' => $validated['interest'],
+            'interest' => $convertedInterest,
             'amount' => $validated['amount'],
             'customer_id' => $validated['customer_id'],
             'group_id' => $validated['group_id'],
@@ -1204,7 +1209,7 @@ class LoanController extends Controller
         ]);
 
         // Calculate interest and repayment dates
-        $interestAmount = $loan->calculateInterestAmount($validated['interest']);
+        $interestAmount = $loan->calculateInterestAmount($convertedInterest);
         $repaymentDates = $loan->getRepaymentDates();
 
         // Update Loan with totals and schedule
@@ -1216,7 +1221,7 @@ class LoanController extends Controller
         ]);
 
         // Generate repayment schedule
-        $loan->generateRepaymentSchedule($validated['interest']);
+        $loan->generateRepaymentSchedule($convertedInterest);
 
         // Post matured interest for past loans
         $loan->postMaturedInterestForPastLoan();
@@ -2293,11 +2298,16 @@ class LoanController extends Controller
                         ->delete();
                 }
 
+                $convertedInterest = $this->convertInterestRate(
+                    (float) $validated['interest'],
+                    $validated['interest_cycle']
+                );
+
                 // Now update loan and proceed with transactions (like store)
                 $loan->fill([
                     'product_id' => $validated['product_id'],
                     'period' => $validated['period'],
-                    'interest' => $validated['interest'],
+                    'interest' => $convertedInterest,
                     'amount' => $validated['amount'],
                     'customer_id' => $validated['customer_id'],
                     'group_id' => $validated['group_id'],
@@ -2311,7 +2321,7 @@ class LoanController extends Controller
                 ]);
 
                 // Calculate interest and repayment dates
-                $interestAmount = $loan->calculateInterestAmount($validated['interest']);
+                $interestAmount = $loan->calculateInterestAmount($convertedInterest);
                 $repaymentDates = $loan->getRepaymentDates();
                 $loan->fill([
                     'interest_amount' => $interestAmount,
@@ -2320,7 +2330,7 @@ class LoanController extends Controller
                     'last_repayment_date' => $repaymentDates['last_repayment_date'],
                 ]);
                 $loan->save();
-                $loan->generateRepaymentSchedule($validated['interest']);
+                $loan->generateRepaymentSchedule($convertedInterest);
 
                 // Post matured interest for past loans
                 $loan->postMaturedInterestForPastLoan();
@@ -2434,24 +2444,7 @@ class LoanController extends Controller
      */
     protected function convertInterestRate(float $monthlyRate, string $selectedCycle): float
     {
-        switch (strtolower($selectedCycle)) {
-            case 'daily':
-                return $monthlyRate / 30;
-            case 'weekly':
-                return $monthlyRate / 4;
-            case 'bimonthly':
-                return $monthlyRate / 2;
-            case 'monthly':
-                return $monthlyRate; // Base rate
-            case 'quarterly':
-                return $monthlyRate * 4;
-            case 'semi_annually':
-                return $monthlyRate * 6;
-            case 'annually':
-                return $monthlyRate * 12;
-            default:
-                return $monthlyRate; // Default to monthly if unknown
-        }
+        return \App\Support\InterestRateConverter::fromMonthlyToCycle($monthlyRate, $selectedCycle);
     }
 
     //////PRODUCT LIMITS ////////////////////////////////
@@ -2982,8 +2975,8 @@ class LoanController extends Controller
                 'top_up_id' => null
             ]);
 
-            // Calculate interest amount after loan is created
-            $interestAmount = $loan->calculateInterestAmount($validated['interest']);
+            // Use converted per-period rate for totals (same as direct loan)
+            $interestAmount = $loan->calculateInterestAmount($convertedInterest);
             $loan->update([
                 'interest_amount' => $interestAmount,
                 'amount_total' => $validated['amount'] + $interestAmount,
@@ -3106,29 +3099,34 @@ class LoanController extends Controller
         $this->validateProductLimits(                                                           $validated, $product);
 
         try {
-            $updateData = [
+            $convertedInterest = $this->convertInterestRate(
+                (float) $validated['interest'],
+                $validated['interest_cycle']
+            );
+
+            $loanApplication->fill([
                 'product_id' => $validated['product_id'],
                 'period' => $validated['period'],
-                'interest' => $validated['interest'],
+                'interest' => $convertedInterest,
                 'amount' => $validated['amount'],
-                'interest_amount' => $loanApplication->calculateInterestAmount($validated['interest']),
+                'interest_cycle' => $validated['interest_cycle'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $validated['group_id'],
-                'amount_total' => $validated['amount'] + $loanApplication->calculateInterestAmount($validated['interest']),
-                'interest_cycle' => $validated['interest_cycle'], // Use from form
                 'date_applied' => $validated['date_applied'],
                 'sector' => $validated['sector'],
-            ];
+            ]);
 
-            info($updateData);
+            $interestAmount = $loanApplication->calculateInterestAmount($convertedInterest);
+            $loanApplication->interest_amount = $interestAmount;
+            $loanApplication->amount_total = $validated['amount'] + $interestAmount;
+
             // If loan was rejected, change status back to applied and reset approvals
             if ($loanApplication->status === 'rejected') {
-                $updateData['status'] = 'applied';
-                // Remove any prior approvals so the workflow restarts cleanly
+                $loanApplication->status = 'applied';
                 LoanApproval::where('loan_id', $loanApplication->id)->delete();
             }
 
-            $loanApplication->update($updateData);
+            $loanApplication->save();
 
             return redirect()->route('loans.by-status', 'applied')->with('success', 'Loan application updated successfully.');
         } catch (\Throwable $th) {
