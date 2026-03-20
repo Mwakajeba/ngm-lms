@@ -24,16 +24,36 @@ class PaymentVoucherController extends Controller
     use TransactionHelper;
 
     /**
+     * Current branch for listing/stats: session branch (change branch) or user's default branch.
+     */
+    protected function paymentVouchersBranchId($user): ?int
+    {
+        $branchId = function_exists('current_branch_id') ? current_branch_id() : null;
+        if ($branchId !== null && $branchId !== '') {
+            return (int) $branchId;
+        }
+        if (!empty($user->branch_id)) {
+            return (int) $user->branch_id;
+        }
+
+        return null;
+    }
+
+    /**
      * Display a listing of the resource.
      */
     public function index()
     {
         $user = Auth::user();
+        $branchId = $this->paymentVouchersBranchId($user);
 
-        // Calculate stats only
+        // Calculate stats only (scoped to login / current branch)
         $allPayments = Payment::with(['bankAccount.chartAccount.accountClassGroup'])
             ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
+            })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->where('payments.branch_id', $branchId);
             })
             ->get();
 
@@ -51,10 +71,14 @@ class PaymentVoucherController extends Controller
     public function getPaymentVouchersData(Request $request)
     {
         $user = Auth::user();
+        $branchId = $this->paymentVouchersBranchId($user);
 
         $payments = Payment::with(['bankAccount', 'customer', 'supplier', 'user', 'approvals'])
             ->whereHas('bankAccount.chartAccount.accountClassGroup', function ($query) use ($user) {
                 $query->where('company_id', $user->company_id);
+            })
+            ->when($branchId, function ($query) use ($branchId) {
+                $query->where('payments.branch_id', $branchId);
             })
             ->select('payments.*');
 
@@ -203,10 +227,11 @@ class PaymentVoucherController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get customers for the current company/branch
+        // Get customers for the current company / login (session) branch
+        $branchForScope = $this->paymentVouchersBranchId($user);
         $customers = Customer::where('company_id', $user->company_id)
-            ->when($user->branch_id, function ($query) use ($user) {
-                return $query->where('branch_id', $user->branch_id);
+            ->when($branchForScope, function ($query) use ($branchForScope) {
+                return $query->where('branch_id', $branchForScope);
             })
             ->orderBy('name')
             ->get();
@@ -280,8 +305,17 @@ class PaymentVoucherController extends Controller
                     $payeeId = $request->customer_id;
                 } elseif ($request->payee_type === 'supplier') {
                     $payeeId = $request->supplier_id;
-                } elseif ($request->payee_type === 'other') {
+                } else                if ($request->payee_type === 'other') {
                     $payeeName = $request->payee_name;
+                }
+
+                $paymentBranchId = $this->paymentVouchersBranchId($user) ?: ($user->branch_id ? (int) $user->branch_id : null);
+                if (!$paymentBranchId) {
+                    DB::rollBack();
+                    return redirect()
+                        ->back()
+                        ->withErrors(['error' => 'No branch context for this voucher. Select a branch or set your default branch.'])
+                        ->withInput();
                 }
 
                 // Create payment
@@ -300,7 +334,7 @@ class PaymentVoucherController extends Controller
                     'payee_name' => $payeeName,
                     'customer_id' => $request->customer_id,
                     'supplier_id' => $request->supplier_id,
-                    'branch_id' => $user->branch_id,
+                    'branch_id' => $paymentBranchId,
                     'approved' => false, // Will be set by approval workflow
                     'approved_by' => null,
                     'approved_at' => null,
@@ -359,7 +393,7 @@ class PaymentVoucherController extends Controller
                         'transaction_type' => 'payment',
                         'date' => $request->date,
                         'description' => $glDescription,
-                        'branch_id' => $user->branch_id,
+                        'branch_id' => $paymentBranchId,
                         'user_id' => $user->id,
                     ]);
 
@@ -380,7 +414,7 @@ class PaymentVoucherController extends Controller
                             'transaction_type' => 'payment',
                             'date' => $request->date,
                             'description' => $lineItemDescription,
-                            'branch_id' => $user->branch_id,
+                            'branch_id' => $paymentBranchId,
                             'user_id' => $user->id,
                         ]);
                     }
@@ -437,10 +471,10 @@ class PaymentVoucherController extends Controller
             ->orderBy('name')
             ->get();
 
-        // Get customers for the current company/branch
+        $branchForScope = $this->paymentVouchersBranchId($user);
         $customers = Customer::where('company_id', $user->company_id)
-            ->when($user->branch_id, function ($query) use ($user) {
-                return $query->where('branch_id', $user->branch_id);
+            ->when($branchForScope, function ($query) use ($branchForScope) {
+                return $query->where('branch_id', $branchForScope);
             })
             ->orderBy('name')
             ->get();
@@ -613,7 +647,7 @@ class PaymentVoucherController extends Controller
                     'transaction_type' => 'payment',
                     'date' => $request->date,
                     'description' => $glDescription,
-                    'branch_id' => $user->branch_id,
+                    'branch_id' => $paymentVoucher->branch_id,
                     'user_id' => $user->id,
                 ]);
 
@@ -634,7 +668,7 @@ class PaymentVoucherController extends Controller
                         'transaction_type' => 'payment',
                         'date' => $request->date,
                         'description' => $lineItemDescription,
-                        'branch_id' => $user->branch_id,
+                        'branch_id' => $paymentVoucher->branch_id,
                         'user_id' => $user->id,
                     ]);
                 }
