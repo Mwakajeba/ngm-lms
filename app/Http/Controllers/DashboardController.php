@@ -174,14 +174,18 @@ class DashboardController extends Controller
         }
         $company = $user->company;
         
-        // Get branch filter
-        $selectedBranchId = $request->get('branch_id', $user->branch_id);
-        
+        // Branch filter: empty / missing = all branches user can see (not a single default branch)
+        $branchParam = $request->input('branch_id');
+        $selectedBranchId = ($branchParam === null || $branchParam === '') ? null : (int) $branchParam;
+
         // Get available branches for the filter - only user's assigned branches
         $branches = $user->branches()->where('company_id', $company->id)->get();
-        
+
         // Get user's assigned branch IDs for filtering
         $userBranchIds = $branches->pluck('id')->toArray();
+        if (empty($userBranchIds)) {
+            $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
+        }
         
         // Get balance sheet data
         $balanceSheetData = $this->getBalanceSheetData($selectedBranchId, $userBranchIds);
@@ -206,31 +210,40 @@ class DashboardController extends Controller
         ->take(5)
         ->get();
         
-        $recentPayments = Payment::whereHas('branch', function($query) use ($company) {
+        $paymentsMonthQuery = Payment::whereHas('branch', function ($query) use ($company) {
             $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+        })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
-        }, function($query) use ($userBranchIds) {
+        }, function ($query) use ($userBranchIds) {
             return $query->whereIn('branch_id', $userBranchIds);
         })
-        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
-        ->with(['user', 'branch'])
-        ->latest()
-        ->take(5)
-        ->get();
-        
-        $recentReceipts = Receipt::whereHas('branch', function($query) use ($company) {
+            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth]);
+
+        // Full month totals (must not use take(5) — that was only for the recent list)
+        $totalPaymentsThisMonth = (clone $paymentsMonthQuery)->sum('amount');
+
+        $recentPayments = (clone $paymentsMonthQuery)
+            ->with(['user', 'branch'])
+            ->latest()
+            ->take(5)
+            ->get();
+
+        $receiptsMonthQuery = Receipt::whereHas('branch', function ($query) use ($company) {
             $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+        })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
-        }, function($query) use ($userBranchIds) {
+        }, function ($query) use ($userBranchIds) {
             return $query->whereIn('branch_id', $userBranchIds);
         })
-        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
-        ->with(['user', 'branch', 'customer'])
-        ->latest()
-        ->take(5)
-        ->get();
+            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth]);
+
+        $totalReceiptsThisMonth = (clone $receiptsMonthQuery)->sum('amount');
+
+        $recentReceipts = (clone $receiptsMonthQuery)
+            ->with(['user', 'branch', 'customer'])
+            ->latest()
+            ->take(5)
+            ->get();
         
         $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed','complete_topup'];
         // Loan statistics for Total Loan Amount (only active and completed)
@@ -242,14 +255,15 @@ class DashboardController extends Controller
             return $query->whereIn('branch_id', $userBranchIds);
         })->whereIn('status', ['active', 'completed'])->get();
         
-        // All loans for other calculations
-        $loans = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
-            $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
-            return $query->where('branch_id', $selectedBranchId);
-        }, function($query) use ($userBranchIds) {
-            return $query->whereIn('branch_id', $userBranchIds);
-        })->whereIn('status', $loans_status_stats)->get();
+        // All loans for other calculations (include completed so repaid totals match full portfolio)
+        $loans = \App\Models\Loan::with(['schedule.repayments'])
+            ->whereHas('branch', function ($query) use ($company) {
+                $query->where('company_id', $company->id);
+            })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
+                return $query->where('branch_id', $selectedBranchId);
+            }, function ($query) use ($userBranchIds) {
+                return $query->whereIn('branch_id', $userBranchIds);
+            })->whereIn('status', $loans_status_stats)->get();
         
         // Loans for detailed interest calculations (same statuses as report)
         $loansForInterest = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
@@ -265,9 +279,20 @@ class DashboardController extends Controller
         $totalPrincipal = $loans->sum('amount');
         $totalInterest = $loans->sum('interest_amount');
 
-        // Repaid principal and interest
+        // Repaid principal/interest: sum ALL repayments for filtered loans (incl. completed),
+        // not only active/defaulted — otherwise completed branch loans show 0 repaid.
         $repaidPrincipal = 0;
         $repaidInterest = 0;
+        foreach ($loans as $loan) {
+            if (!$loan->schedule || $loan->schedule->isEmpty()) {
+                continue;
+            }
+            foreach ($loan->schedule as $schedule) {
+                $repaidPrincipal += (float) $schedule->repayments->sum('principal');
+                $repaidInterest += (float) $schedule->repayments->sum('interest');
+            }
+        }
+
         $outstandingPrincipal = 0;
         $outstandingInterest = 0;
         
@@ -290,8 +315,6 @@ class DashboardController extends Controller
                 foreach ($loan->schedule as $schedule) {
                     $principalPaid = $schedule->repayments->sum('principal');
                     $interestPaid = $schedule->repayments->sum('interest');
-                    $repaidPrincipal += $principalPaid;
-                    $repaidInterest += $interestPaid;
                     $outstandingPrincipal += max(0, $schedule->principal - $principalPaid);
                     $outstandingInterest += max(0, $schedule->interest - $interestPaid);
                     
@@ -361,7 +384,6 @@ class DashboardController extends Controller
         }
 
         $penaltyBalance = LoanPenaltyService::getTotalPenaltyBalance($selectedBranchId);
-        info('penaltyBalance'.$penaltyBalance);
 
         // Get previous year comparative data
         $previousYearData = $this->getPreviousYearData($selectedBranchId, $userBranchIds);
@@ -384,8 +406,10 @@ class DashboardController extends Controller
             'balanceSheetData',
             'financialReportData',
             'recentJournals',
-            'recentPayments', 
+            'recentPayments',
             'recentReceipts',
+            'totalPaymentsThisMonth',
+            'totalReceiptsThisMonth',
             'penaltyBalance',
             'previousYearData',
             'totalLoanAmount',

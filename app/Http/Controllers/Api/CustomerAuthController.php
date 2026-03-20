@@ -18,6 +18,7 @@ use App\Models\LoanFile;
 use App\Models\Receipt;
 use App\Models\Company;
 use App\Models\Announcement;
+use App\Support\InterestRateConverter;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -1404,11 +1405,17 @@ class CustomerAuthController extends Controller
 
             DB::beginTransaction();
 
+            // Monthly rate from form → per-period rate (same as web direct loan / application)
+            $convertedInterest = InterestRateConverter::fromMonthlyToCycle(
+                (float) $validated['interest'],
+                $validated['interest_cycle']
+            );
+
             // Create loan application with 'applied' status
             $loan = Loan::create([
                 'product_id' => $validated['product_id'],
                 'period' => $validated['period'],
-                'interest' => $validated['interest'],
+                'interest' => $convertedInterest,
                 'amount' => $validated['amount'],
                 'customer_id' => $validated['customer_id'],
                 'group_id' => $groupId,
@@ -1427,8 +1434,8 @@ class CustomerAuthController extends Controller
                 'top_up_id' => null
             ]);
 
-            // Calculate interest amount
-            $interestAmount = $loan->calculateInterestAmount($validated['interest']);
+            // Calculate interest amount using converted per-period rate
+            $interestAmount = $loan->calculateInterestAmount($convertedInterest);
             $loan->update([
                 'interest_amount' => $interestAmount,
                 'amount_total' => $validated['amount'] + $interestAmount,
