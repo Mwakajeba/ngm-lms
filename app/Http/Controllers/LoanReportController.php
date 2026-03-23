@@ -155,7 +155,8 @@ class LoanReportController extends Controller
         }
 
         $disbursements = $loansQuery->get();
-        $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
+        // Treat 'all' / empty like the index report — do not call findOrFail('all') (causes 404)
+        $branch = ($branchId && $branchId !== 'all') ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
 
 
         // 3. Tekeleza mantiki ya export kulingana na aina ya faili
