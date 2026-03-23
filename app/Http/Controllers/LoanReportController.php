@@ -50,10 +50,6 @@ class LoanReportController extends Controller
             $branchId = $branches->first()->id;
         }
 
-        info('start date: ' . $startDate);
-        info('end date: ' . $endDate);
-        info('branch: ' . $branchId);
-
         // Get user's assigned branch IDs for filtering
         $assignedBranchIds = $user->branches()
             ->where('branches.company_id', $company->id)
@@ -98,9 +94,9 @@ class LoanReportController extends Controller
         $groups = Group::all();
         // Only show loan officers assigned to the selected branch (if any)
         $loanOfficers = User::excludeSuperAdmin()
-        ->when($branchId, function($query) use ($branchId) {
-            $query->whereHas('branches', function($q) use ($branchId) {
-            $q->where('branches.id', $branchId);
+        ->when($branchId && $branchId !== 'all', function ($query) use ($branchId) {
+            $query->whereHas('branches', function ($q) use ($branchId) {
+                $q->where('branches.id', $branchId);
             });
         })
         ->get();
@@ -116,9 +112,9 @@ class LoanReportController extends Controller
         $user = auth()->user();
         $company = $user->company;
 
-        // 1. Pata filters kutoka kwenye request
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        // Same defaults as loanDisbursementReport (1st of month → today)
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
@@ -126,6 +122,16 @@ class LoanReportController extends Controller
         $companyId = $request->input('company_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download'); // 'download' ni default
+
+        // Get user's assigned branches (same as index report)
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
 
         // Get user's assigned branch IDs for filtering
         $assignedBranchIds = $user->branches()
