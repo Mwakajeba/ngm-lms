@@ -775,8 +775,8 @@ Route::name('loans.reports.')->group(function () {
     Route::get('/npl/export-pdf', [LoanReportController::class, 'exportNPLToPdf'])->name('npl.export_pdf');
 });
 
-// Loan Reports Routes (accounting.loans.reports.*)
-Route::prefix('accounting/loans/reports')->name('accounting.loans.reports.')->group(function () {
+// Loan Reports Routes (accounting.loans.reports.*) — auth required (exports use auth()->user())
+Route::prefix('accounting/loans/reports')->name('accounting.loans.reports.')->middleware('auth')->group(function () {
     // Loan Portfolio Report
     Route::get('/portfolio', [LoanReportController::class, 'portfolioReport'])->name('portfolio');
     Route::get('/portfolio/export-excel', [LoanReportController::class, 'exportPortfolioToExcel'])->name('portfolio.export_excel');
