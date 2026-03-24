@@ -188,7 +188,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
                                 <p class="mb-0">Total Payments</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($recentPayments->sum('amount') ?? 0, 2) }}</h4>
+                                <h4 class="font-weight-bold">TZS {{ number_format($totalPaymentsThisMonth ?? 0, 2) }}</h4>
                                 <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
                             <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
@@ -204,7 +204,7 @@ use Vinkla\Hashids\Facades\Hashids;
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
                                 <p class="mb-0">Total Receipts</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($recentReceipts->sum('amount') ?? 0, 2) }}</h4>
+                                <h4 class="font-weight-bold">TZS {{ number_format($totalReceiptsThisMonth ?? 0, 2) }}</h4>
                                 <p class="text-secondary mb-0 font-13">This month</p>
                             </div>
                             <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-receipt'></i></div>

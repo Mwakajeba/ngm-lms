@@ -50,10 +50,6 @@ class LoanReportController extends Controller
             $branchId = $branches->first()->id;
         }
 
-        info('start date: ' . $startDate);
-        info('end date: ' . $endDate);
-        info('branch: ' . $branchId);
-
         // Get user's assigned branch IDs for filtering
         $assignedBranchIds = $user->branches()
             ->where('branches.company_id', $company->id)
@@ -98,9 +94,9 @@ class LoanReportController extends Controller
         $groups = Group::all();
         // Only show loan officers assigned to the selected branch (if any)
         $loanOfficers = User::excludeSuperAdmin()
-        ->when($branchId, function($query) use ($branchId) {
-            $query->whereHas('branches', function($q) use ($branchId) {
-            $q->where('branches.id', $branchId);
+        ->when($branchId && $branchId !== 'all', function ($query) use ($branchId) {
+            $query->whereHas('branches', function ($q) use ($branchId) {
+                $q->where('branches.id', $branchId);
             });
         })
         ->get();
@@ -116,9 +112,9 @@ class LoanReportController extends Controller
         $user = auth()->user();
         $company = $user->company;
 
-        // 1. Pata filters kutoka kwenye request
-        $startDate = $request->input('start_date');
-        $endDate = $request->input('end_date');
+        // Same defaults as loanDisbursementReport (1st of month → today)
+        $startDate = $request->input('start_date', Carbon::now()->startOfMonth()->toDateString());
+        $endDate = $request->input('end_date', Carbon::now()->toDateString());
         $branchId = $request->input('branch_id');
         $groupId = $request->input('group_id');
         $loanOfficerId = $request->input('loan_officer_id');
@@ -126,6 +122,16 @@ class LoanReportController extends Controller
         $companyId = $request->input('company_id');
         $exportType = $request->input('export_type');
         $exportAction = $request->input('export_action', 'download'); // 'download' ni default
+
+        // Get user's assigned branches (same as index report)
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
 
         // Get user's assigned branch IDs for filtering
         $assignedBranchIds = $user->branches()
@@ -155,7 +161,8 @@ class LoanReportController extends Controller
         }
 
         $disbursements = $loansQuery->get();
-        $branch = $branchId ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
+        // Treat 'all' / empty like the index report — do not call findOrFail('all') (causes 404)
+        $branch = ($branchId && $branchId !== 'all') ? Branch::findOrFail($branchId) : (object)['name' => 'All Branches'];
 
 
         // 3. Tekeleza mantiki ya export kulingana na aina ya faili
@@ -392,8 +399,8 @@ class LoanReportController extends Controller
                     return ($r->principal ?? 0) + ($r->interest ?? 0) + ($r->fee_amount ?? 0) + ($r->penalt_amount ?? 0);
                 });
             $outstanding = max(0, $totalLoan - $collected);
-            // ACTUAL INTEREST COLLECTED = TOTAL AMOUNT COLLECTED - LOAN GIVEN
-            $actualInterestCollected = $collected - $loanGiven;
+            // ACTUAL INTEREST COLLECTED = sum of interest portion on repayments for this disbursement cohort
+            $actualInterestCollected = (float) $repayments->whereIn('loan_id', $cohortLoanIds)->sum('interest');
             $performance = $totalLoan > 0 ? round(min(1, $collected / $totalLoan) * 100, 2) : 0;
 
             $rows[] = [
@@ -414,11 +421,6 @@ class LoanReportController extends Controller
             $grand['outstanding'] += $outstanding;
             $grand['actual_interest_collected'] += $actualInterestCollected;
         }
-
-        // Calculate grand total for actual_interest_collected: TOTAL AMOUNT COLLECTED - LOAN GIVEN
-        // Use the accumulated sum (which matches individual month calculations)
-        // Don't use max(0, ...) to allow negative values if total collected is less than loan given
-        $grand['actual_interest_collected'] = $grand['collected'] - $grand['loan_given'];
 
         return view('loans.reports.monthly_performance', [
             'rows' => $rows,

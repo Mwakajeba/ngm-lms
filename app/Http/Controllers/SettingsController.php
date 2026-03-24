@@ -895,6 +895,7 @@ class SettingsController extends Controller
             'group_notifications'   => 'Group automatic notifications',
             'cash_collateral'       => 'Cash collateral notifications',
             'mature_interest'       => 'Mature interest collection notifications',
+            'loan_penalty'          => 'Loan penalty / overdue fine notifications',
         ];
 
         // Available template variables per event (shown as hints in the UI)
@@ -906,7 +907,8 @@ class SettingsController extends Controller
             'customer_notifications'=> ['{customer_name}', '{company_name}'],
             'group_notifications'   => ['{customer_name}', '{amount_paid}', '{remaining_amount}', '{company_name}'],
             'cash_collateral'       => ['{amount}', '{action}', '{company_name}'],
-            'mature_interest'       => ['{customer_name}', '{loan_no}', '{amount}', '{company_name}', '{company_phone}'],
+            'mature_interest'       => ['{customer_name}', '{loan_no}', '{amount}', '{company_name}'],
+            'loan_penalty'          => ['{customer_name}', '{amount}', '{days_overdue}', '{loan_no}', '{due_date}', '{company_name}', '{company_phone}'],
         ];
 
         // System default message shown as placeholder when no custom template is set
@@ -919,6 +921,7 @@ class SettingsController extends Controller
             'group_notifications'   => 'Habari! {customer_name}, umelipa rejesho kiasi cha Tsh {amount_paid}. Salio: Tsh {remaining_amount}. {company_name}',
             'cash_collateral'       => 'Cash {action} processed successfully. Amount: TSHS{amount}',
             'mature_interest'       => 'Habari {customer_name}. Mkopo namba {loan_no} una deni la faini ya TZS {amount} kwa kuchelewa kulipa. Tafadhali lipa haraka ili uepuke faini zaidi. Asante.',
+            'loan_penalty'          => 'Habari ndugu mteja {customer_name}. Adhabu ya TZS {amount} imeongezwa kwenye mkopo namba {loan_no} kwa kuchelewa kulipa ({days_overdue}). Tafadhali lipa haraka ili uepuke adhabu zaidi. Asante, kwa mawasiliano piga {company_phone}.',
         ];
 
         $enabledEvents = [];
@@ -977,6 +980,7 @@ class SettingsController extends Controller
                 'group_notifications',
                 'cash_collateral',
                 'mature_interest',
+                'loan_penalty',
             ];
 
             $selectedEvents = $request->input('sms_events', []);
