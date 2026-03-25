@@ -823,6 +823,13 @@ class LoanReportController extends Controller
         $totalOutstandingInterest = 0;
         $totalAccruedInterest = 0;
         $totalNotDueInterest = 0;
+        $totalAmountToPay = 0;
+        $totalExpectedFees = 0;
+        $totalFeesPaid = 0;
+        $totalOutstandingFees = 0;
+        $totalScheduledPenalty = 0;
+        $totalPenaltyPaid = 0;
+        $totalOutstandingPenalty = 0;
 
         $currentDate = \Carbon\Carbon::parse($asOfDate);
         $currentMonth = $currentDate->format('Y-m');
@@ -882,6 +889,26 @@ class LoanReportController extends Controller
             $totalPaid = $principalPaid + $interestPaid;
             $outstandingBalance = $totalLoanAmount - $totalPaid;
 
+            $expectedFeesFromSchedule = 0;
+            $outstandingFees = 0;
+            $scheduledPenalty = 0;
+            $outstandingPenalty = 0;
+            if ($loan->schedule && $loan->schedule->count() > 0) {
+                foreach ($loan->schedule as $schedule) {
+                    $feeOnRow = (float) ($schedule->fee_amount ?? 0);
+                    $penaltyOnRow = (float) ($schedule->penalty_amount ?? 0);
+                    $expectedFeesFromSchedule += $feeOnRow;
+                    $scheduledPenalty += $penaltyOnRow;
+                    $feePaidOnRow = $schedule->repayments ? (float) $schedule->repayments->sum('fee_amount') : 0;
+                    $penaltyPaidOnRow = $schedule->repayments ? (float) $schedule->repayments->sum('penalt_amount') : 0;
+                    $outstandingFees += max(0, $feeOnRow - $feePaidOnRow);
+                    $outstandingPenalty += max(0, $penaltyOnRow - $penaltyPaidOnRow);
+                }
+            }
+
+            // Amount to pay (contract): disbursed principal + total expected interest on the loan
+            $amountToPay = ($loan->amount ?? 0) + ($loan->interest_amount ?? 0);
+
             // Calculate expected interest verification: Interest Paid + Outstanding Interest + Not Due Interest
             $calculatedExpectedInterest = $interestPaid + $outstandingInterest + $notDueInterest;
 
@@ -892,6 +919,9 @@ class LoanReportController extends Controller
                 'loan_no' => $loan->loanNo ?? 'N/A',
                 'amount' => $loan->amount ?? 0,
                 'interest' => $loan->interest_amount ?? 0,
+                'amount_to_pay' => $amountToPay,
+                'expected_fees' => $expectedFeesFromSchedule,
+                'scheduled_penalty' => $scheduledPenalty,
                 'outstanding_balance' => $outstandingBalance,
                 'disbursed_no' => $loan->disbursed_on ?? 'N/A',
                 'expiry' => $loan->last_repayment_date ?? 'N/A',
@@ -901,6 +931,8 @@ class LoanReportController extends Controller
                 'interest_paid' => $interestPaid,
                 'fees_paid' => $feesPaid,
                 'penalty_paid' => $penaltyPaid,
+                'outstanding_fees' => $outstandingFees,
+                'outstanding_penalty' => $outstandingPenalty,
                 'outstanding_interest' => $outstandingInterest,
                 'accrued_interest' => $accruedInterest,
                 'not_due_interest' => $notDueInterest,
@@ -913,6 +945,13 @@ class LoanReportController extends Controller
             $totalOutstandingInterest += $outstandingInterest;
             $totalAccruedInterest += $accruedInterest;
             $totalNotDueInterest += $notDueInterest;
+            $totalAmountToPay += $amountToPay;
+            $totalExpectedFees += $expectedFeesFromSchedule;
+            $totalFeesPaid += $feesPaid;
+            $totalOutstandingFees += $outstandingFees;
+            $totalScheduledPenalty += $scheduledPenalty;
+            $totalPenaltyPaid += $penaltyPaid;
+            $totalOutstandingPenalty += $outstandingPenalty;
         }
 
         // Calculate total expected interest from components for verification
@@ -927,6 +966,13 @@ class LoanReportController extends Controller
             'total_accrued_interest' => $totalAccruedInterest,
             'total_not_due_interest' => $totalNotDueInterest,
             'total_calculated_expected_interest' => $totalCalculatedExpectedInterest,
+            'total_amount_to_pay' => $totalAmountToPay,
+            'total_expected_fees' => $totalExpectedFees,
+            'total_fees_paid' => $totalFeesPaid,
+            'total_outstanding_fees' => $totalOutstandingFees,
+            'total_scheduled_penalty' => $totalScheduledPenalty,
+            'total_penalty_paid' => $totalPenaltyPaid,
+            'total_outstanding_penalty' => $totalOutstandingPenalty,
         ];
 
         // Handle export requests
@@ -3747,16 +3793,23 @@ class LoanReportController extends Controller
                         'Loan No' => $row['loan_no'],
                         'Disbursed Amount' => $row['amount'],
                         'Expected Interest' => $row['interest'],
+                        'Amount to Pay' => $row['amount_to_pay'],
+                        'Expected Fees (Schedule)' => $row['expected_fees'],
+                        'Penalty on Schedule' => $row['scheduled_penalty'],
                         'Disbursed Date' => $row['disbursed_no'],
                         'Expiry' => $row['expiry'],
                         'Branch' => $row['branch'],
                         'Loan Officer' => $row['loan_officer'],
                         'Principal Paid' => $row['principal_paid'],
                         'Interest Paid' => $row['interest_paid'],
+                        'Fees Paid' => $row['fees_paid'],
+                        'Penalty Paid' => $row['penalty_paid'],
                         'Outstanding Principal' => $row['amount'] - $row['principal_paid'],
                         'Outstanding Interest' => $row['outstanding_interest'],
                         'Accrued Interest' => $row['accrued_interest'],
                         'Not Due Interest' => $row['not_due_interest'],
+                        'Outstanding Fees' => $row['outstanding_fees'],
+                        'Outstanding Penalty' => $row['outstanding_penalty'],
                         'Outstanding Balance' => $row['outstanding_balance'],
                     ];
                 });
@@ -3771,16 +3824,23 @@ class LoanReportController extends Controller
                     'Loan No',
                     'Disbursed Amount',
                     'Expected Interest',
+                    'Amount to Pay',
+                    'Expected Fees (Schedule)',
+                    'Penalty on Schedule',
                     'Disbursed Date',
                     'Expiry',
                     'Branch',
                     'Loan Officer',
                     'Principal Paid',
                     'Interest Paid',
+                    'Fees Paid',
+                    'Penalty Paid',
                     'Outstanding Principal',
                     'Outstanding Interest',
                     'Accrued Interest',
                     'Not Due Interest',
+                    'Outstanding Fees',
+                    'Outstanding Penalty',
                     'Outstanding Balance',
                 ];
             }
