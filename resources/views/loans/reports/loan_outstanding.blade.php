@@ -206,9 +206,9 @@
                     <table class="table table-bordered table-striped">
                         <thead class="table-light">
                             <tr>
-                                <th colspan="10" class="text-center">DISBURSEMENT</th>
-                                <th colspan="2" class="text-center">REPAYMENT</th>
-                                <th colspan="6" class="text-center">OUTSTANDING & INTEREST BREAKDOWN</th>
+                                <th colspan="13" class="text-center">DISBURSEMENT</th>
+                                <th colspan="4" class="text-center">REPAYMENT</th>
+                                <th colspan="7" class="text-center">OUTSTANDING &amp; INTEREST BREAKDOWN</th>
                             </tr>
                             <tr>
                                 <th>Customer</th>
@@ -217,16 +217,23 @@
                                 <th>Loan No</th>
                                 <th>Disbursed Amount</th>
                                 <th>Expected Interest</th>
+                                <th class="text-end">Amount to Pay</th>
+                                <th class="text-end">Expected Fees</th>
+                                <th class="text-end">Penalty (Schedule)</th>
                                 <th>Disbursed Date</th>
                                 <th>Expiry</th>
                                 <th>Branch</th>
                                 <th>Loan Officer</th>
                                 <th class="text-end">Principal Paid</th>
                                 <th class="text-end">Interest Paid</th>
+                                <th class="text-end">Fees Paid</th>
+                                <th class="text-end">Penalty Paid</th>
                                 <th class="text-end">Outstanding Principal</th>
                                 <th class="text-end">Accrued Interest</th>
                                 <th class="text-end">Outstanding Interest</th>
                                 <th class="text-end">Not Due Interest</th>
+                                <th class="text-end">Outstanding Fees</th>
+                                <th class="text-end">Outstanding Penalty</th>
                                 <th class="text-end">Outstanding Balance</th>
                             </tr>
                         </thead>
@@ -239,21 +246,28 @@
                                     <td>{{ $row['loan_no'] }}</td>
                                     <td class="text-end">{{ number_format($row['amount'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['interest'], 2) }}</td>
+                                    <td class="text-end fw-semibold">{{ number_format($row['amount_to_pay'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['expected_fees'] ?? 0, 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['scheduled_penalty'] ?? 0, 2) }}</td>
                                     <td>{{ $row['disbursed_no'] }}</td>
                                     <td>{{ $row['expiry'] }}</td>
                                     <td>{{ $row['branch'] }}</td>
                                     <td>{{ $row['loan_officer'] }}</td>
                                     <td class="text-end">{{ number_format($row['principal_paid'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['interest_paid'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['fees_paid'] ?? 0, 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['penalty_paid'] ?? 0, 2) }}</td>
                                     <td class="text-end">{{ number_format($row['amount'] - $row['principal_paid'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['accrued_interest'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['outstanding_interest'], 2) }}</td>
                                     <td class="text-end">{{ number_format($row['not_due_interest'], 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['outstanding_fees'] ?? 0, 2) }}</td>
+                                    <td class="text-end">{{ number_format($row['outstanding_penalty'] ?? 0, 2) }}</td>
                                     <td class="text-end fw-bold">{{ number_format($row['outstanding_balance'], 2) }}</td>
                                 </tr>
                             @empty
                                 <tr>
-                                    <td colspan="17" class="text-center text-muted">No outstanding data found for the selected criteria.</td>
+                                    <td colspan="24" class="text-center text-muted">No outstanding data found for the selected criteria.</td>
                                 </tr>
                             @endforelse
                         </tbody>
@@ -262,13 +276,20 @@
                                 <th colspan="4" class="text-center">TOTALS</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('amount'), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('interest'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('amount_to_pay'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('expected_fees'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('scheduled_penalty'), 2) }}</th>
                                 <th colspan="4"></th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('principal_paid'), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('interest_paid'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('fees_paid'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('penalty_paid'), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum(function($row) { return $row['amount'] - $row['principal_paid']; }), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('accrued_interest'), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('outstanding_interest'), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('not_due_interest'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('outstanding_fees'), 2) }}</th>
+                                <th class="text-end">{{ number_format(collect($outstandingData)->sum('outstanding_penalty'), 2) }}</th>
                                 <th class="text-end">{{ number_format(collect($outstandingData)->sum('outstanding_balance'), 2) }}</th>
                             </tr>
                         </tfoot>
