@@ -116,8 +116,8 @@ class RepaymentReminderJob implements ShouldQueue
             $amount = number_format($unpaid, 2);
             $due = Carbon::parse($schedule->due_date);
             $dueDate = $due->format('d/m/Y');
-            $daysUntil = Carbon::today()->diffInDays($due, false);
-            
+            $daysUntil = (int) Carbon::today()->diffInDays($due, false);
+
             // Determine reminder type and message
             if ($daysUntil === 3) {
                 $reminderType = "Kumbusho la kwanza";
@@ -125,6 +125,9 @@ class RepaymentReminderJob implements ShouldQueue
             } elseif ($daysUntil === 2) {
                 $reminderType = "Kumbusho la pili";
                 $daysText = "siku 2 zijazo";
+            } elseif ($daysUntil === 1) {
+                $reminderType = "Kumbusho";
+                $daysText = "siku 1 zijazo";
             } elseif ($daysUntil <= 0) {
                 $reminderType = "Kumbusho la mwisho";
                 $daysText = "leo";
