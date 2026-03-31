@@ -118,23 +118,27 @@ class RepaymentReminderJob implements ShouldQueue
             $dueDate = $due->format('d/m/Y');
             $daysUntil = (int) Carbon::today()->diffInDays($due, false);
 
-            // Determine reminder type and message
+            // Reminder labels + phrasing for SMS
             if ($daysUntil === 3) {
-                $reminderType = "Kumbusho la kwanza";
-                $daysText = "siku 3 zijazo";
+                $reminderType = 'Kumbusho la kwanza';
             } elseif ($daysUntil === 2) {
-                $reminderType = "Kumbusho la pili";
-                $daysText = "siku 2 zijazo";
+                $reminderType = 'Kumbusho la pili';
             } elseif ($daysUntil === 1) {
-                $reminderType = "Kumbusho";
-                $daysText = "siku 1 zijazo";
+                $reminderType = 'Kumbusho';
             } elseif ($daysUntil <= 0) {
-                $reminderType = "Kumbusho la mwisho";
-                $daysText = "leo";
+                $reminderType = 'Kumbusho la mwisho';
             } else {
-                $reminderType = "Kumbusho";
-                $daysText = "siku {$daysUntil} zijazo";
+                $reminderType = 'Kumbusho';
             }
+
+            // Full phrase for built-in fallback: (siku 2 zijazo) or (leo)
+            $daysPhraseForSms = $daysUntil <= 0
+                ? 'leo'
+                : 'siku ' . $daysUntil . ' zijazo';
+
+            // Template {days_overdue}: omit trailing "zijazo" so custom templates like
+            // "... ({days_overdue} zijazo)" do not become "siku 2 zijazo zijazo".
+            $daysOverdueForTemplate = $daysUntil <= 0 ? 'leo' : 'siku ' . $daysUntil;
 
             // Resolve company name and phone: branch → company, then customer company, then current_company()
             $company = $loan->branch && $loan->branch->company ? $loan->branch->company : null;
@@ -151,7 +155,7 @@ class RepaymentReminderJob implements ShouldQueue
             $templateVars = [
                 'customer_name' => (string) ($customer->name ?? ''),
                 'amount'        => (string) $amount,
-                'days_overdue'  => (string) $daysText,
+                'days_overdue'  => (string) $daysOverdueForTemplate,
                 'loan_no'       => (string) ($loan->loanNo ?? ''),
                 'due_date'      => (string) $dueDate,
                 'reminder_type' => (string) $reminderType,
@@ -159,7 +163,7 @@ class RepaymentReminderJob implements ShouldQueue
                 'company_phone' => (string) $companyPhone,
             ];
             $message = SmsHelper::resolveTemplate('loan_arrears_reminder', $templateVars)
-                ?? "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysText}). Tafadhali lipa kwa wakati ili kuepuka faini.";
+                ?? "Habari {$customer->name}. {$reminderType} la malipo ya mkopo namba {$loan->loanNo}. Kiasi kinachodaiwa ni TZS {$amount}, tarehe ya mwisho ya malipo ni {$dueDate} ({$daysPhraseForSms}). Tafadhali lipa kwa wakati ili kuepuka faini.";
 
             $phone = normalize_phone_number($customer->phone1);
             SmsHelper::send($phone, $message, 'loan_arrears_reminder');
