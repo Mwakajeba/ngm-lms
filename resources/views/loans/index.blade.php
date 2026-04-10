@@ -12,7 +12,7 @@
 
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h6 class="mb-0 text-uppercase">LOAN MANAGEMENT</h6>
-                <button type="button" class="btn btn-warning" data-bs-toggle="modal" data-bs-target="#openingBalanceModal">
+                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#openingBalanceModal">
                     <i class="bx bx-upload me-1"></i> Opening Balance
                 </button>
             </div>
@@ -25,14 +25,14 @@
                             <div class="row">
                                 <!-- Loan Calculator -->
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-info position-relative">
+                                    <div class="card border-success position-relative">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-calculator fs-1 text-info"></i>
+                                                <i class="bx bx-calculator fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Loan Calculator</h5>
                                             <p class="card-text">Simulate loan scenarios, view schedules and export results.</p>
-                                            <a href="{{ route('loan-calculator.index') }}" class="btn btn-info position-relative">
+                                            <a href="{{ route('loan-calculator.index') }}" class="btn btn-success position-relative">
                                                 <i class="bx bx-calculator me-1"></i> Open Calculator
                                             </a>
                                         </div>
@@ -41,16 +41,16 @@
                                 @can('view loans')
                                     <!-- Active Loans -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-primary position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-primary">{{ $stats['active'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['active'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-building fs-1 text-primary"></i>
+                                                    <i class="bx bx-building fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Active Loans</h5>
                                                 <p class="card-text">Manage your company loans disbursed to customers.</p>
-                                                <a href="{{ route('loans.list') }}" class="btn btn-primary position-relative">
+                                                <a href="{{ route('loans.list') }}" class="btn btn-success position-relative">
                                                     <i class="bx bx-cog me-1"></i> View Loans
                                                 </a>
                                             </div>
@@ -81,17 +81,17 @@
                                 @can('view checked loans')
                                     <!-- Checked Applications -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-teal position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-secondary">{{ $stats['checked'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['checked'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-check-circle fs-1 text-secondary"></i>
+                                                    <i class="bx bx-check-circle fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Checked Applications</h5>
                                                 <p class="card-text">Manage and check applied loans.</p>
                                                 <a href="{{ route('loans.by-status', 'checked') }}"
-                                                    class="btn btn-secondary position-relative">
+                                                    class="btn btn-success position-relative">
                                                     <i class="bx bx-check me-1"></i> View Applications
                                                 </a>
                                             </div>
@@ -101,17 +101,17 @@
                                 @can('view approved loans')
                                     <!-- Approved Applications -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-purple position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">{{ $stats['approved'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['approved'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-check-circle fs-1 text-info"></i>
+                                                    <i class="bx bx-check-circle fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Approved Applications</h5>
                                                 <p class="card-text">Manage and verify applied loans.</p>
                                                 <a href="{{ route('loans.by-status', 'approved') }}"
-                                                    class="btn btn-info position-relative">
+                                                    class="btn btn-success position-relative">
                                                     <i class="bx bx-verify me-1"></i> View Applications
                                                 </a>
                                             </div>
@@ -121,17 +121,17 @@
                                 @can('view authorized loans')
                                     <!-- Authorized Applications -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-orange position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-warning text-dark">{{ $stats['authorized'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['authorized'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-badge-check fs-1 text-warning"></i>
+                                                    <i class="bx bx-badge-check fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Authorized Applications</h5>
                                                 <p class="card-text">Manage and approve applied loans.</p>
                                                 <a href="{{ route('loans.by-status', 'authorized') }}"
-                                                    class="btn btn-warning position-relative">
+                                                    class="btn btn-success position-relative">
                                                     <i class="bx bx-badge-check me-1"></i> View Applications
                                                 </a>
                                             </div>
@@ -141,17 +141,17 @@
                                 @can('view defaulted loans')
                                     <!-- Defaulted Loans -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-danger position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ $stats['defaulted'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['defaulted'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-error fs-1 text-danger"></i>
+                                                    <i class="bx bx-error fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Defaulted Loans</h5>
                                                 <p class="card-text">Manage all defaulted loans.</p>
                                                 <a href="{{ route('loans.by-status', 'defaulted') }}"
-                                                    class="btn btn-danger position-relative">
+                                                    class="btn btn-success position-relative">
                                                     <i class="bx bx-error me-1"></i> View Loans
                                                 </a>
                                             </div>
@@ -161,17 +161,17 @@
                                 @can('view rejected loans')
                                     <!-- Rejected Applications -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-danger position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ $stats['rejected'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['rejected'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-x-circle fs-1 text-danger"></i>
+                                                    <i class="bx bx-x-circle fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Rejected Applications</h5>
                                                 <p class="card-text">Manage all rejected loan applications.</p>
                                                 <a href="{{ route('loans.by-status', 'rejected') }}"
-                                                    class="btn btn-danger position-relative">
+                                                    class="btn btn-success position-relative">
                                                     <i class="bx bx-x-circle me-1"></i> View Applications
                                                 </a>
                                             </div>
@@ -181,16 +181,16 @@
                                 @can('view loans')
                                     <!-- Written Off Loans -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-danger position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">{{ $stats['written_off'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['written_off'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-x-circle fs-1 text-danger"></i>
+                                                    <i class="bx bx-x-circle fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Written Off Loans</h5>
                                                 <p class="card-text">Manage all written off loans.</p>
-                                                <a href="{{ route('loans.writtenoff') }}" class="btn btn-danger">
+                                                <a href="{{ route('loans.writtenoff') }}" class="btn btn-success">
                                                     <i class="bx bx-x-circle me-1"></i> View Loans
                                                 </a>
                                             </div>
@@ -219,16 +219,16 @@
                                 @can('view loans')
                                     <!-- Restructured Loans -->
                                     <div class="col-md-6 col-lg-4 mb-4">
-                                        <div class="card border-info position-relative">
+                                        <div class="card border-success position-relative">
                                             <span
-                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-info">{{ $stats['restructured'] ?? 0 }}</span>
+                                                class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-success">{{ $stats['restructured'] ?? 0 }}</span>
                                             <div class="card-body text-center">
                                                 <div class="mb-3">
-                                                    <i class="bx bx-refresh fs-1 text-info"></i>
+                                                    <i class="bx bx-refresh fs-1 text-success"></i>
                                                 </div>
                                                 <h5 class="card-title">Restructured Loans</h5>
                                                 <p class="card-text">Manage all restructured loans.</p>
-                                                <a href="{{ route('loans.by-status', 'restructured') }}" class="btn btn-info position-relative">
+                                                <a href="{{ route('loans.by-status', 'restructured') }}" class="btn btn-success position-relative">
                                                     <i class="bx bx-refresh me-1"></i> View Loans
                                                 </a>
                                             </div>
@@ -339,7 +339,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-warning">
+                        <button type="submit" class="btn btn-success">
                             <i class="bx bx-upload me-1"></i> Process Opening Balance
                         </button>
                     </div>
@@ -358,90 +358,6 @@
     </footer>
 
 @endsection
-
-@push('styles')
-    <style>
-        .border-purple {
-            border-color: #6f42c1 !important;
-        }
-
-        .text-purple {
-            color: #6f42c1 !important;
-        }
-
-        .btn-purple {
-            background-color: #6f42c1;
-            border-color: #6f42c1;
-            color: white;
-        }
-
-        .btn-purple:hover {
-            background-color: #5a32a3;
-            border-color: #5a32a3;
-            color: white;
-        }
-
-        .border-orange {
-            border-color: #fd7e14 !important;
-        }
-
-        .text-orange {
-            color: #fd7e14 !important;
-        }
-
-        .btn-orange {
-            background-color: #fd7e14;
-            border-color: #fd7e14;
-            color: white;
-        }
-
-        .btn-orange:hover {
-            background-color: #e8690b;
-            border-color: #e8690b;
-            color: white;
-        }
-
-        .border-teal {
-            border-color: #20c997 !important;
-        }
-
-        .text-teal {
-            color: #20c997 !important;
-        }
-
-        .btn-teal {
-            background-color: #20c997;
-            border-color: #20c997;
-            color: white;
-        }
-
-        .btn-teal:hover {
-            background-color: #1ba37e;
-            border-color: #1ba37e;
-            color: white;
-        }
-
-        .border-danger {
-            border-color: #dc3545 !important;
-        }
-
-        .text-danger {
-            color: #dc3545 !important;
-        }
-
-        .btn-danger {
-            background-color: #dc3545;
-            border-color: #dc3545;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #bb2d3b;
-            border-color: #bb2d3b;
-            color: white;
-        }
-    </style>
-@endpush
 
 @push('scripts')
     <script>

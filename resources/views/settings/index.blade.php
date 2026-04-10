@@ -45,14 +45,14 @@
                             <!-- Company Settings -->
                             @can('manage campany setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-primary">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-building fs-1 text-primary"></i>
+                                            <i class="bx bx-building fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Company Settings</h5>
                                         <p class="card-text">Manage your company information and preferences.</p>
-                                        <a href="{{ route('settings.company') }}" class="btn btn-primary">
+                                        <a href="{{ route('settings.company') }}" class="btn btn-success">
                                             <i class="bx bx-cog me-1"></i> Configure
                                         </a>
                                     </div>
@@ -82,14 +82,14 @@
                             <!-- User Settings -->
                             @can('manage user setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-info">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-user fs-1 text-info"></i>
+                                            <i class="bx bx-user fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">User Settings</h5>
                                         <p class="card-text">Manage user preferences and permissions.</p>
-                                        <a href="{{ route('settings.user') }}" class="btn btn-info">
+                                        <a href="{{ route('settings.user') }}" class="btn btn-success">
                                             <i class="bx bx-cog me-1"></i> Configure
                                         </a>
                                     </div>
@@ -100,14 +100,14 @@
                             <!-- System Settings -->
                             @can('view system configurations')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-warning">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-cog fs-1 text-warning"></i>
+                                            <i class="bx bx-cog fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">System Settings</h5>
                                         <p class="card-text">Configure system-wide settings and preferences.</p>
-                                        <a href="{{ route('settings.system') }}" class="btn btn-warning">
+                                        <a href="{{ route('settings.system') }}" class="btn btn-success">
                                             <i class="bx bx-cog me-1"></i> Configure
                                         </a>
                                     </div>
@@ -119,14 +119,14 @@
                             <!-- Backup Settings -->
                             @can('view backup settings')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-danger">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-data fs-1 text-danger"></i>
+                                            <i class="bx bx-data fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Backup Settings</h5>
                                         <p class="card-text">Manage data backup and restore operations.</p>
-                                        <a href="{{ route('settings.backup') }}" class="btn btn-danger">
+                                        <a href="{{ route('settings.backup') }}" class="btn btn-success">
                                             <i class="bx bx-cog me-1"></i> Configure
                                         </a>
                                     </div>
@@ -156,47 +156,48 @@
                             <!-- Roles & Permissions -->
                             @can('manage role & permission')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-secondary">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-shield fs-1 text-secondary"></i>
+                                            <i class="bx bx-shield fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Roles & Permissions</h5>
                                         <p class="card-text">Manage user roles, permissions, and access control.</p>
-                                        <a href="{{ route('roles.index') }}" class="btn btn-secondary">
+                                        <a href="{{ route('roles.index') }}" class="btn btn-success">
                                             <i class="bx bx-shield me-1"></i> Role, Permissions & Menu
                                         </a>
                                     </div>
                                 </div>
                             </div>
                             @endcan
-<!-- 
+<!--
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-info">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-globe fs-1 text-info"></i>
+                                            <i class="bx bx-globe fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Language Test</h5>
                                         <p class="card-text">Test the multi-language functionality of the system.</p>
-                                        <a href="{{ route('test.language') }}" class="btn btn-info">
+                                        <a href="{{ route('test.language') }}" class="btn btn-success">
                                             <i class="bx bx-globe me-1"></i> Test Language
                                         </a>
                                     </div>
                                 </div>
-                            </div> -->
+                            </div>
+                            -->
 
                             <!-- Fees Settings -->
                             @can('manage fee setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-teal">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-dollar-circle fs-1 text-teal"></i>
+                                            <i class="bx bx-dollar-circle fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Fees Management</h5>
                                         <p class="card-text">Manage service fees, charges, and payment structures.</p>
-                                        <a href="{{ route('accounting.fees.index') }}" class="btn btn-teal">
+                                        <a href="{{ route('accounting.fees.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i> Manage Fees
                                         </a>
                                     </div>
@@ -207,14 +208,14 @@
                             <!-- Penalties Settings -->
                             @can('manage penalty setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-danger">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-error-circle fs-1 text-danger"></i>
+                                            <i class="bx bx-error-circle fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Penalties Management</h5>
                                         <p class="card-text">Configure late payment penalties and fee structures.</p>
-                                        <a href="{{ route('accounting.penalties.index') }}" class="btn btn-danger">
+                                        <a href="{{ route('accounting.penalties.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i> Manage Penalties
                                         </a>
                                     </div>
@@ -225,14 +226,14 @@
                             <!-- Run Penalty Accrual -->
                             @can('manage penalty setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-warning">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-calculator fs-1 text-warning"></i>
+                                            <i class="bx bx-calculator fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Run Penalty Accrual</h5>
                                         <p class="card-text">Kokotoa adhabu za mikopo iliyochelewa (Calculate penalties for overdue loans).</p>
-                                        <button type="button" class="btn btn-warning" onclick="runPenaltyAccrual()">
+                                        <button type="button" class="btn btn-success" onclick="runPenaltyAccrual()">
                                             <i class="bx bx-play-circle me-1"></i> Run Penalty Accrual
                                         </button>
                                     </div>
@@ -243,14 +244,14 @@
                             <!-- Run Daily Accrual Interest -->
                             @can('manage penalty setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-primary">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-trending-up fs-1 text-primary"></i>
+                                            <i class="bx bx-trending-up fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Run Daily Accrual Interest</h5>
                                         <p class="card-text">Calculate daily interest accrual for loans using daily accrual method.</p>
-                                        <button type="button" class="btn btn-primary" onclick="runDailyAccrualInterest()">
+                                        <button type="button" class="btn btn-success" onclick="runDailyAccrualInterest()">
                                             <i class="bx bx-play-circle me-1"></i> Run Daily Accrual Interest
                                         </button>
                                     </div>
@@ -261,15 +262,15 @@
                             <!-- Filetypes Settings -->
                             @can('manage filetype setting')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-danger">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-file fs-1 text-primary"></i>
+                                            <i class="bx bx-file fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">File Types Management</h5>
                                         <p class="card-text">Configure the filetypes to be used in uploading documents.
                                         </p>
-                                        <a href="{{ route('settings.filetypes.index') }}" class="btn btn-primary">
+                                        <a href="{{ route('settings.filetypes.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i> Manage File Types
                                         </a>
                                     </div>
@@ -279,14 +280,14 @@
 
                             <!-- Complain Categories Settings -->
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-info">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-message-square-detail fs-1 text-info"></i>
+                                            <i class="bx bx-message-square-detail fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Complain Categories</h5>
                                         <p class="card-text">Manage complaint categories and their priorities for organizing customer complaints.</p>
-                                        <a href="{{ route('settings.complain-categories.index') }}" class="btn btn-info">
+                                        <a href="{{ route('settings.complain-categories.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i> Manage Categories
                                         </a>
                                     </div>
@@ -295,14 +296,14 @@
 
                             <!-- Announcements Settings -->
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-warning">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-bullhorn fs-1 text-warning"></i>
+                                            <i class="bx bx-bullhorn fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Announcements</h5>
                                         <p class="card-text">Manage announcements displayed to customers in the mobile app. Upload images and set publish dates.</p>
-                                        <a href="{{ route('settings.announcements.index') }}" class="btn btn-warning">
+                                        <a href="{{ route('settings.announcements.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i> Manage Announcements
                                         </a>
                                     </div>
@@ -312,17 +313,17 @@
                             <!-- activity logs Settings -->
                             @can('view logs activity')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-danger">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-file fs-1 text-primary"></i>
+                                            <i class="bx bx-file fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Activity Logs Management</h5>
                                         <p class="card-text">
                                             Monitor and track all user activities in the system.
                                             Ensure accountability and review actions performed by users.
                                         </p>
-                                        <a href="{{ route('settings.logs.index') }}" class="btn btn-primary">
+                                        <a href="{{ route('settings.logs.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i>Manage Logs
                                         </a>
                                     </div>
@@ -332,17 +333,17 @@
                             <!-- SMS Setting -->
                            @role('super-admin')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-warning">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-message-dots fs-1 text-warning"></i>
+                                            <i class="bx bx-message-dots fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">SMS Setting</h5>
                                         <p class="card-text">
                                             Configure SMS gateway settings, API credentials, and SMS provider configurations.
                                             Manage SMS service integration and settings.
                                         </p>
-                                        <a href="{{ route('settings.sms') }}" class="btn btn-warning">
+                                        <a href="{{ route('settings.sms') }}" class="btn btn-success">
                                             <i class="bx bx-message-dots me-1"></i> Configure SMS
                                         </a>
                                     </div>
@@ -375,17 +376,17 @@
                             <!-- Payment Voucher Approval Process -->
                             @can('manage payment voucher approval')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-info">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-check-shield fs-1 text-info"></i>
+                                            <i class="bx bx-check-shield fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Payment Voucher Approval</h5>
                                         <p class="card-text">
                                             Configure approval workflows for payment vouchers.
                                             Set up approval levels, approvers, and approval thresholds.
                                         </p>
-                                        <a href="{{ route('settings.payment-voucher-approval') }}" class="btn btn-info">
+                                        <a href="{{ route('settings.payment-voucher-approval') }}" class="btn btn-success">
                                             <i class="bx bx-check-shield me-1"></i> Configure Approval
                                         </a>
                                     </div>
@@ -396,17 +397,17 @@
                             <!-- Job Logs -->
                             @can('view logs activity')
                             <div class="col-md-6 col-lg-4 mb-4">
-                                <div class="card border-info">
+                                <div class="card border-success">
                                     <div class="card-body text-center">
                                         <div class="mb-3">
-                                            <i class="bx bx-list-ul fs-1 text-info"></i>
+                                            <i class="bx bx-list-ul fs-1 text-success"></i>
                                         </div>
                                         <h5 class="card-title">Job Logs</h5>
                                         <p class="card-text">
                                             View and monitor background job execution logs.
                                             Track job status, performance, and execution history.
                                         </p>
-                                        <a href="{{ route('settings.job-logs.index') }}" class="btn btn-info">
+                                        <a href="{{ route('settings.job-logs.index') }}" class="btn btn-success">
                                             <i class="bx bx-list-ul me-1"></i> View Job Logs
                                         </a>
                                     </div>
@@ -442,7 +443,7 @@
             text: 'This will calculate penalties for all overdue loans. This process may take a few minutes.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#ffc107',
+            confirmButtonColor: '#6fa82e',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Yes, Run It',
             cancelButtonText: 'Cancel',
@@ -491,7 +492,7 @@
             text: 'This will calculate daily interest accrual for loans using daily accrual method. This process may take a few minutes.',
             icon: 'question',
             showCancelButton: true,
-            confirmButtonColor: '#0d6efd',
+            confirmButtonColor: '#6fa82e',
             cancelButtonColor: '#6c757d',
             confirmButtonText: 'Yes, Run It',
             cancelButtonText: 'Cancel',
@@ -534,88 +535,4 @@
         });
     }
 </script>
-@endpush
-
-@push('styles')
-<style>
-    .border-purple {
-        border-color: #6f42c1 !important;
-    }
-
-    .text-purple {
-        color: #6f42c1 !important;
-    }
-
-    .btn-purple {
-        background-color: #6f42c1;
-        border-color: #6f42c1;
-        color: white;
-    }
-
-    .btn-purple:hover {
-        background-color: #5a32a3;
-        border-color: #5a32a3;
-        color: white;
-    }
-
-    .border-orange {
-        border-color: #fd7e14 !important;
-    }
-
-    .text-orange {
-        color: #fd7e14 !important;
-    }
-
-    .btn-orange {
-        background-color: #fd7e14;
-        border-color: #fd7e14;
-        color: white;
-    }
-
-    .btn-orange:hover {
-        background-color: #e8690b;
-        border-color: #e8690b;
-        color: white;
-    }
-
-    .border-teal {
-        border-color: #20c997 !important;
-    }
-
-    .text-teal {
-        color: #20c997 !important;
-    }
-
-    .btn-teal {
-        background-color: #20c997;
-        border-color: #20c997;
-        color: white;
-    }
-
-    .btn-teal:hover {
-        background-color: #1ba37e;
-        border-color: #1ba37e;
-        color: white;
-    }
-
-    .border-danger {
-        border-color: #dc3545 !important;
-    }
-
-    .text-danger {
-        color: #dc3545 !important;
-    }
-
-    .btn-danger {
-        background-color: #dc3545;
-        border-color: #dc3545;
-        color: white;
-    }
-
-    .btn-danger:hover {
-        background-color: #bb2d3b;
-        border-color: #bb2d3b;
-        color: white;
-    }
-</style>
 @endpush

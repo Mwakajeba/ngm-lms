@@ -11,38 +11,110 @@ use Vinkla\Hashids\Facades\Hashids;
         margin-bottom: 20px;
     }
 
-    .section-header {
-        border-radius: 8px 8px 0 0 !important;
+    /* Financial Report Summary — Smartfinance palette (forest green, lime, gold) */
+    .financial-report-summary {
+        overflow: hidden;
+        border: 1px solid rgba(0, 104, 55, 0.15) !important;
+        box-shadow: 0 4px 18px rgba(0, 104, 55, 0.08) !important;
     }
 
-    .section-content {
+    .financial-report-summary::before {
+        content: '';
+        display: block;
+        height: 4px;
+        background: linear-gradient(90deg, #ebb02d 0%, #8dc63f 50%, #006837 100%);
+    }
+
+    .financial-report-summary .card-header h5,
+    .financial-report-summary .card-header h5.text-dark {
+        color: #006837 !important;
+    }
+
+    .financial-report-summary .card-header .bx-bar-chart {
+        color: #8dc63f !important;
+    }
+
+    .financial-report-summary .card-header .text-muted {
+        color: #5a6b62 !important;
+    }
+
+    .financial-report-summary .section-header {
+        border-radius: 8px 8px 0 0 !important;
+        background: linear-gradient(180deg, #0a7a45 0%, #006837 55%, #004d28 100%) !important;
+        border: none !important;
+    }
+
+    .financial-report-summary .section-header h4,
+    .financial-report-summary .section-header h4.text-dark {
+        color: #fff !important;
+    }
+
+    .financial-report-summary .section-header small,
+    .financial-report-summary .section-header .text-muted {
+        color: rgba(255, 255, 255, 0.88) !important;
+    }
+
+    .financial-report-summary .section-header .bx {
+        color: #ebb02d !important;
+    }
+
+    .financial-report-summary .section-title {
+        background: rgba(141, 198, 63, 0.16) !important;
+        border-left: 4px solid #006837;
+        border-bottom: 1px solid rgba(0, 104, 55, 0.12) !important;
+    }
+
+    .financial-report-summary .section-title h6,
+    .financial-report-summary .section-title h6.text-dark {
+        color: #006837 !important;
+    }
+
+    .financial-report-summary .section-title .bx {
+        color: #6fa82e !important;
+    }
+
+    .financial-report-summary .section-content {
         border-radius: 0 0 8px 8px !important;
         border-top: none !important;
+        border-color: rgba(0, 104, 55, 0.18) !important;
     }
 
-    .account-row:hover {
-        background-color: #f8f9fa;
+    .financial-report-summary .account-row:hover {
+        background-color: rgba(141, 198, 63, 0.12) !important;
         transition: background-color 0.2s ease;
     }
 
-    .account-row a:hover {
-        color: #007bff !important;
+    .financial-report-summary .account-row a:hover {
+        color: #006837 !important;
         text-decoration: underline !important;
     }
 
-    .table-sm td {
+    .financial-report-summary thead.table-light th,
+    .financial-report-summary thead.table-secondary th {
+        background: rgba(0, 104, 55, 0.07) !important;
+        color: #1a2e1f !important;
+        border-color: rgba(0, 104, 55, 0.1) !important;
+    }
+
+    .financial-report-summary tr.table-info {
+        background: rgba(235, 176, 45, 0.22) !important;
+        color: #1a2418 !important;
+    }
+
+    .financial-report-summary tr.table-secondary {
+        background: rgba(0, 104, 55, 0.09) !important;
+    }
+
+    .financial-report-summary tr.table-secondary.fw-bold td {
+        color: #004d28 !important;
+    }
+
+    .financial-report-summary .table-sm td {
         padding: 0.5rem;
         vertical-align: middle;
     }
 
-    .section-title {
-        background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
-    }
-
-
-
     @media print {
-
         .btn,
         .overlay,
         .back-to-top,
@@ -55,9 +127,17 @@ use Vinkla\Hashids\Facades\Hashids;
             box-shadow: none !important;
         }
 
-        .section-header {
-            background: #333 !important;
-            color: white !important;
+        .financial-report-summary::before {
+            height: 3px;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+        }
+
+        .financial-report-summary .section-header {
+            background: #006837 !important;
+            color: #fff !important;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
         }
     }
 </style>
@@ -667,7 +747,7 @@ use Vinkla\Hashids\Facades\Hashids;
         @can('view financial reports')
         <div class="row">
             <div class="col-12">
-                <div class="card radius-10 border-0 shadow-sm">
+                <div class="card radius-10 border-0 shadow-sm financial-report-summary">
                     <div class="card-header bg-transparent border-0">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">

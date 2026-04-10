@@ -15,8 +15,8 @@
                         <div class="card-body">
                             <div class="p-4 rounded">
                                 <div class="text-center">
-							       <img src="{{ asset('assets/images/icons/lock.png')}}" width="120" alt="" />
-						        </div>
+                                    <img src="{{ asset('assets/images/icons/smartfinance.png') }}" alt="" />
+                                </div>
                                 <div class="login-separater text-center mb-4">
                                     <span>FORGOT PASSWORD</span>
                                     <hr />

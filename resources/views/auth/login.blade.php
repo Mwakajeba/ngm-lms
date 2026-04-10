@@ -24,7 +24,7 @@
 
                                 </div> -->
                                 <div class="text-center">
-							       <img src="{{ asset('assets/images/icons/smartfinance.png')}}" width="200" alt="" />
+							       <img src="{{ asset('assets/images/icons/smartfinance.png')}}"  alt="" />
 						        </div>
                                 <div class="login-separater text-center mb-4">
                                     <span>{{ __('app.sign_in') }} {{ __('app.with_phone') }}</span>

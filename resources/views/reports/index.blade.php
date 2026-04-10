@@ -43,14 +43,14 @@
                                 <!-- Balance Sheet Report -->
                                 @can('view balance sheet report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-warning">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-bar-chart fs-1 text-warning"></i>
+                                                <i class="bx bx-bar-chart fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Balance Sheet Report</h5>
                                             <p class="card-text">View assets, liabilities, and equity position at a specific date.</p>
-                                            <a href="{{ route('accounting.reports.balance-sheet') }}" class="btn btn-warning">
+                                            <a href="{{ route('accounting.reports.balance-sheet') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -79,14 +79,14 @@
                                 <!-- Income Statement Report -->
                                 @can('view income statement report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-info">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-line-chart fs-1 text-info"></i>
+                                                <i class="bx bx-line-chart fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Income Statement Report</h5>
                                             <p class="card-text">Generate profit and loss statements showing revenue and expenses.</p>
-                                            <a href="{{ route('accounting.reports.income-statement') }}" class="btn btn-info">
+                                            <a href="{{ route('accounting.reports.income-statement') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -97,14 +97,14 @@
                                 <!-- Cash Book Report -->
                                 @can('view cash book report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-danger">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-book fs-1 text-danger"></i>
+                                                <i class="bx bx-book fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Cash Book Report</h5>
                                             <p class="card-text">Track cash receipts and payments with detailed transaction records.</p>
-                                            <a href="{{ route('accounting.reports.cash-book') }}" class="btn btn-danger">
+                                            <a href="{{ route('accounting.reports.cash-book') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -115,10 +115,10 @@
                                 <!-- Cash Flow Report -->
                                 @can('view cash flow report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-purple">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-transfer fs-1 text-purple"></i>
+                                                <i class="bx bx-transfer fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Cash Flow Report</h5>
                                             <p class="card-text">Analyze cash inflows and outflows from operating, investing, and financing activities.</p>
@@ -133,14 +133,14 @@
                                 <!-- General Ledger Report -->
                                 @can('view general ledger report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-secondary">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-list-ul fs-1 text-secondary"></i>
+                                                <i class="bx bx-list-ul fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">General Ledger Report</h5>
                                             <p class="card-text">View detailed transaction history for all chart of accounts.</p>
-                                            <a href="{{ route('accounting.reports.general-ledger') }}" class="btn btn-secondary">
+                                            <a href="{{ route('accounting.reports.general-ledger') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -151,10 +151,10 @@
                                 <!-- Expenses Summary Report -->
                                 @can('view expenses summary report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-teal">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-dollar-circle fs-1 text-teal"></i>
+                                                <i class="bx bx-dollar-circle fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Expenses Summary Report</h5>
                                             <p class="card-text">Analyze and categorize all expenses with detailed breakdowns.</p>
@@ -169,10 +169,10 @@
                                 <!-- Accounting Notes Report -->
                                 @can('view accounting notes report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-indigo">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-note fs-1 text-indigo"></i>
+                                                <i class="bx bx-note fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Accounting Notes Report</h5>
                                             <p class="card-text">Generate comprehensive accounting notes.</p>
@@ -187,10 +187,10 @@
                                 <!-- Changes in Equity Report -->
                                 @can('view changes in equity report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-orange">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-trending-up fs-1 text-orange"></i>
+                                                <i class="bx bx-trending-up fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Changes in Equity Report</h5>
                                             <p class="card-text">Track changes in shareholders' equity over time.</p>
@@ -205,14 +205,14 @@
                                 <!-- Fees Report -->
                                 @can('view fees report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-primary">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-money fs-1 text-primary"></i>
+                                                <i class="bx bx-money fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Fees Report</h5>
                                             <p class="card-text">Generate comprehensive reports on all loan fees collected and their breakdowns.</p>
-                                            <a href="{{ route('accounting.reports.fees') }}" class="btn btn-primary">
+                                            <a href="{{ route('accounting.reports.fees') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -223,14 +223,14 @@
                                 <!-- Penalties Report -->
                                 @can('view penalties report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-dark">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-error-circle fs-1 text-dark"></i>
+                                                <i class="bx bx-error-circle fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Penalties Report</h5>
                                             <p class="card-text">Track and analyze penalty charges applied to loans and their collection status.</p>
-                                            <a href="{{ route('accounting.reports.penalties') }}" class="btn btn-dark">
+                                            <a href="{{ route('accounting.reports.penalties') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -259,14 +259,14 @@
                                 <!-- Budget Report -->
                                 @can('view budget report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-info">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-target-lock fs-1 text-info"></i>
+                                                <i class="bx bx-target-lock fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Budget Report</h5>
                                             <p class="card-text">Compare actual performance against budgeted amounts and analyze variances.</p>
-                                            <a href="{{ route('accounting.reports.budget-report') }}" class="btn btn-info">
+                                            <a href="{{ route('accounting.reports.budget-report') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>
@@ -277,14 +277,14 @@
                                 <!-- Bank Reconciliation Report -->
                                 @can('view bank reconciliation report')
                                 <div class="col-md-6 col-lg-4 mb-4">
-                                    <div class="card border-warning">
+                                    <div class="card border-success">
                                         <div class="card-body text-center">
                                             <div class="mb-3">
-                                                <i class="bx bx-check-circle fs-1 text-warning"></i>
+                                                <i class="bx bx-check-circle fs-1 text-success"></i>
                                             </div>
                                             <h5 class="card-title">Bank Reconciliation Report</h5>
                                             <p class="card-text">Reconcile bank statements with accounting records and identify discrepancies.</p>
-                                            <a href="{{ route('accounting.reports.bank-reconciliation-report') }}" class="btn btn-warning">
+                                            <a href="{{ route('accounting.reports.bank-reconciliation-report') }}" class="btn btn-success">
                                                 <i class="bx bx-file me-1"></i> Generate Report
                                             </a>
                                         </div>

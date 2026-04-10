@@ -20,7 +20,7 @@
                         <div class="card-body">
                             <div class="p-4 rounded">
                                 <div class="text-center mb-4">
-                                    <img src="{{ asset('assets/images/icons/lock.png') }}" width="150" alt="Subscription Expired" />
+                                    <img src="{{ asset('assets/images/icons/smartfinance.png') }}" alt="" />
                                 </div>
                                 
                                 <div class="text-center mb-4">
