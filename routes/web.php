@@ -1,64 +1,64 @@
 <?php
 
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Route;
-use App\Http\Controllers\AuthController;
-use App\Http\Controllers\LanguageController;
-use App\Http\Controllers\OtpEmailController;
-use App\Http\Controllers\ReportsController;
-use App\Http\Controllers\RolePermissionController;
-use App\Http\Controllers\UserController;
-use App\Http\Controllers\SettingsController;
-use App\Http\Controllers\ActivityLogsController;
-use App\Http\Controllers\FiletypeController;
-use App\Http\Controllers\ComplainCategoryController;
-use App\Http\Controllers\ComplaintsController;
-use App\Http\Controllers\AnnouncementController;
-use App\Http\Controllers\BranchController;
-use App\Http\Controllers\CompanyController;
-use App\Http\Controllers\CashCollateralTypeController;
-use App\Http\Controllers\SuperAdminController;
 use App\Http\Controllers\AccountClassGroupController;
-use App\Http\Controllers\ChartAccountController;
-use App\Http\Controllers\Accounting\SupplierController;
-use App\Http\Controllers\Accounting\PaymentVoucherController;
-use App\Http\Controllers\Accounting\BillPurchaseController;
-use App\Http\Controllers\Accounting\ReceiptVoucherController;
-use App\Http\Controllers\BankAccountController;
 use App\Http\Controllers\Accounting\BankReconciliationController;
-use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
+use App\Http\Controllers\Accounting\BillPurchaseController;
 use App\Http\Controllers\Accounting\BudgetController;
 use App\Http\Controllers\Accounting\FeeController;
+use App\Http\Controllers\Accounting\PaymentVoucherController;
 use App\Http\Controllers\Accounting\PenaltyController;
-use App\Http\Controllers\JournalController;
+use App\Http\Controllers\Accounting\ReceiptVoucherController;
+use App\Http\Controllers\Accounting\Reports\BalanceSheetReportController as NewBalanceSheetReportController;
+use App\Http\Controllers\Accounting\Reports\BankReconciliationReportController;
+use App\Http\Controllers\Accounting\SupplierController;
+use App\Http\Controllers\ActivityLogsController;
+use App\Http\Controllers\AnnouncementController;
+use App\Http\Controllers\ArrearsClassificationController;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\BankAccountController;
+use App\Http\Controllers\BranchController;
+use App\Http\Controllers\CashCollateralController;
+use App\Http\Controllers\CashCollateralTypeController;
+use App\Http\Controllers\ChartAccountController;
+use App\Http\Controllers\CompanyController;
+use App\Http\Controllers\ComplainCategoryController;
+use App\Http\Controllers\ComplaintsController;
 use App\Http\Controllers\CustomerController;
-use App\Http\Controllers\LoanProductController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\EmailController;
+use App\Http\Controllers\FiletypeController;
 use App\Http\Controllers\GroupController;
 use App\Http\Controllers\GroupMemberController;
-use App\Http\Controllers\LoanController;
-use App\Http\Controllers\LoanTopUpController;
-use App\Http\Controllers\LoanReportController;
-use App\Http\Controllers\LoanRepaymentController;
-use App\Http\Controllers\LoanCollateralController;
-use App\Http\Controllers\CashCollateralController;
-use App\Http\Controllers\LocationController;
-use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\JournalController;
+use App\Http\Controllers\LanguageController;
+use App\Http\Controllers\LaravelLogsController;
 use App\Http\Controllers\LoanCalculatorController;
-use App\Http\Controllers\TransactionController;
-use App\Http\Controllers\Accounting\Reports\BalanceSheetReportController as NewBalanceSheetReportController;
+use App\Http\Controllers\LoanCollateralController;
+use App\Http\Controllers\LoanController;
+use App\Http\Controllers\LoanProductController;
+use App\Http\Controllers\LoanRepaymentController;
+use App\Http\Controllers\LoanReportController;
+use App\Http\Controllers\LoanTopUpController;
+use App\Http\Controllers\LocationController;
+use App\Http\Controllers\OtpEmailController;
+use App\Http\Controllers\Reports\BotAgentBankingController;
 use App\Http\Controllers\Reports\BotBalanceSheetController;
-use App\Http\Controllers\Reports\BotIncomeStatementController;
-use App\Http\Controllers\Reports\BotSectoralLoansController;
-use App\Http\Controllers\Reports\BotInterestRatesController;
-use App\Http\Controllers\Reports\BotLiquidAssetsController;
 use App\Http\Controllers\Reports\BotComplaintsReportController;
 use App\Http\Controllers\Reports\BotDepositsBorrowingsController;
-use App\Http\Controllers\Reports\BotAgentBankingController;
-use App\Http\Controllers\EmailController;
-use App\Http\Controllers\Reports\BotLoansDisbursedController;
 use App\Http\Controllers\Reports\BotGeographicalDistributionController;
+use App\Http\Controllers\Reports\BotIncomeStatementController;
+use App\Http\Controllers\Reports\BotInterestRatesController;
+use App\Http\Controllers\Reports\BotLiquidAssetsController;
+use App\Http\Controllers\Reports\BotLoansDisbursedController;
+use App\Http\Controllers\Reports\BotSectoralLoansController;
+use App\Http\Controllers\RolePermissionController;
+use App\Http\Controllers\SettingsController;
 use App\Http\Controllers\SubscriptionController;
-use App\Http\Controllers\LaravelLogsController;
+use App\Http\Controllers\SuperAdminController;
+use App\Http\Controllers\UserController;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Route;
+
 // Add other main app routes here
 Route::get('/dashboard/loan-product-disbursement', [DashboardController::class, 'loanProductDisbursement'])->middleware('auth');
 Route::get('/dashboard/delinquency-loan-buckets', [DashboardController::class, 'delinquencyLoanBuckets'])->middleware('auth');
@@ -102,9 +102,7 @@ Route::get('group-members-ajax/{group}', [\App\Http\Controllers\GroupMemberAjaxC
 Route::get('arrears-loans', [\App\Http\Controllers\ArrearsLoanController::class, 'index'])->name('arrears.loans.list');
 Route::get('arrears-loans/pdf', [\App\Http\Controllers\ArrearsLoanController::class, 'exportPdf'])->name('arrears.loans.pdf');
 
-
 Route::get('/', [AuthController::class, 'showLoginForm'])->name('login');
-
 
 Route::get('/login', [AuthController::class, 'showLoginForm']);
 Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
@@ -152,37 +150,36 @@ Route::get('/test-language', function () {
 Route::get('/request-email-otp', [OtpEmailController::class, 'showEmailForm'])->name('email-otp-form');
 Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->name('email-otp-send');
 
-
 // Reports Route
 Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->middleware('auth')->name('reports.index');
 Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'loans'])->middleware('auth')->name('reports.loans');
 Route::get('/reports/customers', [App\Http\Controllers\ReportsController::class, 'customers'])->middleware('auth')->name('reports.customers');
-Route::get("/reports/customers/list", [App\Http\Controllers\Reports\CustomerListReportController::class, "index"])->middleware("auth")->name("reports.customers.list");
-Route::get("/reports/customers/list/export", [App\Http\Controllers\Reports\CustomerListReportController::class, "export"])->middleware("auth")->name("reports.customers.list.export");
-Route::get("/reports/customers/list/export-pdf", [App\Http\Controllers\Reports\CustomerListReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.list.export-pdf");
-Route::get("/reports/customers/activity", [App\Http\Controllers\Reports\CustomerActivityReportController::class, "index"])->middleware("auth")->name("reports.customers.activity");
-Route::get("/reports/customers/activity/export", [App\Http\Controllers\Reports\CustomerActivityReportController::class, "export"])->middleware("auth")->name("reports.customers.activity.export");
-Route::get("/reports/customers/activity/export-pdf", [App\Http\Controllers\Reports\CustomerActivityReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.activity.export-pdf");
-Route::get("/reports/customers/performance", [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, "index"])->middleware("auth")->name("reports.customers.performance");
-Route::get("/reports/customers/performance/export", [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, "export"])->middleware("auth")->name("reports.customers.performance.export");
-Route::get("/reports/customers/performance/export-pdf", [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.performance.export-pdf");
-Route::get("/reports/customers/demographics", [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, "index"])->middleware("auth")->name("reports.customers.demographics");
-Route::get("/reports/customers/demographics/export", [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, "export"])->middleware("auth")->name("reports.customers.demographics.export");
-Route::get("/reports/customers/demographics/export-pdf", [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.demographics.export-pdf");
-Route::get("/reports/customers/risk-assessment", [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, "index"])->middleware("auth")->name("reports.customers.risk-assessment");
-Route::get("/reports/customers/risk-assessment/export", [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, "export"])->middleware("auth")->name("reports.customers.risk-assessment.export");
-Route::get("/reports/customers/risk-assessment/export-pdf", [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.risk-assessment.export-pdf");
-Route::get("/reports/customers/communication", [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, "index"])->middleware("auth")->name("reports.customers.communication");
-Route::get("/reports/customers/communication/export", [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, "export"])->middleware("auth")->name("reports.customers.communication.export");
-Route::get("/reports/customers/communication/export-pdf", [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, "exportPdf"])->middleware("auth")->name("reports.customers.communication.export-pdf");
+Route::get('/reports/customers/list', [App\Http\Controllers\Reports\CustomerListReportController::class, 'index'])->middleware('auth')->name('reports.customers.list');
+Route::get('/reports/customers/list/export', [App\Http\Controllers\Reports\CustomerListReportController::class, 'export'])->middleware('auth')->name('reports.customers.list.export');
+Route::get('/reports/customers/list/export-pdf', [App\Http\Controllers\Reports\CustomerListReportController::class, 'exportPdf'])->middleware('auth')->name('reports.customers.list.export-pdf');
+Route::get('/reports/customers/activity', [App\Http\Controllers\Reports\CustomerActivityReportController::class, 'index'])->middleware('auth')->name('reports.customers.activity');
+Route::get('/reports/customers/activity/export', [App\Http\Controllers\Reports\CustomerActivityReportController::class, 'export'])->middleware('auth')->name('reports.customers.activity.export');
+Route::get('/reports/customers/activity/export-pdf', [App\Http\Controllers\Reports\CustomerActivityReportController::class, 'exportPdf'])->middleware('auth')->name('reports.customers.activity.export-pdf');
+Route::get('/reports/customers/performance', [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, 'index'])->middleware('auth')->name('reports.customers.performance');
+Route::get('/reports/customers/performance/export', [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, 'export'])->middleware('auth')->name('reports.customers.performance.export');
+Route::get('/reports/customers/performance/export-pdf', [App\Http\Controllers\Reports\CustomerPerformanceReportController::class, 'exportPdf'])->middleware('auth')->name('reports.customers.performance.export-pdf');
+Route::get('/reports/customers/demographics', [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, 'index'])->middleware('auth')->name('reports.customers.demographics');
+Route::get('/reports/customers/demographics/export', [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, 'export'])->middleware('auth')->name('reports.customers.demographics.export');
+Route::get('/reports/customers/demographics/export-pdf', [App\Http\Controllers\Reports\CustomerDemographicsReportController::class, 'exportPdf'])->middleware('auth')->name('reports.customers.demographics.export-pdf');
+Route::get('/reports/customers/risk-assessment', [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, 'index'])->middleware('auth')->name('reports.customers.risk-assessment');
+Route::get('/reports/customers/risk-assessment/export', [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, 'export'])->middleware('auth')->name('reports.customers.risk-assessment.export');
+Route::get('/reports/customers/risk-assessment/export-pdf', [App\Http\Controllers\Reports\CustomerRiskAssessmentReportController::class, 'exportPdf'])->middleware('auth')->name('reports.customers.risk-assessment.export-pdf');
+Route::get('/reports/customers/communication', [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, 'index'])->middleware('auth')->name('reports.customers.communication');
+Route::get('/reports/customers/communication/export', [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, 'export'])->middleware('auth')->name('reports.customers.communication.export');
+Route::get('/reports/customers/communication/export-pdf', [App\Http\Controllers\Reports\CustomerCommunicationReportController::class, 'exportPdf'])->middleware('auth')->name('reports.customers.communication.export-pdf');
 Route::get('/reports/bot', [App\Http\Controllers\ReportsController::class, 'bot'])->middleware('auth')->name('reports.bot');
 // BOT Balance Sheet & Income Statement
 Route::prefix('reports/bot')->middleware('auth')->name('reports.bot.')->group(function () {
 
     // Accounting Reports Index
-    Route::get("/accounting-reports", function () {
-        return view("reports.index");
-    })->name("index");
+    Route::get('/accounting-reports', function () {
+        return view('reports.index');
+    })->name('index');
     Route::get('/balance-sheet', [BotBalanceSheetController::class, 'index'])->name('balance-sheet');
     Route::get('/balance-sheet/export', [BotBalanceSheetController::class, 'export'])->name('balance-sheet.export');
     Route::get('/income-statement', [BotIncomeStatementController::class, 'index'])->name('income-statement');
@@ -205,7 +202,7 @@ Route::prefix('reports/bot')->middleware('auth')->name('reports.bot.')->group(fu
     Route::get('/geographical-distribution/export', [BotGeographicalDistributionController::class, 'export'])->name('geographical-distribution.export');
 });
 
-////////////////////////////////////////ROLES & PERMISSIONSMANAGEMENT /////////////////////////////////////////////
+// //////////////////////////////////////ROLES & PERMISSIONSMANAGEMENT /////////////////////////////////////////////
 Route::middleware(['auth'])->group(function () {
     // Explicit route model binding for Role
     Route::model('role', \App\Models\Role::class);
@@ -229,8 +226,6 @@ Route::middleware(['auth'])->group(function () {
     Route::post('permissions', [RolePermissionController::class, 'createPermission'])->name('permissions.store');
     Route::delete('permissions/{permission}', [RolePermissionController::class, 'deletePermission'])->name('permissions.destroy');
 
-
-
     // User role assignment
     Route::post('users/{user}/assign-roles', [RolePermissionController::class, 'assignToUser'])->name('users.assign-roles');
     Route::delete('users/{user}/remove-role', [RolePermissionController::class, 'removeFromUser'])->name('users.remove-role');
@@ -238,9 +233,9 @@ Route::middleware(['auth'])->group(function () {
     // Role statistics
     Route::get('roles-stats', [RolePermissionController::class, 'getStats'])->name('roles.stats');
 });
-////////////////////////////////////////////// END ROLES & PERMISSIONS MANAGEMENT //////////////////////////////////////////
+// //////////////////////////////////////////// END ROLES & PERMISSIONS MANAGEMENT //////////////////////////////////////////
 
-////////////////////////////////////////////// USER MANAGEMENT /////////////////////////////////////////////////////
+// //////////////////////////////////////////// USER MANAGEMENT /////////////////////////////////////////////////////
 
 // Additional user routes (must come BEFORE resource route)
 Route::get('/users/profile', [UserController::class, 'profile'])->name('users.profile')->middleware('auth');
@@ -254,13 +249,13 @@ Route::patch('/users/{user}/status', [UserController::class, 'changeStatus'])->n
 Route::post('/users/{user}/roles', [UserController::class, 'assignRoles'])->name('users.roles')->middleware(['auth', 'company.scope']);
 Route::post('/users/{user}/assign-branches', [UserController::class, 'assignBranches'])->name('users.assign-branches')->middleware(['auth', 'company.scope']);
 
-////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////// SETTINGS ROUTES ////////////////////////////////////////////////
+// //////////////////////////////////////////// SETTINGS ROUTES ////////////////////////////////////////////////
 
 Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope'])->group(function () {
 
-    //Filetypes settings
+    // Filetypes settings
     Route::resource('filetypes', FiletypeController::class);
 
     // Complain Categories
@@ -312,23 +307,32 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
         return response()->json([
             'csrf_token' => csrf_token(),
             'status' => 'success',
-            'message' => 'AI Assistant connection test successful'
+            'message' => 'AI Assistant connection test successful',
         ]);
     })->name('ai.test');
 
     // Penalty Settings
     Route::get('/penalty', [SettingsController::class, 'penaltySettings'])->name('penalty');
     Route::put('/penalty', [SettingsController::class, 'updatePenaltySettings'])->name('penalty.update');
-           // Activity Logs
-           Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
-           Route::get('/logs/data', [ActivityLogsController::class, 'data'])->name('logs.data');
-           Route::get('/logs/{id}', [ActivityLogsController::class, 'show'])->name('logs.show');
-            //////logs route///
-            Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
-            Route::get('/logs/data', [ActivityLogsController::class, 'getData'])->name('logs.data');
-            Route::get('/logs/export/excel', [ActivityLogsController::class, 'exportExcel'])->name('logs.export.excel');
-            Route::get('/logs/export/pdf', [ActivityLogsController::class, 'exportPdf'])->name('logs.export.pdf');
-           
+
+    // Loan arrears classifications (aging buckets & provision %)
+    Route::get('/arrears-classifications', [ArrearsClassificationController::class, 'index'])->name('arrears-classifications.index');
+    Route::get('/arrears-classifications/data', [ArrearsClassificationController::class, 'data'])->name('arrears-classifications.data');
+    Route::post('/arrears-classifications/seed-defaults', [ArrearsClassificationController::class, 'seedDefaults'])->name('arrears-classifications.seed-defaults');
+    Route::post('/arrears-classifications/clear-all', [ArrearsClassificationController::class, 'clearAll'])->name('arrears-classifications.clear-all');
+    Route::post('/arrears-classifications', [ArrearsClassificationController::class, 'store'])->name('arrears-classifications.store');
+    Route::put('/arrears-classifications/{arrears_classification}', [ArrearsClassificationController::class, 'update'])->name('arrears-classifications.update');
+    Route::delete('/arrears-classifications/{arrears_classification}', [ArrearsClassificationController::class, 'destroy'])->name('arrears-classifications.destroy');
+    // Activity Logs
+    Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
+    Route::get('/logs/data', [ActivityLogsController::class, 'data'])->name('logs.data');
+    Route::get('/logs/{id}', [ActivityLogsController::class, 'show'])->name('logs.show');
+    // ////logs route///
+    Route::get('/logs', [ActivityLogsController::class, 'index'])->name('logs.index');
+    Route::get('/logs/data', [ActivityLogsController::class, 'getData'])->name('logs.data');
+    Route::get('/logs/export/excel', [ActivityLogsController::class, 'exportExcel'])->name('logs.export.excel');
+    Route::get('/logs/export/pdf', [ActivityLogsController::class, 'exportPdf'])->name('logs.export.pdf');
+
     // Fees Settings
     Route::get('/fees', [SettingsController::class, 'feesSettings'])->name('fees');
     Route::put('/fees', [SettingsController::class, 'updateFeesSettings'])->name('fees.update');
@@ -357,14 +361,14 @@ Route::prefix('settings')->name('settings.')->middleware(['auth', 'company.scope
 
     // Run Penalty Accrual
     Route::post('/penalty-accrual/run', [SettingsController::class, 'runPenaltyAccrual'])->name('penalty-accrual.run');
-    
+
     // Run Daily Accrual Interest
     Route::post('/daily-accrual-interest/run', [SettingsController::class, 'runDailyAccrualInterest'])->name('daily-accrual-interest.run');
 });
 
-////////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
+// //////////////////////////////////////////// END SETTINGS ROUTES /////////////////////////////////////////////
 
-////////////////////////////////////////////// SUBSCRIPTION MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// SUBSCRIPTION MANAGEMENT ///////////////////////////////////////////
 
 Route::prefix('subscriptions')->name('subscriptions.')->middleware(['auth', 'role:super-admin'])->group(function () {
     // Subscription Dashboard
@@ -401,7 +405,7 @@ Route::get('/api/ticker-messages', function () {
             'success' => true,
             'messages' => [],
             'show_ticker' => false,
-            'timestamp' => now()->toISOString()
+            'timestamp' => now()->toISOString(),
         ]);
     }
 
@@ -416,21 +420,21 @@ Route::get('/api/ticker-messages', function () {
         $daysText = $daysLeft == 0 ? 'expires today' : ($daysLeft == 1 ? 'expires tomorrow' : "expires in {$daysLeft} days");
 
         $messages[] = [
-            'text' => "⚠️ URGENT: {$subscription->company->name} subscription ({$subscription->plan_name}) {$daysText} - Amount: " . number_format($subscription->amount, 2) . " {$subscription->currency}",
+            'text' => "⚠️ URGENT: {$subscription->company->name} subscription ({$subscription->plan_name}) {$daysText} - Amount: ".number_format($subscription->amount, 2)." {$subscription->currency}",
             'type' => $urgency,
             'icon' => 'bx-credit-card',
             'subscription_id' => $subscription->id,
             'company_name' => $subscription->company->name,
             'days_left' => $daysLeft,
-            'expiry_date' => $subscription->end_date->format('M d, Y')
+            'expiry_date' => $subscription->end_date->format('M d, Y'),
         ];
     }
 
     // Add a general reminder message
     $messages[] = [
-        'text' => "🔔 Action Required: Please renew expiring subscriptions to avoid service interruption",
+        'text' => '🔔 Action Required: Please renew expiring subscriptions to avoid service interruption',
         'type' => 'urgent',
-        'icon' => 'bx-bell'
+        'icon' => 'bx-bell',
     ];
 
     return response()->json([
@@ -438,23 +442,23 @@ Route::get('/api/ticker-messages', function () {
         'messages' => $messages,
         'show_ticker' => true,
         'expiring_count' => $expiringSubscriptions->count(),
-        'timestamp' => $now->toISOString()
+        'timestamp' => $now->toISOString(),
     ]);
 })->middleware('auth');
 
-////////////////////////////////////////////// END SUBSCRIPTION MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END SUBSCRIPTION MANAGEMENT ///////////////////////////////////////////
 
-////////////////////////////////////////////// BRANCH MANAGEMENT ///////////////////////////////////////////////////
+// //////////////////////////////////////////// BRANCH MANAGEMENT ///////////////////////////////////////////////////
 
-//Route::resource('branches', BranchController::class)->middleware('auth');
+// Route::resource('branches', BranchController::class)->middleware('auth');
 
-//Route::resource('companies', CompanyController::class)->middleware('auth');
+// Route::resource('companies', CompanyController::class)->middleware('auth');
 
 Route::resource('cash_collateral_types', CashCollateralTypeController::class)->middleware('auth');
 
-////////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
+// //////////////////////////////////////////// END /////////////////////////////////////////////////////////////////
 
-////////////////////////////////////////////// SUPER ADMIN ROUTES ////////////////////////////////////////////////
+// //////////////////////////////////////////// SUPER ADMIN ROUTES ////////////////////////////////////////////////
 
 Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:super-admin'])->group(function () {
 
@@ -475,9 +479,9 @@ Route::prefix('super-admin')->name('super-admin.')->middleware(['auth', 'role:su
     Route::get('/users', [SuperAdminController::class, 'users'])->name('users');
 });
 
-////////////////////////////////////////////// END SUPER ADMIN ROUTES /////////////////////////////////////////////
+// //////////////////////////////////////////// END SUPER ADMIN ROUTES /////////////////////////////////////////////
 
-////////////////////////////////////////////// ACCOUNTING MANAGEMENT ///////////////////////////////////////////////
+// //////////////////////////////////////////// ACCOUNTING MANAGEMENT ///////////////////////////////////////////////
 
 Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(function () {
     // Account Class Groups
@@ -489,11 +493,11 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/{paymentVoucher}/approval', [PaymentVoucherController::class, 'showApproval'])->name('approval');
         Route::post('/{paymentVoucher}/approve', [PaymentVoucherController::class, 'approve'])->name('approve');
         Route::post('/{paymentVoucher}/reject', [PaymentVoucherController::class, 'reject'])->name('reject');
-        Route::get("/data", [PaymentVoucherController::class, "getPaymentVouchersData"])->name("data");
-        Route::resource("", PaymentVoucherController::class)->parameters(["" => "paymentVoucher"]);
-        Route::get("/{paymentVoucher}/download-attachment", [PaymentVoucherController::class, "downloadAttachment"])->name("download-attachment");
-        Route::delete("/{paymentVoucher}/remove-attachment", [PaymentVoucherController::class, "removeAttachment"])->name("remove-attachment");
-        Route::get("/{paymentVoucher}/export-pdf", [PaymentVoucherController::class, "exportPdf"])->name("export-pdf");
+        Route::get('/data', [PaymentVoucherController::class, 'getPaymentVouchersData'])->name('data');
+        Route::resource('', PaymentVoucherController::class)->parameters(['' => 'paymentVoucher']);
+        Route::get('/{paymentVoucher}/download-attachment', [PaymentVoucherController::class, 'downloadAttachment'])->name('download-attachment');
+        Route::delete('/{paymentVoucher}/remove-attachment', [PaymentVoucherController::class, 'removeAttachment'])->name('remove-attachment');
+        Route::get('/{paymentVoucher}/export-pdf', [PaymentVoucherController::class, 'exportPdf'])->name('export-pdf');
     });
     Route::get('/account-class-groups/create', [AccountClassGroupController::class, 'create'])->name('account-class-groups.create');
     Route::post('/account-class-groups', [AccountClassGroupController::class, 'store'])->name('account-class-groups.store');
@@ -522,7 +526,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::put('/suppliers/{encodedId}', [SupplierController::class, 'update'])->name('suppliers.update');
     Route::patch('/suppliers/{encodedId}/status', [SupplierController::class, 'changeStatus'])->name('suppliers.changeStatus');
     Route::delete('/suppliers/{encodedId}', [SupplierController::class, 'destroy'])->name('suppliers.destroy');
-
 
     // Bill and Payment PDF Export Routes
     Route::get('/bill-purchases/{billPurchase}/export-pdf', [BillPurchaseController::class, 'exportPdf'])->name('bill-purchases.export-pdf');
@@ -601,7 +604,6 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/budgets/{budget}/export/excel', [BudgetController::class, 'exportExcel'])->name('budgets.export-excel');
     Route::get('/budgets/{budget}/export/pdf', [BudgetController::class, 'exportPdf'])->name('budgets.export-pdf');
 
-
     Route::get('/budgets/{budget}', [BudgetController::class, 'show'])->name('budgets.show');
     Route::get('/budgets/{budget}/edit', [BudgetController::class, 'edit'])->name('budgets.edit');
     Route::put('/budgets/{budget}', [BudgetController::class, 'update'])->name('budgets.update');
@@ -641,17 +643,18 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::prefix('reports')->name('reports.')->group(function () {
 
         // Main Reports Index
-        Route::get("/", function () {
-            return view("reports.index");
-        })->name("index");
+        Route::get('/', function () {
+            return view('reports.index');
+        })->name('index');
 
         // Accounting Reports Index
-        Route::get("/accounting-reports", function () {
-            if (!auth()->user()->can('view accounting reports')) {
+        Route::get('/accounting-reports', function () {
+            if (! auth()->user()->can('view accounting reports')) {
                 abort(403, 'Unauthorized access to accounting reports.');
             }
-            return view("reports.index");
-        })->name("accounting");
+
+            return view('reports.index');
+        })->name('accounting');
         Route::get('/other-income', [App\Http\Controllers\Accounting\Reports\OtherIncomeReportController::class, 'index'])->name('other-income');
         // Trial Balance Report
         Route::get('/trial-balance', [App\Http\Controllers\Accounting\Reports\TrialBalanceReportController::class, 'index'])->name('trial-balance');
@@ -682,15 +685,15 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
         Route::get('/budget-report/export-pdf', [App\Http\Controllers\Accounting\Reports\BudgetReportController::class, 'exportPdf'])->name('budget-report.export-pdf');
 
         // Fees Report
-        Route::get("/fees", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "index"])->name("fees");
-        Route::get("/fees/export", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "export"])->name("fees.export");
+        Route::get('/fees', [App\Http\Controllers\Accounting\Reports\FeesReportController::class, 'index'])->name('fees');
+        Route::get('/fees/export', [App\Http\Controllers\Accounting\Reports\FeesReportController::class, 'export'])->name('fees.export');
 
-        Route::get("/fees/export-pdf", [App\Http\Controllers\Accounting\Reports\FeesReportController::class, "exportPdf"])->name("fees.export-pdf");
+        Route::get('/fees/export-pdf', [App\Http\Controllers\Accounting\Reports\FeesReportController::class, 'exportPdf'])->name('fees.export-pdf');
 
         // Penalties Report
-        Route::get("/penalties", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "index"])->name("penalties");
-        Route::get("/penalties/export", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "export"])->name("penalties.export");
-        Route::get("/penalties/export-pdf", [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, "exportPdf"])->name("penalties.export-pdf");
+        Route::get('/penalties', [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, 'index'])->name('penalties');
+        Route::get('/penalties/export', [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, 'export'])->name('penalties.export');
+        Route::get('/penalties/export-pdf', [App\Http\Controllers\Accounting\Reports\PenaltiesReportController::class, 'exportPdf'])->name('penalties.export-pdf');
     });
 
     // Transaction Routes
@@ -698,19 +701,18 @@ Route::prefix('accounting')->name('accounting.')->middleware('auth')->group(func
     Route::get('/transactions/details/{transactionId}/{transactionType?}', [App\Http\Controllers\TransactionController::class, 'showTransactionDetails'])->name('transactions.details');
 });
 
-//route
+// route
 // Analytics Routes
 Route::get('/analytics/loans', [App\Http\Controllers\LoanAnalyticsController::class, 'index'])->middleware('auth')->name('analytics.loans.index');
 Route::get('/api/analytics/kpis', [App\Http\Controllers\LoanAnalyticsController::class, 'getKPIs'])->middleware('auth')->name('api.analytics.kpis');
 Route::get('/api/analytics/charts', [App\Http\Controllers\LoanAnalyticsController::class, 'getChartData'])->middleware('auth')->name('api.analytics.charts');
 Route::get('/api/analytics/insights', [App\Http\Controllers\LoanAnalyticsController::class, 'getAIInsights'])->middleware('auth')->name('api.analytics.insights');
 
-
 Route::name('loans.reports.')->group(function () {
-    //////LOANS REPORT ROUTE////////
+    // ////LOANS REPORT ROUTE////////
     Route::get('/loan-disbursement', [LoanReportController::class, 'loanDisbursementReport'])->name('disbursed');
     Route::get('/loan-disbursement/export', [LoanReportController::class, 'exportLoanDisbursement'])->name('loan-export');
-    ////////REPAYMENT ROUTE///////
+    // //////REPAYMENT ROUTE///////
     Route::get('/loan-repayments', [LoanReportController::class, 'getRepaymentReport'])->name('repayment');
     Route::get('/loan-repayment', [LoanReportController::class, 'getRepaymentReport'])->name('loan-repayment');
     Route::get('/loan-repayment/export', [LoanReportController::class, 'exportLoanRepayment'])->name('loan-export-repayment');
@@ -735,6 +737,10 @@ Route::name('loans.reports.')->group(function () {
     Route::get('/loan-arrears', [LoanReportController::class, 'loanArrearsReport'])->name('loan_arrears');
     Route::get('/loan-arrears/export-excel', [LoanReportController::class, 'exportLoanArrearsToExcel'])->name('loan_arrears.export_excel');
     Route::get('/loan-arrears/export-pdf', [LoanReportController::class, 'exportLoanArrearsToPdf'])->name('loan_arrears.export_pdf');
+
+    // Portfolio provisioning & arrears classification (Vision-style)
+    Route::get('/portfolio-provisioning', [LoanReportController::class, 'portfolioProvisioningReport'])->name('portfolio_provisioning');
+    Route::get('/portfolio-provisioning/export-excel', [LoanReportController::class, 'exportPortfolioProvisioningToExcel'])->name('portfolio_provisioning.export_excel');
 
     // Expected vs Collected Report
     Route::get('/expected-vs-collected', [LoanReportController::class, 'expectedVsCollectedReport'])->name('expected_vs_collected');
@@ -818,6 +824,10 @@ Route::prefix('accounting/loans/reports')->name('accounting.loans.reports.')->mi
     Route::get('/loan-arrears/export-excel', [LoanReportController::class, 'exportLoanArrearsToExcel'])->name('loan_arrears.export_excel');
     Route::get('/loan-arrears/export-pdf', [LoanReportController::class, 'exportLoanArrearsToPdf'])->name('loan_arrears.export_pdf');
 
+    // Portfolio provisioning & arrears classification (Vision-style)
+    Route::get('/portfolio-provisioning', [LoanReportController::class, 'portfolioProvisioningReport'])->name('portfolio_provisioning');
+    Route::get('/portfolio-provisioning/export-excel', [LoanReportController::class, 'exportPortfolioProvisioningToExcel'])->name('portfolio_provisioning.export_excel');
+
     // Expected vs Collected Report
     Route::get('/expected-vs-collected', [LoanReportController::class, 'expectedVsCollectedReport'])->name('expected_vs_collected');
     Route::get('/expected-vs-collected/export-excel', [LoanReportController::class, 'exportExpectedVsCollectedToExcel'])->name('expected_vs_collected.export_excel');
@@ -839,9 +849,9 @@ Route::prefix('accounting/loans/reports')->name('accounting.loans.reports.')->mi
     Route::get('/npl/export-pdf', [LoanReportController::class, 'exportNPLToPdf'])->name('npl.export_pdf');
 });
 
-////////////////////////////////////////////// END ACCOUNTING MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END ACCOUNTING MANAGEMENT ///////////////////////////////////////////
 
-////////////////////////////////////////////// CUSTOMER MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// CUSTOMER MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
     Route::get('customers', [CustomerController::class, 'index'])->name('customers.index');
@@ -870,9 +880,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('customers/{customer}', [CustomerController::class, 'destroy'])->name('customers.destroy');
 });
 
-////////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END CUSTOMER MANAGEMENT ///////////////////////////////////////////
 
-////////////////////////////////////////////// LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
     Route::get('loan-products', [LoanProductController::class, 'index'])->name('loan-products.index');
@@ -887,9 +897,9 @@ Route::middleware(['auth'])->group(function () {
     Route::put('loan-products/{encodedId}/kyc-config', [LoanProductController::class, 'updateKycConfig'])->name('loan-products.kyc-config.update');
 });
 
-////////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END LOAN PRODUCT MANAGEMENT ///////////////////////////////////////////
 
-////////////////////////////////////////////// LOAN CALCULATOR ///////////////////////////////////////////
+// //////////////////////////////////////////// LOAN CALCULATOR ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
     Route::get('loan-calculator', [LoanCalculatorController::class, 'index'])->name('loan-calculator.index');
@@ -915,28 +925,30 @@ Route::middleware(['auth'])->group(function () {
     // New Balance Sheet report
     Route::get('reports/balance-sheet', [NewBalanceSheetReportController::class, 'index'])->name('reports.balance-sheet');
 
-  // Simple SMS send endpoint for navbar modal
-  Route::post('sms/send', function(\Illuminate\Http\Request $request) {
-      $validated = $request->validate([
-          'phone' => 'required|string',
-          'message' => 'required|string|max:500'
-      ]);
-      try {
-          $result = \App\Helpers\SmsHelper::send($validated['phone'], $validated['message']);
-          if (is_array($result) && isset($result['success'])) {
-              return response()->json($result);
-          }
-          return response()->json(['success' => true, 'response' => $result]);
-      } catch (\Throwable $e) {
-          \Log::error('SMS send failed: '.$e->getMessage());
-          return response()->json(['success' => false, 'message' => 'SMS send failed: ' . $e->getMessage()], 500);
-      }
-  })->name('sms.send');
+    // Simple SMS send endpoint for navbar modal
+    Route::post('sms/send', function (\Illuminate\Http\Request $request) {
+        $validated = $request->validate([
+            'phone' => 'required|string',
+            'message' => 'required|string|max:500',
+        ]);
+        try {
+            $result = \App\Helpers\SmsHelper::send($validated['phone'], $validated['message']);
+            if (is_array($result) && isset($result['success'])) {
+                return response()->json($result);
+            }
+
+            return response()->json(['success' => true, 'response' => $result]);
+        } catch (\Throwable $e) {
+            \Log::error('SMS send failed: '.$e->getMessage());
+
+            return response()->json(['success' => false, 'message' => 'SMS send failed: '.$e->getMessage()], 500);
+        }
+    })->name('sms.send');
 });
 
-////////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////
+// //////////////////////////////////////////// END LOAN CALCULATOR ///////////////////////////////////////////
 
-////////////////////////////////////////////// GROUP MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// GROUP MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
     Route::get('groups', [GroupController::class, 'index'])->name('groups.index');
@@ -959,7 +971,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('groups/{encodedId}/transfer-member', [GroupController::class, 'transferMember'])->name('groups.members.transfer');
     Route::get('groups/{encodedId}/members-for-transfer', [GroupController::class, 'getMembersForTransfer'])->name('groups.members.for-transfer');
 });
-////////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// GROUP MEMBER MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
     Route::get('groups/{encodedId}/members/create', [GroupMemberController::class, 'create'])->name('group-members.create');
@@ -967,9 +979,9 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('groups/{encodedId}/members/{member}', [GroupMemberController::class, 'destroy'])->name('group-members.destroy');
 });
 
-////////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END GROUP MANAGEMENT ///////////////////////////////////////////
 
-////////////////////////////////////////////// LOAN MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// LOAN MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->group(function () {
     Route::get('loans', [LoanController::class, 'index'])->name('loans.index');
@@ -980,6 +992,7 @@ Route::middleware(['auth'])->group(function () {
         $loans = \App\Models\Loan::with(['customer', 'product', 'branch'])
             ->where('status', 'written_off')
             ->get();
+
         return view('loans.written_off', compact('loans'));
     })->name('loans.writtenoff');
     Route::get('loans/chart-accounts/{type}', [LoanController::class, 'getChartAccountsByType'])->name('loans.chart-accounts');
@@ -1069,7 +1082,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('accounting.receipt-vouchers.print');
 });
 
-////////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END LOAN MANAGEMENT ///////////////////////////////////////////
 
 // Temporary fallback route for asset work orders to fix missing route error.
 // Redirects back to dashboard with a success message. Replace with real controller later.
@@ -1090,7 +1103,7 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/loans/{encodedId}/settle', [LoanController::class, 'settleRepayment'])->name('loans.settle');
 });
 
-////////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// CASHCOLLATERALS MANAGEMENT ///////////////////////////////////////////
 
 Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
     Route::get('/', [CashCollateralController::class, 'index'])->name('cash_collaterals.index');
@@ -1100,7 +1113,6 @@ Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
     Route::get('/{cashcollateral}/edit', [CashCollateralController::class, 'edit'])->name('cash_collaterals.edit');
     Route::delete('/{cashcollateral}/delete', [CashCollateralController::class, 'destroy'])->name('cash_collaterals.destroy');
     Route::put('/{cashcollateral}', [CashCollateralController::class, 'update'])->name('cash_collaterals.update');
-
 
     // Direct Receipt and Payment Routes for Cash Collateral
     Route::get('/receipts/{receipt}/edit', [CashCollateralController::class, 'editReceipt'])->name('receipts.edit');
@@ -1120,7 +1132,7 @@ Route::middleware(['auth'])->prefix('cash_collaterals')->group(function () {
     Route::get('/print-withdrawal-receipt/{id}', [CashCollateralController::class, 'printWithdrawalReceipt'])->name('cash_collaterals.printWithdrawalReceipt');
 });
 
-////////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
+// //////////////////////////////////////////// END CASHCOLLATERALS  MANAGEMENT ///////////////////////////////////////////
 
 Route::get('/get-districts/{regionId}', [LocationController::class, 'getDistricts']);
 
@@ -1155,5 +1167,6 @@ Route::middleware(['auth'])->group(function () {
 
 Route::post('/logout', function () {
     Auth::logout();
+
     return redirect('/')->with('success', 'You are successfully logout.');
 })->middleware('auth');

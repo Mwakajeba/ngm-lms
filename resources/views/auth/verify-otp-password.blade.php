@@ -12,7 +12,7 @@
                         <div class="card-body">
                             <div class="p-4 rounded">
                                 <div class="text-center">
-                                    <img src="{{ asset('assets/images/icons/smartfinance.png') }}" alt="" />
+                                    <img src="{{ asset('assets/images/icons/smartfinance.png') }}" alt="NGML" width="300"/>
                                 </div>
                                 <div class="login-separater text-center mb-4">
                                     <span>VERIFY YOUR PHONE</span>

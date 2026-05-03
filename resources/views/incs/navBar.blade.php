@@ -534,11 +534,13 @@
                     <img src="{{ asset('assets/images/avatars/avatar-2.png') }}" class="user-img" alt="user avatar">
                     <div class="user-info ps-3">
                         <p class="user-name mb-0">{{ Auth::user()->name }}</p>
-                        <?php
-// Fetch the user's role name
-$roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()->name) : '';
-                ?>
-                        <p class="designattion mb-0">{{ $roleName }}</p>
+                        @php
+                            $roleName = Auth::user()->roles->first() ? ucfirst(Auth::user()->roles->first()->name) : '';
+                            $navBranchName = session('branch_id')
+                                ? optional(Auth::user()->branches->where('id', session('branch_id'))->first())->name
+                                : (Auth::user()->branch?->name ?? null);
+                        @endphp
+                        <p class="designattion mb-0">{{ $roleName }} - {{ $navBranchName }}</p>
                     </div>
                 </a>
                 <ul class="dropdown-menu dropdown-menu-end">

@@ -155,11 +155,7 @@ use Vinkla\Hashids\Facades\Hashids;
                             <div class="col-md-8">
                                 <div class="card-title d-flex align-items-center">
                                     <div><i class="bx bx-home me-1 font-22 text-primary"></i></div>
-                                    <h5 class="mb-0 text-primary">Welcome back, {{ auth()->user()->name }}!
-                                        <span class="badge bg-warning text-dark ms-2" style="font-size: 1rem; vertical-align: middle;">
-                                            Branch: {{ session('branch_id') ? optional(auth()->user()->branches->where('id', session('branch_id'))->first())->name : (auth()->user()->branch->name ?? 'N/A') }}
-                                        </span>
-                                    </h5>
+                                    <h5 class="mb-0 text-primary">{{ __('app.dashboard') }}</h5>
                                 </div>
                                 <p class="mb-0 text-muted">Here's what's happening with your financial data today</p>
                             </div>
@@ -244,148 +240,177 @@ use Vinkla\Hashids\Facades\Hashids;
             </div>
             @endcan
 
-
-            @can('view journals')
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">Total Journals</p>
-                                <h4 class="font-weight-bold">{{ $recentJournals->count() > 0 ? $recentJournals->count() : 0 }}</h4>
-                                <p class="text-success mb-0 font-13">This month</p>
-                            </div>
-                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-book-open'></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endcan
-            @can('view payments')
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">Total Payments</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($totalPaymentsThisMonth ?? 0, 2) }}</h4>
-                                <p class="text-secondary mb-0 font-13">This month</p>
-                            </div>
-                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endcan
-            @can('view receipts')
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-body">
-                        <div class="d-flex align-items-center">
-                            <div class="flex-grow-1">
-                                <p class="mb-0">Total Receipts</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($totalReceiptsThisMonth ?? 0, 2) }}</h4>
-                                <p class="text-secondary mb-0 font-13">This month</p>
-                            </div>
-                            <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-receipt'></i></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-            @endcan
-            <!-- Loan Stats Cards -->
+            <!-- Loan KPIs (Active loans only) -->
             @can('view loans')
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Total Loan Amount</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($totalLoanAmount ?? 0, 2) }}</h4>
+                                <p class="mb-0 text-muted">Principal Disbursed</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($principalDisbursed ?? 0, 2) }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-blues text-white"><i class='bx bx-wallet'></i></div>
                         </div>
                     </div>
                 </div>
             </div>
-            @endcan
-            @can('view loans')
+
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Total Principal</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($totalPrincipal ?? 0, 2) }}</h4>
-                                <p class="mb-0">Total Interest: TZS {{ number_format($totalInterest ?? 0, 2) }}</p>
+                                <p class="mb-0 text-muted">Interest Expected</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($interestExpected ?? 0, 2) }}</h4>
                             </div>
-                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-money'></i></div>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-trending-up'></i></div>
                         </div>
                     </div>
                 </div>
             </div>
-            @endcan
-            @can('view loans')
+
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Repaid Principal</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format($repaidPrincipal ?? 0, 2) }}</h4>
-                                <p class="mb-0">Repaid Interest: TZS {{ number_format($repaidInterest ?? 0, 2) }}</p>
+                                <p class="mb-0 text-muted">Total Loans (Principal + Expected Interest)</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($totalLoansExpected ?? 0, 2) }}</h4>
+                            </div>
+                            <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-layer'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0 text-muted">Principal Collected</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($principalCollected ?? 0, 2) }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-success text-white"><i class='bx bx-check-circle'></i></div>
                         </div>
                     </div>
                 </div>
             </div>
-            @endcan
-            @can('view loans')
+
             <div class="col">
                 <div class="card radius-10">
                     <div class="card-body">
                         <div class="d-flex align-items-center">
                             <div class="flex-grow-1">
-                                <p class="mb-0">Outstanding Total</p>
-                                <h4 class="font-weight-bold">TZS {{ number_format(($outstandingPrincipal + $outstandingInterest) ?? 0, 0) }}</h4>
-                                <p class="mb-0" style="font-size: 0.75rem;">Outstanding Interest: <b>TZS {{ number_format($outstandingInterestDetailed ?? 0, 0) }}</b></p>
-                                <p class="mb-0" style="font-size: 0.75rem;">Accrued Interest: <b>TZS {{ number_format($accruedInterest ?? 0, 0) }}</b></p>
-                                <p class="mb-0" style="font-size: 0.75rem;">Not Due Interest: <b>TZS {{ number_format($notDueInterest ?? 0, 0) }}</b></p>
-                                <p class="mb-0" style="font-size: 0.75rem;">Paid Interest: <b>TZS {{ number_format($paidInterest ?? 0, 0) }}</b></p>
-                                <p class="mb-0" style="font-size: 0.75rem;">Outstanding Principal: <b>TZS {{ number_format($outstandingPrincipal ?? 0, 0) }}</b></p>
+                                <p class="mb-0 text-muted">Interest Collected</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($interestCollected ?? 0, 2) }}</h4>
+                            </div>
+                            <div class="widgets-icons bg-gradient-lush text-white"><i class='bx bx-receipt'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0 text-muted">Outstanding Principal</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($outstandingPrincipalActive ?? 0, 2) }}</h4>
                             </div>
                             <div class="widgets-icons bg-gradient-cosmic text-white"><i class='bx bx-hourglass'></i></div>
                         </div>
                     </div>
                 </div>
             </div>
-            @endcan
 
-            <!-- Complaints Card -->
             <div class="col">
-                <a href="{{ route('complaints.index') }}" class="text-decoration-none">
-                    <div class="card radius-10">
-                        <div class="card-body position-relative">
-                            <div class="d-flex align-items-center">
-                                <div class="flex-grow-1">
-                                    <p class="mb-0 text-muted">Complaints</p>
-                                    <h4 class="font-weight-bold text-dark">
-                                        {{ $pendingComplaintsCount ?? 0 }}
-                                    </h4>
-                                    <p class="text-warning mb-0 font-13">Pending ({{ $totalComplaintsCount ?? 0 }} total)</p>
-                                </div>
-                                <div class="widgets-icons bg-gradient-danger text-white">
-                                    <i class='bx bx-message-square-error'></i>
-                                </div>
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0 text-muted">Outstanding Interest</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($outstandingInterestActive ?? 0, 2) }}</h4>
                             </div>
-                            <span class="stretched-link"></span>
+                            <div class="widgets-icons bg-gradient-burning text-white"><i class='bx bx-time-five'></i></div>
                         </div>
                     </div>
-                </a>
+                </div>
             </div>
+
+            <div class="col">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <div class="d-flex align-items-center">
+                            <div class="flex-grow-1">
+                                <p class="mb-0 text-muted">Total Outstanding (Prin + Interest + Penalty)</p>
+                                <h4 class="font-weight-bold">TZS {{ number_format($totalOutstanding ?? 0, 2) }}</h4>
+                            </div>
+                            <div class="widgets-icons bg-gradient-dark text-white"><i class='bx bx-spreadsheet'></i></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            @endcan
+
+            {{-- Complaints card removed --}}
         </div>
         <!--end row-->
+
+        @can('view loans')
+        @if(!empty($arrearsBucketStats))
+        <div class="row mb-3">
+            <div class="col-12">
+                <div class="card radius-10">
+                    <div class="card-body">
+                        <h5 class="mb-2"><i class="bx bx-category me-2 text-primary"></i>Loans by arrears classification</h5>
+                        <p class="text-muted small mb-3">Active loans only. Each loan is placed in the first matching bucket by days in arrears (from the first overdue instalment). <strong>Principal / interest in arrears</strong> are unpaid parts of overdue instalments; <strong>total in arrears</strong> matches the loan arrears total (includes fees/penalties on overdue lines). <strong>Provision amount</strong> is principal in arrears only × bucket provision % (indicative, not posted to the GL). Empty buckets show <strong>0</strong>. The branch filter above applies.@can('manage system configurations') <a href="{{ route('settings.arrears-classifications.index') }}">Configure buckets</a>@endcan</p>
+                        <div class="table-responsive mt-3">
+                            <table class="table table-striped table-bordered mb-0">
+                                <thead class="table-light">
+                                    <tr>
+                                        <th>Bucket</th>
+                                        <th>Days (DPD)</th>
+                                        <th>Status</th>
+                                        <th class="text-end">Principal in arrears (TZS)</th>
+                                        <th class="text-end">Interest in arrears (TZS)</th>
+                                        <th class="text-end">Total in arrears (TZS)</th>
+                                        <th class="text-end">Provision %</th>
+                                        <th class="text-end">Provision amount (TZS)</th>
+                                        <th class="text-end"># Loans</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($arrearsBucketStats as $row)
+                                    <tr>
+                                        <td><span class="badge bg-secondary">{{ $row['bucket_label'] }}</span></td>
+                                        <td>
+                                            @if($row['days_to'] === null)
+                                                {{ $row['days_from'] }}+
+                                            @else
+                                                {{ $row['days_from'] }}–{{ $row['days_to'] }}
+                                            @endif
+                                        </td>
+                                        <td>{{ $row['status'] }}</td>
+                                        <td class="text-end">{{ number_format($row['arrears_principal'] ?? 0, 2) }}</td>
+                                        <td class="text-end">{{ number_format($row['arrears_interest'] ?? 0, 2) }}</td>
+                                        <td class="text-end">{{ number_format($row['arrears_total'] ?? 0, 2) }}</td>
+                                        <td class="text-end">{{ number_format($row['provision_percentage'], 2) }}</td>
+                                        <td class="text-end">{{ number_format($row['provision_amount'] ?? 0, 2) }}</td>
+                                        <td class="text-end fw-semibold">{{ $row['loan_count'] }}</td>
+                                    </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        @endif
+        @endcan
 
         @can('view graphs')
         <!-- Loan Product Disbursement Chart -->
@@ -513,99 +538,112 @@ use Vinkla\Hashids\Facades\Hashids;
                         }
                     });
                 });
-        });
 
-           // Monthly Collections Grouped Bar Chart
-            fetch('/dashboard/monthly-collections')
-                .then(response => response.json())
-                .then(data => {
-                    console.log('Monthly Collections Chart Data:', data);
-                    const ctx = document.getElementById('monthlyCollectionsChart').getContext('2d');
-                    const isEmpty = !data.months || !data.expected || !data.collected || !data.arrears ||
-                        data.months.length === 0 ||
-                        (data.expected.every(v => v == 0) && data.collected.every(v => v == 0) && data.arrears.every(v => v == 0));
-                    if (isEmpty) {
-                        document.getElementById('monthlyCollectionsChart').style.display = 'none';
-                        const fallback = document.createElement('div');
-                        fallback.style.textAlign = 'center';
-                        fallback.style.padding = '40px 0';
-                        fallback.style.color = '#888';
-                        fallback.innerHTML = '<b>No monthly collections data available for this year.</b>';
-                        ctx.canvas.parentNode.appendChild(fallback);
-                        return;
-                    }
-                    // Highlight months with no repayments by changing the collected bar color to gray
-                    const collectedColors = data.collected.map(v => v == 0 ? '#cccccc' : '#27ae60');
-                    new Chart(ctx, {
-                        type: 'bar',
-                        data: {
-                            labels: data.months,
-                            datasets: [
-                                {
-                                    label: 'Expected',
-                                    data: data.expected,
-                                    backgroundColor: '#f1c40f',
-                                    barPercentage: 0.3,
-                                    categoryPercentage: 0.6
-                                },
-                                {
-                                    label: 'Collected',
-                                    data: data.collected,
-                                    backgroundColor: collectedColors,
-                                    barPercentage: 0.3,
-                                    categoryPercentage: 0.6
-                                },
-                                {
-                                    label: 'Arrears',
-                                    data: data.arrears,
-                                    backgroundColor: '#e74c3c',
-                                    barPercentage: 0.3,
-                                    categoryPercentage: 0.6
-                                }
-                            ]
-                        },
-                        options: {
-                            responsive: true,
-                            plugins: {
-                                legend: { display: true },
-                                title: {
-                                    display: true,
-                                    text: 'Monthly Expected vs Collected vs Arrears'
-                                },
-                                tooltip: {
-                                    callbacks: {
-                                        label: function(context) {
-                                            let label = context.dataset.label || '';
-                                            let value = context.parsed;
-                                            if (label === 'Collected' && value === 0) {
-                                                return `${context.label}: No repayments`;
+            // Monthly Collections Grouped Bar Chart
+            const monthlyCollectionsCanvas = document.getElementById('monthlyCollectionsChart');
+            if (monthlyCollectionsCanvas) {
+                fetch('/dashboard/monthly-collections' + (branchId ? '?branch_id=' + branchId : ''))
+                    .then(response => response.json())
+                    .then(data => {
+                        console.log('Monthly Collections Chart Data:', data);
+                        const ctx = document.getElementById('monthlyCollectionsChart').getContext('2d');
+                        const isEmpty = !data.months || !data.expected || !data.collected || !data.arrears ||
+                            data.months.length === 0 ||
+                            (data.expected.every(v => v == 0) && data.collected.every(v => v == 0) && data.arrears.every(v => v == 0));
+                        if (isEmpty) {
+                            document.getElementById('monthlyCollectionsChart').style.display = 'none';
+                            const fallback = document.createElement('div');
+                            fallback.style.textAlign = 'center';
+                            fallback.style.padding = '40px 0';
+                            fallback.style.color = '#888';
+                            fallback.innerHTML = '<b>No monthly collections data available for this year.</b>';
+                            ctx.canvas.parentNode.appendChild(fallback);
+                            return;
+                        }
+                        const datasets = [
+                            {
+                                label: 'Expected',
+                                data: data.expected,
+                                backgroundColor: '#f1c40f',
+                                barPercentage: 0.3,
+                                categoryPercentage: 0.6
+                            }
+                        ];
+
+                        const hasCollected = Array.isArray(data.collected) && data.collected.some(v => Number(v) > 0);
+                        const hasArrears = Array.isArray(data.arrears) && data.arrears.some(v => Number(v) > 0);
+
+                        if (hasCollected) {
+                            const collectedColors = data.collected.map(v => Number(v) === 0 ? '#cccccc' : '#27ae60');
+                            datasets.push({
+                                label: 'Collected',
+                                data: data.collected,
+                                backgroundColor: collectedColors,
+                                barPercentage: 0.3,
+                                categoryPercentage: 0.6
+                            });
+                        }
+
+                        if (hasArrears) {
+                            datasets.push({
+                                label: 'Arrears',
+                                data: data.arrears,
+                                backgroundColor: '#e74c3c',
+                                barPercentage: 0.3,
+                                categoryPercentage: 0.6
+                            });
+                        }
+
+                        const titleParts = ['Monthly Expected'];
+                        if (hasCollected) titleParts.push('Collected');
+                        if (hasArrears) titleParts.push('Arrears');
+
+                        new Chart(ctx, {
+                            type: 'bar',
+                            data: {
+                                labels: data.months,
+                                datasets
+                            },
+                            options: {
+                                responsive: true,
+                                plugins: {
+                                    legend: { display: true },
+                                    title: {
+                                        display: true,
+                                        text: titleParts.join(' vs ') + ' (This Year)'
+                                    },
+                                    tooltip: {
+                                        callbacks: {
+                                            label: function(context) {
+                                                let value = context.parsed;
+                                                return `${context.dataset.label}: ${value.toLocaleString()}`;
                                             }
-                                            return `${context.label}: ${value.toLocaleString()}`;
                                         }
                                     }
-                                }
-                            },
-                            scales: {
-                                x: {
-                                    stacked: true,
-                                    title: { display: true, text: 'Month' }
                                 },
-                                y: {
-                                    stacked: false,
-                                    beginAtZero: true,
-                                    title: { display: true, text: 'Amount (TZS)' }
-                                }
-                            },
-                            barThickness: 12
-                        }
+                                scales: {
+                                    x: {
+                                        stacked: false,
+                                        title: { display: true, text: 'Month' }
+                                    },
+                                    y: {
+                                        stacked: false,
+                                        beginAtZero: true,
+                                        title: { display: true, text: 'Amount (TZS)' }
+                                    }
+                                },
+                                barThickness: 12
+                            }
+                        });
                     });
-                });
+            }
+        });
         </script>
         <!--end row-->
         @can('view graphs')
         <!-- Balance Sheet Overview -->
         <div class="row">
-            <div class="col-12 col-lg-8 d-lg-flex align-items-lg-stretch">
+            <div class="col-12 d-lg-flex align-items-lg-stretch">
                 <div class="card radius-10 w-100">
                     <div class="card-body">                
                         <div id="chart3"></div>
@@ -623,125 +661,8 @@ use Vinkla\Hashids\Facades\Hashids;
                     </div>
                 </div>
             </div>
-            <div class="col-12 col-lg-4 d-lg-flex align-items-lg-stretch">
-                <div class="card radius-10 w-100">
-                    <div class="card-header bg-transparent">Account Class Balances</div>
-                    <div class="card-body">
-                        <div class="table-responsive">
-                            <table class="table table-striped mb-0">
-                                <thead>
-                                    <tr>
-                                        <th>Class</th>
-                                        <th>Balance</th>
-                                        <th>Accounts</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    @forelse($balanceSheetData as $item)
-                                    <tr>
-                                        <td>
-                                            <div>
-                                                <strong>{{ $item['class_code'] }}</strong>
-                                                <br>
-                                                <small class="text-muted">{{ $item['class_name'] }}</small>
-                                            </div>
-                                        </td>
-                                        <td>
-                                            <span class="badge {{ $item['balance'] >= 0 ? 'bg-success' : 'bg-danger' }}">
-                                                TZS {{ number_format(abs($item['balance']), 2) }}
-                                            </span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ $item['account_count'] }}</span>
-                                        </td>
-                                    </tr>
-                                    @empty
-                                    <tr>
-                                        <td colspan="3" class="text-center text-muted">No account data available</td>
-                                    </tr>
-                                    @endforelse
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
         </div>
         <!--end row-->
-        @endcan
-        <!-- Recent Activities -->
-        @can('view recent activities') 
-        <div class="row row-cols-1 row-cols-lg-3">
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0"><i class="bx bx-book-open me-2"></i>Recent Journals</h6>
-                    </div>
-                    <div class="card-body">
-                        @forelse($recentJournals as $journal)
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="widgets-icons bg-light-primary text-primary me-3">
-                                <i class="bx bx-book"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ $journal->reference }}</h6>
-                                <p class="mb-0 text-muted">{{ Str::limit($journal->description, 30) }}</p>
-                                <small class="text-muted">{{ $journal->date ? $journal->date->format('M d, Y') : 'N/A' }}</small>
-                            </div>
-                        </div>
-                        @empty
-                        <p class="text-muted text-center">No recent journals</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0"><i class="bx bx-money me-2"></i>Recent Payments</h6>
-                    </div>
-                    <div class="card-body">
-                        @forelse($recentPayments as $payment)
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="widgets-icons bg-light-success text-success me-3">
-                                <i class="bx bx-money"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ $payment->reference }}</h6>
-                                <p class="mb-0 text-muted">{{ Str::limit($payment->description, 30) }}</p>
-                                <small class="text-muted">{{ $payment->date ? $payment->date->format('M d, Y') : 'N/A' }}</small>
-                            </div>
-                        </div>
-                        @empty
-                        <p class="text-muted text-center">No recent payments</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-            <div class="col">
-                <div class="card radius-10">
-                    <div class="card-header bg-transparent">
-                        <h6 class="mb-0"><i class="bx bx-receipt me-2"></i>Recent Receipts</h6>
-                    </div>
-                    <div class="card-body">
-                        @forelse($recentReceipts as $receipt)
-                        <div class="d-flex align-items-center mb-3">
-                            <div class="widgets-icons bg-light-success text-success me-3">
-                                <i class="bx bx-receipt"></i>
-                            </div>
-                            <div class="flex-grow-1">
-                                <h6 class="mb-1">{{ $receipt->reference }}</h6>
-                                <p class="mb-0 text-muted">{{ $receipt->description ?? 'N/A' }}</p>
-                                <small class="text-muted">{{ $receipt->date ? $receipt->date->format('M d, Y') : 'N/A' }}</small>
-                            </div>
-                        </div>
-                        @empty
-                        <p class="text-muted text-center">No recent receipts</p>
-                        @endforelse
-                    </div>
-                </div>
-            </div>
-        </div>
         @endcan
         <!-- Financial Report Summary -->
         @can('view financial reports')

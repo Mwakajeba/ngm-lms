@@ -2,27 +2,48 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\ArrearsClassification;
+use App\Models\Complain;
+use App\Models\Loan;
+use App\Services\LoanPenaltyService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use App\Models\ChartAccount;
-use App\Models\AccountClassGroup;
-use App\Models\GlTransaction;
-use App\Models\BankReconciliation;
-use App\Models\Journal;
-use App\Models\Payment;
-use App\Models\Penalty;
-use App\Models\Receipt;
-use App\Models\Complain;
-use App\Services\LoanPenaltyService;
 
 class DashboardController extends Controller
 {
     /**
      * Endpoint for monthly collections (expected, collected, arrears) for current year
      */
-    public function monthlyCollections()
+    public function monthlyCollections(Request $request)
     {
         $year = now()->year;
+        $company = auth()->user()->company;
+        $user = auth()->user();
+        $selectedBranchId = $request->get('branch_id');
+
+        $userBranchIds = $user->branches()->where('company_id', $company->id)->pluck('branches.id')->toArray();
+        if (empty($userBranchIds)) {
+            $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
+        }
+
+        $scheduleForMonth = function ($m) use ($year, $company, $selectedBranchId, $userBranchIds) {
+            $q = \App\Models\LoanSchedule::query()
+                ->whereYear('loan_schedules.due_date', $year)
+                ->whereMonth('loan_schedules.due_date', $m)
+                ->join('loans', 'loan_schedules.loan_id', '=', 'loans.id')
+                ->join('branches', 'loans.branch_id', '=', 'branches.id')
+                ->where('branches.company_id', $company->id);
+
+            if ($selectedBranchId) {
+                $q->where('loans.branch_id', $selectedBranchId);
+            } elseif (! empty($userBranchIds)) {
+                $q->whereIn('loans.branch_id', $userBranchIds);
+            }
+
+            return $q;
+        };
+
         $months = [];
         $expected = [];
         $collected = [];
@@ -30,31 +51,38 @@ class DashboardController extends Controller
         for ($m = 1; $m <= 12; $m++) {
             $monthLabel = date('M', mktime(0, 0, 0, $m, 1));
             $months[] = $monthLabel;
-            // Expected: sum of all schedules due in this month (no branch/company filter)
-            $exp = \App\Models\LoanSchedule::whereYear('due_date', $year)
-                ->whereMonth('due_date', $m)
-                ->sum('principal');
-            $exp += \App\Models\LoanSchedule::whereYear('due_date', $year)
-                ->whereMonth('due_date', $m)
-                ->sum('interest');
+
+            $exp = (clone $scheduleForMonth($m))->sum(DB::raw('loan_schedules.principal + loan_schedules.interest'));
             $expected[] = $exp;
-            // Collected: sum of repayments made for schedules due in this month (no branch/company filter)
-            $repayments = \DB::table('repayments')
+
+            $repayments = DB::table('repayments')
                 ->join('loan_schedules', 'repayments.loan_schedule_id', '=', 'loan_schedules.id')
+                ->join('loans', 'loan_schedules.loan_id', '=', 'loans.id')
+                ->join('branches', 'loans.branch_id', '=', 'branches.id')
+                ->whereNull('repayments.deleted_at')
+                ->where('branches.company_id', $company->id)
                 ->whereYear('loan_schedules.due_date', $year)
-                ->whereMonth('loan_schedules.due_date', $m)
-                ->sum(\DB::raw('repayments.principal + repayments.interest'));
-            $collected[] = $repayments;
-            // Arrears: expected - collected
-            $arrears[] = max(0, $exp - $repayments);
+                ->whereMonth('loan_schedules.due_date', $m);
+
+            if ($selectedBranchId) {
+                $repayments->where('loans.branch_id', $selectedBranchId);
+            } elseif (! empty($userBranchIds)) {
+                $repayments->whereIn('loans.branch_id', $userBranchIds);
+            }
+
+            $collectedSum = (float) $repayments->sum(DB::raw('repayments.principal + repayments.interest'));
+            $collected[] = $collectedSum;
+            $arrears[] = max(0, $exp - $collectedSum);
         }
+
         return response()->json([
             'months' => $months,
             'expected' => $expected,
             'collected' => $collected,
-            'arrears' => $arrears
+            'arrears' => $arrears,
         ]);
     }
+
     /**
      * Endpoint for delinquency loan buckets (current year)
      */
@@ -63,18 +91,18 @@ class DashboardController extends Controller
         $year = now()->year;
         $company = auth()->user()->company;
         $user = auth()->user();
-        
+
         // Get branch filter from request
         $selectedBranchId = $request->get('branch_id');
-        
+
         // Get user's assigned branches
         $userBranchIds = $user->branches()->where('company_id', $company->id)->pluck('branches.id')->toArray();
-        
+
         // If no assigned branches, use all company branches
         if (empty($userBranchIds)) {
             $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
         }
-        
+
         // Define buckets (days overdue)
         $buckets = [
             '1-30 days' => [1, 30],
@@ -88,33 +116,35 @@ class DashboardController extends Controller
         $values = [];
         foreach ($buckets as $label => [$min, $max]) {
             $query = \App\Models\Loan::whereYear('disbursed_on', $year)
-                ->whereHas('branch', function($q) use ($company) {
+                ->whereHas('branch', function ($q) use ($company) {
                     $q->where('company_id', $company->id);
                 })
                 ->where('status', 'active');
-            
+
             // Apply branch filter
             if ($selectedBranchId) {
                 $query->where('branch_id', $selectedBranchId);
             } else {
                 // If no specific branch selected, filter by user's assigned branches
-                if (!empty($userBranchIds)) {
+                if (! empty($userBranchIds)) {
                     $query->whereIn('branch_id', $userBranchIds);
                 }
             }
-            
-            $count = $query->whereHas('schedule', function($q) use ($min, $max) {
-                    $q->whereRaw('DATEDIFF(CURDATE(), due_date) BETWEEN ? AND ?', [$min, $max]);
-                })
+
+            $count = $query->whereHas('schedule', function ($q) use ($min, $max) {
+                $q->whereRaw('DATEDIFF(CURDATE(), due_date) BETWEEN ? AND ?', [$min, $max]);
+            })
                 ->count();
             $labels[] = $label;
             $values[] = $count;
         }
+
         return response()->json([
             'labels' => $labels,
-            'values' => $values
+            'values' => $values,
         ]);
     }
+
     /**
      * Endpoint for loan product disbursement data (current year)
      */
@@ -123,18 +153,18 @@ class DashboardController extends Controller
         $year = now()->year;
         $company = auth()->user()->company;
         $user = auth()->user();
-        
+
         // Get branch filter from request
         $selectedBranchId = $request->get('branch_id');
-        
+
         // Get user's assigned branches
         $userBranchIds = $user->branches()->where('company_id', $company->id)->pluck('branches.id')->toArray();
-        
+
         // If no assigned branches, use all company branches
         if (empty($userBranchIds)) {
             $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
         }
-        
+
         $products = \App\Models\LoanProduct::all();
 
         $productNames = [];
@@ -142,38 +172,40 @@ class DashboardController extends Controller
         foreach ($products as $product) {
             $query = \App\Models\Loan::where('product_id', $product->id)
                 ->whereYear('disbursed_on', $year)
-                ->whereHas('branch', function($q) use ($company) {
+                ->whereHas('branch', function ($q) use ($company) {
                     $q->where('company_id', $company->id);
                 });
-            
+
             // Apply branch filter
             if ($selectedBranchId) {
                 $query->where('branch_id', $selectedBranchId);
             } else {
                 // If no specific branch selected, filter by user's assigned branches
-                if (!empty($userBranchIds)) {
+                if (! empty($userBranchIds)) {
                     $query->whereIn('branch_id', $userBranchIds);
                 }
             }
-            
+
             $total = $query->sum('amount');
             $productNames[] = $product->name;
             $amounts[] = $total;
         }
+
         return response()->json([
             'products' => $productNames,
-            'amounts' => $amounts
+            'amounts' => $amounts,
         ]);
     }
+
     public function index(Request $request)
     {
         $user = auth()->user();
-        if (!$user) {
+        if (! $user) {
             // Redirect to login or show an error
             return redirect()->route('login')->with('error', 'Please login to access the dashboard.');
         }
         $company = $user->company;
-        
+
         // Branch filter: empty / missing = all branches user can see (not a single default branch)
         $branchParam = $request->input('branch_id');
         $selectedBranchId = ($branchParam === null || $branchParam === '') ? null : (int) $branchParam;
@@ -186,75 +218,20 @@ class DashboardController extends Controller
         if (empty($userBranchIds)) {
             $userBranchIds = \App\Models\Branch::where('company_id', $company->id)->pluck('id')->toArray();
         }
-        
-        // Get balance sheet data
-        $balanceSheetData = $this->getBalanceSheetData($selectedBranchId, $userBranchIds);
-        
+
         // Get comprehensive financial report data
         $financialReportData = $this->getFinancialReportData($selectedBranchId, $userBranchIds);
-        
-        // Get current month
-        $currentMonth = now()->format('Y-m');
 
-        // Get recent activities - filter by company through branch and current month
-        $recentJournals = Journal::whereHas('branch', function($query) use ($company) {
-            $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
-            return $query->where('branch_id', $selectedBranchId);
-        }, function($query) use ($userBranchIds) {
-            return $query->whereIn('branch_id', $userBranchIds);
-        })
-        ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth])
-        ->with(['user', 'branch'])
-        ->latest()
-        ->take(5)
-        ->get();
-        
-        $paymentsMonthQuery = Payment::whereHas('branch', function ($query) use ($company) {
-            $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
-            return $query->where('branch_id', $selectedBranchId);
-        }, function ($query) use ($userBranchIds) {
-            return $query->whereIn('branch_id', $userBranchIds);
-        })
-            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth]);
-
-        // Full month totals (must not use take(5) — that was only for the recent list)
-        $totalPaymentsThisMonth = (clone $paymentsMonthQuery)->sum('amount');
-
-        $recentPayments = (clone $paymentsMonthQuery)
-            ->with(['user', 'branch'])
-            ->latest()
-            ->take(5)
-            ->get();
-
-        $receiptsMonthQuery = Receipt::whereHas('branch', function ($query) use ($company) {
-            $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
-            return $query->where('branch_id', $selectedBranchId);
-        }, function ($query) use ($userBranchIds) {
-            return $query->whereIn('branch_id', $userBranchIds);
-        })
-            ->whereRaw("DATE_FORMAT(date, '%Y-%m') = ?", [$currentMonth]);
-
-        $totalReceiptsThisMonth = (clone $receiptsMonthQuery)->sum('amount');
-
-        $recentReceipts = (clone $receiptsMonthQuery)
-            ->with(['user', 'branch', 'customer'])
-            ->latest()
-            ->take(5)
-            ->get();
-        
-        $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed','complete_topup'];
+        $loans_status_stats = ['active', 'written_off', 'defaulted', 'completed', 'complete_topup'];
         // Loan statistics for Total Loan Amount (only active and completed)
-        $loansForTotalAmount = \App\Models\Loan::whereHas('branch', function($query) use ($company) {
+        $loansForTotalAmount = \App\Models\Loan::whereHas('branch', function ($query) use ($company) {
             $query->where('company_id', $company->id);
-        })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+        })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
             return $query->where('branch_id', $selectedBranchId);
-        }, function($query) use ($userBranchIds) {
+        }, function ($query) use ($userBranchIds) {
             return $query->whereIn('branch_id', $userBranchIds);
         })->whereIn('status', ['active', 'completed'])->get();
-        
+
         // All loans for other calculations (include completed so repaid totals match full portfolio)
         $loans = \App\Models\Loan::with(['schedule.repayments'])
             ->whereHas('branch', function ($query) use ($company) {
@@ -264,14 +241,14 @@ class DashboardController extends Controller
             }, function ($query) use ($userBranchIds) {
                 return $query->whereIn('branch_id', $userBranchIds);
             })->whereIn('status', $loans_status_stats)->get();
-        
+
         // Loans for detailed interest calculations (same statuses as report)
         $loansForInterest = \App\Models\Loan::with(['customer', 'branch', 'loanOfficer', 'schedule.repayments'])
-            ->whereHas('branch', function($query) use ($company) {
+            ->whereHas('branch', function ($query) use ($company) {
                 $query->where('company_id', $company->id);
-            })->when($selectedBranchId, function($query) use ($selectedBranchId) {
+            })->when($selectedBranchId, function ($query) use ($selectedBranchId) {
                 return $query->where('branch_id', $selectedBranchId);
-            }, function($query) use ($userBranchIds) {
+            }, function ($query) use ($userBranchIds) {
                 return $query->whereIn('branch_id', $userBranchIds);
             })->whereIn('status', ['active', 'written_off', 'defaulted'])->get();
 
@@ -284,7 +261,7 @@ class DashboardController extends Controller
         $repaidPrincipal = 0;
         $repaidInterest = 0;
         foreach ($loans as $loan) {
-            if (!$loan->schedule || $loan->schedule->isEmpty()) {
+            if (! $loan->schedule || $loan->schedule->isEmpty()) {
                 continue;
             }
             foreach ($loan->schedule as $schedule) {
@@ -295,34 +272,34 @@ class DashboardController extends Controller
 
         $outstandingPrincipal = 0;
         $outstandingInterest = 0;
-        
+
         // Detailed interest breakdown
         $accruedInterest = 0;
         $notDueInterest = 0;
         $paidInterest = 0;
         $outstandingInterestDetailed = 0;
-        
+
         $currentDate = \Carbon\Carbon::now();
         $currentMonth = $currentDate->format('Y-m');
-        
+
         foreach ($loansForInterest as $loan) {
             $loanAccruedInterest = 0;
             $loanNotDueInterest = 0;
             $loanOutstandingInterest = 0;
             $loanPaidInterest = 0;
-            
+
             if ($loan->schedule && $loan->schedule->count() > 0) {
                 foreach ($loan->schedule as $schedule) {
                     $principalPaid = $schedule->repayments->sum('principal');
                     $interestPaid = $schedule->repayments->sum('interest');
                     $outstandingPrincipal += max(0, $schedule->principal - $principalPaid);
                     $outstandingInterest += max(0, $schedule->interest - $interestPaid);
-                    
+
                     // Calculate detailed interest breakdown per schedule
                     $scheduleDate = \Carbon\Carbon::parse($schedule->due_date);
                     $scheduleMonth = $scheduleDate->format('Y-m');
                     $scheduleInterest = $schedule->interest ?? 0;
-                    
+
                     if ($scheduleMonth <= $currentMonth) {
                         // Interest is due up to this month - what's not paid is outstanding
                         $loanOutstandingInterest += max(0, $scheduleInterest - $interestPaid);
@@ -330,7 +307,7 @@ class DashboardController extends Controller
                         // Interest is not yet due
                         $loanNotDueInterest += $scheduleInterest;
                     }
-                    
+
                     $loanPaidInterest += $interestPaid;
                 }
             } else {
@@ -339,17 +316,17 @@ class DashboardController extends Controller
                 $loanNotDueInterest = 0;
                 $loanAccruedInterest = 0;
             }
-            
+
             // Calculate accrued interest for this loan (interest earned but not yet due)
             $loanStartDate = \Carbon\Carbon::parse($loan->disbursed_on);
             $monthsElapsed = $loanStartDate->diffInMonths($currentDate);
             $totalLoanMonths = $loan->period ?? 1;
-            
+
             if ($monthsElapsed > 0 && $monthsElapsed < $totalLoanMonths) {
                 // Calculate proportional interest earned but not yet due for this loan
                 $loanAccruedInterest = ($loanNotDueInterest * $monthsElapsed) / $totalLoanMonths;
             }
-            
+
             // Add this loan's amounts to totals
             $accruedInterest += $loanAccruedInterest;
             $notDueInterest += $loanNotDueInterest;
@@ -360,14 +337,14 @@ class DashboardController extends Controller
         // Loan officer-specific portfolio & arrears (for logged-in user)
         $officerLoansQuery = \App\Models\Loan::with(['schedule.repayments'])
             ->where('loan_officer_id', $user->id)
-            ->whereHas('branch', function($query) use ($company) {
+            ->whereHas('branch', function ($query) use ($company) {
                 $query->where('company_id', $company->id);
             });
 
         // Apply same branch filter logic
         if ($selectedBranchId) {
             $officerLoansQuery->where('branch_id', $selectedBranchId);
-        } elseif (!empty($userBranchIds)) {
+        } elseif (! empty($userBranchIds)) {
             $officerLoansQuery->whereIn('branch_id', $userBranchIds);
         }
 
@@ -389,27 +366,66 @@ class DashboardController extends Controller
         $previousYearData = $this->getPreviousYearData($selectedBranchId, $userBranchIds);
 
         // Get complaints count (pending complaints for current branch/company)
-        $complaintsQuery = Complain::whereHas('branch', function($q) use ($company) {
+        $complaintsQuery = Complain::whereHas('branch', function ($q) use ($company) {
             $q->where('company_id', $company->id);
         });
-        
+
         if ($selectedBranchId) {
             $complaintsQuery->where('branch_id', $selectedBranchId);
-        } elseif (!empty($userBranchIds)) {
+        } elseif (! empty($userBranchIds)) {
             $complaintsQuery->whereIn('branch_id', $userBranchIds);
         }
-        
+
         $pendingComplaintsCount = (clone $complaintsQuery)->where('status', 'pending')->count();
         $totalComplaintsCount = $complaintsQuery->count();
 
+        // Active-loan KPIs (dashboard stat cards)
+        $activeLoansForKpi = \App\Models\Loan::with(['schedule.repayments', 'repayments'])
+            ->whereHas('branch', function ($query) use ($company) {
+                $query->where('company_id', $company->id);
+            })
+            ->when($selectedBranchId, function ($query) use ($selectedBranchId) {
+                return $query->where('branch_id', $selectedBranchId);
+            }, function ($query) use ($userBranchIds) {
+                return $query->whereIn('branch_id', $userBranchIds);
+            })
+            ->where('status', 'active')
+            ->get();
+
+        $principalDisbursed = (float) $activeLoansForKpi->sum('amount');
+        $interestExpected = 0.0;
+        $principalCollected = 0.0;
+        $interestCollected = 0.0;
+        $outstandingPrincipalActive = 0.0;
+        $outstandingInterestActive = 0.0;
+
+        foreach ($activeLoansForKpi as $loan) {
+            if ($loan->schedule && $loan->schedule->isNotEmpty()) {
+                foreach ($loan->schedule as $schedule) {
+                    $interestExpected += (float) ($schedule->interest ?? 0);
+                    $principalCollected += (float) $schedule->repayments->sum('principal');
+                    $interestCollected += (float) $schedule->repayments->sum('interest');
+                    $prPaid = (float) $schedule->repayments->sum('principal');
+                    $intPaid = (float) $schedule->repayments->sum('interest');
+                    $outstandingPrincipalActive += max(0, (float) ($schedule->principal ?? 0) - $prPaid);
+                    $outstandingInterestActive += max(0, (float) ($schedule->interest ?? 0) - $intPaid);
+                }
+            } else {
+                $interestExpected += (float) ($loan->interest_amount ?? 0);
+                $principalCollected += (float) $loan->total_principal_paid;
+                $interestCollected += (float) $loan->total_interest_paid;
+                $outstandingPrincipalActive += max(0, (float) ($loan->amount ?? 0) - (float) $loan->total_principal_paid);
+                $outstandingInterestActive += max(0, (float) ($loan->interest_amount ?? 0) - (float) $loan->total_interest_paid);
+            }
+        }
+
+        $totalLoansExpected = $principalDisbursed + $interestExpected;
+        $totalOutstanding = $outstandingPrincipalActive + $outstandingInterestActive + (float) $penaltyBalance;
+
+        $arrearsBucketStats = $this->buildArrearsBucketLoanCounts($activeLoansForKpi);
+
         return view('dashboard', compact(
-            'balanceSheetData',
             'financialReportData',
-            'recentJournals',
-            'recentPayments',
-            'recentReceipts',
-            'totalPaymentsThisMonth',
-            'totalReceiptsThisMonth',
             'penaltyBalance',
             'previousYearData',
             'totalLoanAmount',
@@ -428,91 +444,137 @@ class DashboardController extends Controller
             'branches',
             'selectedBranchId',
             'pendingComplaintsCount',
-            'totalComplaintsCount'
+            'totalComplaintsCount',
+            'principalDisbursed',
+            'interestExpected',
+            'totalLoansExpected',
+            'principalCollected',
+            'interestCollected',
+            'outstandingPrincipalActive',
+            'outstandingInterestActive',
+            'totalOutstanding',
+            'arrearsBucketStats'
         ));
     }
-    
-    private function getBalanceSheetData($selectedBranchId = null, $userBranchIds = [])
+
+    /**
+     * For each active company arrears classification bucket, count active loans whose
+     * days-in-arrears (first overdue instalment) falls in [days_from, days_to] (open-ended if days_to null).
+     * arrears_principal / arrears_interest sum overdue schedule components; arrears_total sums loan arrears_amount.
+     * provision_amount sums (principal in arrears only × bucket provision %) for loans in that bucket.
+     * Buckets with no loans show loan_count 0 and provision_amount 0. Returns [] when no classifications are configured.
+     */
+    private function buildArrearsBucketLoanCounts($activeLoans): array
     {
-        $company = auth()->user()->company;
-        
-        // Get balance sheet data directly from gl_transactions
-        $query = DB::table('gl_transactions')
-            ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
-            ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
-            ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
-            ->where('account_class_groups.company_id', $company->id);
-        
-        // Apply branch filter
-        if ($selectedBranchId) {
-            $query->where('gl_transactions.branch_id', $selectedBranchId);
-        } else {
-            // If no specific branch selected, filter by user's assigned branches
-            $query->whereIn('gl_transactions.branch_id', $userBranchIds);
+        $classifications = ArrearsClassification::query()
+            ->forCompany()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        if ($classifications->isEmpty()) {
+            return [];
         }
-        
-        $balanceSheetData = $query
-            ->select(
-                'account_class.name as class_name',
-                'account_class_groups.group_code as class_code',
-                DB::raw('SUM(CASE WHEN gl_transactions.nature = "debit" THEN gl_transactions.amount ELSE 0 END) as total_debit'),
-                DB::raw('SUM(CASE WHEN gl_transactions.nature = "credit" THEN gl_transactions.amount ELSE 0 END) as total_credit'),
-                DB::raw('COUNT(DISTINCT chart_accounts.id) as account_count')
-            )
-            ->groupBy('account_class.id', 'account_class.name', 'account_class_groups.group_code')
-            ->get()
-            ->map(function ($item) {
-                // Calculate balance based on account class
-                $balance = 0;
-                switch (strtolower($item->class_name)) {
-                    case 'assets':
-                        $balance = $item->total_debit - $item->total_credit; // Assets: debit increases
-                        break;
-                    case 'liabilities':
-                        $balance = $item->total_credit - $item->total_debit; // Liabilities: credit increases
-                        break;
-                    case 'equity':
-                        $balance = $item->total_credit - $item->total_debit; // Equity: credit increases
-                        break;
-                    case 'income':
-                    case 'revenue':
-                        $balance = $item->total_credit - $item->total_debit; // Revenue: credit increases
-                        break;
-                    case 'expenses':
-                    case 'expense':
-                        $balance = $item->total_debit - $item->total_credit; // Expenses: debit increases
-                        break;
-                    default:
-                        $balance = $item->total_debit - $item->total_credit;
+
+        $stats = [];
+        foreach ($classifications as $c) {
+            $stats[$c->id] = [
+                'bucket_label' => $c->bucket_label,
+                'status' => $c->status,
+                'days_from' => (int) $c->days_from,
+                'days_to' => $c->days_to !== null ? (int) $c->days_to : null,
+                'provision_percentage' => (float) $c->provision_percentage,
+                'loan_count' => 0,
+                'provision_amount' => 0.0,
+                'arrears_principal' => 0.0,
+                'arrears_interest' => 0.0,
+                'arrears_total' => 0.0,
+            ];
+        }
+
+        foreach ($activeLoans as $loan) {
+            $dpd = (int) $loan->days_in_arrears;
+            $arrearsSplit = $this->loanArrearsPrincipalInterestSplit($loan);
+            foreach ($classifications as $c) {
+                if ($this->arrearsDpdMatchesBucket(
+                    $dpd,
+                    (int) $c->days_from,
+                    $c->days_to !== null ? (int) $c->days_to : null
+                )) {
+                    $stats[$c->id]['loan_count']++;
+                    $rate = (float) $c->provision_percentage / 100.0;
+                    $stats[$c->id]['provision_amount'] += $arrearsSplit['principal'] * $rate;
+                    $stats[$c->id]['arrears_principal'] += $arrearsSplit['principal'];
+                    $stats[$c->id]['arrears_interest'] += $arrearsSplit['interest'];
+                    $stats[$c->id]['arrears_total'] += $arrearsSplit['total'];
+                    break;
                 }
-                
-                return [
-                    'class_name' => $item->class_name,
-                    'class_code' => $item->class_code,
-                    'balance' => $balance,
-                    'account_count' => $item->account_count
-                ];
-            })
-            ->sortByDesc(function ($item) {
-                return abs($item['balance']);
-            })
-            ->values()
-            ->toArray();
-            
-        return $balanceSheetData;
+            }
+        }
+
+        return $classifications->map(fn ($c) => $stats[$c->id])->values()->all();
     }
-    
+
+    private function arrearsDpdMatchesBucket(int $dpd, int $daysFrom, ?int $daysTo): bool
+    {
+        if ($daysTo === null) {
+            return $dpd >= $daysFrom;
+        }
+
+        return $dpd >= $daysFrom && $dpd <= $daysTo;
+    }
+
+    /**
+     * Principal and interest portions of overdue instalments (due date passed, remaining on line).
+     * Total in arrears uses the loan model aggregate (includes fees/penalties on overdue lines).
+     *
+     * @return array{principal: float, interest: float, total: float}
+     */
+    private function loanArrearsPrincipalInterestSplit(Loan $loan): array
+    {
+        if ($loan->status === 'restructured') {
+            return ['principal' => 0.0, 'interest' => 0.0, 'total' => 0.0];
+        }
+
+        $today = Carbon::now();
+        $principal = 0.0;
+        $interest = 0.0;
+
+        foreach ($loan->schedule ?? [] as $scheduleItem) {
+            if (($scheduleItem->status ?? null) === 'restructured') {
+                continue;
+            }
+
+            $dueDate = Carbon::parse($scheduleItem->due_date);
+            if (! $dueDate->lt($today) || (float) $scheduleItem->remaining_amount <= 0) {
+                continue;
+            }
+
+            $prPaid = (float) $scheduleItem->repayments->sum('principal');
+            $intPaid = (float) $scheduleItem->repayments->sum('interest');
+            $principal += max(0.0, (float) ($scheduleItem->principal ?? 0) - $prPaid);
+            $interest += max(0.0, (float) ($scheduleItem->interest ?? 0) - $intPaid);
+        }
+
+        return [
+            'principal' => $principal,
+            'interest' => $interest,
+            'total' => (float) $loan->arrears_amount,
+        ];
+    }
+
     private function getFinancialReportData($selectedBranchId = null, $userBranchIds = [])
     {
         $company = auth()->user()->company;
-        
+
         // Get all chart accounts with their balances grouped by account class
         $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
             ->join('account_class_groups', 'chart_accounts.account_class_group_id', '=', 'account_class_groups.id')
             ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
             ->where('account_class_groups.company_id', $company->id);
-        
+
         // Apply branch filter
         if ($selectedBranchId) {
             $query->where('gl_transactions.branch_id', $selectedBranchId);
@@ -520,7 +582,7 @@ class DashboardController extends Controller
             // If no specific branch selected, filter by user's assigned branches
             $query->whereIn('gl_transactions.branch_id', $userBranchIds);
         }
-        
+
         $chartAccountsData = $query
             ->select(
                 'chart_accounts.id as account_id',
@@ -532,18 +594,18 @@ class DashboardController extends Controller
             )
             ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class.name', 'account_class_groups.name')
             ->get();
-            
+
         // Group by account class and calculate balances
         $chartAccountsAssets = [];
         $chartAccountsLiabilities = [];
         $chartAccountsEquitys = [];
         $chartAccountsRevenues = [];
         $chartAccountsExpense = [];
-        
+
         foreach ($chartAccountsData as $account) {
             // Calculate balance based on account class
             $balance = 0;
-            
+
             // Categorize based on account class
             switch (strtolower($account->class_name)) {
                 case 'assets':
@@ -551,7 +613,7 @@ class DashboardController extends Controller
                     $chartAccountsAssets[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'liabilities':
@@ -559,7 +621,7 @@ class DashboardController extends Controller
                     $chartAccountsLiabilities[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'equity':
@@ -567,7 +629,7 @@ class DashboardController extends Controller
                     $chartAccountsEquitys[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'income':
@@ -576,7 +638,7 @@ class DashboardController extends Controller
                     $chartAccountsRevenues[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'expenses':
@@ -585,33 +647,33 @@ class DashboardController extends Controller
                     $chartAccountsExpense[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
             }
         }
-        
+
         // Calculate profit/loss
         $sumRevenue = collect($chartAccountsRevenues)->flatten(1)->sum('sum');
         $sumExpense = collect($chartAccountsExpense)->flatten(1)->sum('sum');
         $profitLoss = $sumRevenue - $sumExpense;
-        
+
         return [
             'chartAccountsAssets' => $chartAccountsAssets,
             'chartAccountsLiabilities' => $chartAccountsLiabilities,
             'chartAccountsEquitys' => $chartAccountsEquitys,
             'chartAccountsRevenues' => $chartAccountsRevenues,
             'chartAccountsExpense' => $chartAccountsExpense,
-            'profitLoss' => $profitLoss
+            'profitLoss' => $profitLoss,
         ];
     }
-    
+
     private function getPreviousYearData($selectedBranchId = null, $userBranchIds = [])
     {
         $company = auth()->user()->company;
         $currentYear = date('Y');
         $previousYear = $currentYear - 1;
-        
+
         // Get previous year financial data by account
         $query = DB::table('gl_transactions')
             ->join('chart_accounts', 'gl_transactions.chart_account_id', '=', 'chart_accounts.id')
@@ -619,7 +681,7 @@ class DashboardController extends Controller
             ->join('account_class', 'account_class_groups.class_id', '=', 'account_class.id')
             ->where('account_class_groups.company_id', $company->id)
             ->whereYear('gl_transactions.date', $previousYear);
-        
+
         // Apply branch filter
         if ($selectedBranchId) {
             $query->where('gl_transactions.branch_id', $selectedBranchId);
@@ -627,7 +689,7 @@ class DashboardController extends Controller
             // If no specific branch selected, filter by user's assigned branches
             $query->whereIn('gl_transactions.branch_id', $userBranchIds);
         }
-        
+
         $previousYearData = $query
             ->select(
                 'chart_accounts.id as account_id',
@@ -639,18 +701,18 @@ class DashboardController extends Controller
             )
             ->groupBy('chart_accounts.id', 'chart_accounts.account_name', 'account_class.name', 'account_class_groups.name')
             ->get();
-            
+
         // Group by account class and calculate balances
         $previousYearAssets = [];
         $previousYearLiabilities = [];
         $previousYearEquitys = [];
         $previousYearRevenues = [];
         $previousYearExpense = [];
-        
+
         foreach ($previousYearData as $account) {
             // Calculate balance based on account class
             $balance = 0;
-            
+
             // Categorize based on account class
             switch (strtolower($account->class_name)) {
                 case 'assets':
@@ -658,7 +720,7 @@ class DashboardController extends Controller
                     $previousYearAssets[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'liabilities':
@@ -666,7 +728,7 @@ class DashboardController extends Controller
                     $previousYearLiabilities[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'equity':
@@ -674,7 +736,7 @@ class DashboardController extends Controller
                     $previousYearEquitys[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'income':
@@ -683,7 +745,7 @@ class DashboardController extends Controller
                     $previousYearRevenues[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
                 case 'expenses':
@@ -692,17 +754,17 @@ class DashboardController extends Controller
                     $previousYearExpense[$account->group_name][] = [
                         'account_id' => $account->account_id,
                         'account' => $account->account,
-                        'sum' => $balance
+                        'sum' => $balance,
                     ];
                     break;
             }
         }
-        
+
         // Calculate previous year profit/loss
         $sumRevenue = collect($previousYearRevenues)->flatten(1)->sum('sum');
         $sumExpense = collect($previousYearExpense)->flatten(1)->sum('sum');
         $previousYearProfitLoss = $sumRevenue - $sumExpense;
-        
+
         return [
             'year' => $previousYear,
             'chartAccountsAssets' => $previousYearAssets,
@@ -710,7 +772,7 @@ class DashboardController extends Controller
             'chartAccountsEquitys' => $previousYearEquitys,
             'chartAccountsRevenues' => $previousYearRevenues,
             'chartAccountsExpense' => $previousYearExpense,
-            'profitLoss' => $previousYearProfitLoss
+            'profitLoss' => $previousYearProfitLoss,
         ];
     }
 
@@ -753,12 +815,15 @@ class DashboardController extends Controller
             $phone = preg_replace('/[^0-9+]/', '', $customer->phone1);
             if (empty($phone) || in_array($phone, $sentNumbers)) {
                 $invalid++;
-                if (in_array($phone, $sentNumbers)) $duplicates++;
+                if (in_array($phone, $sentNumbers)) {
+                    $duplicates++;
+                }
+
                 continue;
             }
             $sentNumbers[] = $phone;
-            $fullMessage = $title . ": " . $messageContent;
-            //$smsResponse = \App\Helpers\SmsHelper::send($phone, $fullMessage);
+            $fullMessage = $title.': '.$messageContent;
+            // $smsResponse = \App\Helpers\SmsHelper::send($phone, $fullMessage);
             $responses[] = $smsResponse;
             $valid++;
             // Log SMS
@@ -776,14 +841,14 @@ class DashboardController extends Controller
 
         return response()->json([
             'success' => true,
-            'message' => "Bulk SMS sent successfully!",
+            'message' => 'Bulk SMS sent successfully!',
             'response' => [
                 'message' => 'Message Submitted Successfully',
                 'valid' => $valid,
                 'invalid' => $invalid,
                 'duplicates' => $duplicates,
-                'details' => $responses
-            ]
+                'details' => $responses,
+            ],
         ]);
     }
 }

@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Exports\GenericArrayExport;
+use App\Models\ArrearsClassification;
 use App\Models\Branch;
 use App\Models\Company;
 use App\Models\Group;
@@ -20,7 +22,6 @@ use App\Exports\PerformanceExport;
 use App\Exports\DelinquencyExport;
 use App\Exports\InternalPortfolioAnalysisExport;
 use App\Exports\LoanSizeTypeExport;
-use App\Exports\GenericArrayExport;
 use PDF;
 
 class LoanReportController extends Controller
@@ -1434,6 +1435,302 @@ class LoanReportController extends Controller
                   ->setPaper('A3', 'landscape');
 
         return $pdf->download('loan_arrears_report_' . date('Y_m_d') . '.pdf');
+    }
+
+    /**
+     * Portfolio provisioning & arrears classification — active loans with principal in each
+     * configured aging bucket, provision rate and provision amount (principal in arrears × rate).
+     */
+    public function portfolioProvisioningReport(Request $request)
+    {
+        $this->authorizeProvisioningReport();
+
+        $user = auth()->user();
+        $company = $user->company;
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
+        $branches = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->select('branches.id', 'branches.name')
+            ->get();
+
+        if (($branches->count() ?? 0) === 1) {
+            $branchId = $branches->first()->id;
+        }
+
+        $groups = Group::all();
+        $loanOfficers = User::excludeSuperAdmin()
+            ->when($branchId && $branchId !== 'all', function ($query) use ($branchId) {
+                $query->whereHas('branches', function ($q) use ($branchId) {
+                    $q->where('branches.id', $branchId);
+                });
+            })
+            ->get();
+
+        $classifications = ArrearsClassification::query()
+            ->forCompany()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $report = $this->buildPortfolioProvisioningRows($branchId, $groupId, $loanOfficerId, $classifications);
+
+        return view('loans.reports.portfolio_provisioning', [
+            'branches' => $branches,
+            'groups' => $groups,
+            'loanOfficers' => $loanOfficers,
+            'branchId' => $branchId,
+            'groupId' => $groupId,
+            'loanOfficerId' => $loanOfficerId,
+            'classifications' => $classifications,
+            'rows' => $report['rows'],
+            'totals' => $report['totals'],
+        ]);
+    }
+
+    /**
+     * Export portfolio provisioning & classification report to Excel.
+     */
+    public function exportPortfolioProvisioningToExcel(Request $request)
+    {
+        $this->authorizeProvisioningReport();
+
+        $branchId = $request->input('branch_id');
+        $groupId = $request->input('group_id');
+        $loanOfficerId = $request->input('loan_officer_id');
+
+        $classifications = ArrearsClassification::query()
+            ->forCompany()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->orderBy('id')
+            ->get();
+
+        $report = $this->buildPortfolioProvisioningRows($branchId, $groupId, $loanOfficerId, $classifications);
+
+        $headings = [
+            'Customer',
+            'Customer No',
+            'Phone',
+            'Loan No',
+            'Branch',
+            'Loan officer',
+            'Principal disbursed',
+            'Outstanding principal',
+            'Days in arrears',
+            'Past due days',
+            'Principal in arrears',
+            'Interest in arrears',
+            'Total in arrears',
+        ];
+
+        foreach ($classifications as $c) {
+            $headings[] = $c->bucket_label.' — '.$c->status.' ('.number_format((float) $c->provision_percentage, 2).'%)';
+        }
+        $headings[] = 'Provision rate %';
+        $headings[] = 'Provision amount';
+
+        $excelRows = [];
+        foreach ($report['rows'] as $r) {
+            $line = [
+                $r['customer_name'],
+                $r['customer_no'],
+                $r['phone'],
+                $r['loan_no'],
+                $r['branch'],
+                $r['loan_officer'],
+                $r['principal_disbursed'],
+                $r['outstanding_principal'],
+                $r['days_in_arrears'],
+                $r['past_due_days'],
+                $r['principal_in_arrears'],
+                $r['interest_in_arrears'],
+                $r['total_in_arrears'],
+            ];
+            foreach ($classifications as $c) {
+                $line[] = $r['buckets'][$c->id] ?? 0;
+            }
+            $line[] = $r['provision_rate'];
+            $line[] = $r['provision_amount'];
+            $excelRows[] = $line;
+        }
+
+        $fileName = 'portfolio_provisioning_'.date('Y_m_d').'.xlsx';
+
+        return Excel::download(new GenericArrayExport($excelRows, $headings), $fileName);
+    }
+
+    private function authorizeProvisioningReport(): void
+    {
+        abort_unless(auth()->user()->can('view loan arrears report'), 403);
+    }
+
+    /**
+     * @param  \Illuminate\Support\Collection<int, ArrearsClassification>  $classifications
+     * @return array{rows: array<int, array>, totals: array<string, mixed>}
+     */
+    private function buildPortfolioProvisioningRows($branchId, $groupId, $loanOfficerId, $classifications): array
+    {
+        $loans = $this->queryActiveLoansForProvisioningReport($branchId, $groupId, $loanOfficerId);
+        $rows = [];
+        $totals = [
+            'principal_disbursed' => 0.0,
+            'outstanding_principal' => 0.0,
+            'principal_in_arrears' => 0.0,
+            'interest_in_arrears' => 0.0,
+            'total_in_arrears' => 0.0,
+            'provision_amount' => 0.0,
+            'buckets' => [],
+        ];
+        foreach ($classifications as $c) {
+            $totals['buckets'][$c->id] = 0.0;
+        }
+
+        foreach ($loans as $loan) {
+            $split = $this->loanArrearsPrincipalInterestSplitForReport($loan);
+            $dpd = (int) $loan->days_in_arrears;
+            $buckets = [];
+            foreach ($classifications as $c) {
+                $buckets[$c->id] = 0.0;
+            }
+            $matched = null;
+            foreach ($classifications as $c) {
+                if ($this->arrearsDpdMatchesBucketForReport(
+                    $dpd,
+                    (int) $c->days_from,
+                    $c->days_to !== null ? (int) $c->days_to : null
+                )) {
+                    $buckets[$c->id] = $split['principal'];
+                    $matched = $c;
+                    break;
+                }
+            }
+            $rate = $matched ? (float) $matched->provision_percentage : 0.0;
+            $provisionAmount = $split['principal'] * ($rate / 100.0);
+
+            $row = [
+                'customer_name' => $loan->customer->name ?? 'N/A',
+                'customer_no' => $loan->customer->customerNo ?? 'N/A',
+                'phone' => $loan->customer->phone1 ?? 'N/A',
+                'loan_no' => $loan->loanNo ?? 'N/A',
+                'branch' => $loan->branch->name ?? 'N/A',
+                'loan_officer' => $loan->loanOfficer->name ?? 'N/A',
+                'principal_disbursed' => (float) ($loan->amount ?? 0),
+                'outstanding_principal' => $this->loanOutstandingPrincipalForReport($loan),
+                'days_in_arrears' => $dpd,
+                'past_due_days' => $dpd,
+                'principal_in_arrears' => $split['principal'],
+                'interest_in_arrears' => $split['interest'],
+                'total_in_arrears' => $split['total'],
+                'buckets' => $buckets,
+                'provision_rate' => $rate,
+                'provision_amount' => $provisionAmount,
+                'classification_label' => $matched ? ($matched->bucket_label.' — '.$matched->status) : '—',
+            ];
+            $rows[] = $row;
+
+            $totals['principal_disbursed'] += $row['principal_disbursed'];
+            $totals['outstanding_principal'] += $row['outstanding_principal'];
+            $totals['principal_in_arrears'] += $row['principal_in_arrears'];
+            $totals['interest_in_arrears'] += $row['interest_in_arrears'];
+            $totals['total_in_arrears'] += $row['total_in_arrears'];
+            $totals['provision_amount'] += $provisionAmount;
+            foreach ($classifications as $c) {
+                $totals['buckets'][$c->id] += $buckets[$c->id];
+            }
+        }
+
+        return ['rows' => $rows, 'totals' => $totals];
+    }
+
+    private function queryActiveLoansForProvisioningReport($branchId = null, $groupId = null, $loanOfficerId = null)
+    {
+        $user = auth()->user();
+        $company = $user->company;
+        $assignedBranchIds = $user->branches()
+            ->where('branches.company_id', $company->id)
+            ->pluck('branches.id')
+            ->toArray();
+
+        $loansQuery = Loan::with(['customer', 'branch', 'group', 'loanOfficer', 'schedule.repayments'])
+            ->where('status', 'active')
+            ->whereIn('branch_id', $assignedBranchIds);
+
+        if ($branchId && $branchId !== 'all') {
+            $loansQuery->where('branch_id', $branchId);
+        }
+
+        if ($groupId) {
+            $loansQuery->where('group_id', $groupId);
+        }
+
+        if ($loanOfficerId) {
+            $loansQuery->where('loan_officer_id', $loanOfficerId);
+        }
+
+        return $loansQuery->orderBy('id')->get();
+    }
+
+    private function loanOutstandingPrincipalForReport(Loan $loan): float
+    {
+        $total = 0.0;
+        foreach ($loan->schedule ?? [] as $scheduleItem) {
+            if (($scheduleItem->status ?? null) === 'restructured') {
+                continue;
+            }
+            $prPaid = (float) $scheduleItem->repayments->sum('principal');
+            $total += max(0.0, (float) ($scheduleItem->principal ?? 0) - $prPaid);
+        }
+
+        return $total;
+    }
+
+    /**
+     * @return array{principal: float, interest: float, total: float}
+     */
+    private function loanArrearsPrincipalInterestSplitForReport(Loan $loan): array
+    {
+        if ($loan->status === 'restructured') {
+            return ['principal' => 0.0, 'interest' => 0.0, 'total' => 0.0];
+        }
+
+        $today = Carbon::now();
+        $principal = 0.0;
+        $interest = 0.0;
+
+        foreach ($loan->schedule ?? [] as $scheduleItem) {
+            if (($scheduleItem->status ?? null) === 'restructured') {
+                continue;
+            }
+
+            $dueDate = Carbon::parse($scheduleItem->due_date);
+            if (! $dueDate->lt($today) || (float) $scheduleItem->remaining_amount <= 0) {
+                continue;
+            }
+
+            $prPaid = (float) $scheduleItem->repayments->sum('principal');
+            $intPaid = (float) $scheduleItem->repayments->sum('interest');
+            $principal += max(0.0, (float) ($scheduleItem->principal ?? 0) - $prPaid);
+            $interest += max(0.0, (float) ($scheduleItem->interest ?? 0) - $intPaid);
+        }
+
+        return [
+            'principal' => $principal,
+            'interest' => $interest,
+            'total' => (float) $loan->arrears_amount,
+        ];
+    }
+
+    private function arrearsDpdMatchesBucketForReport(int $dpd, int $daysFrom, ?int $daysTo): bool
+    {
+        if ($daysTo === null) {
+            return $dpd >= $daysFrom;
+        }
+
+        return $dpd >= $daysFrom && $dpd <= $daysTo;
     }
 
     /**

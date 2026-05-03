@@ -223,6 +223,23 @@
                             </div>
                             @endcan
 
+                            @can('manage system configurations')
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card border-success">
+                                    <div class="card-body text-center">
+                                        <div class="mb-3">
+                                            <i class="bx bx-category fs-1 text-success"></i>
+                                        </div>
+                                        <h5 class="card-title">Loan Arrears Classifications</h5>
+                                        <p class="card-text">Define aging buckets, loan status labels, and provision rates for arrears reporting.</p>
+                                        <a href="{{ route('settings.arrears-classifications.index') }}" class="btn btn-success">
+                                            <i class="bx bx-slider-alt me-1"></i> Configure
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                            @endcan
+
                             <!-- Run Penalty Accrual -->
                             @can('manage penalty setting')
                             <div class="col-md-6 col-lg-4 mb-4">
