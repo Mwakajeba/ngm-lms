@@ -150,6 +150,29 @@ Route::get('/test-language', function () {
 Route::get('/request-email-otp', [OtpEmailController::class, 'showEmailForm'])->name('email-otp-form');
 Route::post('/send-email-otp', [OtpEmailController::class, 'sendOtpEmail'])->name('email-otp-send');
 
+// Product / system feature overview (PDF for proposals & invoices)
+Route::get('/docs/system-features.pdf', [App\Http\Controllers\DocsController::class, 'systemFeaturesPdf'])
+    ->middleware('auth')
+    ->name('docs.system_features_pdf');
+
+// NGML UAT feature checklist (interactive HTML + PDF)
+Route::get('/docs/uat-checklist', [App\Http\Controllers\DocsController::class, 'uatChecklistHtml'])
+    ->middleware('auth')
+    ->name('docs.uat_checklist');
+Route::get('/docs/uat-checklist.pdf', [App\Http\Controllers\DocsController::class, 'uatChecklistPdf'])
+    ->middleware('auth')
+    ->name('docs.uat_checklist_pdf');
+
+// Public Job Portal (HR recruitment — no auth)
+Route::prefix('jobs')->name('public.job-portal.')->group(function () {
+    Route::get('/', [App\Http\Controllers\Public\JobPortalController::class, 'index'])->name('index');
+    Route::get('/{vacancyRequisition}', [App\Http\Controllers\Public\JobPortalController::class, 'show'])->name('show');
+    Route::post('/{vacancyRequisition}/apply', [App\Http\Controllers\Public\JobPortalController::class, 'apply'])->name('apply');
+});
+
+// HR & Payroll (EYP-parity module)
+require __DIR__.'/hr.php';
+
 // Reports Route
 Route::get('/reports', [App\Http\Controllers\ReportsController::class, 'index'])->middleware('auth')->name('reports.index');
 Route::get('/reports/loans', [App\Http\Controllers\ReportsController::class, 'loans'])->middleware('auth')->name('reports.loans');

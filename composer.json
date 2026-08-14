@@ -39,7 +39,8 @@
             "app/Helpers/CompanyHelper.php",
             "app/Helpers/SystemHelper.php",
             "app/Helpers/PhoneHelper.php",
-            "app/Helpers/FormHelper.php"
+            "app/Helpers/FormHelper.php",
+            "app/Helpers/LocationHelper.php"
         ]
     },
     "autoload-dev": {

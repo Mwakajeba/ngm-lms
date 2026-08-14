@@ -84,6 +84,14 @@ class MenuSeeder extends Seeder
                 ],
                 'hiddenRoutes' => ['loan-products.edit', 'loan-products.destroy', 'loan-products.show', 'groups.edit', 'groups.destroy', 'groups.show', 'groups.create', 'groups.payment', 'loans.edit', 'loans.destroy', 'loans.show', 'loans.create', 'loans.list'],
             ],
+
+            'HR & Payroll' => [
+                'icon' => 'bx bx-user',
+                'visibleRoutes' => [
+                    ['name' => 'HR & Payroll', 'route' => 'hr-payroll.index'],
+                ],
+                'hiddenRoutes' => [],
+            ],
            
             'Reports' => [
                 'icon' => 'bx bx-file',

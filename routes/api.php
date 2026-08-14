@@ -62,3 +62,14 @@ Route::prefix('customer')->controller(CustomerAuthController::class)->group(func
     // Msaada: company contact (phone, email) from companies table
     Route::get('company-contact', 'companyContact');
 });
+
+/*
+|--------------------------------------------------------------------------
+| Biometric device API (API key/secret — same as EYP)
+|--------------------------------------------------------------------------
+*/
+Route::prefix('biometric')->group(function () {
+    Route::post('/punch', [App\Http\Controllers\Api\BiometricApiController::class, 'receivePunch']);
+    Route::post('/punches', [App\Http\Controllers\Api\BiometricApiController::class, 'receiveBulkPunches']);
+    Route::get('/status', [App\Http\Controllers\Api\BiometricApiController::class, 'getStatus']);
+});

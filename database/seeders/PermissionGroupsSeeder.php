@@ -83,7 +83,16 @@ class PermissionGroupsSeeder extends Seeder
                 'icon' => 'bx bx-message-square-dots',
                 'sort_order' => 8,
                 'is_active' => true
-            ]
+            ],
+            [
+                'name' => 'hr_payroll',
+                'display_name' => 'HR & Payroll',
+                'description' => 'Permissions related to HR management, payroll, and leave management',
+                'color' => '#0dcaf0',
+                'icon' => 'bx bx-user-check',
+                'sort_order' => 9,
+                'is_active' => true
+            ],
         ];
 
         // Create permission groups
@@ -411,7 +420,37 @@ class PermissionGroupsSeeder extends Seeder
                 'send messages',
                 'view chat history',
                 'manage chat settings'
-            ]
+            ],
+
+            'hr_payroll' => [
+                'view employees',
+                'create employee',
+                'edit employee',
+                'delete employee',
+                'view employee profile',
+                'manage employee documents',
+                'view payrolls',
+                'create payroll',
+                'edit payroll',
+                'delete payroll',
+                'process payroll',
+                'view payslips',
+                'generate payslip',
+                'view leave types',
+                'create leave type',
+                'edit leave type',
+                'delete leave type',
+                'view leave applications',
+                'approve leave application',
+                'reject leave application',
+                'manage leave settings',
+                'manage leave types',
+                'view leave requests',
+                'approve leave',
+                'reject leave',
+                'view hr payroll',
+                'manage hr payroll',
+            ],
         ];
 
         // Update permissions with their groups

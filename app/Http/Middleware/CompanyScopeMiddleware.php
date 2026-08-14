@@ -19,10 +19,13 @@ class CompanyScopeMiddleware
         if (Auth::check()) {
             $user = Auth::user();
             
-            // Set company and branch context for the authenticated user
+            // Set company and branch context (prefer session branch like EYP HR)
             if ($user->company_id) {
                 config(['app.current_company_id' => $user->company_id]);
-                config(['app.current_branch_id' => $user->branch_id]);
+                $branchId = session('branch_id') ?: $user->branch_id;
+                if ($branchId) {
+                    config(['app.current_branch_id' => $branchId]);
+                }
             }
         }
 

@@ -46,6 +46,14 @@ class ScheduleServiceProvider extends ServiceProvider
                 ->withoutOverlapping()
                 ->onOneServer()
                 ->appendOutputTo(storage_path('logs/subscription-expiry-check.log'));
+
+            // HR biometric device sync (EYP parity) — every minute
+            if (class_exists(\App\Console\Commands\SyncBiometricDevices::class)) {
+                $schedule->command('biometric:sync')
+                    ->everyMinute()
+                    ->withoutOverlapping()
+                    ->appendOutputTo(storage_path('logs/biometric-sync.log'));
+            }
         });
     }
 }
