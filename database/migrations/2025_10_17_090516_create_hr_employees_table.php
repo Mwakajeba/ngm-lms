@@ -41,7 +41,7 @@ return new class extends Migration
             $table->decimal('basic_salary', 10, 2);
             $table->string('identity_document_type');
             $table->string('identity_number');
-            $table->enum('employment_type', ['full_time', 'part_time', 'contract', 'intern']);
+            $table->enum('employment_type', ['full_time', 'part_time', 'contract', 'probation', 'casual', 'intern']);
             $table->date('date_of_employment');
             $table->string('designation');
             $table->string('tin')->nullable();

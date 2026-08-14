@@ -274,6 +274,7 @@
                         <option value="full_time" @selected($et === 'full_time')>Full Time</option>
                         <option value="part_time" @selected($et === 'part_time')>Part Time</option>
                         <option value="contract" @selected($et === 'contract')>Contract</option>
+                        <option value="probation" @selected($et === 'probation')>Probation</option>
                         <option value="casual" @selected($et === 'casual')>Casual workers</option>
                         <option value="intern" @selected($et === 'intern')>Intern</option>
                     </select>

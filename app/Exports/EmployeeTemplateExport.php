@@ -96,7 +96,7 @@ class EmployeeTemplateExport implements FromArray, WithHeadings, WithStyles
                 $data[9], // basic_salary
                 'national_id', // identity_document_type
                 $data[10], // identity_number
-                $employmentType, // employment_type (valid enum: full_time, part_time, contract, intern)
+                $employmentType, // employment_type (valid enum: full_time, part_time, contract, probation, casual, intern)
                 '2024-01-01', // date_of_employment
                 $data[15], // tin
                 $data[13], // bank_name

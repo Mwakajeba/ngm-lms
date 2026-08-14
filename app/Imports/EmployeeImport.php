@@ -451,12 +451,17 @@ class EmployeeImport implements ToCollection, WithHeadingRow
             'parttime' => 'part_time',
             'contractor' => 'contract',
             'internship' => 'intern',
+            'probation' => 'probation',
+            'probationary' => 'probation',
+            'casual' => 'casual',
+            'casual worker' => 'casual',
+            'casual workers' => 'casual',
         ];
 
         $normalized = strtolower(trim($employmentType));
         
         // Check if it's already a valid enum value
-        $validEnums = ['full_time', 'part_time', 'contract', 'intern'];
+        $validEnums = ['full_time', 'part_time', 'contract', 'probation', 'casual', 'intern'];
         if (in_array($normalized, $validEnums)) {
             return $normalized;
         }
