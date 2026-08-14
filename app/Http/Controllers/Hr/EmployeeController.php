@@ -13,6 +13,7 @@ use App\Models\Hr\Document;
 use App\Models\Hr\JobGrade;
 use App\Services\Hr\PositionService;
 use App\Models\Branch;
+use App\Models\Region;
 use App\Models\User;
 use App\Models\Role;
 use Illuminate\Validation\Rule;
@@ -94,10 +95,7 @@ class EmployeeController extends Controller
         $nextEmployeeNumber = 'EMP' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
         $currentBranchId = current_branch_id();
         
-        // Get countries list
-        $countries = function_exists('get_countries_list') ? get_countries_list() : ['Tanzania' => 'Tanzania'];
-        $tanzaniaRegions = function_exists('get_tanzania_regions') ? get_tanzania_regions() : [];
-        $tanzaniaDistricts = function_exists('get_tanzania_districts') ? get_tanzania_districts() : [];
+        extract($this->locationOptions());
 
         return view('hr-payroll.employees.create', compact('departments', 'positions', 'tradeUnions', 'branches', 'nextEmployeeNumber', 'currentBranchId', 'countries', 'tanzaniaRegions', 'tanzaniaDistricts'));
     }
@@ -417,10 +415,7 @@ class EmployeeController extends Controller
         $tradeUnions = TradeUnion::where('company_id', $currentUser->company_id)->where('is_active', true)->orderBy('name')->get();
         $branches = Branch::where('company_id', $currentUser->company_id)->orderBy('name')->get();
         
-        // Get countries list
-        $countries = function_exists('get_countries_list') ? get_countries_list() : ['Tanzania' => 'Tanzania'];
-        $tanzaniaRegions = function_exists('get_tanzania_regions') ? get_tanzania_regions() : [];
-        $tanzaniaDistricts = function_exists('get_tanzania_districts') ? get_tanzania_districts() : [];
+        extract($this->locationOptions());
 
         return view('hr-payroll.employees.edit', compact('employee', 'departments', 'positions', 'tradeUnions', 'branches', 'currentBranchId', 'countries', 'tanzaniaRegions', 'tanzaniaDistricts'));
     }
@@ -982,5 +977,44 @@ class EmployeeController extends Controller
             'available' => !$existsInUsers,
             'message' => $existsInUsers ? 'This phone number is already registered in the system.' : null
         ]);
+    }
+
+    /**
+     * Countries, regions and districts for employee forms.
+     * Prefers the production regions/districts tables (same as customers),
+     * then falls back to LocationHelper if those tables are empty.
+     */
+    protected function locationOptions(): array
+    {
+        $helper = app_path('Helpers/LocationHelper.php');
+        if (is_file($helper) && ! function_exists('get_tanzania_regions')) {
+            require_once $helper;
+        }
+
+        $countries = function_exists('get_countries_list')
+            ? get_countries_list()
+            : ['Tanzania' => 'Tanzania'];
+
+        $tanzaniaRegions = Region::query()->orderBy('name')->pluck('name')->filter()->values()->all();
+
+        $tanzaniaDistricts = Region::query()
+            ->with(['districts' => fn ($q) => $q->orderBy('name')])
+            ->orderBy('name')
+            ->get()
+            ->mapWithKeys(function (Region $region) {
+                return [$region->name => $region->districts->pluck('name')->filter()->values()->all()];
+            })
+            ->filter(fn ($districts) => count($districts) > 0)
+            ->all();
+
+        if (empty($tanzaniaRegions) && function_exists('get_tanzania_regions')) {
+            $tanzaniaRegions = get_tanzania_regions();
+        }
+
+        if (empty($tanzaniaDistricts) && function_exists('get_tanzania_districts')) {
+            $tanzaniaDistricts = get_tanzania_districts();
+        }
+
+        return compact('countries', 'tanzaniaRegions', 'tanzaniaDistricts');
     }
 }
